@@ -41,6 +41,7 @@ It offers many UNIX-like features:
 Community
 ---------
 - [Website](http://www.fiwix.org)
+- [Wiki](https://github.com/mikaku/Fiwix/wiki)
 - [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
 - [IRC](http://webchat.freenode.net/?channels=fiwix)
 
