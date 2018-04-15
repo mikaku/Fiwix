@@ -1,5 +1,5 @@
-Fiwix kernel release 1.0
-========================
+Fiwix kernel v1.0.0
+===================
 Fiwix is an operating system kernel, written by Jordi Sanfeliu from scratch, based on the UNIX architecture and fully focused on being POSIX compatible. It is designed and developed mainly as a hobby OS but also for educational purposes, therefore the kernel code is kept as simple as possible.
 
 It runs on the i386 (x86 32bit) hardware architecture and is compatible with a good base of existing GNU applications.
@@ -44,6 +44,10 @@ Community
 - [Wiki](https://github.com/mikaku/Fiwix/wiki)
 - [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
 - [IRC](http://webchat.freenode.net/?channels=fiwix)
+
+License
+-------
+Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.
 
 Credits
 -------
