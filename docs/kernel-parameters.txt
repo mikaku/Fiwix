@@ -1,0 +1,18 @@
+Fiwix kernel parameters
+=======================
+
+The following is a list of the current kernel parameters:
+
+console=	Set the output console device
+		Options: /dev/tty[1..12]
+
+noramdisk	Disable RAM disk driver
+
+ramdisksize=	Size of the RAM disk device in kilobytes (KB)
+
+root=		Root filesystem
+		Options: /dev/fd0, /dev/hda1, ...
+
+rootfstype=	Set the root filesystem type
+		Options: minix, ext2, iso9660
+

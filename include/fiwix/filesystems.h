@@ -1,0 +1,151 @@
+/*
+ * fiwix/include/fiwix/filesystems.h
+ *
+ * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Distributed under the terms of the Fiwix License.
+ */
+
+#ifndef _FIWIX_FILESYSTEMS_H
+#define _FIWIX_FILESYSTEMS_H
+
+#include <fiwix/types.h>
+#include <fiwix/limits.h>
+
+#define NR_FILESYSTEMS		5	/* supported filesystems */
+
+/* value to be determined during system startup */
+extern unsigned int mount_table_size;	/* size in bytes */
+
+struct filesystems {
+	const char *name;		/* filesystem name */
+	struct fs_operations *fsop;	/* filesystem operations */
+	struct mount *mt;		/* mount-table entry (only for nodev) */
+};
+struct filesystems filesystems_table[NR_FILESYSTEMS];
+
+struct mount {
+	__dev_t dev;			/* device number */
+	char devname[DEVNAME_MAX + 1];	/* device name */
+	char dirname[NAME_MAX + 1];	/* mount point directory name */
+	unsigned char used;		/* 1=busy, 0=free */
+	struct superblock sb;		/* superblock */
+	struct filesystems *fs;		/* pointer to filesystem structure */
+};
+extern struct mount *mount_table;
+
+int register_filesystem(const char *, struct fs_operations *);
+struct filesystems * get_filesystem(const char *);
+void fs_init(void);
+
+struct superblock * get_superblock(__dev_t);
+void sync_superblocks(__dev_t);
+int kern_mount(__dev_t, struct filesystems *);
+int mount_root(void);
+void mount_init(void);
+
+
+/* minix prototypes */
+int minix_file_open(struct inode *, struct fd *);
+int minix_file_close(struct inode *, struct fd *);
+int minix_file_write(struct inode *, struct fd *, const char *, __size_t);
+int minix_file_lseek(struct inode *, __off_t);
+int minix_dir_open(struct inode *, struct fd *);
+int minix_dir_close(struct inode *, struct fd *);
+int minix_dir_read(struct inode *, struct fd *, char *, __size_t);
+int minix_dir_write(struct inode *, struct fd *, const char *, __size_t);
+int minix_dir_readdir(struct inode *, struct fd *, struct dirent *, unsigned int);
+int minix_readlink(struct inode *, char *, __size_t);
+int minix_followlink(struct inode *, struct inode *, struct inode **);
+int minix_bmap(struct inode *, __off_t, int);
+int minix_lookup(const char *, struct inode *, struct inode **);
+int minix_rmdir(struct inode *, struct inode *);
+int minix_link(struct inode *, struct inode *, char *);
+int minix_unlink(struct inode *, struct inode *, char *);
+int minix_symlink(struct inode *, char *, char *);
+int minix_mkdir(struct inode *, char *, __mode_t);
+int minix_mknod(struct inode *, char *, __mode_t, __dev_t);
+int minix_truncate(struct inode *, __off_t);
+int minix_create(struct inode *, char *, __mode_t, struct inode **);
+int minix_rename(struct inode *, struct inode *, struct inode *, struct inode *, char *, char *);
+int minix_read_inode(struct inode *);
+int minix_write_inode(struct inode *);
+int minix_ialloc(struct inode *);
+void minix_ifree(struct inode *);
+void minix_statfs(struct superblock *, struct statfs *);
+int minix_read_superblock(__dev_t, struct superblock *);
+int minix_remount_fs(struct superblock *, int);
+int minix_write_superblock(struct superblock *);
+void minix_release_superblock(struct superblock *);
+int minix_init(void);
+
+
+/* ext2 prototypes */
+int ext2_file_open(struct inode *, struct fd *);
+int ext2_file_close(struct inode *, struct fd *);
+int ext2_file_lseek(struct inode *, __off_t);
+int ext2_dir_open(struct inode *, struct fd *);
+int ext2_dir_close(struct inode *, struct fd *);
+int ext2_dir_read(struct inode *, struct fd *, char *, __size_t);
+int ext2_dir_readdir(struct inode *, struct fd *, struct dirent *, unsigned int);
+int ext2_readlink(struct inode *, char *, __size_t);
+int ext2_followlink(struct inode *, struct inode *, struct inode **);
+int ext2_bmap(struct inode *, __off_t, int);
+int ext2_lookup(const char *, struct inode *, struct inode **);
+int ext2_read_inode(struct inode *);
+void ext2_statfs(struct superblock *, struct statfs *);
+int ext2_read_superblock(__dev_t, struct superblock *);
+int ext2_init(void);
+
+
+/* pipefs prototypes */
+int fifo_open(struct inode *, struct fd *);
+int pipefs_close(struct inode *, struct fd *);
+int pipefs_read(struct inode *, struct fd *, char *, __size_t);
+int pipefs_write(struct inode *, struct fd *, const char *, __size_t);
+int pipefs_ioctl(struct inode *, int, unsigned long int);
+int pipefs_lseek(struct inode *, __off_t);
+int pipefs_select(struct inode *, int);
+int pipefs_ialloc(struct inode *);
+void pipefs_ifree(struct inode *);
+int pipefs_read_superblock(__dev_t, struct superblock *);
+int pipefs_init(void);
+
+
+/* iso9660 prototypes */
+int iso9660_file_open(struct inode *, struct fd *);
+int iso9660_file_close(struct inode *, struct fd *);
+int iso9660_file_lseek(struct inode *, __off_t);
+int iso9660_dir_open(struct inode *, struct fd *);
+int iso9660_dir_close(struct inode *, struct fd *);
+int iso9660_dir_read(struct inode *, struct fd *, char *, __size_t);
+int iso9660_dir_readdir(struct inode *, struct fd *, struct dirent *, unsigned int);
+int iso9660_readlink(struct inode *, char *, __size_t);
+int iso9660_followlink(struct inode *, struct inode *, struct inode **);
+int iso9660_bmap(struct inode *, __off_t, int);
+int iso9660_lookup(const char *, struct inode *, struct inode **);
+int iso9660_read_inode(struct inode *);
+void iso9660_statfs(struct superblock *, struct statfs *);
+int iso9660_read_superblock(__dev_t, struct superblock *);
+void iso9660_release_superblock(struct superblock *);
+int iso9660_init(void);
+
+
+/* procfs prototypes */
+int procfs_file_open(struct inode *, struct fd *);
+int procfs_file_close(struct inode *, struct fd *);
+int procfs_file_read(struct inode *, struct fd *, char *, __size_t);
+int procfs_file_lseek(struct inode *, __off_t);
+int procfs_dir_open(struct inode *, struct fd *);
+int procfs_dir_close(struct inode *, struct fd *);
+int procfs_dir_read(struct inode *, struct fd *, char *, __size_t);
+int procfs_dir_readdir(struct inode *, struct fd *, struct dirent *, unsigned int);
+int procfs_readlink(struct inode *, char *, __size_t);
+int procfs_followlink(struct inode *, struct inode *, struct inode **);
+int procfs_bmap(struct inode *, __off_t, int);
+int procfs_lookup(const char *, struct inode *, struct inode **);
+int procfs_read_inode(struct inode *);
+void procfs_statfs(struct superblock *, struct statfs *);
+int procfs_read_superblock(__dev_t, struct superblock *);
+int procfs_init(void);
+
+#endif /* _FIWIX_FILESYSTEMS_H */

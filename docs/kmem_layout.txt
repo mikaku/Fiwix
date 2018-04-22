@@ -1,0 +1,78 @@
+			Fiwix Kernel Memory Address Space
+			=================================
+
+0x00000000
+	.
+	.
+0x00090000
+	+-------------------+
+	| 4KB kpage_dir     | this page will be reused once the definitive
+	| only used at boot | kpage_dir is installed
+	+-------------------+
+	.
+0x00100000
+	+-------------------+
+	| .text section     | kernel binary (fiwix)
+	+-------------------+
+	| .data section     |
+	+-------------------+
+	| .bss section      |
+	+-------------------+
++ PAGE_SIZE
+	+-------------------+ this page prevents stack reaching .bss section
+	|       NULL        | this page *shouldn't be* mapped so it will GPF,
+	+-------------------+ its purpose is to capture out-of-bounds addresses
++ PAGE_SIZE			   /\
+	+-------------------+	   ||
+	| stack pointer     | grows downwards
+	+-------------------+ kernel has only 4KB space for its own stack
++ PAGE_SIZE
+	+-------------------+
+	| kpage_dir         |
+	+-------------------+
++ PAGE_SIZE
+	+-------------------+
+	| kpage_table       |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| proc_table        |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| buffer_table      |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| buffer_hash_table |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| inode_table       |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| inode_hash_table  |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| fd_table          |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| mount_table       |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| RAMdisk           |
+	| (default is 4MB)  |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| page_hash_table   |
+	+-------------------+
+0x.....000 (page aligned)
+	+-------------------+
+	| page_table        |
+	+-------------------+
+
