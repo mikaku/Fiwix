@@ -82,4 +82,7 @@ void do_sched(void)
 void sched_init(void)
 {
 	get_system_time();
+
+	/* this should be more unpredictable */
+	kstat.random_seed = CURRENT_TIME;
 }

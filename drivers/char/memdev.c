@@ -227,6 +227,48 @@ static struct fs_operations memdev_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
+static struct fs_operations urandom_driver_fsop = {
+	0,
+	0,
+
+	urandom_open,
+	urandom_close,
+	urandom_read,
+	urandom_write,
+	NULL,			/* ioctl */
+	urandom_lseek,
+	NULL,			/* readdir */
+	NULL,			/* mmap */
+	NULL,			/* select */
+
+	NULL,			/* readlink */
+	NULL,			/* followlink */
+	NULL,			/* bmap */
+	NULL,			/* lockup */
+	NULL,			/* rmdir */
+	NULL,			/* link */
+	NULL,			/* unlink */
+	NULL,			/* symlink */
+	NULL,			/* mkdir */
+	NULL,			/* mknod */
+	NULL,			/* truncate */
+	NULL,			/* create */
+	NULL,			/* rename */
+
+	NULL,			/* read_block */
+	NULL,			/* write_block */
+
+	NULL,			/* read_inode */
+	NULL,			/* write_inode */
+	NULL,			/* ialloc */
+	NULL,			/* ifree */
+	NULL,			/* statfs */
+	NULL,			/* read_superblock */
+	NULL,			/* remount_fs */
+	NULL,			/* write_superblock */
+	NULL			/* release_superblock */
+};
+
 static struct device memdev_device = {
 	"mem",
 	-1,
@@ -360,6 +402,38 @@ int zero_lseek(struct inode *i, __off_t offset)
 	return offset;
 }
 
+int urandom_open(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int urandom_close(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int urandom_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+{
+	int n;
+
+	for(n = 0; n < count; n++) {
+		kstat.random_seed = kstat.random_seed * 1103515245 + 12345;
+		*buffer = (char)(unsigned int)(kstat.random_seed / 65536) % 256;
+		buffer++;
+	}
+	return count;
+}
+
+int urandom_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+{
+	return count;
+}
+
+int urandom_lseek(struct inode *i, __off_t offset)
+{
+	return offset;
+}
+
 int memdev_open(struct inode *i, struct fd *fd_table)
 {
         unsigned char minor;
@@ -377,6 +451,12 @@ int memdev_open(struct inode *i, struct fd *fd_table)
 			break;
 		case MEMDEV_ZERO:
 			i->fsop = &zero_driver_fsop;
+			break;
+		case MEMDEV_RANDOM:
+			i->fsop = &urandom_driver_fsop;
+			break;
+		case MEMDEV_URANDOM:
+			i->fsop = &urandom_driver_fsop;
 			break;
 		default:
 			return -ENXIO;
@@ -424,4 +504,6 @@ void memdev_init(void)
 	SET_MINOR(memdev_device.minors, MEMDEV_KMEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_NULL);
 	SET_MINOR(memdev_device.minors, MEMDEV_ZERO);
+	SET_MINOR(memdev_device.minors, MEMDEV_RANDOM);
+	SET_MINOR(memdev_device.minors, MEMDEV_URANDOM);
 }

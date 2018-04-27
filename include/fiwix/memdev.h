@@ -17,6 +17,8 @@
 #define MEMDEV_KMEM	2	/* minor for /dev/kmem */
 #define MEMDEV_NULL	3	/* minor for /dev/null */
 #define MEMDEV_ZERO	5	/* minor for /dev/zero */
+#define MEMDEV_RANDOM	8	/* minor for /dev/random */
+#define MEMDEV_URANDOM	9	/* minor for /dev/urandom */
 
 int mem_open(struct inode *, struct fd *);
 int mem_close(struct inode *, struct fd *);
@@ -41,6 +43,12 @@ int zero_close(struct inode *, struct fd *);
 int zero_read(struct inode *, struct fd *, char *, __size_t);
 int zero_write(struct inode *, struct fd *, const char *, __size_t);
 int zero_lseek(struct inode *, __off_t);
+
+int urandom_open(struct inode *, struct fd *);
+int urandom_close(struct inode *, struct fd *);
+int urandom_read(struct inode *, struct fd *, char *, __size_t);
+int urandom_write(struct inode *, struct fd *, const char *, __size_t);
+int urandom_lseek(struct inode *, __off_t);
 
 int memdev_open(struct inode *, struct fd *);
 int mem_mmap(struct inode *, struct vma *);

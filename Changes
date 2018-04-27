@@ -1,0 +1,5 @@
+1.N.N - DD-MMM-2018
+===================
+- Added a basic implementation of a Pseudo-Random Number Generator using the
+  character devices /dev/random and /dev/urandom.
+

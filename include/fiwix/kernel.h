@@ -73,6 +73,7 @@ struct kernel_stat {
 	unsigned int buffers;		/* memory used by buffers in KB */
 	unsigned int cached;		/* memory used to cache file pages */
 	unsigned int shared;		/* pages with count > 1 */
+	unsigned long int random_seed;	/* next random seed */
 };
 extern struct kernel_stat kstat;
 
