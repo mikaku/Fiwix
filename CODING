@@ -30,8 +30,5 @@ conventions in its code:
 - Multiline comments start always with a capital letter and the last sentence
   ends with a period.
 
-- In a function definition, the function name starts a new line.
-  Then you can grep -n '^foo' */*.c to find the definition of foo.
-
 - Functions that take no arguments are declared as f(void) not f().
 
