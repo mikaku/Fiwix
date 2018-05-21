@@ -76,7 +76,7 @@ static int proc_listdir(char *buffer)
 			d.lev = -1;
 			d.name_len = 1;
 			n = p->pid;
-			while(n) {
+			while(n / 10) {
 				n /= 10;
 				d.name_len++;
 			}
