@@ -15,7 +15,7 @@ DEBUG = -D__DEBUG__ #-D__2DEBUG__
 CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) #$(DEBUG)
 LD = $(CROSS_COMPILE)ld
 
-CFLAGS = -I$(INCLUDE) -Wall -Wstrict-prototypes -ffreestanding -O2 #-Wextra
+CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 
 DIRS = kernel kernel/syscalls mm fs drivers/block drivers/char lib
