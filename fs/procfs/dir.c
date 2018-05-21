@@ -227,23 +227,23 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 
 	boffset = offset % i->sb->s_blocksize;
 
-	total_read = i->fsop->read(i, fd_table, buffer, count);
+	total_read = i->fsop->read(i, fd_table, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {
 		kfree((unsigned int)buffer);
 		return dirent_offset;
 	}
 
-	while(boffset < total_read) {
+	while(boffset < fd_table->offset) {
 		d = (struct procfs_dir_entry *)(buffer + boffset);
 		if(!d->inode) {
 			break;
 		}
 		dirent_len = (base_dirent_len + (d->name_len + 1)) + 3;
 		dirent_len &= ~3;	/* round up */
-		if((doffset + sizeof(struct procfs_dir_entry)) <= count) {
+		if((doffset + dirent_len) <= count) {
 			boffset += sizeof(struct procfs_dir_entry);
 			offset += sizeof(struct procfs_dir_entry);
-			doffset += sizeof(struct procfs_dir_entry);
+			doffset += dirent_len;
 			dirent->d_ino = d->inode;
 			dirent->d_off = offset;
 			dirent->d_reclen = dirent_len;
@@ -255,7 +255,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 			break;
 		}
 	}
-	fd_table->offset = offset;
+	fd_table->offset = boffset;
 	kfree((unsigned int)buffer);
 	return dirent_offset;
 }
