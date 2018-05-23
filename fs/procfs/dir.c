@@ -66,13 +66,14 @@ static int proc_listdir(char *buffer)
 	struct procfs_dir_entry d;
 	int size;
 
-	size = n = 0;
+	size = 0;
 	pd = (struct procfs_dir_entry *)buffer;
 
 	FOR_EACH_PROCESS(p) {
 		if(p->state) {
 			d.inode = PROC_PID_INO + (p->pid << 12);
 			d.mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+			d.nlink = 1;
 			d.lev = -1;
 			d.name_len = 1;
 			n = p->pid;
@@ -83,20 +84,20 @@ static int proc_listdir(char *buffer)
 			d.name = p->pidstr;
 			d.data_fn = NULL;
 
-			if(size + sizeof(d) >= 4096) {
+			if(size + sizeof(struct procfs_dir_entry) >= PAGE_SIZE) {
 				printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
 				break;
 			}
 
-			size += sizeof(d);
-			memcpy_b((void *)pd, (void *)&d, sizeof(d));
+			size += sizeof(struct procfs_dir_entry);
+			memcpy_b((void *)pd, (void *)&d, sizeof(struct procfs_dir_entry));
 			pd++;
 		}
 	}
-	memset_b((void *)pd + size, NULL, sizeof(d));
 	return size;
 }
 
+/*
 static int proc_listfd(struct inode *i, char *buffer)
 {
 	int n;
@@ -118,19 +119,20 @@ static int proc_listfd(struct inode *i, char *buffer)
 			d.name_len = sprintk(d.name, "%d", n);
 			d.data_fn = NULL;
 
-			if(size + sizeof(d) >= 4096) {
+			if(size + sizeof(struct procfs_dir_entry) >= 4096) {
 				printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
 				break;
 			}
 
-			size += sizeof(d);
-			memcpy_b((void *)pd, (void *)&d, sizeof(d));
+			size += sizeof(struct procfs_dir_entry);
+			memcpy_b((void *)pd, (void *)&d, sizeof(struct procfs_dir_entry));
 			pd++;
 		}
 	}
-	memset_b((void *)pd + size, NULL, sizeof(d));
+	memset_b((void *)pd + size, NULL, sizeof(struct procfs_dir_entry));
 	return size;
 }
+*/
 
 int procfs_dir_open(struct inode *i, struct fd *fd_table)
 {
@@ -146,9 +148,8 @@ int procfs_dir_close(struct inode *i, struct fd *fd_table)
 int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	__off_t total_read;
-	unsigned int boffset, bytes;
-	int blksize, len;
-	int lev;
+	unsigned int bytes;
+	int len, lev;
 	char *buf;
 
 	if(!(buf = (void *)kmalloc())) {
@@ -161,7 +162,7 @@ int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 		len = proc_listdir(buf);
 	}
 
-	/* create the list of fds used for each process (TODO)
+	/* TODO: create the list of fds used for each process
 	if((i->inode & 0xF0000FFF) == PROC_PID_FD) {
 		len = proc_listfd(i, buf);
 	}
@@ -169,35 +170,17 @@ int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 
 	/* add the rest of static files in the main directory */
 	lev = i->u.procfs.i_lev;
-	if((len + sizeof(procfs_array[lev])) > (PAGE_SIZE - 1)) {
-		printk("WARNING: %s(): len > 4096 (%d)!\n", __FUNCTION__, len);
+
+	/* assigns the size of the level without the last entry (NULL) */
+	bytes = sizeof(procfs_array[lev]) - sizeof(struct procfs_dir_entry);
+
+	if((len + bytes) > (PAGE_SIZE - 1)) {
+		printk("WARNING: %s(): len > 4095 (%d).\n", __FUNCTION__, len);
 	}
-	memcpy_b(buf + len, (char *)&procfs_array[lev], sizeof(procfs_array[lev]));
-	len += sizeof(procfs_array[lev]);
-	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > len) {
-		fd_table->offset = len;
-	}
-
-	total_read = 0;
-
-	for(;;) {
-		count = (fd_table->offset + count > len) ? len - fd_table->offset : count;
-		if(!count) {
-			break;
-		}
-
-		boffset = fd_table->offset % blksize;
-		bytes = blksize - boffset;
-		bytes = MIN(bytes, count);
-		memcpy_b(buffer + total_read, buf + boffset, bytes);
-		total_read += bytes;
-		count -= bytes;
-		boffset += bytes;
-		boffset %= blksize;
-		fd_table->offset += bytes;
-	}
-
+	memcpy_b(buf + len, (char *)&procfs_array[lev], bytes);
+	len += bytes;
+	total_read = fd_table->offset = len;
+	memcpy_b(buffer, buf, PAGE_SIZE);
 	kfree((unsigned int)buf);
 	return total_read;
 }
@@ -225,7 +208,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 	offset = fd_table->offset;
 	boffset = dirent_offset = doffset = 0;
 
-	boffset = offset % i->sb->s_blocksize;
+	boffset = offset % PAGE_SIZE;
 
 	total_read = i->fsop->read(i, fd_table, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {
