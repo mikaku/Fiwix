@@ -2,5 +2,6 @@
 ===================
 - Added a basic implementation of a Pseudo-Random Number Generator using the
   character devices /dev/random and /dev/urandom.
+- Improved the mechanism in procfs_dir_readdir() to fix a memory corruption bug.
 - Fixed a bug in procfs_dir_readdir() that prevented from reading correctly the
   entire procfs root directory.
