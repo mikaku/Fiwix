@@ -13,7 +13,7 @@ conventions in its code:
 - No space after keywords "if", "for", "while", "switch".
   For example, if(x) not if (x).
 
-- Space before braces.
+- Space before braces (except in function declarations).
   For example, if(x) { not if(x){.
 
 - Space between operands.
@@ -31,4 +31,15 @@ conventions in its code:
   ends with a period.
 
 - Functions that take no arguments are declared as f(void) not f().
+
+- The open parenthesis is always on the same line as the function name.
+
+- There is never a space between the function name and the open parenthesis.
+
+- There is never a space between the parentheses and the parameters.
+
+- The open curly brace is always at the next line of the function declaration.
+
+- Conditionals should always include curly braces, even if there is only a
+  single statement within the conditional.
 
