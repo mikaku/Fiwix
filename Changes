@@ -5,3 +5,5 @@
 - Improved the mechanism in procfs_dir_readdir() to fix a memory corruption bug.
 - Fixed a bug in procfs_dir_readdir() that prevented from reading correctly the
   entire procfs root directory.
+- Fixed a bug in iso9660_dir_readdir() that prevented from reading correctly any
+  directory.

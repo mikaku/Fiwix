@@ -114,7 +114,7 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 				if(isonum_711(d->length)) {
 					dirent_len = (base_dirent_len + (isonum_711(d->name_len) + 1)) + 3;
 					dirent_len &= ~3;	/* round up */
-					if((size + isonum_711(d->length)) < count) {
+					if((size + dirent_len) < count) {
 						dirent->d_ino = (block << ISO9660_INODE_BITS) + (doffset & ISO9660_INODE_MASK);
 						dirent->d_off = doffset;
 						dirent->d_reclen = dirent_len;
