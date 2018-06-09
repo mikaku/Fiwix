@@ -7,3 +7,4 @@
   entire procfs root directory.
 - Fixed a bug in iso9660_dir_readdir() that prevented from reading correctly any
   directory.
+- Fixed to show the complete pathname in the argv[0] of the init process.
