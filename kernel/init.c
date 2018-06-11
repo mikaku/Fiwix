@@ -21,7 +21,7 @@
 
 #define INIT_TRAMPOLINE_SIZE	128	/* max. size of init_trampoline() */
 
-char *init_argv[] = { "/sbin/init", NULL };
+char *init_argv[] = { INIT_PROGRAM, NULL };
 char *init_envp[] = { "HOME=/", "TERM=linux", NULL };
 
 static void init_trampoline(void)
