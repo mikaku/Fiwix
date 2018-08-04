@@ -67,10 +67,13 @@ int send_sig(struct proc *p, __sigset_t signum)
 	/* SIGCHLD is ignored by default */
 	if(p->sigaction[signum - 1].sa_handler == SIG_DFL) {
 		/*
+		 * INIT process is special, it only gets signals that have the
+		 * signal handler installed. This avoids to bring down the
+		 * system accidentally.
+		 */
 		if(p->pid == INIT) {
 			return 0;
 		}
-		*/
 		if(signum == SIGCHLD) {
 			return 0;
 		}
