@@ -1,4 +1,4 @@
-1.N.N - DD-MMM-2018
+1.0.1 - DD-Aug-2018
 ===================
 - Added a basic implementation of a Pseudo-Random Number Generator using the
   character devices /dev/random and /dev/urandom.
@@ -8,3 +8,5 @@
 - Fixed a bug in iso9660_dir_readdir() that prevented from reading correctly any
   directory.
 - Fixed to show the complete pathname in the argv[0] of the init process.
+- Fixed to protect INIT process from unexpected signals.
+
