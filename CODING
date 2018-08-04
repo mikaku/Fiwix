@@ -43,3 +43,8 @@ conventions in its code:
 - Conditionals should always include curly braces, even if there is only a
   single statement within the conditional.
 
+
+Recommended for reading
+-------------------------------------------------------------------------------
+- http://skull.piratehaven.org/~bapper/298c/cstyle.html
+
