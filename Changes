@@ -1,4 +1,4 @@
-1.0.1 - DD-Aug-2018
+1.0.1 - 04-Aug-2018
 ===================
 - Added a basic implementation of a Pseudo-Random Number Generator using the
   character devices /dev/random and /dev/urandom.
