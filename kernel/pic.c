@@ -190,7 +190,11 @@ void irq_handler(int irq, struct sigcontext sc)
 			if(irq > 7) {
 				outport_b(PIC_MASTER, EOI);
 			}
-			printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", irq);
+			if(kstat.sirqs < MAX_SPU_NOTICES) {
+				printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", irq);
+			} else if(kstat.sirqs == MAX_SPU_NOTICES) {
+				printk("WARNING: too many spurious interrupts; not logging any more.\n");
+			}
 			kstat.sirqs++;
 			return;
 		}

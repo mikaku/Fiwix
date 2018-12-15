@@ -52,4 +52,7 @@
 /* number of screens in console' scroll back */
 #define SCREENS_LOG		6
 
+/* maximum number of messages on spurious interrupts */
+#define MAX_SPU_NOTICES		10
+
 #endif /* _FIWIX_CONFIG_H */
