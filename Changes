@@ -1,3 +1,8 @@
+1.X.X - DD-MMM-YYYY
+===================
+- Limit the number of messages on spurious interrupts.
+
+
 1.0.1 - 04-Aug-2018
 ===================
 - Added a basic implementation of a Pseudo-Random Number Generator using the
