@@ -795,6 +795,16 @@ void floppy_init(void)
 
 	/* the high nibble describes the 'master' floppy drive */
 	master = cmosval >> 4;
+
+	/* 
+	 * Some BIOS may return the value 0x05 (for 2.88MB floppy type) which is
+	 * not supported by Fiwix. This prevents from using an unexistent type
+	 * in the fdd_type structure if this happens.
+	 */
+	if(master > 4) {
+		master = 4;
+	}
+
 	if(master) {
 		if(!register_irq(FLOPPY_IRQ, floppy_device.name, irq_floppy)) {
 			enable_irq(FLOPPY_IRQ);

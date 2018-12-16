@@ -1,6 +1,8 @@
 1.X.X - DD-MMM-YYYY
 ===================
 - Limit the number of messages on spurious interrupts.
+- Fixed to prevent from using an unexistent floppy type, in the fdd_type
+  structure, if CMOS returns a value bigger than 0x04.
 
 
 1.0.1 - 04-Aug-2018
