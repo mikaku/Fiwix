@@ -83,8 +83,8 @@ void bios_map_init(memory_map_t *bmmap_addr, unsigned long int bmmap_length)
 	 * This truncates to 1GB since it's the maximum physical memory
 	 * currently supported.
 	 */
-	if(kstat.physical_pages & (0x40000000 >> PAGE_SHIFT)) {
-		kstat.physical_pages &= (0x40000000 >> PAGE_SHIFT);
+	if(kstat.physical_pages > (0x40000000 >> PAGE_SHIFT)) {
+		kstat.physical_pages = (0x40000000 >> PAGE_SHIFT);
 		printk("WARNING: only up to 1GB of physical memory will be used.\n");
 	}
 }
