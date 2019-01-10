@@ -1,5 +1,6 @@
 1.X.X - DD-MMM-YYYY
 ===================
+- Added support for an initial RAMdisk (initrd) image.
 - Limit the number of messages on spurious interrupts.
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
