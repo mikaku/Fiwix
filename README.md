@@ -1,4 +1,4 @@
-Fiwix kernel v1.0.0
+Fiwix kernel v1.x.x
 ===================
 Fiwix is an operating system kernel, written by Jordi Sanfeliu from scratch, based on the UNIX architecture and fully focused on being POSIX compatible. It is designed and developed mainly as a hobby OS but also for educational purposes, therefore the kernel code is kept as simple as possible.
 
@@ -31,9 +31,11 @@ It offers many UNIX-like features:
 - PIPE pseudo-filesystem support.
 - ISO9660 filesystem support with Rock Ridge extensions.
 - RAMdisk device support.
+- Initial RAMdisk (initrd) image support.
 - SVGAlib based applications support.
 - Keyboard driver with Linux keymaps support.
 - Parallel port printer driver support.
+- Basic implementation of a Pseudo-Random Number Generator.
 - Floppy disk device driver and DMA management.
 - IDE/ATA hard disk device driver.
 - IDE/ATA ATAPI CDROM device driver.

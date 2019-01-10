@@ -1,4 +1,4 @@
-			Fiwix kernel release 1.0.0
+			Fiwix kernel release 1.x.x
 			~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Fiwix is an operating system kernel, written by Jordi Sanfeliu from scratch,
@@ -32,9 +32,11 @@ a good base of existing GNU applications. It offers many UNIX-like features:
  - PIPE pseudo-filesystem support.
  - ISO9660 filesystem support with Rock Ridge extensions.
  - RAMdisk device support.
+ - Initial RAMdisk (initrd) image support.
  - SVGAlib based applications support.
  - Keyboard driver with Linux keymaps support.
  - Parallel port printer driver support.
+ - Basic implementation of a Pseudo-Random Number Generator.
  - Floppy disk device driver and DMA management.
  - IDE/ATA hard disk device driver.
  - IDE/ATA ATAPI CDROM device driver.
@@ -124,10 +126,10 @@ The minimal requirements to use Fiwix are as follows:
  - Standard IBM PC-AT architecture.
  - i386 processor or higher.
  - 2MB of RAM memory (64MB recommended).
- - Floppy disk (3.5", 1.44MB) or IDE/ATAPI CDROM.
+ - IDE/ATAPI CDROM or floppy disk (3.5", 1.44MB).
  - 500MB IDE Hard disk (1GB recommended).
 
-Let the system boot either from a floppy or a CDROM, and when you are ready
+Let the system boot either from a CDROM or floppy, and when you are ready
 just type:
 
 install.sh
@@ -136,5 +138,5 @@ install.sh
 Happy hacking.
 
 --
-Copyright (C) 2018, Jordi Sanfeliu.
+Copyright (C) 2018-2019, Jordi Sanfeliu.
 http://www.fiwix.org

@@ -6,6 +6,8 @@ The following is a list of the current kernel parameters:
 console=	Set the output console device
 		Options: /dev/tty[1..12]
 
+initrd=		The initial ramdisk image file which will be loaded by GRUB
+
 noramdisk	Disable RAM disk driver
 
 ramdisksize=	Size of the RAM disk device in kilobytes (KB)

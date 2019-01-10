@@ -18,11 +18,15 @@
 	+-------------------+
 	| .bss section      |
 	+-------------------+
+0x........
+        +-------------------+
+	| initrd (optional) |
+	+-------------------+
 + PAGE_SIZE
 	+-------------------+ this page prevents stack reaching .bss section
 	|       NULL        | this page *shouldn't be* mapped so it will GPF,
 	+-------------------+ its purpose is to capture out-of-bounds addresses
-+ PAGE_SIZE			   /\
++ PAGE_SIZE x 2			   /\
 	+-------------------+	   ||
 	| stack pointer     | grows downwards
 	+-------------------+ kernel has only 4KB space for its own stack
