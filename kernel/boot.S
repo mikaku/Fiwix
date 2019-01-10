@@ -127,7 +127,7 @@ multiboot_entry:
 	call	gdt_init		/* setup and load the definitive GDT */
 
 	pushl	%ebx			/* save Multiboot info structure */
-	call	get_last_elf_addr
+	call	get_last_boot_addr
 	add	$4, %esp
 	popl	%ecx			/* restore Multiboot magic value */
 	andl	$0xFFFFF000, %eax	/* page aligned */

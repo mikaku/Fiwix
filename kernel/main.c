@@ -56,6 +56,7 @@ int _noramdisk;
 int _ramdisksize;
 char _rootfstype[10];
 char _rootdevname[DEVNAME_MAX + 1];
+char _initrd[DEVNAME_MAX + 1];
 int _syscondev;
 
 char cmdline[NAME_MAX + 1];
@@ -72,19 +73,23 @@ struct new_utsname sys_utsname = {
 struct kernel_stat kstat;
 
 /*
- * This function returns the last address used by kernel symbols. This is
- * intended to setup the kernel stack beyond this address.
+ * This function returns the last address used by kernel symbols or the value
+ * of 'mod_end' (in the module structure) of the last module loaded by GRUB.
+ *
+ * This is intended to setup the kernel stack beyond all these addresses.
  */
-unsigned int get_last_elf_addr(unsigned int info)
+unsigned int get_last_boot_addr(unsigned int info)
 {
-	multiboot_info_t *info_boot;
+	multiboot_info_t *mbi;
 	Elf32_Shdr *shdr;
 	elf_section_header_table_t *hdr;
+	struct module *mod;
 	unsigned short int n;
+	unsigned int addr;
 
 	symtab = strtab = NULL;
-	info_boot = (multiboot_info_t *)info;
-	hdr = &(info_boot->u.elf_sec);
+	mbi = (multiboot_info_t *)info;
+	hdr = &(mbi->u.elf_sec);
 	for(n = 0; n < hdr->num; n++) {
 		shdr = (Elf32_Shdr *)(hdr->addr + (n * hdr->size));
 		if(shdr->sh_type == SHT_SYMTAB) {
@@ -94,7 +99,23 @@ unsigned int get_last_elf_addr(unsigned int info)
 			strtab = shdr;
 		}
 	}
-	return P2V((strtab->sh_addr + strtab->sh_size));
+
+	addr = strtab->sh_addr + strtab->sh_size;
+
+	/*
+	 * https://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+	 *
+	 * Check if GRUB has loaded some modules and, if so, get the last
+	 * address used by the last one.
+	 */
+	if(CHECK_FLAG(mbi->flags, 3)) {
+		mod = (struct module *)mbi->mods_addr;
+		for(n = 0; n < mbi->mods_count; n++, mod++) {
+			addr = mod->mod_end;
+		}
+	}
+
+	return P2V(addr);
 }
 
 /* check the validity of a command line parameter */
@@ -125,6 +146,12 @@ static int check_parm(struct kparms *parm, const char *value)
 			_ramdisksize = size;
 		}
 		return 0;
+	}
+	if(!strcmp(parm->name, "initrd=")) {
+		if(value[0]) {
+			strncpy(_initrd, value, DEVNAME_MAX);
+			return 0;
+		}
 	}
 	if(!strcmp(parm->name, "rootfstype=")) {
 		for(n = 0; parm->value[n]; n++) {
@@ -263,6 +290,19 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	timer_init();
 	vconsole_init();
 	keyboard_init();
+
+	if(CHECK_FLAG(mbi.flags, 3)) {
+		int n;
+		struct module *mod;
+
+		mod = (struct module *)mbi.mods_addr;
+		for(n = 0; n < mbi.mods_count; n++, mod++) {
+			if(!strcmp((char *)mod->string, _initrd)) {
+				printk("initrd    0x%08X-0x%08X file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->string, (mod->mod_end - mod->mod_start) / 1024);
+				ramdisk_table[0].addr = (char *)mod->mod_start;
+			}
+		}
+	}
 
 	if(!CHECK_FLAG(mbi.flags, 0)) {
 		printk("WARNING: values in mem_lower and mem_upper are not valid!\n");

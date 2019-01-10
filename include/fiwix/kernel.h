@@ -35,6 +35,7 @@ extern int _noramdisk;
 extern int _ramdisksize;
 extern char _rootfstype[10];
 extern char _rootdevname[DEVNAME_MAX + 1];
+extern char _initrd[DEVNAME_MAX + 1];
 extern int _syscondev;
 
 extern int _cputype;
@@ -77,7 +78,7 @@ struct kernel_stat {
 };
 extern struct kernel_stat kstat;
 
-unsigned int get_last_elf_addr(unsigned int);
+unsigned int get_last_boot_addr(unsigned int);
 void start_kernel(unsigned long, unsigned long, unsigned int);
 void stop_kernel(void);
 void init_init(void);
