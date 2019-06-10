@@ -23,7 +23,7 @@ struct fs_operations ext2_dir_fsop = {
 	ext2_dir_open,
 	ext2_dir_close,
 	ext2_dir_read,
-	NULL,			/* write */
+	ext2_dir_write,
 	NULL,			/* ioctl */
 	NULL,			/* lseek */
 	ext2_dir_readdir,
@@ -72,6 +72,11 @@ int ext2_dir_close(struct inode *i, struct fd *fd_table)
 int ext2_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	return -EISDIR;
+}
+
+int ext2_dir_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+{
+	return -EBADF;
 }
 
 int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, unsigned int count)
