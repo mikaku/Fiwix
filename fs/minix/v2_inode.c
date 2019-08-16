@@ -166,6 +166,8 @@ int v2_minix_ialloc(struct inode *i)
 	if(errno) {
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set inode %d.\n", __FUNCTION__, inode);
+			superblock_unlock(sb);
+			return errno;
 		} else {
 			printk("WARNING: %s(): inode %d is already marked as used!\n", __FUNCTION__, inode);
 		}
