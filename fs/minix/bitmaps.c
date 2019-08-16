@@ -108,6 +108,8 @@ int minix_balloc(struct superblock *sb)
 	if(errno) {
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set block %d.\n", __FUNCTION__, block);
+			superblock_unlock(sb);
+			return error;
 		} else {
 			printk("WARNING: %s(): block %d is already marked as used!\n", __FUNCTION__, block);
 		}
