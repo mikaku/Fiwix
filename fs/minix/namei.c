@@ -83,6 +83,7 @@ static struct buffer * find_dir_entry(struct inode *dir, struct inode *i, struct
 				if(!i) {
 					/* returns the first empty entry */
 					if(!(*d_res)->inode || (doffset + offset >= dir->i_size)) {
+						/* the directory grows by directory entry size */
 						if(doffset + offset >= dir->i_size) {
 							dir->i_size += dir->sb->u.minix.dirsize;
 						}
