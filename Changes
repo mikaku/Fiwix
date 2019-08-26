@@ -1,13 +1,15 @@
 1.X.X - DD-MMM-YYYY
 ===================
 - Added support for an initial RAMdisk (initrd) image.
+- Added full support for the ext2 filesystem.
 - Limit the number of messages on spurious interrupts.
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
 - Fixed to prevent from using an unexistent floppy type, in the fdd_type
   structure, if CMOS returns a value bigger than 0x04.
 - Fixed a misplaced bitwise operator AND that was not ensuring the limitation
-  to 1GB of the amount of physical memory supported.
+  to 1GB as the amount of physical memory supported.
+- Fixed some bugs in *_minix_ialloc() and minix_balloc() when they fail.
 
 
 1.0.1 - 04-Aug-2018
