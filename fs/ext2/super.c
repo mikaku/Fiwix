@@ -48,14 +48,14 @@ struct fs_operations ext2_fsop = {
 	NULL,			/* write_block */
 
 	ext2_read_inode,
-	NULL,			/* write_inode */
-	NULL,			/* ialloc */
-	NULL,			/* ifree */
+	ext2_write_inode,
+	ext2_ialloc,
+	ext2_ifree,
 	ext2_statfs,
 	ext2_read_superblock,
-	NULL,			/* remount_fs */
-	NULL,			/* write_superblock */
-	NULL			/* release_superblock */
+	ext2_remount_fs,
+	ext2_write_superblock,
+	ext2_release_superblock
 };
 
 static void check_superblock(struct ext2_super_block *sb)
@@ -75,15 +75,15 @@ void ext2_statfs(struct superblock *sb, struct statfs *statfsbuf)
 {
 	statfsbuf->f_type = EXT2_SUPER_MAGIC;
 	statfsbuf->f_bsize = sb->s_blocksize;
-	statfsbuf->f_blocks = sb->u.ext2.s_blocks_count;
-	statfsbuf->f_bfree = sb->u.ext2.s_free_blocks_count;
-	if(statfsbuf->f_bfree >= sb->u.ext2.s_r_blocks_count) {
-		statfsbuf->f_bavail = statfsbuf->f_bfree - sb->u.ext2.s_r_blocks_count;
+	statfsbuf->f_blocks = sb->u.ext2.sb.s_blocks_count;
+	statfsbuf->f_bfree = sb->u.ext2.sb.s_free_blocks_count;
+	if(statfsbuf->f_bfree >= sb->u.ext2.sb.s_r_blocks_count) {
+		statfsbuf->f_bavail = statfsbuf->f_bfree - sb->u.ext2.sb.s_r_blocks_count;
 	} else {
 		statfsbuf->f_bavail = 0;
 	}
-	statfsbuf->f_files = sb->u.ext2.s_inodes_count;
-	statfsbuf->f_ffree = sb->u.ext2.s_free_inodes_count;
+	statfsbuf->f_files = sb->u.ext2.sb.s_inodes_count;
+	statfsbuf->f_ffree = sb->u.ext2.sb.s_free_inodes_count;
 	/* statfsbuf->f_fsid = ? */
 	statfsbuf->f_namelen = EXT2_NAME_LEN;
 }
@@ -95,6 +95,7 @@ int ext2_read_superblock(__dev_t dev, struct superblock *sb)
 
 	superblock_lock(sb);
 	if(!(buf = bread(dev, SUPERBLOCK, BLKSIZE_1K))) {
+		printk("WARNING: %s(): I/O error on device %d,%d.\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 		superblock_unlock(sb);
 		return -EIO;
 	}
@@ -107,21 +108,20 @@ int ext2_read_superblock(__dev_t dev, struct superblock *sb)
 		return -EINVAL;
 	}
 
-	/* sparse-superblock feature not supported (only for read-write mode) */
-	if(!sb->flags & MS_RDONLY) {
-		if(ext2sb->s_feature_ro_compat & EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER) {
-			printk("WARNING: %s(): sparse-superblock feature is not supported.\n", __FUNCTION__);
-			printk("filesystem structure not supported. Try with '-o ro'.\n");
-			superblock_unlock(sb);
-			brelse(buf);
-			return -EINVAL;
-		}
+	if(ext2sb->s_minor_rev_level || ext2sb->s_rev_level) {
+		printk("WARNING: %s(): unsupported ext2 filesystem revision.\n", __FUNCTION__);
+		printk("Only revision 0 (original without features) is supported.\n");
+		superblock_unlock(sb);
+		brelse(buf);
+		return -EINVAL;
 	}
 
 	sb->dev = dev;
 	sb->fsop = &ext2_fsop;
 	sb->s_blocksize = EXT2_MIN_BLOCK_SIZE << ext2sb->s_log_block_size;
-	memcpy_b(&sb->u.ext2, ext2sb, sizeof(struct ext2_super_block));
+	memcpy_b(&sb->u.ext2.sb, ext2sb, sizeof(struct ext2_super_block));
+	EXT2_DESC_PER_BLOCK(sb) = sb->s_blocksize / sizeof(struct ext2_group_desc);
+	sb->u.ext2.block_groups = 1 + (ext2sb->s_blocks_count - 1) / ext2sb->s_blocks_per_group;
 
 	if(!(sb->root = iget(sb, EXT2_ROOT_INO))) {
 		printk("WARNING: %s(): unable to get root inode.\n", __FUNCTION__);
@@ -130,10 +130,84 @@ int ext2_read_superblock(__dev_t dev, struct superblock *sb)
 		return -EINVAL;
 	}
 
-	superblock_unlock(sb);
 	check_superblock(ext2sb);
-	brelse(buf);
+	if(!(sb->flags & MS_RDONLY)) {
+		sb->u.ext2.sb.s_state &= ~EXT2_VALID_FS;
+		sb->u.ext2.sb.s_mnt_count++;
+		sb->u.ext2.sb.s_mtime = CURRENT_TIME;
+		memcpy_b(buf->data, &sb->u.ext2.sb, sizeof(struct ext2_super_block));
+		bwrite(buf);
+	} else {
+		brelse(buf);
+	}
+	superblock_unlock(sb);
 	return 0;
+}
+
+int ext2_remount_fs(struct superblock *sb, int flags)
+{
+	struct buffer *buf;
+	struct ext2_super_block *ext2sb;
+
+	if((flags & MS_RDONLY) == (sb->flags & MS_RDONLY)) {
+		return 0;
+	}
+
+	superblock_lock(sb);
+	if(!(buf = bread(sb->dev, SUPERBLOCK, BLKSIZE_1K))) {
+		superblock_unlock(sb);
+		return -EIO;
+	}
+	ext2sb = (struct ext2_super_block *)buf->data;
+
+	if(flags & MS_RDONLY) {
+		/* switching from RW to RO */
+		sb->u.ext2.sb.s_state |= EXT2_VALID_FS;
+		ext2sb->s_state |= EXT2_VALID_FS;
+	} else {
+		/* switching from RO to RW */
+		check_superblock(ext2sb);
+		sb->u.ext2.sb.s_state &= ~EXT2_VALID_FS;
+		sb->u.ext2.sb.s_mnt_count++;
+		sb->u.ext2.sb.s_mtime = CURRENT_TIME;
+		ext2sb->s_state &= ~EXT2_VALID_FS;
+	}
+
+	sb->dirty = 1;
+	superblock_unlock(sb);
+	bwrite(buf);
+	return 0;
+}
+
+int ext2_write_superblock(struct superblock *sb)
+{
+	struct buffer *buf;
+
+	superblock_lock(sb);
+	if(!(buf = bread(sb->dev, SUPERBLOCK, BLKSIZE_1K))) {
+		superblock_unlock(sb);
+		return -EIO;
+	}
+
+	memcpy_b(buf->data, &sb->u.ext2.sb, sizeof(struct ext2_super_block));
+	sb->dirty = 0;
+	superblock_unlock(sb);
+	bwrite(buf);
+	return 0;
+}
+
+void ext2_release_superblock(struct superblock *sb)
+{
+	if(sb->flags & MS_RDONLY) {
+		return;
+	}
+
+	superblock_lock(sb);
+
+	sb->u.ext2.sb.s_state |= EXT2_VALID_FS;
+	sb->dirty = 1;
+
+	superblock_unlock(sb);
 }
 
 int ext2_init(void)

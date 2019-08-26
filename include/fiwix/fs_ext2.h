@@ -44,10 +44,10 @@ struct ext2_group_desc
 /*
  * Macro-instructions used to manage group descriptors
  */
-# define EXT2_BLOCKS_PER_GROUP(s)	((s)->u.ext2_sb.s_blocks_per_group)
-# define EXT2_DESC_PER_BLOCK(s)		((s)->u.ext2_sb.s_desc_per_block)
-# define EXT2_INODES_PER_GROUP(s)	((s)->u.ext2_sb.s_inodes_per_group)
+#define EXT2_BLOCKS_PER_GROUP(s)	((s)->u.ext2.sb.s_blocks_per_group)
+#define EXT2_INODES_PER_GROUP(s)	((s)->u.ext2.sb.s_inodes_per_group)
 # define EXT2_DESC_PER_BLOCK_BITS(s)	((s)->u.ext2_sb.s_desc_per_block_bits)
+#define EXT2_DESC_PER_BLOCK(s)		((s)->u.ext2.desc_per_block)
 
 /*
  * Constants relative to the data blocks
@@ -196,8 +196,6 @@ struct ext2_super_block {
 	__u32	s_reserved[190];	/* Padding to the end of the block */
 };
 
-#define EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
-
 /*
  * Structure of a directory entry
  */
@@ -224,9 +222,30 @@ struct ext2_dir_entry_2 {
 	char	name[EXT2_NAME_LEN];	/* File name */
 };
 
+/*
+ * Ext2 directory file types.  Only the low 3 bits are used.  The
+ * other bits are reserved for now.
+ */
+#define EXT2_FT_UNKNOWN		0
+#define EXT2_FT_REG_FILE	1
+#define EXT2_FT_DIR		2
+#define EXT2_FT_CHRDEV		3
+#define EXT2_FT_BLKDEV		4
+#define EXT2_FT_FIFO		5
+#define EXT2_FT_SOCK		6
+#define EXT2_FT_SYMLINK		7
+
+/* superblock in memory */
+struct ext2_sb_info {
+	unsigned int desc_per_block;
+	unsigned int block_groups;
+	struct ext2_super_block sb;
+};
+
 /* inode in memory */
 struct ext2_i_info {
-	__u32	i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
+	__u32	i_data[EXT2_N_BLOCKS];	/* Pointers to blocks */
+	__u32	i_dtime;
 };
 
 #endif	/* _FIWIX_FS_EXT2_H */

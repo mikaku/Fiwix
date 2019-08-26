@@ -126,7 +126,7 @@ struct superblock {
 	__u32 s_blocksize;
 	union {
 		struct minix_sb_info minix;
-		struct ext2_super_block ext2;
+		struct ext2_sb_info ext2;
 		struct iso9660_sb_info iso9660;
 	} u;
 };
@@ -193,14 +193,16 @@ extern int minix_count_free_inodes(struct superblock *);
 extern int minix_count_free_blocks(struct superblock *);
 extern int minix_find_first_zero(struct superblock *, __blk_t, int, int);
 extern int minix_change_bit(int, struct superblock *, int, int);
-extern void minix_bfree(struct superblock *, int);
 extern int minix_balloc(struct superblock *);
+extern void minix_bfree(struct superblock *, int);
 
 /* fs_ext2.h prototypes */
 extern struct fs_operations ext2_fsop;
 extern struct fs_operations ext2_file_fsop;
 extern struct fs_operations ext2_dir_fsop;
 extern struct fs_operations ext2_symlink_fsop;
+extern int ext2_balloc(struct superblock *);
+extern void ext2_bfree(struct superblock *, int);
 
 /* fs_proc.h prototypes */
 extern struct fs_operations procfs_fsop;

@@ -34,15 +34,15 @@ struct fs_operations ext2_dir_fsop = {
 	NULL,			/* followlink */
 	ext2_bmap,
 	ext2_lookup,
-	NULL,			/* rmdir */
-	NULL,			/* link */
-	NULL,			/* unlink */
-	NULL,			/* symlink */
-	NULL,			/* mkdir */
-	NULL,			/* mknod */
+	ext2_rmdir,
+	ext2_link,
+	ext2_unlink,
+	ext2_symlink,
+	ext2_mkdir,
+	ext2_mknod,
 	NULL,			/* truncate */
-	NULL,			/* create */
-	NULL,			/* rename */
+	ext2_create,
+	ext2_rename,
 
 	NULL,			/* read_block */
 	NULL,			/* write_block */

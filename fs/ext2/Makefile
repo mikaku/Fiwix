@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = inode.o super.o namei.o symlink.o dir.o file.o
+OBJS = inode.o super.o namei.o symlink.o dir.o file.o bitmaps.o
 
 ext2:	$(OBJS)
 	$(LD) $(LDFLAGS) -r $(OBJS) -o ext2.o

@@ -76,14 +76,14 @@ int ext2_readlink(struct inode *i, char *buffer, __size_t count)
 	}
 	count = MIN(count, blksize);
 	if(i->i_blocks) {	/* slow symlink */
-		if(!(buf = bread(i->dev, i->u.ext2.i_block[0], blksize))) {
+		if(!(buf = bread(i->dev, i->u.ext2.i_data[0], blksize))) {
 			inode_unlock(i);
 			return -EIO;
 		}
 		memcpy_b(buffer, buf->data, count);
 		brelse(buf);
 	} else {	/* fast symlink */
-		memcpy_b(buffer, (char *)i->u.ext2.i_block, count);
+		memcpy_b(buffer, (char *)i->u.ext2.i_data, count);
 	}
 	buffer[count] = NULL;
 	inode_unlock(i);
@@ -112,14 +112,14 @@ int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 
 	inode_lock(i);
 	if(i->i_blocks) {	/* slow symlink */
-		if(!(buf = bread(i->dev, i->u.ext2.i_block[0], i->sb->s_blocksize))) {
+		if(!(buf = bread(i->dev, i->u.ext2.i_data[0], i->sb->s_blocksize))) {
 			inode_unlock(i);
 			return -EIO;
 		}
 		name = buf->data;
 	} else {	/* fast symlink */
 		buf = NULL;
-		name = (char *)i->u.ext2.i_block;
+		name = (char *)i->u.ext2.i_data;
 	}
 	inode_unlock(i);
 

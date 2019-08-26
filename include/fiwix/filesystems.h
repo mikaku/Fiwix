@@ -82,18 +82,35 @@ int minix_init(void);
 /* ext2 prototypes */
 int ext2_file_open(struct inode *, struct fd *);
 int ext2_file_close(struct inode *, struct fd *);
+int ext2_file_write(struct inode *, struct fd *, const char *, __size_t);
 int ext2_file_lseek(struct inode *, __off_t);
 int ext2_dir_open(struct inode *, struct fd *);
 int ext2_dir_close(struct inode *, struct fd *);
 int ext2_dir_read(struct inode *, struct fd *, char *, __size_t);
+int ext2_dir_write(struct inode *, struct fd *, const char *, __size_t);
 int ext2_dir_readdir(struct inode *, struct fd *, struct dirent *, unsigned int);
 int ext2_readlink(struct inode *, char *, __size_t);
 int ext2_followlink(struct inode *, struct inode *, struct inode **);
 int ext2_bmap(struct inode *, __off_t, int);
 int ext2_lookup(const char *, struct inode *, struct inode **);
+int ext2_rmdir(struct inode *, struct inode *);
+int ext2_link(struct inode *, struct inode *, char *);
+int ext2_unlink(struct inode *, struct inode *, char *);
+int ext2_symlink(struct inode *, char *, char *);
+int ext2_mkdir(struct inode *, char *, __mode_t);
+int ext2_mknod(struct inode *, char *, __mode_t, __dev_t);
+int ext2_truncate(struct inode *, __off_t);
+int ext2_create(struct inode *, char *, __mode_t, struct inode **);
+int ext2_rename(struct inode *, struct inode *, struct inode *, struct inode *, char *, char *);
 int ext2_read_inode(struct inode *);
+int ext2_write_inode(struct inode *);
+int ext2_ialloc(struct inode *);
+void ext2_ifree(struct inode *);
 void ext2_statfs(struct superblock *, struct statfs *);
 int ext2_read_superblock(__dev_t, struct superblock *);
+int ext2_remount_fs(struct superblock *, int);
+int ext2_write_superblock(struct superblock *);
+void ext2_release_superblock(struct superblock *);
 int ext2_init(void);
 
 

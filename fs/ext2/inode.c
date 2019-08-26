@@ -27,17 +27,36 @@
 
 #define EXT2_INODES_PER_BLOCK(sb)	(EXT2_BLOCK_SIZE(sb) / sizeof(struct ext2_inode))
 
-static int get_group_desc(struct inode *i, struct superblock *sb, struct ext2_group_desc *gd)
+static void free_indblock(struct inode *i, int block, int offset)
 {
-	int block_group;
-	int desc_per_block, group_desc_block, group_desc;
+	int n;
+	struct buffer *buf;
+	__blk_t *indblock;
+
+	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
+		printk("WARNING: %s(): error reading block %d.\n", __FUNCTION__, block);
+		return;
+	}
+	indblock = (__blk_t *)buf->data;
+	for(n = offset; n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
+		if(indblock[n]) {
+			ext2_bfree(i->sb, indblock[n]);
+			indblock[n] = 0;
+			i->i_blocks -= i->sb->s_blocksize / 512;
+		}
+	}
+	bwrite(buf);
+}
+
+static int get_group_desc(struct superblock *sb, __blk_t block_group, struct ext2_group_desc *gd)
+{
+	__blk_t group_desc_block;
+	int group_desc;
 	struct buffer *buf;
 
-	block_group = ((i->inode - 1) / sb->u.ext2.s_inodes_per_group);
-	desc_per_block = sb->s_blocksize / sizeof(struct ext2_group_desc);
-	group_desc_block = block_group / desc_per_block;
-	group_desc = block_group % desc_per_block;
-	if(!(buf = bread(i->dev, SUPERBLOCK + sb->u.ext2.s_first_data_block + group_desc_block, i->sb->s_blocksize))) {
+	group_desc_block = block_group / EXT2_DESC_PER_BLOCK(sb);
+	group_desc = block_group % EXT2_DESC_PER_BLOCK(sb);
+	if(!(buf = bread(sb->dev, SUPERBLOCK + sb->u.ext2.sb.s_first_data_block + group_desc_block, sb->s_blocksize))) {
 		return -EIO;
 	}
 	memcpy_b(gd, (void *)(buf->data + (group_desc * sizeof(struct ext2_group_desc))), sizeof(struct ext2_group_desc));
@@ -47,7 +66,7 @@ static int get_group_desc(struct inode *i, struct superblock *sb, struct ext2_gr
 
 int ext2_read_inode(struct inode *i)
 {
-	__ino_t block;
+	__blk_t block_group, block;
 	unsigned int offset;
 	struct superblock *sb;
 	struct ext2_inode *ii;
@@ -58,18 +77,19 @@ int ext2_read_inode(struct inode *i)
 		printk("WARNING: %s(): get_superblock() has returned NULL.\n");
 		return -EINVAL;
 	}
-	if(get_group_desc(i, sb, &gd)) {
+	block_group = ((i->inode - 1) / EXT2_INODES_PER_GROUP(sb));
+	if(get_group_desc(sb, block_group, &gd)) {
 		return -EIO;
 	}
-	block = (((i->inode - 1) % sb->u.ext2.s_inodes_per_group) / EXT2_INODES_PER_BLOCK(sb));
+	block = (((i->inode - 1) % EXT2_INODES_PER_GROUP(sb)) / EXT2_INODES_PER_BLOCK(sb));
 
 	if(!(buf = bread(i->dev, gd.bg_inode_table + block, i->sb->s_blocksize))) {
 		return -EIO;
 	}
-	offset = ((((i->inode - 1) % sb->u.ext2.s_inodes_per_group) % EXT2_INODES_PER_BLOCK(sb)) * sizeof(struct ext2_inode));
+	offset = ((((i->inode - 1) % EXT2_INODES_PER_GROUP(sb)) % EXT2_INODES_PER_BLOCK(sb)) * sizeof(struct ext2_inode));
 
 	ii = (struct ext2_inode *)(buf->data + offset);
-	memcpy_b(&i->u.ext2.i_block, ii->i_block, sizeof(ii->i_block));
+	memcpy_b(&i->u.ext2.i_data, ii->i_block, sizeof(ii->i_block));
 
 	i->i_mode = ii->i_mode;
 	i->i_uid = ii->i_uid;
@@ -117,84 +137,323 @@ int ext2_read_inode(struct inode *i)
 	return 0;
 }
 
+int ext2_write_inode(struct inode *i)
+{
+	__blk_t block_group, block;
+	short int offset;
+	struct superblock *sb;
+	struct ext2_inode *ii;
+	struct ext2_group_desc gd;
+	struct buffer *buf;
+
+	if(!(sb = get_superblock(i->dev))) {
+		printk("WARNING: %s(): get_superblock() has returned NULL.\n");
+		return -EINVAL;
+	}
+	block_group = ((i->inode - 1) / EXT2_INODES_PER_GROUP(sb));
+	if(get_group_desc(sb, block_group, &gd)) {
+		return -EIO;
+	}
+	block = (((i->inode - 1) % EXT2_INODES_PER_GROUP(sb)) / EXT2_INODES_PER_BLOCK(sb));
+
+	if(!(buf = bread(i->dev, gd.bg_inode_table + block, i->sb->s_blocksize))) {
+		return -EIO;
+	}
+	offset = ((((i->inode - 1) % EXT2_INODES_PER_GROUP(sb)) % EXT2_INODES_PER_BLOCK(sb)) * sizeof(struct ext2_inode));
+	ii = (struct ext2_inode *)(buf->data + offset);
+	memset_b(ii, 0, sizeof(struct ext2_inode));
+
+	ii->i_mode = i->i_mode;
+	ii->i_uid = i->i_uid;
+	ii->i_size = i->i_size;
+	ii->i_atime = i->i_atime;
+	ii->i_ctime = i->i_ctime;
+	ii->i_mtime = i->i_mtime;
+	ii->i_dtime = i->u.ext2.i_dtime;
+	ii->i_gid = i->i_gid;
+	ii->i_links_count = i->i_nlink;
+	ii->i_blocks = i->i_blocks;
+	ii->i_flags = i->i_flags;
+	if(S_ISCHR(i->i_mode) || S_ISBLK(i->i_mode)) {
+		ii->i_block[0] = i->rdev;
+	} else {
+		memcpy_b(ii->i_block, &i->u.ext2.i_data, sizeof(i->u.ext2.i_data));
+	}
+	i->dirty = 0;
+	bwrite(buf);
+	return 0;
+}
+
 int ext2_bmap(struct inode *i, __off_t offset, int mode)
 {
 	unsigned char level;
-	short int dind_block;
-	__blk_t *indblock;
-	__blk_t *dindblock;
-	__blk_t block;
-	struct buffer *buf;
+	__blk_t *indblock, *dindblock, *tindblock;
+	__blk_t block, iblock, dblock, tblock, newblock;
+	int blksize;
+	struct buffer *buf, *buf2, *buf3, *buf4;
 
-	block = offset / i->sb->s_blocksize;
+	blksize = i->sb->s_blocksize;
+	block = offset / blksize;
 	level = 0;
+	buf3 = NULL;	/* makes GCC happy */
 
 	if(block < EXT2_NDIR_BLOCKS) {
 		level = EXT2_NDIR_BLOCKS - 1;
 	} else {
 		if(block < (BLOCKS_PER_IND_BLOCK(i->sb) + EXT2_NDIR_BLOCKS)) {
 			level = EXT2_IND_BLOCK;
-			block -= EXT2_NDIR_BLOCKS;
+		} else if(block < ((BLOCKS_PER_IND_BLOCK(i->sb) * BLOCKS_PER_IND_BLOCK(i->sb)) + BLOCKS_PER_IND_BLOCK(i->sb) + EXT2_NDIR_BLOCKS)) {
+			level = EXT2_DIND_BLOCK;
 		} else {
-			if(block < BLOCKS_PER_DIND_BLOCK(i->sb)) {
-				level = EXT2_DIND_BLOCK;
-				block -= EXT2_NDIR_BLOCKS;
-				block -= BLOCKS_PER_IND_BLOCK(i->sb);
-			} else {
-				level = EXT2_TIND_BLOCK;
-				block = 0;
-			}
+			level = EXT2_TIND_BLOCK;
 		}
-	}
-
-	if(level == EXT2_TIND_BLOCK) {
-		printk("(level = %d) (offset = %d) (block = %d)\n", level, offset, block);
-		printk("WARNING: triple-indirect blocks are not supported!\n");
-		return -EINVAL;
+		block -= EXT2_NDIR_BLOCKS;
 	}
 
 	if(level < EXT2_NDIR_BLOCKS) {
-		return i->u.ext2.i_block[block];
+		if(!i->u.ext2.i_data[block] && mode == FOR_WRITING) {
+			if((newblock = ext2_balloc(i->sb)) < 0) {
+				return -ENOSPC;
+			}
+			/* initialize the new block */
+			if(!(buf = bread(i->dev, newblock, blksize))) {
+				ext2_bfree(i->sb, newblock);
+				return -EIO;
+			}
+			memset_b(buf->data, 0, blksize);
+			bwrite(buf);
+			i->u.ext2.i_data[block] = newblock;
+			i->i_blocks += blksize / 512;
+		}
+		return i->u.ext2.i_data[block];
 	}
 
-	if(!(indblock = (void *)kmalloc())) {
-		printk("%s(): returning -ENOMEM.\n", __FUNCTION__);
-		return -ENOMEM;
+	if(!i->u.ext2.i_data[level]) {
+		if(mode == FOR_WRITING) {
+			if((newblock = ext2_balloc(i->sb)) < 0) {
+				return -ENOSPC;
+			}
+			/* initialize the new block */
+			if(!(buf = bread(i->dev, newblock, blksize))) {
+				ext2_bfree(i->sb, newblock);
+				return -EIO;
+			}
+			memset_b(buf->data, 0, blksize);
+			bwrite(buf);
+			i->u.ext2.i_data[level] = newblock;
+			i->i_blocks += blksize / 512;
+		} else {
+			return 0;
+		}
 	}
-	if(i->u.ext2.i_block[level] == 0) {
-		printk("WARNING: %s(): will return 0 as an indirect block request! (inode %d).\n", __FUNCTION__, i->inode);
-		kfree((unsigned int)indblock);
-		return 0;
-	}
-	if(!(buf = bread(i->dev, i->u.ext2.i_block[level], i->sb->s_blocksize))) {
-		kfree((unsigned int)indblock);
-		printk("%s(): returning -EIO.\n", __FUNCTION__);
+	if(!(buf = bread(i->dev, i->u.ext2.i_data[level], blksize))) {
 		return -EIO;
 	}
-	memcpy_l(indblock, buf->data, BLOCKS_PER_IND_BLOCK(i->sb));
-	brelse(buf);
+	indblock = (__blk_t *)buf->data;
+	dblock = block - BLOCKS_PER_IND_BLOCK(i->sb);
+	tblock = block - (BLOCKS_PER_IND_BLOCK(i->sb) * BLOCKS_PER_IND_BLOCK(i->sb)) - BLOCKS_PER_IND_BLOCK(i->sb);
 
+	if(level == EXT2_DIND_BLOCK) {
+		block = dblock / BLOCKS_PER_IND_BLOCK(i->sb);
+	}
+	if(level == EXT2_TIND_BLOCK) {
+		block = tblock / (BLOCKS_PER_IND_BLOCK(i->sb) * BLOCKS_PER_IND_BLOCK(i->sb));
+	}
+
+	if(!indblock[block]) {
+		if(mode == FOR_WRITING) {
+			if((newblock = ext2_balloc(i->sb)) < 0) {
+				brelse(buf);
+				return -ENOSPC;
+			}
+			/* initialize the new block */
+			if(!(buf2 = bread(i->dev, newblock, blksize))) {
+				ext2_bfree(i->sb, newblock);
+				brelse(buf);
+				return -EIO;
+			}
+			memset_b(buf2->data, 0, blksize);
+			bwrite(buf2);
+			indblock[block] = newblock;
+			i->i_blocks += blksize / 512;
+			if(level == EXT2_IND_BLOCK) {
+				bwrite(buf);
+				return newblock;
+			}
+			buf->dirty = 1;
+			buf->valid = 1;
+		} else {
+			brelse(buf);
+			return 0;
+		}
+	}
 	if(level == EXT2_IND_BLOCK) {
-		kfree((unsigned int)indblock);
-		return indblock[block];
+		newblock = indblock[block];
+		brelse(buf);
+		return newblock;
 	}
 
-	if(!(dindblock = (void *)kmalloc())) {
-		kfree((unsigned int)indblock);
-		printk("%s(): returning -ENOMEM.\n", __FUNCTION__);
-		return -ENOMEM;
+	if(level == EXT2_TIND_BLOCK) {
+		if(!(buf3 = bread(i->dev, indblock[block], blksize))) {
+			printk("%s(): returning -EIO\n", __FUNCTION__);
+			brelse(buf);
+			return -EIO;
+		}
+		tindblock = (__blk_t *)buf3->data;
+		block = tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)];
+		if(!block) {
+			if(mode == FOR_WRITING) {
+				if((newblock = ext2_balloc(i->sb)) < 0) {
+					brelse(buf);
+					brelse(buf3);
+					return -ENOSPC;
+				}
+				/* initialize the new block */
+				if(!(buf4 = bread(i->dev, newblock, blksize))) {
+					ext2_bfree(i->sb, newblock);
+					brelse(buf);
+					brelse(buf3);
+					return -EIO;
+				}
+				memset_b(buf4->data, 0, blksize);
+				bwrite(buf4);
+				tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)] = newblock;
+				i->i_blocks += blksize / 512;
+				buf3->dirty = 1;
+				buf3->valid = 1;
+				block = newblock;
+			} else {
+				brelse(buf);
+				brelse(buf3);
+				return 0;
+			}
+		}
+		dblock = tblock;
+		iblock = tblock / BLOCKS_PER_IND_BLOCK(i->sb);
+		if(!(buf2 = bread(i->dev, block, blksize))) {
+			printk("%s(): returning -EIO\n", __FUNCTION__);
+			brelse(buf);
+			brelse(buf3);
+			return -EIO;
+		}
+	} else {
+		iblock = block;
+		if(!(buf2 = bread(i->dev, indblock[iblock], blksize))) {
+			printk("%s(): returning -EIO\n", __FUNCTION__);
+			brelse(buf);
+			return -EIO;
+		}
 	}
-	dind_block = block / BLOCKS_PER_IND_BLOCK(i->sb);
-	if(!(buf = bread(i->dev, indblock[dind_block], i->sb->s_blocksize))) {
-		kfree((unsigned int)indblock);
-		kfree((unsigned int)dindblock);
-		printk("%s(): returning -EIO.\n", __FUNCTION__);
-		return -EIO;
+
+	dindblock = (__blk_t *)buf2->data;
+	block = dindblock[dblock - (iblock * BLOCKS_PER_IND_BLOCK(i->sb))];
+	if(!block && mode == FOR_WRITING) {
+		if((newblock = ext2_balloc(i->sb)) < 0) {
+			brelse(buf);
+			if(level == EXT2_TIND_BLOCK) {
+				brelse(buf3);
+			}
+			brelse(buf2);
+			return -ENOSPC;
+		}
+		/* initialize the new block */
+		if(!(buf4 = bread(i->dev, newblock, blksize))) {
+			ext2_bfree(i->sb, newblock);
+			brelse(buf);
+			if(level == EXT2_TIND_BLOCK) {
+				brelse(buf3);
+			}
+			brelse(buf2);
+			return -EIO;
+		}
+		memset_b(buf4->data, 0, blksize);
+		bwrite(buf4);
+		dindblock[dblock - (iblock * BLOCKS_PER_IND_BLOCK(i->sb))] = newblock;
+		i->i_blocks += blksize / 512;
+		buf2->dirty = 1;
+		buf2->valid = 1;
+		block = newblock;
 	}
-	memcpy_l(dindblock, buf->data, BLOCKS_PER_IND_BLOCK(i->sb));
 	brelse(buf);
-	block = dindblock[block - (dind_block * BLOCKS_PER_IND_BLOCK(i->sb))];
-	kfree((unsigned int)indblock);
-	kfree((unsigned int)dindblock);
+	if(level == EXT2_TIND_BLOCK) {
+		brelse(buf3);
+	}
+	brelse(buf2);
 	return block;
+}
+
+int ext2_truncate(struct inode *i, __off_t length)
+{
+	__blk_t block, dblock, *indblock;
+	struct buffer *buf;
+	int blksize, n;
+
+	blksize = i->sb->s_blocksize;
+	block = length / blksize;
+
+	if(!S_ISDIR(i->i_mode) && !S_ISREG(i->i_mode) && !S_ISLNK(i->i_mode)) {
+		return -EINVAL;
+	}
+
+	if(block < EXT2_NDIR_BLOCKS) {
+		for(n = block; n < EXT2_NDIR_BLOCKS; n++) {
+			if(i->u.ext2.i_data[n]) {
+				ext2_bfree(i->sb, i->u.ext2.i_data[n]);
+				i->u.ext2.i_data[n] = 0;
+				i->i_blocks -= blksize / 512;
+			}
+		}
+		block = 0;
+	}
+
+	if(!block || block < (BLOCKS_PER_IND_BLOCK(i->sb) + EXT2_NDIR_BLOCKS)) {
+		if(block) {
+			block -= EXT2_NDIR_BLOCKS;
+		}
+		if(i->u.ext2.i_data[EXT2_IND_BLOCK]) {
+			free_indblock(i, i->u.ext2.i_data[EXT2_IND_BLOCK], block);
+			if(!block) {
+				ext2_bfree(i->sb, i->u.ext2.i_data[EXT2_IND_BLOCK]);
+				i->u.ext2.i_data[EXT2_IND_BLOCK] = 0;
+				i->i_blocks -= blksize / 512;
+			}
+		}
+		block = 0;
+	}
+
+	if(block) {
+		block -= EXT2_NDIR_BLOCKS;
+		block -= BLOCKS_PER_IND_BLOCK(i->sb);
+	}
+	if(i->u.ext2.i_data[EXT2_DIND_BLOCK]) {
+		if(!(buf = bread(i->dev, i->u.ext2.i_data[EXT2_DIND_BLOCK], blksize))) {
+			printk("%s(): error reading block %d.\n", __FUNCTION__, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
+			return -EIO;
+		}
+		indblock = (__blk_t *)buf->data;
+		dblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
+		for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
+			if(indblock[n]) {
+				free_indblock(i, indblock[n], dblock);
+				if(!dblock) {
+					ext2_bfree(i->sb, indblock[n]);
+					i->i_blocks -= blksize / 512;
+				}
+			}
+			dblock = 0;
+		}
+		bwrite(buf);
+		if(!block) {
+			ext2_bfree(i->sb, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
+			i->u.ext2.i_data[EXT2_DIND_BLOCK] = 0;
+			i->i_blocks -= blksize / 512;
+		}
+	}
+
+	i->i_mtime = CURRENT_TIME;
+	i->i_ctime = CURRENT_TIME;
+	i->i_size = length;
+	i->dirty = 1;
+
+	return 0;
 }
