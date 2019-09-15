@@ -85,7 +85,7 @@ int ext2_ialloc(struct inode *i)
 	struct superblock *sb;
 	struct ext2_group_desc *gd;
 	struct buffer *buf;
-	int bg, errno;
+	int bg, d, errno;
 
 	sb = i->sb;
 	superblock_lock(sb);
@@ -95,18 +95,19 @@ int ext2_ialloc(struct inode *i)
 	buf = NULL;
 
 	/* read through all group descriptors to find the first unallocated inode */
-	for(bg = 0; bg < sb->u.ext2.block_groups; bg++) {
+	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
 		if(!(bg % (sb->s_blocksize / sizeof(struct ext2_group_desc)))) {
 			if(buf) {
 				brelse(buf);
 				block++;
+				d = 0;
 			}
 			if(!(buf = bread(sb->dev, block, sb->s_blocksize))) {
 				superblock_unlock(sb);
 				return -EIO;
 			}
 		}
-		gd = (struct ext2_group_desc *)(buf->data + (bg * sizeof(struct ext2_group_desc)));
+		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_inodes_count) {
 			if((inode = find_first_zero(sb, gd->bg_inode_bitmap))) {
 				break;
@@ -205,7 +206,7 @@ int ext2_balloc(struct superblock *sb)
 	__blk_t b, block;
 	struct ext2_group_desc *gd;
 	struct buffer *buf;
-	int bg, errno;
+	int bg, d, errno;
 
 	superblock_lock(sb);
 
@@ -214,18 +215,19 @@ int ext2_balloc(struct superblock *sb)
 	buf = NULL;
 
 	/* read through all group descriptors to find the first unallocated block */
-	for(bg = 0; bg < sb->u.ext2.block_groups; bg++) {
+	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
 		if(!(bg % (sb->s_blocksize / sizeof(struct ext2_group_desc)))) {
 			if(buf) {
 				brelse(buf);
 				b++;
+				d = 0;
 			}
 			if(!(buf = bread(sb->dev, b, sb->s_blocksize))) {
 				superblock_unlock(sb);
 				return -EIO;
 			}
 		}
-		gd = (struct ext2_group_desc *)(buf->data + (bg * sizeof(struct ext2_group_desc)));
+		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_blocks_count) {
 			if((block = find_first_zero(sb, gd->bg_block_bitmap))) {
 				break;
