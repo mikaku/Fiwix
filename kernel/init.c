@@ -62,12 +62,7 @@ void init_init(void)
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
 	init->tss.cr3 = V2P((unsigned int)pgdir);
 
-	if(!(init->vma = (void *)kmalloc())) {
-		goto init_init__die;
-	}
-	init->rss++;
-	memset_b(init->vma, NULL, PAGE_SIZE);
-
+	memset_b(init->vma, NULL, sizeof(init->vma));
 	init->ppid = 0;
 	init->pgid = 0;
 	init->sid = 0;

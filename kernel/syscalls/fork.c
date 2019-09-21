@@ -77,13 +77,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->start_time = CURRENT_TIME;
 	child->sleep_address = NULL;
 
-	if(!(child->vma = (void *)kmalloc())) {
-		kfree((unsigned int)child_pgdir);
-		release_proc(child);
-		return -ENOMEM;
-	}
-	child->rss++;
-	memcpy_b(child->vma, current->vma, PAGE_SIZE);
+	memcpy_b(child->vma, current->vma, sizeof(child->vma));
 	vma = child->vma;
 	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
 		if(vma->inode) {

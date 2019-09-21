@@ -19,6 +19,7 @@ struct vma {
 	char o_mode;		/* open mode (O_RDONLY, O_RDWR, ...) */
 };
 
+#include <fiwix/config.h>
 #include <fiwix/types.h>
 #include <fiwix/signal.h>
 #include <fiwix/limits.h>
@@ -42,8 +43,6 @@ struct vma {
 
 #define IO_BITMAP_SIZE	32		/* 32 * 32bit = 1024 = 0x3FF */
 					/* 2048 * 32bit = 65536 = 0xFFFF */
-
-#define VMA_REGIONS	(PAGE_SIZE / sizeof(struct vma))
 
 #define PG_LEADER(p)	((p)->pid == (p)->pgid)
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
@@ -129,7 +128,7 @@ struct proc {
 	char **argv;
 	char **envp;
 	char pidstr[5];			/* pid number converted to string */
-	struct vma *vma;		/* virtual memory-map addresses */
+	struct vma vma[VMA_REGIONS];	/* virtual memory-map addresses */
 	unsigned int brk_lower;		/* lower limit of the heap section */
 	unsigned int brk;		/* current limit of the heap */
 	__sigset_t sigpending;

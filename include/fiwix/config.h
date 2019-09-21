@@ -55,4 +55,7 @@
 /* maximum number of messages on spurious interrupts */
 #define MAX_SPU_NOTICES		10
 
+/* maximum number of virtual memory mappings (regions) */
+#define VMA_REGIONS		1000
+
 #endif /* _FIWIX_CONFIG_H */
