@@ -27,7 +27,7 @@ a good base of existing GNU applications. It offers many UNIX-like features:
  - Round Robin based scheduler algorithm (no priorities yet).
  - VFS abstraction layer.
  - Minix v1 and v2 filesystem support.
- - EXT2 filesystem support (read only) with 1KB, 2KB and 4KB block sizes.
+ - EXT2 filesystem support with 1KB, 2KB and 4KB block sizes.
  - Linux-like PROC filesystem support (read only).
  - PIPE pseudo-filesystem support.
  - ISO9660 filesystem support with Rock Ridge extensions.
