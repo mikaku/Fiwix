@@ -5,6 +5,7 @@
 - Limit the number of messages on spurious interrupts.
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
+- Added VMA_REGIONS as a general configurable option (default: 1000).
 - Fixed to prevent from using an unexistent floppy type, in the fdd_type
   structure, if CMOS returns a value bigger than 0x04.
 - Fixed a misplaced bitwise operator AND that was not ensuring the limitation
