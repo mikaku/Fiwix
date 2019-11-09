@@ -12,6 +12,7 @@
 #include <fiwix/fs_ext2.h>
 #include <fiwix/buffer.h>
 #include <fiwix/errno.h>
+#include <fiwix/stat.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -78,7 +79,7 @@ static int change_bit(int mode, struct superblock *sb, __blk_t block, int item)
  * try to assign inodes in the same block group of the directory in which
  * they will be created.
  */
-int ext2_ialloc(struct inode *i)
+int ext2_ialloc(struct inode *i, int mode)
 {
 	__ino_t inode;
 	__blk_t block;
@@ -135,7 +136,9 @@ int ext2_ialloc(struct inode *i)
 	inode += bg * EXT2_INODES_PER_GROUP(sb);
 	gd->bg_free_inodes_count--;
 	sb->u.ext2.sb.s_free_inodes_count--;
-	// FIXME: gd->bg_used_dirs_count++; (if it's a directory)
+	if(S_ISDIR(mode)) {
+		gd->bg_used_dirs_count++;
+	}
 	bwrite(buf);
 
 	i->inode = inode;
@@ -189,7 +192,9 @@ void ext2_ifree(struct inode *i)
 
 	gd->bg_free_inodes_count++;
 	sb->u.ext2.sb.s_free_inodes_count++;
-	// FIXME: gd->bg_used_dirs_count--; (if it's a directory)
+	if(S_ISDIR(i->i_mode)) {
+		gd->bg_used_dirs_count--;
+	}
 	bwrite(buf);
 
 	i->i_size = 0;

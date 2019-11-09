@@ -331,7 +331,7 @@ int minix_symlink(struct inode *dir, char *name, char *oldname)
 
 	inode_lock(dir);
 
-	if(!(i = ialloc(dir->sb))) {
+	if(!(i = ialloc(dir->sb, S_IFLNK))) {
 		inode_unlock(dir);
 		return -ENOSPC;
 	}
@@ -421,7 +421,7 @@ int minix_mkdir(struct inode *dir, char *name, __mode_t mode)
 
 	inode_lock(dir);
 
-	if(!(i = ialloc(dir->sb))) {
+	if(!(i = ialloc(dir->sb, S_IFDIR))) {
 		inode_unlock(dir);
 		return -ENOSPC;
 	}
@@ -505,7 +505,7 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	inode_lock(dir);
 
-	if(!(i = ialloc(dir->sb))) {
+	if(!(i = ialloc(dir->sb, mode & S_IFMT))) {
 		inode_unlock(dir);
 		return -ENOSPC;
 	}
@@ -578,7 +578,7 @@ int minix_create(struct inode *dir, char *name, __mode_t mode, struct inode **i_
 
 	inode_lock(dir);
 
-	if(!(i = ialloc(dir->sb))) {
+	if(!(i = ialloc(dir->sb, S_IFREG))) {
 		inode_unlock(dir);
 		return -ENOSPC;
 	}

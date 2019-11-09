@@ -244,7 +244,7 @@ void inode_unlock(struct inode *i)
 	RESTORE_FLAGS(flags);
 }
 
-struct inode * ialloc(struct superblock *sb)
+struct inode * ialloc(struct superblock *sb, int mode)
 {
 	int errno;
 	struct inode *i;
@@ -253,7 +253,7 @@ struct inode * ialloc(struct superblock *sb)
 		i->sb = sb;
 		i->rdev = sb->dev;
 		if(i->sb && i->sb->fsop && i->sb->fsop->ialloc) {
-			errno = i->sb->fsop->ialloc(i);
+			errno = i->sb->fsop->ialloc(i, mode);
 		} else {
 			printk("WARNING: this filesystem does not have the ialloc() method!\n");
 			i->count = 1;

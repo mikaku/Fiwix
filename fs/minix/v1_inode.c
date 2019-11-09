@@ -142,7 +142,7 @@ int v1_minix_write_inode(struct inode *i)
 	return 0;
 }
 
-int v1_minix_ialloc(struct inode *i)
+int v1_minix_ialloc(struct inode *i, int mode)
 {
 	__blk_t offset;
 	int inode, errno;

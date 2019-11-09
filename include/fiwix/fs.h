@@ -172,7 +172,7 @@ struct fs_operations {
 /* superblock operations */
 	int (*read_inode)(struct inode *);
 	int (*write_inode)(struct inode *);
-	int (*ialloc)(struct inode *);
+	int (*ialloc)(struct inode *, int);
 	void (*ifree)(struct inode *);
 	void (*statfs)(struct superblock *, struct statfs *);
 	int (*read_superblock)(__dev_t, struct superblock *);
@@ -230,7 +230,7 @@ int get_rrip_symlink(struct inode *, char *);
 /* generic VFS function prototypes */
 void inode_lock(struct inode *);
 void inode_unlock(struct inode *);
-struct inode * ialloc(struct superblock *);
+struct inode * ialloc(struct superblock *, int);
 struct inode * iget(struct superblock *, __ino_t);
 int bmap(struct inode *, __off_t, int);
 int check_fs_busy(__dev_t, struct inode *);

@@ -38,13 +38,13 @@ int minix_write_inode(struct inode *i)
 	return v2_minix_write_inode(i);
 }
 
-int minix_ialloc(struct inode *i)
+int minix_ialloc(struct inode *i, int mode)
 {
 	if(i->sb->u.minix.version == 1) {
-		return v1_minix_ialloc(i);
+		return v1_minix_ialloc(i, mode);
 	}
 
-	return v2_minix_ialloc(i);
+	return v2_minix_ialloc(i, mode);
 }
 
 void minix_ifree(struct inode *i)

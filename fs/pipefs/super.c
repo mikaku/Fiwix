@@ -71,7 +71,7 @@ int pipefs_read_superblock(__dev_t dev, struct superblock *sb)
 	return 0;
 }
 
-int pipefs_ialloc(struct inode *i)
+int pipefs_ialloc(struct inode *i, int mode)
 {
 	struct superblock *sb = i->sb;
 

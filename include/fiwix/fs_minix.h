@@ -116,14 +116,14 @@ struct minix_i_info {
 
 int v1_minix_read_inode(struct inode *);
 int v1_minix_write_inode(struct inode *);
-int v1_minix_ialloc(struct inode *);
+int v1_minix_ialloc(struct inode *, int);
 void v1_minix_ifree(struct inode *);
 int v1_minix_bmap(struct inode *, __off_t, int);
 int v1_minix_truncate(struct inode *, __off_t);
 
 int v2_minix_read_inode(struct inode *);
 int v2_minix_write_inode(struct inode *);
-int v2_minix_ialloc(struct inode *);
+int v2_minix_ialloc(struct inode *, int);
 void v2_minix_ifree(struct inode *);
 int v2_minix_bmap(struct inode *, __off_t, int);
 int v2_minix_truncate(struct inode *, __off_t);

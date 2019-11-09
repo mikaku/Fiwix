@@ -8,6 +8,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/fcntl.h>
+#include <fiwix/stat.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 
@@ -30,7 +31,7 @@ int sys_pipe(int pipefd[2])
 	if((errno = check_user_area(VERIFY_WRITE, pipefd, sizeof(int) * 2))) {
 		return errno;
 	}
-	if(!(i = ialloc(&fs->mt->sb))) {
+	if(!(i = ialloc(&fs->mt->sb, S_IFIFO))) {
 		return -EINVAL;
 	}
 	if((rfd = get_new_fd(i)) < 0) {
