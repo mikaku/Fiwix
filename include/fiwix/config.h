@@ -56,6 +56,6 @@
 #define MAX_SPU_NOTICES		10
 
 /* maximum number of virtual memory mappings (regions) */
-#define VMA_REGIONS		1000
+#define VMA_REGIONS		1500
 
 #endif /* _FIWIX_CONFIG_H */
