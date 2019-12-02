@@ -2,6 +2,7 @@
 ===================
 - Added support for an initial RAMdisk (initrd) image.
 - Added full support for the ext2 filesystem.
+- Added support to execute scripts.
 - Limit the number of messages on spurious interrupts.
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
