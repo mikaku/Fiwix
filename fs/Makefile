@@ -13,7 +13,7 @@ FSDIRS = minix ext2 pipefs iso9660 procfs
 FILESYSTEMS = minix/minix.o ext2/ext2.o pipefs/pipefs.o iso9660/iso9660.o \
 	procfs/procfs.o
 OBJS = filesystems.o devices.o buffer.o fd.o locks.o super.o inode.o \
-	namei.o elf.o
+	namei.o elf.o script.o
 
 fs:	$(OBJS)
 	@for n in $(FSDIRS) ; do (cd $$n ; $(MAKE)) ; done

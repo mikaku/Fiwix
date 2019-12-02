@@ -248,8 +248,6 @@ struct mount * get_free_mount_point(__dev_t);
 void release_mount_point(struct mount *);
 struct mount * get_mount_point(struct inode *);
 
-int elf_load(struct inode *, char **, char **, struct sigcontext *);
-
 int get_new_fd(struct inode *);
 void release_fd(unsigned int);
 void fd_init(void);

@@ -35,80 +35,6 @@ static int check_elf(struct elf32_hdr *elf32_h)
 	return 0;
 }
 
-static void free_barg_pages(struct binargs *barg)
-{
-	int n;
-
-	for(n = 0; n < ARG_MAX; n++) {
-		if(barg->page[n]) {
-			kfree(barg->page[n]);
-		}
-	}
-}
-
-static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
-{
-	int n, p, offset;
-	unsigned int ae_str_len;
-	char *page, *str;
-
-	p = ARG_MAX - 1;
-	ae_str_len = barg->argv_len + barg->envp_len + 4;
-	p -= ae_str_len / PAGE_SIZE;
-	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
-	if(offset == PAGE_SIZE) {
-		offset = 0;
-		p++;
-	}
-	barg->offset = offset;
-	for(n = p; n < ARG_MAX; n++) {
-		if(!(barg->page[n] = kmalloc())) {
-			free_barg_pages(barg);
-			return -ENOMEM;
-		}
-	}
-	for(n = 0; n < barg->argc; n++) {
-		str = argv[n];
-		page = (char *)barg->page[p];
-		while(*str) {
-			*(page + offset) = *str;
-			offset++;
-			str++;
-			if(offset == PAGE_SIZE) {
-				p++;
-				offset = 0;
-				page = (char *)barg->page[p];
-			}
-		}
-		*(page + offset++) = NULL;
-		if(offset == PAGE_SIZE) {
-			p++;
-			offset = 0;
-		}
-	}
-	for(n = 0; n < barg->envc; n++) {
-		str = envp[n];
-		page = (char *)barg->page[p];
-		while(*str) {
-			*(page + offset) = *str;
-			offset++;
-			str++;
-			if(offset == PAGE_SIZE) {
-				p++;
-				offset = 0;
-				page = (char *)barg->page[p];
-			}
-		}
-		*(page + offset++) = NULL;
-		if(offset == PAGE_SIZE) {
-			p++;
-			offset = 0;
-		}
-	}
-
-	return 0;
-}
-
 /*
  * Setup the initial process stack (System V ABI for i386)
  * ----------------------------------------------------------------------------
@@ -471,46 +397,22 @@ static int elf_load_interpreter(struct inode *ii)
 	return elf32_h->e_entry + MMAP_START;
 }
 
-int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
+int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char *data)
 {
 	int n, errno;
-	struct buffer *buf;
-	struct binargs barg;
 	struct elf32_hdr *elf32_h;
 	struct elf32_phdr *elf32_ph, *last_ptload;
 	struct inode *ii;
-	__blk_t block;
 	unsigned int start, end, length;
 	unsigned int prot;
 	char *interpreter;
-	char *data;
 	int at_base, phdr_addr;
 	char type;
 	unsigned int ae_ptr_len, ae_str_len;
 	unsigned int sp, str;
 
-	if((block = bmap(i, 0, FOR_READING)) < 0) {
-		return block;
-	}
-	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
-		return -EIO;
-	}
-
-	/*
-	 * The contents of the buffer is copied and then freed immediately to
-	 * make sure that it won't conflict while zeroing the BSS fractional
-	 * page, in case that the same block is requested during the page fault.
-	 */
-	if(!(data = (void *)kmalloc())) {
-		brelse(buf);
-		return -ENOMEM;
-	}
-	memcpy_b(data, buf->data, i->sb->s_blocksize);
-	brelse(buf);
-
 	elf32_h = (struct elf32_hdr *)data;
 	if(check_elf(elf32_h)) {
-		kfree((unsigned int)data);
 		if(current->pid == INIT) {
 			PANIC("%s has an unrecognized binary format.\n", INIT_PROGRAM);
 		}
@@ -528,7 +430,6 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 			interpreter = data + elf32_ph->p_offset;
 			if(namei(interpreter, &ii, NULL, FOLLOW_LINKS)) {
 				printk("%s(): can't find interpreter '%s'.\n", __FUNCTION__, interpreter);
-				kfree((unsigned int)data);
 				send_sig(current, SIGSEGV);
 				return -ELIBACC;
 			}
@@ -543,54 +444,22 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 		}
 	}
 
-	for(n = 0; n < ARG_MAX; n++) {
-		barg.page[n] = 0;
-	}
-	barg.argv_len = barg.envp_len = 0;
-
-	for(n = 0; argv[n]; n++) {
-		if((errno = check_user_area(VERIFY_READ, argv[n], sizeof(char *)))) {
-			kfree((unsigned int)data);
-			return errno;
-		}
-		barg.argv_len += strlen(argv[n]) + 1;
-	}
-	barg.argc = n;
-
-	for(n = 0; envp[n]; n++) {
-		if((errno = check_user_area(VERIFY_READ, envp[n], sizeof(char *)))) {
-			kfree((unsigned int)data);
-			return errno;
-		}
-		barg.envp_len += strlen(envp[n]) + 1;
-	}
-	barg.envc = n;
-
-	strncpy(current->argv0, argv[0], NAME_MAX);
-
 	/*
 	 * calculate the final size of 'ae_ptr_len' based on:
 	 *  - argc = 4 bytes (unsigned int)
 	 *  - barg.argc = (num. of pointers to strings + 1 NULL) x 4 bytes (unsigned int)
 	 *  - barg.envc = (num. of pointers to strings + 1 NULL) x 4 bytes (unsigned int)
 	 */
-	ae_ptr_len = (1 + (barg.argc + 1) + (barg.envc + 1)) * sizeof(unsigned int);
-	ae_str_len = barg.argv_len + barg.envp_len;
+	ae_ptr_len = (1 + (barg->argc + 1) + (barg->envc + 1)) * sizeof(unsigned int);
+	ae_str_len = barg->argv_len + barg->envp_len;
 	if(ae_ptr_len + ae_str_len > (ARG_MAX * PAGE_SIZE)) {
 		printk("WARNING: %s(): argument list (%d) exceeds ARG_MAX (%d)!\n", __FUNCTION__, ae_ptr_len + ae_str_len, ARG_MAX * PAGE_SIZE);
-		kfree((unsigned int)data);
 		return -E2BIG;
 	}
 
 #ifdef __DEBUG__
-	printk("argc=%d (argv_len=%d) envc=%d (envp_len=%d)  ae_ptr_len=%d ae_str_len=%d\n", barg.argc, barg.argv_len, barg.envc, barg.envp_len, ae_ptr_len, ae_str_len);
+	printk("argc=%d (argv_len=%d) envc=%d (envp_len=%d)  ae_ptr_len=%d ae_str_len=%d\n", barg->argc, barg->argv_len, barg->envc, barg->envp_len, ae_ptr_len, ae_str_len);
 #endif /*__DEBUG__ */
-
-	/* save 'argv' and 'envp' into the kernel space */
-	if((errno = copy_strings(&barg, argv, envp))) {
-		kfree((unsigned int)data);
-		return errno;
-	}
 
 
 	/* point of no return */
@@ -603,8 +472,6 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 		errno = elf_load_interpreter(ii);
 		if(errno < 0) {
 			printk("%s(): unable to load the interpreter '%s'.\n", __FUNCTION__, interpreter);
-			kfree((unsigned int)data);
-			free_barg_pages(&barg);
 			iput(ii);
 			send_sig(current, SIGKILL);
 			return errno;
@@ -636,8 +503,6 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 			}
 			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY);
 			if(errno < 0 && errno > -PAGE_SIZE) {
-				kfree((unsigned int)data);
-				free_barg_pages(&barg);
 				send_sig(current, SIGSEGV);
 				return -ENOEXEC;
 			}
@@ -663,8 +528,6 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 	length = end - start;
 	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0);
 	if(errno < 0 && errno > -PAGE_SIZE) {
-		kfree((unsigned int)data);
-		free_barg_pages(&barg);
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
 	}
@@ -676,8 +539,6 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 	length = PAGE_SIZE;
 	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_HEAP, 0);
 	if(errno < 0 && errno > -PAGE_SIZE) {
-		kfree((unsigned int)data);
-		free_barg_pages(&barg);
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
 	}
@@ -693,15 +554,11 @@ int elf_load(struct inode *i, char *argv[], char *envp[], struct sigcontext *sc)
 	length = KERNEL_BASE_ADDR - (sp & PAGE_MASK);
 	errno = do_mmap(NULL, sp & PAGE_MASK, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0);
 	if(errno < 0 && errno > -PAGE_SIZE) {
-		kfree((unsigned int)data);
-		free_barg_pages(&barg);
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
 	}
 
-	elf_create_stack(&barg, (unsigned int *)sp, str, at_base, elf32_h, phdr_addr);
-	kfree((unsigned int)data);
-	free_barg_pages(&barg);
+	elf_create_stack(barg, (unsigned int *)sp, str, at_base, elf32_h, phdr_addr);
 
 	/* set %esp to point to 'argc' */
 	sc->oldesp = sp;

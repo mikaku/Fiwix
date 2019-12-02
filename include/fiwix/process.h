@@ -177,4 +177,7 @@ struct proc * kernel_process(int (*fn)(void));
 void proc_slot_init(struct proc *);
 void proc_init(void);
 
+int elf_load(struct inode *, struct binargs *, struct sigcontext *, char *);
+int script_load(char *, char *, char *);
+
 #endif /* _FIWIX_PROCESS_H */

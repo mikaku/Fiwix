@@ -5,59 +5,355 @@
  * Distributed under the terms of the Fiwix License.
  */
 
-#include <fiwix/fs.h>
 #include <fiwix/syscalls.h>
 #include <fiwix/stat.h>
+#include <fiwix/buffer.h>
+#include <fiwix/mm.h>
+#include <fiwix/process.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
 
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
-#include <fiwix/process.h>
 #endif /*__DEBUG__ */
+
+static int initialize_barg(struct binargs *barg, char *argv[], char *envp[])
+{
+	int n, errno;
+
+	for(n = 0; n < ARG_MAX; n++) {
+		barg->page[n] = 0;
+	}
+	barg->argv_len = barg->envp_len = 0;
+
+	for(n = 0; argv[n]; n++) {
+		if((errno = check_user_area(VERIFY_READ, argv[n], sizeof(char *)))) {
+			return errno;
+		}
+		barg->argv_len += strlen(argv[n]) + 1;
+	}
+	barg->argc = n;
+
+	for(n = 0; envp[n]; n++) {
+		if((errno = check_user_area(VERIFY_READ, envp[n], sizeof(char *)))) {
+			return errno;
+		}
+		barg->envp_len += strlen(envp[n]) + 1;
+	}
+	barg->envc = n;
+
+	return 0;
+}
+
+static void free_barg_pages(struct binargs *barg)
+{
+	int n;
+
+	for(n = 0; n < ARG_MAX; n++) {
+		if(barg->page[n]) {
+			kfree(barg->page[n]);
+		}
+	}
+}
+
+static int add_strings(struct binargs *barg, char *filename, char *interpreter, char *args)
+{
+	int n, p, offset;
+	unsigned int ae_str_len;
+	char *page;
+
+	/*
+	 * For a script we need to substitute the saved argv[0] by the original
+	 * 'filename' supplied in execve(), otherwise the interpreter won't be
+	 * able to find the script file.
+	 */
+	offset = barg->offset;
+	p = ARG_MAX - 1;
+	ae_str_len = barg->argv_len + barg->envp_len + 4;
+	p -= ae_str_len / PAGE_SIZE;
+	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	if(offset == PAGE_SIZE) {
+		offset = 0;
+		p++;
+	}
+	page = (char *)barg->page[p];
+	while(*(page + offset)) {
+		offset++;
+		barg->argv_len--;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+			page = (char *)barg->page[p];
+		}
+	}
+	barg->offset = offset;
+
+
+	offset = barg->offset;
+	p = ARG_MAX - 1;
+	barg->argv_len += (strlen(interpreter) + 1) + strlen(args) + strlen(filename);
+	barg->argc++;
+	if(*args) {
+		barg->argc++;
+	}
+	ae_str_len = barg->argv_len + barg->envp_len + 4;
+	p -= ae_str_len / PAGE_SIZE;
+	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	if(offset == PAGE_SIZE) {
+		offset = 0;
+		p++;
+	}
+	barg->offset = offset;
+	for(n = p; n < ARG_MAX; n++) {
+		if(!barg->page[n]) {
+			if(!(barg->page[n] = kmalloc())) {
+				free_barg_pages(barg);
+				return -ENOMEM;
+			}
+		}
+	}
+
+	/* interpreter */
+	page = (char *)barg->page[p];
+	while(*interpreter) {
+		*(page + offset) = *interpreter;
+		offset++;
+		interpreter++;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+			page = (char *)barg->page[p];
+		}
+	}
+	*(page + offset++) = NULL;
+	if(offset == PAGE_SIZE) {
+		p++;
+		offset = 0;
+	}
+
+	/* args */
+	page = (char *)barg->page[p];
+	if(*args) {
+		while(*args) {
+			*(page + offset) = *args;
+			offset++;
+			args++;
+			if(offset == PAGE_SIZE) {
+				p++;
+				offset = 0;
+				page = (char *)barg->page[p];
+			}
+		}
+		*(page + offset++) = NULL;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+		}
+	}
+
+	/* original script ('filename' with path) at argv[0] */
+	page = (char *)barg->page[p];
+	while(*filename) {
+		*(page + offset) = *filename;
+		offset++;
+		filename++;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+			page = (char *)barg->page[p];
+		}
+		*(page + offset) = NULL;
+	}
+
+	return 0;
+}
+
+static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
+{
+	int n, p, offset;
+	unsigned int ae_str_len;
+	char *page, *str;
+
+	p = ARG_MAX - 1;
+	ae_str_len = barg->argv_len + barg->envp_len + 4;
+	p -= ae_str_len / PAGE_SIZE;
+	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	if(offset == PAGE_SIZE) {
+		offset = 0;
+		p++;
+	}
+	barg->offset = offset;
+	for(n = p; n < ARG_MAX; n++) {
+		if(!(barg->page[n] = kmalloc())) {
+			free_barg_pages(barg);
+			return -ENOMEM;
+		}
+	}
+	for(n = 0; n < barg->argc; n++) {
+		str = argv[n];
+		page = (char *)barg->page[p];
+		while(*str) {
+			*(page + offset) = *str;
+			offset++;
+			str++;
+			if(offset == PAGE_SIZE) {
+				p++;
+				offset = 0;
+				page = (char *)barg->page[p];
+			}
+		}
+		*(page + offset++) = NULL;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+		}
+	}
+	for(n = 0; n < barg->envc; n++) {
+		str = envp[n];
+		page = (char *)barg->page[p];
+		while(*str) {
+			*(page + offset) = *str;
+			offset++;
+			str++;
+			if(offset == PAGE_SIZE) {
+				p++;
+				offset = 0;
+				page = (char *)barg->page[p];
+			}
+		}
+		*(page + offset++) = NULL;
+		if(offset == PAGE_SIZE) {
+			p++;
+			offset = 0;
+		}
+	}
+
+	return 0;
+}
+
+static int do_execve(const char *filename, char *argv[], char *envp[], struct sigcontext *sc)
+{
+	char interpreter[NAME_MAX + 1], args[NAME_MAX + 1], name[NAME_MAX + 1];
+	__blk_t block;
+	struct buffer *buf;
+	struct inode *i;
+	struct binargs barg;
+	char *data, *tmp_name;
+	int errno;
+
+	if((errno = initialize_barg(&barg, &(*argv), &(*envp))) < 0) {
+		return errno;
+	}
+
+	/* save 'argv' and 'envp' into the kernel address space */
+	if((errno = copy_strings(&barg, &(*argv), &(*envp)))) {
+		return errno;
+	}
+
+	if(!(data = (void *)kmalloc())) {
+		return -ENOMEM;
+	}
+
+	if((errno = malloc_name(filename, &tmp_name)) < 0) {
+		kfree((unsigned int)data);
+		free_barg_pages(&barg);
+		return errno;
+	}
+	strcpy(name, tmp_name);
+	free_name(tmp_name);
+
+
+loop:
+	if((errno = namei(name, &i, NULL, FOLLOW_LINKS))) {
+		free_barg_pages(&barg);
+		kfree((unsigned int)data);
+		return errno;
+	}
+
+	if(!S_ISREG(i->i_mode)) {
+		iput(i);
+		free_barg_pages(&barg);
+		kfree((unsigned int)data);
+		return -EACCES;
+	}
+	if(check_permission(TO_EXEC, i) < 0) {
+		iput(i);
+		free_barg_pages(&barg);
+		kfree((unsigned int)data);
+		return -EACCES;
+	}
+
+	if((block = bmap(i, 0, FOR_READING)) < 0) {
+		iput(i);
+		free_barg_pages(&barg);
+		kfree((unsigned int)data);
+		return block;
+	}
+	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
+		iput(i);
+		free_barg_pages(&barg);
+		kfree((unsigned int)data);
+		return -EIO;
+	}
+
+	/*
+	 * The contents of the buffer is copied and then freed immediately to
+	 * make sure that it won't conflict while zeroing the BSS fractional
+	 * page, in case that the same block is requested during the page fault.
+	 */
+	memcpy_b(data, buf->data, i->sb->s_blocksize);
+	brelse(buf);
+
+	errno = elf_load(i, &barg, sc, data);
+	if(errno == -ENOEXEC) {
+		/* OK, looks like it was not an ELF binary; let's see if it is a script */
+		memset_b(interpreter, 0, NAME_MAX + 1);
+		memset_b(args, 0, NAME_MAX + 1);
+		errno = script_load(interpreter, args, data);
+		if(!errno) {
+			iput(i);
+			if((errno = add_strings(&barg, name, interpreter, args))) {
+				free_barg_pages(&barg);
+				kfree((unsigned int)data);
+				return errno;
+			}
+			strcpy(name, interpreter);
+			goto loop;
+		}
+	}
+
+	if(!errno) {
+		if(i->i_mode & S_ISUID) {
+			current->euid = i->i_uid;
+		}
+		if(i->i_mode & S_ISGID) {
+			current->egid = i->i_gid;
+		}
+	}
+
+	iput(i);
+	free_barg_pages(&barg);
+	kfree((unsigned int)data);
+	return errno;
+}
 
 int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int arg5, struct sigcontext *sc)
 {
+	char argv0[NAME_MAX + 1];
 	int n, errno;
-	struct inode *i;
-	char *tmp_name;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_execve('%s', ...)\n", current->pid, filename);
 #endif /*__DEBUG__ */
 
-	if((errno = malloc_name(filename, &tmp_name)) < 0) {
-		return errno;
-	}
-	if((errno = namei(tmp_name, &i, NULL, FOLLOW_LINKS))) {
-		free_name(tmp_name);
-		return errno;
-	}
-	if(!S_ISREG(i->i_mode)) {
-		iput(i);
-		free_name(tmp_name);
-		return -EACCES;
-	}
-	if(check_permission(TO_EXEC, i) < 0) {
-		iput(i);
-		free_name(tmp_name);
-		return -EACCES;
-	}
-
-	if((errno = elf_load(i, &(*argv), &(*envp), sc))) {
-		iput(i);
-		free_name(tmp_name);
+	/* copy filename into kernel address space */
+	strncpy(argv0, argv[0], NAME_MAX);
+	if((errno = do_execve(filename, &(*argv), &(*envp), sc))) {
 		return errno;
 	}
 
-	if(i->i_mode & S_ISUID) {
-		current->euid = i->i_uid;
-	}
-	if(i->i_mode & S_ISGID) {
-		current->egid = i->i_gid;
-	}
-
+	strncpy(current->argv0, argv0, NAME_MAX);
 	for(n = 0; n < OPEN_MAX; n++) {
 		if(current->fd[n] && (current->fd_flags[n] & FD_CLOEXEC)) {
 			sys_close(n);
@@ -77,7 +373,5 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 	}
 	current->sleep_address = NULL;
 	current->flags |= PF_PEXEC;
-	iput(i);
-	free_name(tmp_name);
 	return 0;
 }
