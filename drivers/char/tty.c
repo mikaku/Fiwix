@@ -347,7 +347,7 @@ void do_cook(struct tty *tty)
 		tty->lnext = 0;
 	}
 	tty->output(tty);
-	wakeup(&tty->cooked_q);
+	wakeup(&tty_read);
 	if(!(tty->termios.c_lflag & ICANON) || ((tty->termios.c_lflag & ICANON) && tty->canon_data)) {
 		wakeup(&do_select);
 	}
@@ -476,7 +476,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						if(fd_table->flags & O_NONBLOCK) {
 							return -EAGAIN;
 						}
-						if(sleep(&tty->cooked_q, PROC_INTERRUPTIBLE)) {
+						if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
 							return -EINTR;
 						}
 					}
@@ -505,7 +505,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						if(fd_table->flags & O_NONBLOCK) {
 							return -EAGAIN;
 						}
-						if(sleep(&tty->cooked_q, PROC_INTERRUPTIBLE)) {
+						if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
 							return -EINTR;
 						}
 						if(!tty->cooked_q.count) {
@@ -532,7 +532,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 		if(fd_table->flags & O_NONBLOCK) {
 			return -EAGAIN;
 		}
-		if(sleep(&tty->cooked_q, PROC_INTERRUPTIBLE)) {
+		if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
 			return -EINTR;
 		}
 	}
@@ -581,7 +581,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 			break;
 		}
 		if(tty->write_q.count > 0) {
-			if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
+			if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
 			}
 		}

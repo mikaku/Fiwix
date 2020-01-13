@@ -854,7 +854,7 @@ void vconsole_write(struct tty *tty)
 	if(vc->vc_mode != KD_GRAPHICS) {
 		update_curpos(vc);
 	}
-	wakeup(&tty->write_q);
+	wakeup(&tty_write);
 }
 
 void vconsole_select(int new_cons)
