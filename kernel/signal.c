@@ -183,6 +183,8 @@ void psig(unsigned int stack)
 						current->state = PROC_STOPPED;
 						if(!(current->sigaction[signum - 1].sa_flags & SA_NOCLDSTOP)) {
 							send_sig(get_proc_by_pid(current->ppid), SIGCHLD);
+							/* needed for job control */
+							wakeup(&sys_wait4);
 						}
 						need_resched = 1;
 						break;
