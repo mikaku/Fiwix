@@ -87,12 +87,13 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 			page = (char *)barg->page[p];
 		}
 	}
-	barg->offset = offset;
+	barg->argv_len--;
 
 
-	offset = barg->offset;
 	p = ARG_MAX - 1;
-	barg->argv_len += (strlen(interpreter) + 1) + strlen(args) + strlen(filename);
+	barg->argv_len += strlen(interpreter) + 1;
+	barg->argv_len += strlen(args) ? strlen(args) + 1 : 0;
+	barg->argv_len += strlen(filename) + 1;
 	barg->argc++;
 	if(*args) {
 		barg->argc++;
@@ -163,8 +164,8 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 			offset = 0;
 			page = (char *)barg->page[p];
 		}
-		*(page + offset) = NULL;
 	}
+	*(page + offset) = NULL;
 
 	return 0;
 }
@@ -312,6 +313,7 @@ loop:
 		memset_b(args, 0, NAME_MAX + 1);
 		errno = script_load(interpreter, args, data);
 		if(!errno) {
+			/* yes, it is! */
 			iput(i);
 			if((errno = add_strings(&barg, name, interpreter, args))) {
 				free_barg_pages(&barg);
