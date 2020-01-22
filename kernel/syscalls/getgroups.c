@@ -22,6 +22,20 @@ int sys_getgroups(__ssize_t size, __gid_t *list)
 	printk("(pid %d) sys_getgroups(%d, 0x%08x)\n", current->pid, size, (unsigned int)list);
 #endif /*__DEBUG__ */
 
+	/*
+	 * If size is 0, sys_getgroups() shall return the number of group IDs
+	 * that it would otherwise return without modifying the array pointed
+	 * to by list.
+	 */
+	if(!size) {
+		for(n = 0; n < NGROUPS_MAX; n++) {
+			if(current->groups[n] == -1) {
+				break;
+			}
+		}
+		return n;
+	}
+
 	if((errno = check_user_area(VERIFY_WRITE, list, sizeof(__gid_t)))) {
 		return errno;
 	}
