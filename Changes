@@ -14,6 +14,8 @@
   to 1GB as the amount of physical memory supported.
 - Fixed some bugs in *_minix_ialloc() and minix_balloc() when they fail.
 - Fixed a malfunction in the job control.
+- Fixed in sys_getgroups() to return the number of group IDs when the argument
+  size is zero.
 
 
 1.0.1 - 04-Aug-2018
