@@ -197,8 +197,8 @@ static void adjust(struct vconsole *vc, int x, int y)
 	if(y < 0) {
 		y = 0;
 	}
-	if(y >= vc->lines) {
-		y = vc->lines - 1;
+	if(y >= vc->bottom) {
+		y = vc->bottom - 1;
 	}
 	vc->x = x;
 	vc->y = y;
@@ -233,14 +233,16 @@ static void insert_char(struct vconsole *vc)
 	}
 }
 
-/* FIXME: scrolling inside a text window (ESC[5;8r) is not supported yet */
 static void scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, count, from;
 
+	if(!top) {
+		top = vc->top;
+	}
 	switch(mode) {
 		case SCROLL_DOWN:
-			count = (vc->columns * (vc->lines - top - 1)) * 2;
+			count = (vc->columns * (vc->bottom - top - 1)) * 2;
 			from = top * vc->columns;
 			top = (top + 1) * vc->columns;
 			memcpy_b(vc->vidmem + from, vc->vidmem + top, count);
@@ -248,7 +250,7 @@ static void scroll_screen(struct vconsole *vc, int top, int mode)
 			break;
 		case SCROLL_UP:
 			count = vc->columns * 2;
-			for(n = vc->lines - 1; n >= top; n--) {
+			for(n = vc->bottom - 1; n >= top; n--) {
 				memcpy_b(vc->vidmem + (vc->columns * (n + 1)), vc->vidmem + (vc->columns * n), count);
 			}
 			memset_w(vc->vidmem + (top * vc->columns), BLANK_MEM, count / sizeof(unsigned short int));
@@ -264,7 +266,7 @@ static void cr(struct vconsole *vc)
 
 static void lf(struct vconsole *vc)
 {
-	if(vc->y == vc->lines) {
+	if(vc->y == vc->bottom) {
 		scroll_screen(vc, 0, SCROLL_DOWN);
 	} else {
 		vc->y++;
@@ -328,8 +330,8 @@ static void csi_K(struct vconsole *vc, int mode)
 
 static void csi_L(struct vconsole *vc, int count)
 {
-	if(count > vc->lines) {
-		count = vc->lines;
+	if(count > (vc->bottom - vc->top)) {
+		count = vc->bottom - vc->top;
 	}
 	while(count--) {
 		scroll_screen(vc, vc->y, SCROLL_UP);
@@ -338,8 +340,8 @@ static void csi_L(struct vconsole *vc, int count)
 
 static void csi_M(struct vconsole *vc, int count)
 {
-	if(count > vc->lines) {
-		count = vc->lines;
+	if(count > (vc->bottom - vc->top)) {
+		count = vc->bottom - vc->top;
 	}
 	while(count--) {
 		scroll_screen(vc, vc->y, SCROLL_DOWN);
@@ -504,7 +506,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 					buf_y++;
 				}
 			}
-			if(vc->y >= vc->lines) {
+			if(vc->y >= vc->bottom) {
 				scroll_screen(vc, 0, SCROLL_DOWN);
 				vc->y--;
 			}
@@ -520,7 +522,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 				vc->check_x = 1;
 			}
 		}
-		if(vc->y >= vc->lines) {
+		if(vc->y >= vc->bottom) {
 			scroll_screen(vc, 0, SCROLL_DOWN);
 			vc->y--;
 		}
@@ -544,7 +546,8 @@ void vconsole_reset(struct tty *tty)
 
 	vc = (struct vconsole *)tty->driver_data;
 
-	vc->lines = SCREEN_LINES;
+	vc->top = 0;
+	vc->bottom = SCREEN_LINES;
 	vc->columns = SCREEN_COLS;
 	vc->check_x = 0;
 	vc->led_status = 0;
@@ -565,7 +568,7 @@ void vconsole_reset(struct tty *tty)
 	}
 
 	termios_reset(tty);
-	vc->tty->winsize.ws_row = vc->lines;
+	vc->tty->winsize.ws_row = vc->bottom - vc->top;
 	vc->tty->winsize.ws_col = vc->columns;
 	vc->tty->winsize.ws_xpixel = 0;
 	vc->tty->winsize.ws_ypixel = 0;
@@ -715,6 +718,7 @@ void vconsole_write(struct tty *tty)
 					case 'h':
 						if(vc->question) {
 							switch(vc->parmv1) {
+								/* DEC modes */
 								case 25: /* Switch Cursor Visible <ESC>[?25h */
 									show_cursor(ON);
 									break;
@@ -728,6 +732,7 @@ void vconsole_write(struct tty *tty)
 					case 'l':
 						if(vc->question) {
 							switch(vc->parmv1) {
+								/* DEC modes */
 								case 25: /* Switch Cursor Invisible <ESC>[?25l */
 									show_cursor(OFF);
 									break;
@@ -760,7 +765,7 @@ void vconsole_write(struct tty *tty)
 						}
 						CSE;
 						continue;
-					case 'r':	/* Scroll Screen <ESC>[r  / <ESC>[{start};{end}r */
+					case 'r':	/* Top and Bottom Margins <ESC>[r  / <ESC>[{start};{end}r */
 						if(!vc->parmv1) {
 							vc->parmv1++;
 						}
@@ -768,7 +773,8 @@ void vconsole_write(struct tty *tty)
 							vc->parmv2 = SCREEN_LINES;
 						}
 						if(vc->parmv1 < vc->parmv2 && vc->parmv2 <= SCREEN_LINES) {
-							/* FIXME: text window not supported yet */
+							vc->top = vc->parmv1 - 1;
+							vc->bottom = vc->parmv2;
 							adjust(vc, 0, 0);
 						}
 						CSE;

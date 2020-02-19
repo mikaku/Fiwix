@@ -87,7 +87,7 @@ extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 struct vconsole {
 	int x;		/* current column */
 	int y;		/* current line */
-	int lines, columns;
+	int top, bottom, columns;
 	short int check_x;
 	unsigned char led_status;
 	unsigned char scrlock, numlock, capslock;
