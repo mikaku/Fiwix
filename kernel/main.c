@@ -236,7 +236,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	multiboot_info_t mbi;
 
 	/* default kernel values */
-	strcpy(_rootfstype, "minix");		/* filesystem is minix */
+	strcpy(_rootfstype, "ext2");		/* filesystem is ext2 */
 	_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
 
 	pic_init();
