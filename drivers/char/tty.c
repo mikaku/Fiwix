@@ -536,6 +536,10 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 			return -EINTR;
 		}
 	}
+
+	if(n > 0) {
+		i->i_atime = CURRENT_TIME;
+	}
 	return n;
 }
 
@@ -586,6 +590,10 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 			}
 		}
 		do_sched();
+	}
+
+	if(n > 0) {
+		i->i_mtime = CURRENT_TIME;
 	}
 	return n;
 }
