@@ -1,4 +1,4 @@
-1.X.X - DD-MMM-YYYY
+1.1.0 - DD-MMM-2020
 ===================
 - Added support for an initial RAMdisk (initrd) image.
 - Added full support for the ext2 filesystem.
@@ -7,6 +7,7 @@
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
 - Added VMA_REGIONS as a general configurable option (default: 1500 entries).
+- Changed the default kernel filesystem to ext2.
 - Renamed the sleep addresses in tty.c.
 - Fixed to prevent from using an unexistent floppy type, in the fdd_type
   structure, if CMOS returns a value bigger than 0x04.
@@ -16,6 +17,10 @@
 - Fixed a malfunction in the job control.
 - Fixed in sys_getgroups() to return the number of group IDs when the argument
   size is zero.
+- Fixed the DEC Set Top and Bottom Margins (DECSTBM) sequence in console, which
+  affected the scroll up mechanism in consoles.
+- Fixed to set properly the timestamp on every read and write in all ttys.
+- Fixed the start time value in /proc/<PID>/stat of every process.
 
 
 1.0.1 - 04-Aug-2018
