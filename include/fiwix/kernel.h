@@ -20,6 +20,7 @@
 }
 
 #define CURRENT_TIME	(kstat.system_time)
+#define CURRENT_TICKS	(kstat.ticks)
 #define INIT_PROGRAM	"/sbin/init"
 
 extern char *init_argv[];

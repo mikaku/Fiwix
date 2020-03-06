@@ -69,7 +69,7 @@ void init_init(void)
 	init->flags = 0;
 	init->children = 0;
 	init->priority = DEF_PRIORITY;
-	init->start_time = CURRENT_TIME;
+	init->start_time = CURRENT_TICKS;
 	init->sleep_address = NULL;
 	init->uid = init->gid = 0;
 	init->euid = init->egid = 0;

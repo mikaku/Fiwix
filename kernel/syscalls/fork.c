@@ -74,7 +74,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->flags = 0;
 	child->children = 0;
 	child->cpu_count = child->priority;
-	child->start_time = CURRENT_TIME;
+	child->start_time = CURRENT_TICKS;
 	child->sleep_address = NULL;
 
 	memcpy_b(child->vma, current->vma, sizeof(child->vma));
