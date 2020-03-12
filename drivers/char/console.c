@@ -241,14 +241,14 @@ static void scroll_screen(struct vconsole *vc, int top, int mode)
 		top = vc->top;
 	}
 	switch(mode) {
-		case SCROLL_DOWN:
+		case SCROLL_UP:
 			count = (vc->columns * (vc->bottom - top - 1)) * 2;
 			from = top * vc->columns;
 			top = (top + 1) * vc->columns;
 			memcpy_b(vc->vidmem + from, vc->vidmem + top, count);
 			memset_w(vc->vidmem + from + (count / 2), BLANK_MEM, (top * 2) / sizeof(unsigned short int));
 			break;
-		case SCROLL_UP:
+		case SCROLL_DOWN:
 			count = vc->columns * 2;
 			for(n = vc->bottom - 1; n >= top; n--) {
 				memcpy_b(vc->vidmem + (vc->columns * (n + 1)), vc->vidmem + (vc->columns * n), count);
@@ -267,7 +267,7 @@ static void cr(struct vconsole *vc)
 static void lf(struct vconsole *vc)
 {
 	if(vc->y == vc->bottom) {
-		scroll_screen(vc, 0, SCROLL_DOWN);
+		scroll_screen(vc, 0, SCROLL_UP);
 	} else {
 		vc->y++;
 	}
@@ -276,7 +276,7 @@ static void lf(struct vconsole *vc)
 static void ri(struct vconsole *vc)
 {
 	if(vc->y == 0) {
-		scroll_screen(vc, vc->y, SCROLL_UP);
+		scroll_screen(vc, vc->y, SCROLL_DOWN);
 	} else {
 		vc->y--;
 	}
@@ -334,7 +334,7 @@ static void csi_L(struct vconsole *vc, int count)
 		count = vc->bottom - vc->top;
 	}
 	while(count--) {
-		scroll_screen(vc, vc->y, SCROLL_UP);
+		scroll_screen(vc, vc->y, SCROLL_DOWN);
 	}
 }
 
@@ -344,7 +344,7 @@ static void csi_M(struct vconsole *vc, int count)
 		count = vc->bottom - vc->top;
 	}
 	while(count--) {
-		scroll_screen(vc, vc->y, SCROLL_DOWN);
+		scroll_screen(vc, vc->y, SCROLL_UP);
 	}
 }
 
@@ -507,7 +507,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 				}
 			}
 			if(vc->y >= vc->bottom) {
-				scroll_screen(vc, 0, SCROLL_DOWN);
+				scroll_screen(vc, 0, SCROLL_UP);
 				vc->y--;
 			}
 			ch = iso8859[ch];
@@ -523,7 +523,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 			}
 		}
 		if(vc->y >= vc->bottom) {
-			scroll_screen(vc, 0, SCROLL_DOWN);
+			scroll_screen(vc, 0, SCROLL_UP);
 			vc->y--;
 		}
 		if(vc->has_focus) {
