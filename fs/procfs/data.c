@@ -623,18 +623,40 @@ int data_proc_pid_root(char *buffer, __pid_t pid)
 
 int data_proc_pid_stat(char *buffer, __pid_t pid)
 {
-	int size, vma_start, vma_end;
+	int n, size, vma_start, vma_end;
 	unsigned int esp, eip;
 	int signum, mask;
 	__sigset_t sigignored, sigcaught;
 	struct proc *p;
 	struct sigcontext *sc;
+	struct vma *vma;
+	int text, data, stack, mmap;
 
 	size = vma_start = vma_end = 0;
+	text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(p->vma) {
-			vma_start = p->vma[0].start;
-			vma_end = p->vma[0].end;
+		if(!p->vma) {
+			return 0;
+		}
+		vma_start = p->vma[0].start;
+		vma_end = p->vma[0].end;
+
+		vma = p->vma;
+		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+			switch(vma->s_type) {
+				case P_TEXT:
+					text += vma->end - vma->start;
+					break;
+				case P_HEAP:
+					data += vma->end - vma->start;
+					break;
+				case P_STACK:
+					stack += vma->end - vma->start;
+					break;
+				case P_MMAP:
+					mmap += vma->end - vma->start;
+					break;
+			}
 		}
 
 		sigignored = sigcaught = 0;
@@ -671,7 +693,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 		0,			/* timeout */
 		0,			/* itrealvalue */
 		p->start_time,
-		0,			/* vsize */
+		text + data + stack + mmap,
 		p->rss,
 		0x7FFFFFFF,		/* rlim */
 		vma_start,		/* startcode */
@@ -691,26 +713,49 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 
 int data_proc_pid_status(char *buffer, __pid_t pid)
 {
-	int size;
+	int n, size;
 	int signum, mask;
 	__sigset_t sigignored, sigcaught;
 	struct proc *p;
+	struct vma *vma;
+	int text, data, stack, mmap;
 
-	size = 0;
+	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
+		if(!p->vma) {
+			return 0;
+		}
+		vma = p->vma;
+		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+			switch(vma->s_type) {
+				case P_TEXT:
+					text += vma->end - vma->start;
+					break;
+				case P_HEAP:
+					data += vma->end - vma->start;
+					break;
+				case P_STACK:
+					stack += vma->end - vma->start;
+					break;
+				case P_MMAP:
+					mmap += vma->end - vma->start;
+					break;
+			}
+		}
+
 		size = sprintk(buffer, "Name:\t%s\n", p->argv0);
 		size += sprintk(buffer + size, "State:\t%s\n", pstate[p->state]);
 		size += sprintk(buffer + size, "Pid:\t%d\n", p->pid);
 		size += sprintk(buffer + size, "PPid:\t%d\n", p->ppid);
 		size += sprintk(buffer + size, "Uid:\t%d\t%d\t%d\t-\n", p->uid, p->euid, p->suid);
 		size += sprintk(buffer + size, "Gid:\t%d\t%d\t%d\t-\n", p->gid, p->egid, p->sgid);
-		size += sprintk(buffer + size, "VmSize:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmLck:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmRSS:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmData:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmStk:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmExe:\t\t%c kB\n", '-');
-		size += sprintk(buffer + size, "VmLib:\t\t%c kB\n", '-');
+		size += sprintk(buffer + size, "VmSize:\t%8d kB\n", (text + data + stack + mmap) / 1024);
+		size += sprintk(buffer + size, "VmLck:\t%8d kB\n", 0);
+		size += sprintk(buffer + size, "VmRSS:\t%8d kB\n", p->rss << 2);
+		size += sprintk(buffer + size, "VmData:\t%8d kB\n", data / 1024);
+		size += sprintk(buffer + size, "VmStk:\t%8d kB\n", stack / 1024);
+		size += sprintk(buffer + size, "VmExe:\t%8d kB\n", text / 1024);
+		size += sprintk(buffer + size, "VmLib:\t%8d kB\n", 0);
 		size += sprintk(buffer + size, "SigPnd:\t%08x\n", p->sigpending);
 		size += sprintk(buffer + size, "SigBlk:\t%08x\n", p->sigblocked);
 		sigignored = sigcaught = 0;
