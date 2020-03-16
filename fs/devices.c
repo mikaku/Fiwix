@@ -214,7 +214,8 @@ int blk_dev_close(struct inode *i, struct fd *fd_table)
 int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	__blk_t block;
-	__off_t total_read, device_size;
+	__off_t total_read;
+	unsigned long long int device_size;
 	int blksize;
 	unsigned int boffset, bytes;
 	struct buffer *buf;
@@ -231,13 +232,8 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 		return -EIO;
 	}
 
-	/* check if device size is greater than 4GB (in 32bit would overflow) */
-	if(((__off_t *)d->device_data)[MINOR(i->rdev)] >= (4096 * 1024)) {
-		printk("WARNING: %s(): device size > 4GB (would overflow). Defaulting to 4GB.\n", __FUNCTION__);
-		device_size = (unsigned int)4096 * 1024 * 1023;
-	} else {
-		device_size = ((__off_t *)d->device_data)[MINOR(i->rdev)] * 1024;
-	}
+	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
+	device_size *= 1024LLU;
 
 	count = (fd_table->offset + count > device_size) ? device_size - fd_table->offset : count;
 	if(!count || fd_table->offset > device_size) {
@@ -265,7 +261,8 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
 	__blk_t block;
-	__off_t total_written, device_size;
+	__off_t total_written;
+	unsigned long long int device_size;
 	int blksize;
 	unsigned int boffset, bytes;
 	struct buffer *buf;
@@ -282,13 +279,8 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 		return -EIO;
 	}
 
-	/* check if device size is greater than 4GB (in 32bit would overflow) */
-	if(((__off_t *)d->device_data)[MINOR(i->rdev)] >= (4096 * 1024)) {
-		printk("WARNING: %s(): device size > 4GB (would overflow). Defaulting to 4GB.\n", __FUNCTION__);
-		device_size = (unsigned int)4096 * 1024 * 1023;
-	} else {
-		device_size = ((__off_t *)d->device_data)[MINOR(i->rdev)] * 1024;
-	}
+	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
+	device_size *= 1024LLU;
 
 	count = (fd_table->offset + count > device_size) ? device_size - fd_table->offset : count;
 	if(!count || fd_table->offset > device_size) {
