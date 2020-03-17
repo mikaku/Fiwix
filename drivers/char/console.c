@@ -1158,9 +1158,7 @@ void vconsole_init(void)
 	current_cons = 1;
 	vc[current_cons].vidmem = video_base_address;
 	vc[current_cons].has_focus = 1;
-//	vc[current_cons].count++;	/* XXX */
 
-/*	memset_b(vc[current_cons].vidmem, BLANK_MEM, SCREEN_SIZE); */
 	memcpy_b(vcbuf, vc[current_cons].vidmem, SCREEN_SIZE);
 
 	get_curpos(&vc[current_cons]);
