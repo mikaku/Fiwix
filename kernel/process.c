@@ -164,7 +164,6 @@ __pid_t remove_zombie(struct proc *p)
 	__pid_t pid;
 
 	pid = p->pid;
-	kfree((unsigned int)p->vma);	current->rss--;
 	kfree(p->tss.esp0);		current->rss--;
 	kfree(P2V(p->tss.cr3));		current->rss--;
 	release_proc(p);
