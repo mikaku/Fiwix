@@ -35,8 +35,8 @@ clean:
 	rm -f *.o fiwix System.map.gz
 
 floppy:
-	mkfs.minix -n 30 /dev/fd0
-	mount -t minix /dev/fd0 /mnt/floppy
+	mkfs.ext2 -m 0 /dev/fd0
+	mount -t ext2 /dev/fd0 /mnt/floppy
 	@mkdir -p /mnt/floppy/boot/grub
 	@echo "(fd0)   /dev/fd0" > /mnt/floppy/boot/grub/device.map
 	@grub-install --root-directory=/mnt/floppy /dev/fd0
@@ -48,7 +48,7 @@ floppy:
 	umount /mnt/floppy
 
 floppy_update:
-	mount -t minix /dev/fd0 /mnt/floppy
+	mount -t ext2 /dev/fd0 /mnt/floppy
 	cp fiwix /mnt/floppy/boot
 	cp System.map.gz /mnt/floppy/boot
 	umount /mnt/floppy
