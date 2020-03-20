@@ -199,7 +199,7 @@ static unsigned int get_unmapped_vma_region(unsigned int length)
 		if(vma->start < MMAP_START) {
 			continue;
 		}
-		if((addr + length) < vma->start) {
+		if(vma->start - addr >= length) {
 			return PAGE_ALIGN(addr);
 		}
 		addr = PAGE_ALIGN(vma->end);
