@@ -498,7 +498,8 @@ int ide_hd_init(struct ide *ide, int drive)
 
 	outport_b(ide->ctrl + IDE_DEV_CTRL, IDE_DEVCTR_NIEN);
 	if(ide->drive[drive].flags & DEVICE_HAS_RW_MULTIPLE) {
-		outport_b(ide->base + IDE_SECCNT, BLKSIZE_1K / IDE_HD_SECTSIZE);
+		/* read/write in 4KB blocks (8 sectors) by default */
+		outport_b(ide->base + IDE_SECCNT, PAGE_SIZE / IDE_HD_SECTSIZE);
 		outport_b(ide->base + IDE_COMMAND, ATA_SET_MULTIPLE_MODE);
 		ide_wait400ns(ide);
 		while(inport_b(ide->base + IDE_STATUS) & IDE_STAT_BSY);
