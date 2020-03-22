@@ -1,5 +1,5 @@
-			Fiwix kernel release 1.x.x
-			~~~~~~~~~~~~~~~~~~~~~~~~~~
+			Fiwix kernel release 1.1.0
+			==========================
 
 Fiwix is an operating system kernel, written by Jordi Sanfeliu from scratch,
 based on the UNIX architecture and fully focused on being POSIX compatible.
@@ -9,13 +9,12 @@ purposes, therefore the kernel code is kept as simple as possible.
 It runs on the i386 (x86 32bit) hardware architecture and is compatible with
 a good base of existing GNU applications. It offers many UNIX-like features:
 
- - Mostly written in C language (Assembler only used in the needed parts).
+ - Mostly written in C language (Assembly only used in the needed parts).
  - GRUB Multiboot Specification v1 compliant.
  - Full 32bit protected mode non-preemptive kernel.
  - For i386 processors and higher.
  - Preemptive multitasking.
  - Protected task environment (independent memory address per process).
- - Interrupt and exception handling.
  - POSIX-compliant (mostly).
  - Process groups, sessions and job control.
  - Interprocess communication with pipes and signals.
@@ -26,8 +25,8 @@ a good base of existing GNU applications. It offers many UNIX-like features:
  - ELF-386 executable format support (statically and dynamically linked).
  - Round Robin based scheduler algorithm (no priorities yet).
  - VFS abstraction layer.
- - Minix v1 and v2 filesystem support.
  - EXT2 filesystem support with 1KB, 2KB and 4KB block sizes.
+ - Minix v1 and v2 filesystem support.
  - Linux-like PROC filesystem support (read only).
  - PIPE pseudo-filesystem support.
  - ISO9660 filesystem support with Rock Ridge extensions.
@@ -38,8 +37,8 @@ a good base of existing GNU applications. It offers many UNIX-like features:
  - Parallel port printer driver support.
  - Basic implementation of a Pseudo-Random Number Generator.
  - Floppy disk device driver and DMA management.
+ - IDE/ATA ATAPI CD-ROM device driver.
  - IDE/ATA hard disk device driver.
- - IDE/ATA ATAPI CDROM device driver.
 
 Fiwix is distributed under the terms of the MIT License, see the LICENSE file
 for more details.
@@ -65,10 +64,8 @@ program yourself.
 
 TESTING
 ===============================================================================
-To create a complete bootable floppy disk you need to download the Fiwix Test
-Suite archive and symlink the directory 'tools/' into the root directory of the
-kernel source code. Then insert a floppy disk into the drive and then type the
-following:
+To create a complete bootable floppy disk you need to download the Fiwix Media
+Setup. Then insert a floppy disk into the drive and type the following:
 
 make floppy
 
@@ -78,21 +75,13 @@ kernel version, then type the following:
 make floppy_update
 
 
-If you don't have a floppy drive but a bootable CDROM IDE/ATA drive, you can
-create your own Fiwix Installation CDROM by using your current operating system
-(i.e. GNU/Linux). To do this, you might want to use the scripts and tools that
-come with the Fiwix Test Suite archive. 
+If you don't have a floppy drive but a bootable CD-ROM IDE/ATA drive, you can
+create your own Fiwix Installation CD-ROM by using your current operating system
+(i.e., GNU/Linux). To do this, you might want to use the scripts and tools that
+come with the Fiwix Media Setup archive. 
 
 The scripts to create such bootable images cannot be executed under Fiwix
 because they need support for the loop device and the ISO9660 creation tools.
-
-To create your own bootable CDROM ISO image you must do the following steps:
-
-1. Download the Fiwix Installation CDROM ISO image.
-2. Download the Fiwix floppy image or create a new one with 'make_image'.
-3. Edit the 'make_cdrom' script and adjust the values of the $INSTALLCD and
-   $FIWIX_VERSION variables.
-4. Execute './make_cdrom'.
 
 
 INSTALLING
@@ -113,23 +102,19 @@ resolved.
 
 
 You can proceed to install the Fiwix OS on a hard disk either once booted from
-the floppy or from the Live CDROM. If you chosen the former, you will also need
-the Live CDROM inserted in order to install the packages that form all the
+the Live CD-ROM or from a floppy. If you chosen the later, you will also need
+the Live CD-ROM inserted in order to install the packages that form all the
 system environment.
-
-I recommend using QEMU or VMware Player, but if you want to use it on a real
-hardware you will need a PC with either a bootable floppy 1.44MB drive or an
-IDE/ATAPI CDROM drive.
 
 The minimal requirements to use Fiwix are as follows:
 
  - Standard IBM PC-AT architecture.
  - i386 processor or higher.
- - 2MB of RAM memory (64MB recommended).
- - IDE/ATAPI CDROM or floppy disk (3.5", 1.44MB).
+ - 3MB of RAM memory (128MB recommended).
+ - IDE/ATAPI CD-ROM or floppy disk (3.5", 1.44MB).
  - 500MB IDE Hard disk (1GB recommended).
 
-Let the system boot either from a CDROM or floppy, and when you are ready
+Let the system boot either from a CD-ROM or floppy, and when you are ready
 just type:
 
 install.sh
@@ -138,5 +123,5 @@ install.sh
 Happy hacking.
 
 --
-Copyright (C) 2018-2019, Jordi Sanfeliu.
+Copyright (C) 2018-2020, Jordi Sanfeliu.
 http://www.fiwix.org
