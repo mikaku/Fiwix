@@ -58,6 +58,7 @@ char _rootfstype[10];
 char _rootdevname[DEVNAME_MAX + 1];
 char _initrd[DEVNAME_MAX + 1];
 int _syscondev;
+char *init_args;
 
 char cmdline[NAME_MAX + 1];
 
@@ -175,16 +176,13 @@ static int check_parm(struct kparms *parm, const char *value)
 	return 0;
 }
 
-static void parse_arg(const char *arg)
+static int parse_arg(const char *arg)
 {
 	int n;
-	char *str;
 
-	str = (char *)arg;
-	while(*(str++)) {
-		if(*str == ' ') {
-			return;
-		}
+	/* '--' marks the beginning of the init arguments */
+	if(!strcmp(arg, "--")) {
+		return 1;
 	}
 
 	for(n = 0; parm_table[n].name; n++) {
@@ -193,13 +191,14 @@ static void parse_arg(const char *arg)
 			if(check_parm(&parm_table[n], arg)) {
 				printk("WARNING: invalid value '%s' in the '%s' parameter.\n", arg, parm_table[n].name);
 			}
-			return;
+			return 0;
 		}
 	}
 	printk("WARNING: invalid cmdline parameter: '%s'.\n", arg);
+	return 0;
 }
 
-static void parse_cmdline(const char *str)
+static char * parse_cmdline(const char *str)
 {
 	char *from, *to;
 	char arg[CMDL_ARG_LEN];
@@ -213,7 +212,14 @@ static void parse_cmdline(const char *str)
 				memcpy_b(arg, from, to - from);
 				arg[to - from] = NULL;
 				if(arg[0] != NULL) {
-					parse_arg(arg);
+					if(parse_arg(arg)) {
+						while(*(from++)) {
+							if(*from != '-' && *from != ' ') {
+								break;
+							}
+						}
+						return from;
+					}
 				}
 			} else {
 				memcpy_b(arg, from, CMDL_ARG_LEN);
@@ -228,6 +234,8 @@ static void parse_cmdline(const char *str)
 		}
 		to++;
 	}
+
+	return NULL;
 }
 
 void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
@@ -280,7 +288,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 			}
 		}
 		strcpy(cmdline, p);
-		parse_cmdline(cmdline);
+		init_args = parse_cmdline(cmdline);
 	} else {
 		printk("WARNING: no cmdline detected!\n");
 	}

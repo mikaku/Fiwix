@@ -21,7 +21,7 @@
 
 #define INIT_TRAMPOLINE_SIZE	128	/* max. size of init_trampoline() */
 
-char *init_argv[] = { INIT_PROGRAM, NULL };
+char *init_argv[] = { INIT_PROGRAM, NULL, NULL };
 char *init_envp[] = { "HOME=/", "TERM=linux", NULL };
 
 static void init_trampoline(void)
@@ -79,6 +79,7 @@ void init_init(void)
 	init->root = current->root;
 	init->pwd = current->pwd;
 	strcpy(init->argv0, init_argv[0]);
+	init_argv[1] = init_args;
 	sprintk(init->pidstr, "%d", init->pid);
 	init->sigpending = 0;
 	init->sigblocked = 0;

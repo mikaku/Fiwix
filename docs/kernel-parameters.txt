@@ -18,3 +18,9 @@ root=		Root filesystem
 rootfstype=	Set the root filesystem type
 		Options: minix, ext2, iso9660
 
+
+Use -- to separate kernel parameters from arguments to init.
+
+The kernel parses parameters from the kernel command line up to "--",
+everything found after "--" is passed as an argument to init.
+

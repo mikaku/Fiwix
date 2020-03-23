@@ -25,6 +25,7 @@
 
 extern char *init_argv[];
 extern char *init_envp[];
+extern char *init_args;
 
 extern Elf32_Shdr *symtab, *strtab;
 extern unsigned int _last_data_addr;
