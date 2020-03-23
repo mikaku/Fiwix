@@ -10,8 +10,8 @@ conventions in its code:
 - No space after the name of a function in a call.
   For example, printk("hello") not printk ("hello").
 
-- No space after keywords "if", "for", "while", "switch".
-  For example, if(x) not if (x).
+- Optional space after keywords "if", "for", "while", "switch".
+  For example, if(x) or if (x).
 
 - Space before braces (except in function declarations).
   For example, if(x) { not if(x){.
