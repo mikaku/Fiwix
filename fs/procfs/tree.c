@@ -59,6 +59,7 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ PROC_PID_MOUNTINFO,REG,   1, 1, 9,  "mountinfo",data_proc_pid_mountinfo },
 	{ PROC_PID_ROOT,    LNKPID, 1, 1, 4,  "root",     data_proc_pid_root },
 	{ PROC_PID_STAT,    REG,    1, 1, 4,  "stat",     data_proc_pid_stat },
+	{ PROC_PID_STATM,   REG,    1, 1, 5,  "statm",    data_proc_pid_statm },
 	{ PROC_PID_STATUS,  REG,    1, 1, 6,  "status",   data_proc_pid_status },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },

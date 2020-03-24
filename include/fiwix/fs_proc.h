@@ -17,7 +17,7 @@
 #define PROC_PID_INO		0x40000000	/* base for PID inodes */
 #define PROC_PID_LEV		1	/* array level for PID */
 
-#define PROC_ARRAY_ENTRIES	19
+#define PROC_ARRAY_ENTRIES	20
 
 enum pid_dir_inodes {
 	PROC_PID_FD = PROC_PID_INO + 1001,
@@ -29,6 +29,7 @@ enum pid_dir_inodes {
 	PROC_PID_MOUNTINFO,
 	PROC_PID_ROOT,
 	PROC_PID_STAT,
+	PROC_PID_STATM,
 	PROC_PID_STATUS
 };
 
@@ -84,6 +85,7 @@ int data_proc_pid_maps(char *, __pid_t);
 int data_proc_pid_mountinfo(char *, __pid_t);
 int data_proc_pid_root(char *, __pid_t);
 int data_proc_pid_stat(char *, __pid_t);
+int data_proc_pid_statm(char *, __pid_t);
 int data_proc_pid_status(char *, __pid_t);
 
 #endif /* _FIWIX_FS_PROC_H */

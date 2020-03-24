@@ -711,6 +711,47 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 	return size;
 }
 
+int data_proc_pid_statm(char *buffer, __pid_t pid)
+{
+	int n, size;
+	struct proc *p;
+	struct vma *vma;
+	int text, data, stack, mmap;
+
+	size = text = data = stack = mmap = 0;
+	if((p = get_proc_by_pid(pid))) {
+		if(!p->vma) {
+			return 0;
+		}
+		vma = p->vma;
+		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+			switch(vma->s_type) {
+				case P_TEXT:
+					text += vma->end - vma->start;
+					break;
+				case P_HEAP:
+					data += vma->end - vma->start;
+					break;
+				case P_STACK:
+					stack += vma->end - vma->start;
+					break;
+				case P_MMAP:
+					mmap += vma->end - vma->start;
+					break;
+			}
+		}
+
+		size = sprintk(buffer, "%d", (text + data + stack + mmap) / PAGE_SIZE);
+		size += sprintk(buffer + size, " %d", p->rss);
+		size += sprintk(buffer + size, " 0");	/* shared mappings */
+		size += sprintk(buffer + size, " %d", text / PAGE_SIZE);
+		size += sprintk(buffer + size, " 0");
+		size += sprintk(buffer + size, " %d", (data + stack) / PAGE_SIZE);
+		size += sprintk(buffer + size, " 0\n");
+	}
+	return size;
+}
+
 int data_proc_pid_status(char *buffer, __pid_t pid)
 {
 	int n, size;
