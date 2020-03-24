@@ -253,7 +253,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	tty_init();
 
 	printk("                                Welcome to %s\n", UTS_SYSNAME);
-	printk("                       Copyright (c) 2018, Jordi Sanfeliu\n");
+	printk("                     Copyright (c) 2018-2020, Jordi Sanfeliu\n");
 	printk("\n");
 	printk("                      kernel v%s for i386 architecture\n", UTS_RELEASE);
 	printk("               (GCC %s, built on %s)\n", __VERSION__, UTS_VERSION);
