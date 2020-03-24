@@ -1,4 +1,4 @@
-1.1.0 - DD-MMM-2020
+1.1.0 - 24-Mar-2020
 ===================
 - Added support for an initial RAMdisk (initrd) image.
 - Added full support for the ext2 filesystem.
@@ -6,9 +6,15 @@
 - Limit the number of messages on spurious interrupts.
 - RAMdisks initialization now shows the range of the memory addresses of each
   RAMdisk created.
-- Added VMA_REGIONS as a general configurable option (default: 1500 entries).
+- Added VMA_REGIONS as a general configurable option (default: 150 entries).
 - Changed the default kernel filesystem to ext2.
 - Renamed the sleep addresses in tty.c.
+- Added the ability to pass arguments to init from the kernel's command line.
+- Included memory values in /proc/PID/stat and /proc/PID/status.
+- Included the file /proc/PID/statm to provide more information about memory
+  usage.
+- Changed the ATA's SET MULTIPLE MODE command to do all I/O with 4KB block size
+  (8 sectors) by default.
 - Fixed to prevent from using an unexistent floppy type, in the fdd_type
   structure, if CMOS returns a value bigger than 0x04.
 - Fixed a misplaced bitwise operator AND that was not ensuring the limitation
@@ -17,10 +23,14 @@
 - Fixed a malfunction in the job control.
 - Fixed in sys_getgroups() to return the number of group IDs when the argument
   size is zero.
-- Fixed the DEC Set Top and Bottom Margins (DECSTBM) sequence in console, which
-  affected the scroll up mechanism in consoles.
+- Fixed the DEC Set Top and Bottom Margins (DECSTBM) sequence, which affected
+  the scroll up mechanism in consoles.
 - Fixed to set properly the timestamp on every read and write in all ttys.
-- Fixed the start time value in /proc/<PID>/stat of every process.
+- Fixed the start time value in /proc/PID/stat of every single process.
+- Fixed to use a long long variable type to be able support block devices bigger
+  tan 4GB.
+- Fixed a memory corruption bug processing the VT100 'CSI n J' sequence.
+- Small fixes and cosmetic changes.
 
 
 1.0.1 - 04-Aug-2018
