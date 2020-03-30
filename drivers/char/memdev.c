@@ -271,12 +271,12 @@ static struct fs_operations urandom_driver_fsop = {
 
 static struct device memdev_device = {
 	"mem",
-	-1,
 	MEMDEV_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	NULL,
 	&memdev_driver_fsop,
+	NULL
 };
 
 int mem_open(struct inode *i, struct fd *fd_table)
@@ -496,14 +496,15 @@ int mem_mmap(struct inode *i, struct vma *vma)
 
 void memdev_init(void)
 {
-	if(register_device(CHR_DEV, &memdev_device)) {
-		printk("ERROR: %s(): unable to register memory devices.\n", __FUNCTION__);
-		return;
-	}
 	SET_MINOR(memdev_device.minors, MEMDEV_MEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_KMEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_NULL);
 	SET_MINOR(memdev_device.minors, MEMDEV_ZERO);
 	SET_MINOR(memdev_device.minors, MEMDEV_RANDOM);
 	SET_MINOR(memdev_device.minors, MEMDEV_URANDOM);
+
+	if(register_device(CHR_DEV, &memdev_device)) {
+		printk("ERROR: %s(): unable to register memory devices.\n", __FUNCTION__);
+		return;
+	}
 }

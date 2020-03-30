@@ -59,12 +59,12 @@ static struct fs_operations lp_driver_fsop = {
 
 static struct device lp_device = {
 	"lp",
-	-1,
 	LP_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	NULL,
 	&lp_driver_fsop,
+	NULL
 };
 
 struct lp lp_table[LP_MINORS] = {

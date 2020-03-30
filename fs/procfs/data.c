@@ -101,19 +101,25 @@ int data_proc_devices(char *buffer, __pid_t pid)
 	int n, size;
 	struct device *d;
 
-	d = chr_device_table;
 	size = sprintk(buffer, "Character devices:\n");
-	for(n = 0; n < NR_CHRDEV; n++, d++) {
-		if(d->major) {
-			size += sprintk(buffer + size, "%3d %s\n", d->major, d->name);
+	for(n = 0; n < NR_CHRDEV; n++) {
+		d = chr_device_table[n];
+		if(d) {
+			do {
+				size += sprintk(buffer + size, "%3d %s\n", d->major, d->name);
+				d = d->next;
+			} while(d);
 		}
 	}
 
 	size += sprintk(buffer + size, "\nBlock devices:\n");
-	d = blk_device_table;
-	for(n = 0; n < NR_BLKDEV; n++, d++) {
-		if(d->major) {
-			size += sprintk(buffer + size, "%3d %s\n", d->major, d->name);
+	for(n = 0; n < NR_BLKDEV; n++) {
+		d = blk_device_table[n];
+		if(d) {
+			do {
+				size += sprintk(buffer + size, "%3d %s\n", d->major, d->name);
+				d = d->next;
+			} while(d);
 		}
 	}
 	return size;

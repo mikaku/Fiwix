@@ -62,12 +62,12 @@ static struct fs_operations ramdisk_driver_fsop = {
 
 static struct device ramdisk_device = {
 	"ramdisk",
-	-1,
 	RAMDISK_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	BLKSIZE_1K,
 	&rd_sizes,
 	&ramdisk_driver_fsop,
+	NULL
 };
 
 static struct ramdisk * get_ramdisk(int minor)

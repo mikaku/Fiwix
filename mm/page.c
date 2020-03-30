@@ -277,7 +277,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	blksize = i->sb->s_blocksize;
 	size_read = 0;
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->dev)))) {
+	if(!(d = get_device(BLK_DEV, i->dev))) {
 		printk("WARNING: %s: device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
 		return 1;
 	}

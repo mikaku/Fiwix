@@ -15,8 +15,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct device chr_device_table[NR_CHRDEV];
-struct device blk_device_table[NR_BLKDEV];
+struct device *chr_device_table[NR_CHRDEV];
+struct device *blk_device_table[NR_BLKDEV];
 
 struct fs_operations def_chr_fsop = {
 	0,
@@ -104,7 +104,8 @@ struct fs_operations def_blk_fsop = {
 
 int register_device(int type, struct device *new_d)
 {
-	struct device *d;
+	struct device **d;
+	int n, minors;
 
 	switch(type) {
 		case CHR_DEV:
@@ -112,14 +113,14 @@ int register_device(int type, struct device *new_d)
 				printk("%s(): character device major %d is greater than NR_CHRDEV (%d).\n", __FUNCTION__, new_d->major, NR_CHRDEV);
 				return 1;
 			}
-			d = chr_device_table;
+			d = &chr_device_table[new_d->major];
 			break;
 		case BLK_DEV:
 			if(new_d->major >= NR_BLKDEV) {
 				printk("%s(): block device major %d is greater than NR_BLKDEV (%d).\n", __FUNCTION__, new_d->major, NR_BLKDEV);
 				return 1;
 			}
-			d = blk_device_table;
+			d = &blk_device_table[new_d->major];
 			break;
 		default:
 			printk("WARNING: %s(): invalid device type %d.\n", __FUNCTION__, type);
@@ -127,18 +128,59 @@ int register_device(int type, struct device *new_d)
 			break;
 	}
 
-	if(d[new_d->major].major) {
-		printk("%s(): device '%s' with major %d is already registered.\n", __FUNCTION__, new_d->name, new_d->major);
+	/* make sure there are minors defined */
+	for(n = 0, minors = 0; n < 8; n++) {
+		minors += new_d->minors[n];
+	}
+	if(!minors) {
+		printk("WARNING: %s(): device major %d with no defined minors.\n", __FUNCTION__, new_d->major);
 		return 1;
 	}
-	memcpy_b(d + new_d->major, new_d, sizeof(struct device));
+
+	if(*d) {
+		/* FIXME: check all entries in minors[] */
+		if((*d)->minors[0] == new_d->minors[0]) {
+			printk("WARNING: %s(): duplicated device major %d.\n", __FUNCTION__, new_d->major);
+			return 1;
+		}
+		do {
+			d = &(*d)->next;
+		} while(*d);
+	}
+	*d = new_d;
+
+	/* list
+	{
+		int n;
+		struct device *d;
+
+		for(n = 0; n < 128; n++) {
+			d = blk_device_table[n];
+			if(d) {
+				do {
+					printk("major = %d, minors[0] = %d (%x)\n", d->major, d->minors[0], d->minors[0]);
+					d = d->next;
+					{
+						int n;
+						for(n = 0; n < 1000000; n++)
+							printk("\r");
+					}
+				} while(d);
+			}
+		}
+	}
+	*/
+
 	return 0;
 }
 
-struct device * get_device(int type, unsigned char major)
+struct device * get_device(int type, __dev_t dev)
 {
 	char *name;
+	unsigned char major;
 	struct device *d;
+
+	major = MAJOR(dev);
 
 	switch(type) {
 		case CHR_DEV:
@@ -146,7 +188,7 @@ struct device * get_device(int type, unsigned char major)
 				printk("%s(): character device major %d is greater than NR_CHRDEV (%d).\n", __FUNCTION__, major, NR_CHRDEV);
 				return NULL;
 			}
-			d = chr_device_table;
+			d = chr_device_table[major];
 			name = "character";
 			break;
 		case BLK_DEV:
@@ -154,7 +196,7 @@ struct device * get_device(int type, unsigned char major)
 				printk("%s(): block device major %d is greater than NR_BLKDEV (%d).\n", __FUNCTION__, major, NR_BLKDEV);
 				return NULL;
 			}
-			d = blk_device_table;
+			d = blk_device_table[major];
 			name = "block";
 			break;
 		default:
@@ -162,11 +204,18 @@ struct device * get_device(int type, unsigned char major)
 			return NULL;
 	}
 
-	if(d[major].major) {
-		return &d[major];
+	while(d) {
+		if(d->major == major) {
+			if(TEST_MINOR(d->minors, MINOR(dev))) {
+				return d;
+			}
+			d = d->next;
+			continue;
+		}
+		break;
 	}
 
-	printk("WARNING: %s(): no %s device found with major %d.\n", __FUNCTION__, name, major);
+	printk("WARNING: %s(): %s device %d,%d not found.\n", __FUNCTION__, name, major, MINOR(dev));
 	return NULL;
 }
 
@@ -174,7 +223,7 @@ int chr_dev_open(struct inode *i, struct fd *fd_table)
 {
 	struct device *d;
 
-	if((d = get_device(CHR_DEV, MAJOR(i->rdev)))) {
+	if((d = get_device(CHR_DEV, i->rdev))) {
 		i->fsop = d->fsop;
 		if(i->fsop && i->fsop->open) {
 			return i->fsop->open(i, fd_table);
@@ -188,7 +237,7 @@ int blk_dev_open(struct inode *i, struct fd *fd_table)
 {
 	struct device *d;
 
-	if((d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if((d = get_device(BLK_DEV, i->rdev))) {
 		if(d->fsop && d->fsop->open) {
 			return d->fsop->open(i, fd_table);
 		}
@@ -201,7 +250,7 @@ int blk_dev_close(struct inode *i, struct fd *fd_table)
 {
 	struct device *d;
 
-	if((d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if((d = get_device(BLK_DEV, i->rdev))) {
 		if(d->fsop && d->fsop->close) {
 			return d->fsop->close(i, fd_table);
 		}
@@ -221,7 +270,7 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 	struct buffer *buf;
 	struct device *d;
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -EINVAL;
 	}
 
@@ -268,7 +317,7 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	struct buffer *buf;
 	struct device *d;
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -EINVAL;
 	}
 
@@ -310,7 +359,7 @@ int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	struct device *d;
 
-	if((d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if((d = get_device(BLK_DEV, i->rdev))) {
 		if(d->fsop && d->fsop->ioctl) {
 			return d->fsop->ioctl(i, cmd, arg);
 		}
@@ -324,7 +373,7 @@ int blk_dev_lseek(struct inode *i, __off_t offset)
 {
 	struct device *d;
 
-	if((d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
+	if((d = get_device(BLK_DEV, i->rdev))) {
 		if(d->fsop && d->fsop->lseek) {
 			return d->fsop->lseek(i, offset);
 		}

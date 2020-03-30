@@ -76,16 +76,8 @@ static void assign_minors(__dev_t rdev, struct ide *ide, struct partition *part)
 	minor = 0;
 	drive = get_ide_drive(rdev);
 
-	if(ide->channel == IDE_PRIMARY) {
-		if(!(d = get_device(BLK_DEV, IDE0_MAJOR))) {
-			return;
-		}
-	} else if(ide->channel == IDE_SECONDARY) {
-		if(!(d = get_device(BLK_DEV, IDE1_MAJOR))) {
-			return;
-		}
-	} else {
-		printk("WARNING: %s(): invalid device %d,%d.\n", __FUNCTION__, MAJOR(rdev), MINOR(rdev));
+	if(!(d = get_device(BLK_DEV, rdev))) {
+		printk("WARNING: %s(): unable to assign minors to device %d,%d.\n", __FUNCTION__, MAJOR(rdev), MINOR(rdev));
 		return;
 	}
 
@@ -452,33 +444,35 @@ int ide_hd_init(struct ide *ide, int drive)
 	part = ide->drive[drive].part_table;
 
 	if(ide->channel == IDE_PRIMARY) {
-		if(!(d = get_device(BLK_DEV, IDE0_MAJOR))) {
-			return -EINVAL;
-		}
 		if(drive == IDE_MASTER) {
 			rdev = MKDEV(IDE0_MAJOR, drive);
 			ide->drive[drive].minor_shift = IDE_MASTER_MSF;
-			SET_MINOR(d->minors, 0);
+			if(!(d = get_device(BLK_DEV, rdev))) {
+				return -EINVAL;
+			}
 			((unsigned int *)d->device_data)[0] = ide->drive[drive].nr_sects / 2;
 		} else {
 			rdev = MKDEV(IDE0_MAJOR, 1 << IDE_SLAVE_MSF);
 			ide->drive[drive].minor_shift = IDE_SLAVE_MSF;
-			SET_MINOR(d->minors, 1 << IDE_SLAVE_MSF);
+			if(!(d = get_device(BLK_DEV, rdev))) {
+				return -EINVAL;
+			}
 			((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = ide->drive[drive].nr_sects / 2;
 		}
 	} else if(ide->channel == IDE_SECONDARY) {
-		if(!(d = get_device(BLK_DEV, IDE1_MAJOR))) {
-			return -EINVAL;
-		}
 		if(drive == IDE_MASTER) {
 			rdev = MKDEV(IDE1_MAJOR, drive);
 			ide->drive[drive].minor_shift = IDE_MASTER_MSF;
-			SET_MINOR(d->minors, 0);
+			if(!(d = get_device(BLK_DEV, rdev))) {
+				return -EINVAL;
+			}
 			((unsigned int *)d->device_data)[0] = ide->drive[drive].nr_sects / 2;
 		} else {
 			rdev = MKDEV(IDE1_MAJOR, 1 << IDE_SLAVE_MSF);
 			ide->drive[drive].minor_shift = IDE_SLAVE_MSF;
-			SET_MINOR(d->minors, 1 << IDE_SLAVE_MSF);
+			if(!(d = get_device(BLK_DEV, rdev))) {
+				return -EINVAL;
+			}
 			((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = ide->drive[drive].nr_sects / 2;
 		}
 	} else {

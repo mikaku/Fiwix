@@ -31,14 +31,14 @@ int ide1_timeout = 0;
 struct ide ide_table[NR_IDE_CTRLS] = {
 	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ,
 		{
-			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, -1, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
-			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, -1, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
+			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
+			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
 		}
 	},
 	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ,
 		{
-			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, -1, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
-			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, -1, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
+			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
+			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
 		}
 	}
 };
@@ -93,22 +93,22 @@ static struct fs_operations ide_driver_fsop = {
 
 static struct device ide0_device = {
         "ide0",
-	IDE0_IRQ,
 	IDE0_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	&ide0_sizes,
 	&ide_driver_fsop,
+	NULL
 };
 
 static struct device ide1_device = {
         "ide1",
-	IDE1_IRQ,
 	IDE1_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	&ide1_sizes,
 	&ide_driver_fsop,
+	NULL
 };
 
 static int ide_identify(struct ide *ide, int drive)
@@ -617,10 +617,7 @@ int ide_open(struct inode *i, struct fd *fd_table)
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
-		return -ENXIO;
-	}
-	if(!TEST_MINOR(d->minors, MINOR(i->rdev))) {
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -ENXIO;
 	}
 
@@ -641,10 +638,7 @@ int ide_close(struct inode *i, struct fd *fd_table)
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
-		return -ENXIO;
-	}
-	if(!TEST_MINOR(d->minors, MINOR(i->rdev))) {
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -ENXIO;
 	}
 
@@ -666,10 +660,7 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
-		return -ENXIO;
-	}
-	if(!TEST_MINOR(d->minors, MINOR(dev))) {
+	if(!(d = get_device(BLK_DEV, dev))) {
 		return -ENXIO;
 	}
 
@@ -692,10 +683,7 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
-		return -ENXIO;
-	}
-	if(!TEST_MINOR(d->minors, MINOR(dev))) {
+	if(!(d = get_device(BLK_DEV, dev))) {
 		return -ENXIO;
 	}
 
@@ -717,10 +705,7 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, MAJOR(i->rdev)))) {
-		return -ENXIO;
-	}
-	if(!TEST_MINOR(d->minors, MINOR(i->rdev))) {
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -ENXIO;
 	}
 
@@ -747,6 +732,7 @@ void ide_init(void)
 		if(!(ide_identify(ide, IDE_MASTER))) {
 			get_device_size(&ide->drive[IDE_MASTER]);
 			ide_results(ide, IDE_MASTER);
+			SET_MINOR(ide0_device.minors, 0);
 			register_device(BLK_DEV, &ide0_device);
 			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
 				if(!ide_hd_init(ide, IDE_MASTER)) {
@@ -764,6 +750,7 @@ void ide_init(void)
 		if(!(ide_identify(ide, IDE_SLAVE))) {
 			get_device_size(&ide->drive[IDE_SLAVE]);
 			ide_results(ide, IDE_SLAVE);
+			SET_MINOR(ide0_device.minors, 1 << IDE_SLAVE_MSF);
 			if(!devices) {
 				register_device(BLK_DEV, &ide0_device);
 			}
@@ -794,6 +781,7 @@ void ide_init(void)
 		if(!(ide_identify(ide, IDE_MASTER))) {
 			get_device_size(&ide->drive[IDE_MASTER]);
 			ide_results(ide, IDE_MASTER);
+			SET_MINOR(ide1_device.minors, 0);
 			register_device(BLK_DEV, &ide1_device);
 			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
 				if(!ide_hd_init(ide, IDE_MASTER)) {
@@ -811,6 +799,7 @@ void ide_init(void)
 		if(!(ide_identify(ide, IDE_SLAVE))) {
 			get_device_size(&ide->drive[IDE_SLAVE]);
 			ide_results(ide, IDE_SLAVE);
+			SET_MINOR(ide1_device.minors, 1 << IDE_SLAVE_MSF);
 			if(!devices) {
 				register_device(BLK_DEV, &ide1_device);
 			}

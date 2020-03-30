@@ -87,7 +87,7 @@ int sys_umount2(const char *target, int flags)
 		fs->fsop->release_superblock(sb);
 	}
 	if(sb->fsop->flags & FSOP_REQUIRES_DEV) {
-		if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
+		if(!(d = get_device(BLK_DEV, dev))) {
 			printk("WARNING: %s(): block device %d,%d not registered!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 			unlock_resource(&umount_resource);
 			return -EINVAL;

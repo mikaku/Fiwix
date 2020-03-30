@@ -508,21 +508,17 @@ int ide_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 int ide_cd_init(struct ide *ide, int drive)
 {
 	struct device *d;
+	unsigned char minor;
 
 	ide->drive[drive].fsop = &ide_cd_driver_fsop;
 
-	if(!(d = get_device(BLK_DEV, ide->drive[drive].major))) {
+	minor = !ide->drive[drive].minor_shift ? 0 : 1 << ide->drive[drive].minor_shift;
+
+	if(!(d = get_device(BLK_DEV, MKDEV(ide->drive[drive].major, minor)))) {
 		return -EINVAL;
 	}
-	if(drive == IDE_MASTER) {
-		ide->drive[drive].minor_shift = IDE_MASTER_MSF;
-		SET_MINOR(d->minors, 0);
-		((unsigned int *)d->device_data)[0] = CDROM_DEFAULT_SIZE;
-	} else {
-		ide->drive[drive].minor_shift = IDE_SLAVE_MSF;
-		SET_MINOR(d->minors, 1 << IDE_SLAVE_MSF);
-		((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = CDROM_DEFAULT_SIZE;
-	}
+	SET_MINOR(d->minors, minor);
+	((unsigned int *)d->device_data)[minor] = CDROM_DEFAULT_SIZE;
 
 	return 0;
 }

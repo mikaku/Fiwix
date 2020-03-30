@@ -117,12 +117,12 @@ static struct fs_operations fdc_driver_fsop = {
 
 static struct device floppy_device = {
 	"floppy",
-	FLOPPY_IRQ,
 	FDC_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	BLKSIZE_1K,
 	&fdd_sizes,
 	&fdc_driver_fsop,
+	NULL
 };
 
 static int fdc_in(void)
@@ -525,7 +525,7 @@ int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	if(!blksize) {
-		if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
+		if(!(d = get_device(BLK_DEV, dev))) {
 			return -EINVAL;
 		}
 		blksize = d->blksize;
@@ -633,7 +633,7 @@ int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	if(!blksize) {
-		if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
+		if(!(d = get_device(BLK_DEV, dev))) {
 			return -EINVAL;
 		}
 		blksize = d->blksize;

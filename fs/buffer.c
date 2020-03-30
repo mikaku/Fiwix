@@ -149,7 +149,7 @@ static void sync_one_buffer(struct buffer *buf)
 	struct device *d;
 	int errno;
 
-	if(!(d = get_device(BLK_DEV, MAJOR(buf->dev)))) {
+	if(!(d = get_device(BLK_DEV, buf->dev))) {
 		printk("WARNING: %s(): block device %d,%d not registered!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
 		return;
 	}
@@ -270,7 +270,7 @@ struct buffer * bread(__dev_t dev, __blk_t block, int size)
 	struct buffer *buf;
 	struct device *d;
 
-	if(!(d = get_device(BLK_DEV, MAJOR(dev)))) {
+	if(!(d = get_device(BLK_DEV, dev))) {
 		printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 		return NULL;
 	}

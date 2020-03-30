@@ -23,19 +23,19 @@
 
 struct device {
 	char *name;
-	int irq;
 	unsigned char major;
 	unsigned int minors[8];		/* bitmap of 256 bits */
 	int blksize;
-	void *device_data;		/* mostly used for minor sizes in KB */
+	void *device_data;		/* mostly used for minor sizes, in KB */
 	struct fs_operations *fsop;
+	struct device *next;
 };
 
-extern struct device chr_device_table[NR_CHRDEV];
-extern struct device blk_device_table[NR_BLKDEV];
+extern struct device *chr_device_table[NR_CHRDEV];
+extern struct device *blk_device_table[NR_BLKDEV];
 
 int register_device(int, struct device *);
-struct device * get_device(int, unsigned char);
+struct device * get_device(int, __dev_t);
 int chr_dev_open(struct inode *, struct fd *);
 int blk_dev_open(struct inode *, struct fd *);
 int blk_dev_close(struct inode *, struct fd *);

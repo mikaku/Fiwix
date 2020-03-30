@@ -113,22 +113,22 @@ static struct fs_operations tty_driver_fsop = {
 
 static struct device tty_device = {
 	"vconsole",
-	KEYBOARD_IRQ,
 	VCONSOLES_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	NULL,
 	&tty_driver_fsop,
+	NULL
 };
 
 static struct device console_device = {
 	"console",
-	KEYBOARD_IRQ,
 	SYSCON_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
 	NULL,
 	&tty_driver_fsop,
+	NULL
 };
 
 unsigned short int ansi_color_table[] = {
@@ -1137,7 +1137,7 @@ void vconsole_init(void)
 	printk(" (%d virtual consoles)\n", NR_VCONSOLES);
 	screen_on();
 
-	for(n = 1; n < NR_VCONSOLES + 1; n++) {
+	for(n = 1; n <= NR_VCONSOLES; n++) {
 		if(!register_tty(MKDEV(VCONSOLES_MAJOR, n))) {
 			tty = get_tty(MKDEV(VCONSOLES_MAJOR, n));
 			tty->driver_data = (void *)&vc[n];
@@ -1165,6 +1165,12 @@ void vconsole_init(void)
 	update_curpos(&vc[current_cons]);
 	buf_y = vc[current_cons].y;
 	buf_top = 0;
+
+	SET_MINOR(console_device.minors, 0);
+	SET_MINOR(console_device.minors, 1);
+	for(n = 0; n <= NR_VCONSOLES; n++) {
+		SET_MINOR(tty_device.minors, n);
+	}
 
 	register_device(CHR_DEV, &console_device);
 	register_device(CHR_DEV, &tty_device);
