@@ -138,8 +138,7 @@ int register_device(int type, struct device *new_d)
 	}
 
 	if(*d) {
-		/* FIXME: check all entries in minors[] */
-		if((*d)->minors[0] == new_d->minors[0]) {
+		if(&((*d)->minors) == &new_d->minors || (&(*d)->next && &(*d)->next->minors == &new_d->minors)) {
 			printk("WARNING: %s(): duplicated device major %d.\n", __FUNCTION__, new_d->major);
 			return 1;
 		}
@@ -148,28 +147,6 @@ int register_device(int type, struct device *new_d)
 		} while(*d);
 	}
 	*d = new_d;
-
-	/* list
-	{
-		int n;
-		struct device *d;
-
-		for(n = 0; n < 128; n++) {
-			d = blk_device_table[n];
-			if(d) {
-				do {
-					printk("major = %d, minors[0] = %d (%x)\n", d->major, d->minors[0], d->minors[0]);
-					d = d->next;
-					{
-						int n;
-						for(n = 0; n < 1000000; n++)
-							printk("\r");
-					}
-				} while(d);
-			}
-		}
-	}
-	*/
 
 	return 0;
 }
