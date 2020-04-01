@@ -1,0 +1,77 @@
+			FIWIX ALLOCATED DEVICES
+
+Character
+
+Major | Minor | Device	      | Description
+------+-------+---------------+------------------------------------------------
+1 Memory devices
+	1	mem		physical memory access
+	2	kmem		kernel virtual memory access
+	3	null		null device
+	5	zero		null byte source
+	8	random		random number generator
+	9	urandom		random number generator (same as above)
+
+4 TTY devices
+	0	tty0		current virtual console
+	1	tty1		first virtual console
+	...	...
+	12	tty12		12th virtual console
+	64	ttyS0		first UART serial port
+	65	ttyS1		second UART serial port
+	66	ttyS2		third UART serial port
+	67	ttyS3		fourth UART serial port
+
+5 Alternate TTY devices
+	0	tty		current tty device
+	1	console		system console
+
+6 Parallel printer devices
+	0	lp0		first parallel printer port
+
+
+
+
+Block
+
+Major | Minor | Device	      | Description
+------+-------+---------------+------------------------------------------------
+1 RAMdisk devices
+	0	ram0		first RAM disk
+
+2 Floppy disks (controller 0)
+	0	fd0		floppy disk drive 0
+	1	fd1		floppy disk drive 1
+	4	fd0h360		floppy disk drive 0 (5.25" 360KB)
+	5	fd1h360		floppy disk drive 1 (5.25" 360KB)
+	8	fd0h1200	floppy disk drive 0 (5.25" 1.2MB)
+	9	fd1h1200	floppy disk drive 1 (5.25" 1.2MB)
+	12	fd0h720		floppy disk drive 0 (3.5" 720KB)
+	13	fd1h720		floppy disk drive 1 (3.5" 720KB)
+	16	fd0h1440	floppy disk drive 0 (3.5" 1.44MB)
+	17	fd1h1440	floppy disk drive 1 (3.5" 1.44MB)
+
+3 Primary IDE/ATA interface (hard disk or CD-ROM)
+	0	hda		whole hard disk/CD-ROM master
+	1	hda1		first partition
+	2	hda2		second partition
+	3	hda3		third partition
+	4	hda4		fourth partition
+	64	hdb		whole hard disk/CD-ROM slave
+	65	hdb1		first partition
+	66	hdb2		second partition
+	67	hdb3		third partition
+	68	hdb4		fourth partition
+
+22 Secondary IDE/ATA interface (hard disk or CD-ROM)
+	0	hdc		whole hard disk/CD-ROM master
+	1	hdc1		first partition
+	2	hdc2		second partition
+	3	hdc3		third partition
+	4	hdc4		fourth partition
+	64	hdd		whole hard disk/CD-ROM slave
+	65	hdd1		first partition
+	66	hdd2		second partition
+	67	hdd3		third partition
+	68	hdd4		fourth partition
+
