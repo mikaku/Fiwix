@@ -4,9 +4,9 @@ Fiwix is an operating system kernel written from scratch, based on the UNIX arch
 
 Community
 ---------
-- [Website](http://www.fiwix.org)
+- [Website](https://www.fiwix.org)
 - [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
-- [IRC](http://webchat.freenode.net/?channels=fiwix)
+- [IRC](https://webchat.freenode.net/?channels=fiwix)
 
 License
 -------
@@ -14,5 +14,5 @@ Fiwix is free software licensed under the terms of the MIT License, see the LICE
 
 Credits
 -------
-Fiwix was created by [Jordi Sanfeliu](http://www.fibranet.cat).
+Fiwix was created by [Jordi Sanfeliu](https://www.fibranet.cat).
 You can contact me at [jordi@fibranet.cat](mailto:jordi@fibranet.cat).
