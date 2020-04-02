@@ -655,6 +655,7 @@ void keyboard_bh(void)
 			continue;
 		}
 		if(lock_area(AREA_TTY_READ)) {
+			add_bh(keyboard_bh);
 			continue;
 		}
 		tty->input(tty);
