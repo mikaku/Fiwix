@@ -700,6 +700,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			set_termio(tty, (struct termio *)arg);
 			break;
 
+		/* Perform start/stop control */
 		case TCXONC:
 			switch(arg) {
 				case TCOOFF:
@@ -752,12 +753,22 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			tty->sid = current->sid;
 			tty->pgid = current->pgid;
 			break;
+
+		/*
+		 * Get the process group ID of the '__pid_t' pointed to by
+		 * the arg to the foreground processes group ID.
+		 */
 		case TIOCGPGRP:
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(__pid_t)))) {
 				return errno;
 			}
 			memcpy_b((void *)arg, &tty->pgid, sizeof(__pid_t));
 			break;
+
+		/*
+		 * Associate the process pointed to by '__pid_t' in the arg to
+		 * the value of the terminal.
+		 */
 		case TIOCSPGRP:
 			if(arg < 1) {
 				return -EINVAL;
@@ -767,12 +778,28 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			}
 			memcpy_b(&tty->pgid, (void *)arg, sizeof(__pid_t));
 			break;
+
+		/*
+		 * The session ID of the terminal is fetched and stored in
+		 * the '__pid_t' pointed to by the arg.
+		case TIOCSID:	FIXME
+		 */
+
+		/*
+		 * The terminal drivers notion of terminal size is stored in
+		 * the 'winsize' structure pointed to by the arg.
+		 */
 		case TIOCGWINSZ:
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(struct winsize)))) {
 				return errno;
 			}
 			memcpy_b((void *)arg, &tty->winsize, sizeof(struct winsize));
 			break;
+
+		/*
+		 * The terminal drivers notion of the terminal size is set
+		 * to value in the 'winsize' structure pointed to by the arg.
+		 */
 		case TIOCSWINSZ:
 		{
 			struct winsize *ws = (struct winsize *)arg;
