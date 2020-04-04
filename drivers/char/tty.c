@@ -60,6 +60,36 @@ static void set_termio(struct tty *tty, struct termio *termio)
 	}
 }
 
+static int opost(struct tty *tty, unsigned char ch)
+{
+	int status;
+
+	status = 0;
+
+	if(tty->termios.c_oflag & OPOST) {
+		switch(ch) {
+			case '\n':
+				if(tty->termios.c_oflag & ONLCR) {
+					if(tty_queue_room(&tty->write_q) >= 2) {
+						tty_queue_putchar(tty, &tty->write_q, '\r');
+					}
+				} else {
+					return -1;
+				}
+				break;
+			default:
+				if(tty->termios.c_oflag & OLCUC) {
+					ch = TOUPPER(ch);
+				}
+				break;
+		}
+	}
+	if(tty_queue_putchar(tty, &tty->write_q, ch) < 0) {
+		status = -1;
+	}
+	return status;
+}
+
 static void out_char(struct tty *tty, unsigned char ch)
 {
 	if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
@@ -68,7 +98,7 @@ static void out_char(struct tty *tty, unsigned char ch)
 			tty_queue_putchar(tty, &tty->write_q, ch + 64);
 		}
 	} else {
-		tty_queue_putchar(tty, &tty->write_q, ch);
+		opost(tty, ch);
 	}
 }
 
@@ -575,7 +605,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 		while(count && n < count) {
 			ch = *(buffer + n);
 			/* FIXME: check if *(buffer + n) address is valid */
-			if(tty_queue_putchar(tty, &tty->write_q, ch) < 0) {
+			if(opost(tty, ch) < 0) {
 				break;
 			}
 			n++;
