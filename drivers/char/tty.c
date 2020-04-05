@@ -72,9 +72,9 @@ static int opost(struct tty *tty, unsigned char ch)
 				if(tty->termios.c_oflag & ONLCR) {
 					if(tty_queue_room(&tty->write_q) >= 2) {
 						tty_queue_putchar(tty, &tty->write_q, '\r');
+					} else {
+						return -1;
 					}
-				} else {
-					return -1;
 				}
 				break;
 			default:
