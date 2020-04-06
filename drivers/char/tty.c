@@ -458,14 +458,12 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 	}
 
 	/* only the foreground process group is allowed to read from the tty */
-	if(i->rdev != MKDEV(VCONSOLES_MAJOR, 0)) {	/* /dev/tty0 */
-		if(current->pgid != tty->pgid) {
-			if(current->sigaction[SIGTTIN - 1].sa_handler == SIG_IGN || current->sigblocked & (1 << (SIGTTIN - 1)) || is_orphaned_pgrp(current->pgid)) {
-				return -EIO;
-			}
-			kill_pgrp(current->pgid, SIGTTIN);
-			return -ERESTART;
+	if(current->ctty == tty && current->pgid != tty->pgid) {
+		if(current->sigaction[SIGTTIN - 1].sa_handler == SIG_IGN || current->sigblocked & (1 << (SIGTTIN - 1)) || is_orphaned_pgrp(current->pgid)) {
+			return -EIO;
 		}
+		kill_pgrp(current->pgid, SIGTTIN);
+		return -ERESTART;
 	}
 
 	n = min = 0;
@@ -585,8 +583,8 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 	}
 
 	/* only the foreground process group is allowed to write to the tty */
-	if(i->rdev != MKDEV(VCONSOLES_MAJOR, 0)) {	/* /dev/tty0 */
-		if(current->pgid != tty->pgid && tty->termios.c_lflag & TOSTOP) {
+	if(current->ctty == tty && current->pgid != tty->pgid) {
+		if(tty->termios.c_lflag & TOSTOP) {
 			if(current->sigaction[SIGTTIN - 1].sa_handler != SIG_IGN && !(current->sigblocked & (1 << (SIGTTIN - 1)))) {
 				if(is_orphaned_pgrp(current->pgid)) {
 					return -EIO;
