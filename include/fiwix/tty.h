@@ -76,6 +76,7 @@ int tty_queue_putchar(struct tty *, struct clist *, unsigned char);
 int tty_queue_unputchar(struct clist *);
 unsigned char tty_queue_getchar(struct clist *);
 void tty_queue_flush(struct clist *);
+int tty_queue_room(struct clist *q);
 void tty_queue_init(struct tty *);
 
 int vt_ioctl(struct tty *, int, unsigned long int);
