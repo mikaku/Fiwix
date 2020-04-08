@@ -573,9 +573,9 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 
 int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
-	unsigned int n;
 	unsigned char ch;
 	struct tty *tty;
+	int n;
 
 	if(!(tty = get_tty(i->rdev))) {
 		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
@@ -612,6 +612,10 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 		if(n == count) {
 			break;
 		}
+		if(fd_table->flags & O_NONBLOCK) {
+			n = -EAGAIN;
+			break;
+		}
 		if(tty->write_q.count > 0) {
 			if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
@@ -620,7 +624,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 		do_sched();
 	}
 
-	if(n > 0) {
+	if(n) {
 		i->i_mtime = CURRENT_TIME;
 	}
 	return n;
