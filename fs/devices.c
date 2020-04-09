@@ -138,7 +138,7 @@ int register_device(int type, struct device *new_d)
 	}
 
 	if(*d) {
-		if(&((*d)->minors) == &new_d->minors || (&(*d)->next && &(*d)->next->minors == &new_d->minors)) {
+		if(&(*d)->minors == &new_d->minors || (&(*d)->next && &(*d)->next->minors == &new_d->minors)) {
 			printk("WARNING: %s(): duplicated device major %d.\n", __FUNCTION__, new_d->major);
 			return 1;
 		}
