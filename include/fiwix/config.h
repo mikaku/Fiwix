@@ -14,9 +14,6 @@
 /* maximum number of callout functions (timer) */
 #define NR_CALLOUTS		NR_PROCS
 
-/* maximum number of bottom halves in pool */
-#define NR_BH			NR_PROCS
-
 /* maximum number of mounted filesystems */
 #define NR_MOUNT_POINTS		8
 

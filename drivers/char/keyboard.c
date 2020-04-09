@@ -95,6 +95,8 @@ short int current_cons;
 char ctrl_alt_del = 1;
 char any_key_to_reboot = 0;
 
+static struct bh keyboard_bh = { 0, &do_keyboard_bh, NULL };
+
 struct diacritic *diacr;
 static char *diacr_chars = "`'^ \"";
 struct diacritic grave_table[NR_DIACR] = {
@@ -415,7 +417,7 @@ void irq_keyboard(void)
 	scode = inport_b(KB_DATA);
 
 	screen_on();
-	add_bh(keyboard_bh);
+	keyboard_bh.flags |= BH_ACTIVE;
 
 	if(scode == KB_ACK) {
 		return;
@@ -634,7 +636,7 @@ void irq_keyboard(void)
 	return;
 }
 
-void keyboard_bh(void)
+void do_keyboard_bh(void)
 {
 	int n;
 	struct tty *tty;
@@ -655,7 +657,7 @@ void keyboard_bh(void)
 			continue;
 		}
 		if(lock_area(AREA_TTY_READ)) {
-			add_bh(keyboard_bh);
+			keyboard_bh.flags |= BH_ACTIVE;
 			continue;
 		}
 		tty->input(tty);
@@ -665,6 +667,8 @@ void keyboard_bh(void)
 
 void keyboard_init(void)
 {
+	add_bh(&keyboard_bh);
+
 	keyboard_reset();
 
 	/* flush buffers */

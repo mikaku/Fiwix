@@ -19,40 +19,7 @@
 #define IRQ0_ADDR	0x20
 #define IRQ8_ADDR	0x28
 
-/*
- * pic.c implements a bottom half table using a singly linked list.
- *
- *  head                           tail
- * +---------+  ----------+  ...  ----------+
- * |data|next|  |data|next|  ...  |data|next|
- * |    |  -->  |    |  -->  ...  |    |  / |
- * +---------+  ----------+  ...  ----------+
- *  (bh)         (bh)              (bh)
- */
-
-struct bh bh_pool[NR_BH];
-struct bh *bh_pool_head;
-struct bh *bh_head;
-struct bh *bh_tail;
-
-static struct bh *get_free_bh(void)
-{
-	struct bh *new;
-
-	new = NULL;
-	if(bh_pool_head) {
-		new = bh_pool_head;
-		bh_pool_head = bh_pool_head->next;
-		new->next = NULL;
-	}
-	return new;
-}
-
-static void put_free_bh(struct bh *old)
-{
-	old->next = bh_pool_head;
-	bh_pool_head = old;
-}
+static struct bh *bh_table = NULL;
 
 /*
  * This sends the command OCW3 to PIC (master or slave) to obtain the register
@@ -66,51 +33,20 @@ static unsigned short int pic_get_irq_reg(int ocw3)
 	return (inport_b(PIC_SLAVE) << 8) | inport_b(PIC_MASTER);
 }
 
-void add_bh(void (*fn)(void))
+void add_bh(struct bh *new)
 {
 	unsigned long int flags;
-	struct bh *b;
+	struct bh **b;
 
 	SAVE_FLAGS(flags); CLI();
 
-	if(!(b = get_free_bh())) {
-		RESTORE_FLAGS(flags);
-		PANIC("no more bottom half slots!\n");
+	b = &bh_table;
+	if(*b) {
+		do {
+			b = &(*b)->next;
+		} while(*b);
 	}
-
-	/* initialize bh */
-	memset_b(b, NULL, sizeof(struct bh));
-	b->fn = fn;
-
-	if(!bh_tail) {
-		bh_head = bh_tail = b;
-	} else {
-		bh_tail->next = b;
-		bh_tail = b;
-	}
-
-	RESTORE_FLAGS(flags);
-	return;
-}
-
-void del_bh(void)
-{
-	unsigned long int flags;
-	struct bh *b;
-
-	if(!bh_head) {
-		return;
-	}
-
-	SAVE_FLAGS(flags); CLI();
-
-	b = bh_head;
-	if(bh_head == bh_tail) {
-		bh_head = bh_tail = NULL;
-	} else {
-		bh_head = bh_head->next;
-	}
-	put_free_bh(b);
+	*b = new;
 
 	RESTORE_FLAGS(flags);
 	return;
@@ -217,38 +153,28 @@ void irq_handler(int irq, struct sigcontext sc)
 	enable_irq(irq);
 }
 
-/* do bottom halves (interrupts are (FIXME) enabled) */
+/* do bottom halves (interrupts are (not yet, FIXME) enabled) */
 void do_bh(void)
 {
 	struct bh *b;
 	void (*fn)(void);
 
-	if((b = bh_head)) {
-		while(b) {
-			fn = b->fn;
+	b = bh_table;
+	if(b) {
+		do {
+			if(b->flags & BH_ACTIVE) {
+				b->flags &= ~BH_ACTIVE;
+				fn = b->fn;
+				(*fn)();
+			}
 			b = b->next;
-			del_bh();
-			(*fn)();
-		}
+		} while(b);
 	}
 }
 
 void pic_init(void)
 {
-	int n;
-	struct bh *b;
-
 	memset_b(irq_table, NULL, sizeof(irq_table));
-	memset_b(bh_pool, NULL, sizeof(bh_pool));
-
-	/* bh free list initialization */
-	bh_pool_head = NULL;
-	n = NR_BH;
-	while(n--) {
-		b = &bh_pool[n];
-		put_free_bh(b);
-	}
-	bh_head = bh_tail = NULL;
 
 	/* remap interrupts for PIC1 */
 	outport_b(PIC_MASTER, ICW1_RESET);

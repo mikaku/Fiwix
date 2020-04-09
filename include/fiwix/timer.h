@@ -41,8 +41,8 @@ struct callout_req {
 void add_callout(struct callout_req *, unsigned int);
 void del_callout(struct callout_req *);
 void irq_timer(struct sigcontext *);
-void timer_bh(void);
-void callouts_bh(void);
+void do_timer_bh(void);
+void do_callouts_bh(void);
 void get_system_time(void);
 void set_system_time(__time_t);
 void timer_init(void);

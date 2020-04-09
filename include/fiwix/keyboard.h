@@ -128,7 +128,7 @@ extern __key_t keymap[NR_MODIFIERS * NR_SCODES];
 
 void set_leds(unsigned char);
 void irq_keyboard(void);
-void keyboard_bh(void);
+void do_keyboard_bh(void);
 void keyboard_init(void);
 
 #endif /* _FIWIX_KEYBOARD_H */

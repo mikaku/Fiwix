@@ -36,13 +36,16 @@ struct interrupts {
 };
 struct interrupts irq_table[NR_IRQS];
 
+
+#define BH_ACTIVE	0x01
+
 struct bh {
+	int flags;
 	void (*fn)(void);
 	struct bh *next;
 };
 
-void add_bh(void (*fn)(void));
-void del_bh(void);
+void add_bh(struct bh *);
 void enable_irq(int);
 void disable_irq(int);
 int register_irq(int, char *, void *);

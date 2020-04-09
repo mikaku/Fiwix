@@ -41,6 +41,9 @@ struct callout *callout_head;
 static char month[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 unsigned int avenrun[3] = { 0, 0, 0 };
 
+static struct bh timer_bh = { 0, &do_timer_bh, NULL };
+static struct bh callouts_bh = { 0, &do_callouts_bh, NULL };
+
 static unsigned int count_active_procs(void)
 {
 	int counter;
@@ -177,7 +180,7 @@ void do_timer(struct sigcontext *sc)
 		kstat.uptime++;
 	}
 
-	add_bh(timer_bh);
+	timer_bh.flags |= BH_ACTIVE;
 
 	/* FIXME: put this in 'timer_bh' */
 	if(sc->cs == KERNEL_CS) {
@@ -279,7 +282,7 @@ unsigned long int mktime(struct mt *mt)
 	return seconds;
 }
 
-void timer_bh(void)
+void do_timer_bh(void)
 {
 	struct proc *p;
 
@@ -320,11 +323,11 @@ void timer_bh(void)
 		if(callout_head->expires > 0) {
 			callout_head->expires--;
 			if(!callout_head->expires) {
-				add_bh(callouts_bh);
+				callouts_bh.flags |= BH_ACTIVE;
 			}
 		} else {
 			printk("%s(): callout losing ticks.\n", __FUNCTION__);
-			add_bh(callouts_bh);
+			callouts_bh.flags |= BH_ACTIVE;
 		}
 	}
 
@@ -334,7 +337,7 @@ void timer_bh(void)
 	}
 }
 
-void callouts_bh(void)
+void do_callouts_bh(void)
 {
 	struct callout *c;
 	void (*fn)(unsigned int);
@@ -432,7 +435,11 @@ void timer_init(void)
 	int n;
 	struct callout *c;
 
+	add_bh(&timer_bh);
+	add_bh(&callouts_bh);
+
 	pit_init(HZ);
+
 	memset_b(callout_pool, NULL, sizeof(callout_pool));
 
 	/* callout free list initialization */
