@@ -71,10 +71,7 @@
 #define SCREEN_LINES		25
 #define SCREEN_SIZE		(SCREEN_COLS * SCREEN_LINES * 2)
 
-#define TAB_SIZE		8
 #define BS			127	/* backspace */
-
-#define MAX_TAB_COLS		132	/* maximum number of tab stops */
 
 #define VC_BUF_LINES		(SCREEN_LINES * SCREENS_LOG)
 #define VC_BUF_SIZE		(SCREEN_COLS * VC_BUF_LINES * 2)
@@ -101,7 +98,6 @@ struct vconsole {
 	unsigned short int scrbuf[SCREEN_SIZE / 2];
 	int saved_x;
 	int saved_y;
-	char tab_stop[MAX_TAB_COLS];
 	struct vt_mode vt_mode;
 	unsigned char vc_mode;
 	unsigned char blanked;

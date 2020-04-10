@@ -72,14 +72,29 @@ static int opost(struct tty *tty, unsigned char ch)
 				if(tty->termios.c_oflag & ONLCR) {
 					if(tty_queue_room(&tty->write_q) >= 2) {
 						tty_queue_putchar(tty, &tty->write_q, '\r');
+						tty->column = 0;
 					} else {
 						return -1;
 					}
 				}
 				break;
+			case '\t':
+				while(tty->column < (tty->winsize.ws_col - 1)) {
+					if(tty->tab_stop[++tty->column]) {
+						break;
+					}
+				}
+				break;
+			case '\b':
+				if(tty->column > 0) {
+					tty->column--;
+				}
 			default:
 				if(tty->termios.c_oflag & OLCUC) {
 					ch = TOUPPER(ch);
+				}
+				if(!ISCNTRL(ch)) {
+					tty->column++;
 				}
 				break;
 		}
@@ -96,6 +111,7 @@ static void out_char(struct tty *tty, unsigned char ch)
 		if(tty->lnext || (!tty->lnext && ch != tty->termios.c_cc[VEOF])) {
 			tty_queue_putchar(tty, &tty->write_q, '^');
 			tty_queue_putchar(tty, &tty->write_q, ch + 64);
+			tty->column += 2;
 		}
 	} else {
 		opost(tty, ch);
@@ -410,6 +426,7 @@ int tty_open(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 	tty->count++;
+	tty->column = 0;
 
 	if(SESS_LEADER(current) && !current->ctty && !noctty_flag && !tty->sid) {
 		current->ctty = tty;

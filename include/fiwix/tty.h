@@ -11,11 +11,14 @@
 #include <fiwix/termios.h>
 #include <fiwix/fs.h>
 
-#define NR_TTYS		15	/* maximum number of tty devices */
+#define NR_TTYS		16	/* 12 vconsoles + 4 serials */
 
 #define CBSIZE		32	/* number of characters in cblock */
 #define NR_CB_QUEUE	10	/* number of cblocks per queue */
 #define CB_POOL_SIZE	128	/* number of cblocks in the central pool */
+
+#define TAB_SIZE	8
+#define MAX_TAB_COLS	132	/* maximum number of tab stops */
 
 #define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : NULL)
 
@@ -46,6 +49,8 @@ struct tty {
 	unsigned char lnext;
 	void *driver_data;
 	int canon_data;
+	char tab_stop[132];
+	int column;
 
 	/* formerly tty_operations */
 	void (*stop)(struct tty *);
@@ -54,6 +59,11 @@ struct tty {
 	void (*reset)(struct tty *);
 	void (*input)(struct tty *);
 	void (*output)(struct tty *);
+	// FIXME!!
+	int (*open)(struct inode *, struct fd *);
+	int (*close)(struct inode *, struct fd *);
+	int (*ioctl)(struct inode *, int cmd, unsigned long int);
+	int (*select)(struct inode *, int);
 };
 extern struct tty tty_table[];
 

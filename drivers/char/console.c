@@ -491,7 +491,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 
 		} else if(ch == '\t') {
 			while(vc->x < (vc->columns - 1)) {
-				if(vc->tab_stop[++vc->x]) {
+				if(vc->tty->tab_stop[++vc->x]) {
 					break;
 				}
 			}
@@ -561,9 +561,9 @@ void vconsole_reset(struct tty *tty)
 
 	for(n = 0; n < MAX_TAB_COLS; n++) {
 		if(!(n % TAB_SIZE)) {
-			vc->tab_stop[n] = 1;
+			vc->tty->tab_stop[n] = 1;
 		} else {
-			vc->tab_stop[n] = 0;
+			vc->tty->tab_stop[n] = 0;
 		}
 	}
 
@@ -706,11 +706,11 @@ void vconsole_write(struct tty *tty)
 					case 'g':
 						switch(vc->parmv1) {
 							case 0:	/* Clear Tab <ESC>[g */
-								vc->tab_stop[vc->x] = 0;
+								vc->tty->tab_stop[vc->x] = 0;
 								break;
 							case 3:	/* Clear All Tabs <ESC>[3g */
 								for(n = 0; n < MAX_TAB_COLS; n++)
-									vc->tab_stop[n] = 0;
+									vc->tty->tab_stop[n] = 0;
 								break;
 						}
 						CSE;
@@ -821,7 +821,7 @@ void vconsole_write(struct tty *tty)
 						CSE;
 						continue;
 					case 'H':	/* Set Tab <ESC>H */
-						vc->tab_stop[vc->x] = 1;
+						vc->tty->tab_stop[vc->x] = 1;
 						CSE;
 						continue;
 					case 'M':	/* Scroll Up <ESC>M */
@@ -1078,7 +1078,7 @@ void vconsole_deltab(struct tty *tty)
 			if(n >= cb->start_off) {
 				ch = cb->data[n];
 				if(ch == '\t') {
-					while(!vc->tab_stop[++col]);
+					while(!vc->tty->tab_stop[++col]);
 				} else {
 					col++;
 					if(ISCNTRL(ch) && !ISSPACE(ch) && tty->termios.c_lflag & ECHOCTL) {
