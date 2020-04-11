@@ -404,6 +404,7 @@ int tty_open(struct inode *i, struct fd *fd_table)
 	int noctty_flag;
 	__dev_t dev;
 	struct tty *tty;
+	int errno;
 	 
 	noctty_flag = fd_table->flags & O_NOCTTY;
 
@@ -425,6 +426,12 @@ int tty_open(struct inode *i, struct fd *fd_table)
 		printk("_syscondev = %x\n", _syscondev);
 		return -ENXIO;
 	}
+
+	if(tty->open) {
+		if((errno = tty->open(tty) < 0)) {
+			return errno;
+		}
+	}
 	tty->count++;
 	tty->column = 0;
 
@@ -440,13 +447,19 @@ int tty_close(struct inode *i, struct fd *fd_table)
 {
 	struct proc *p;
 	struct tty *tty;
+	int errno;
 
 	if(!(tty = get_tty(i->rdev))) {
 		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
 		return -ENXIO;
 	}
 
-	tty->count = tty->count ? tty->count - 1 : 0;
+	if(tty->close) {
+		if((errno = tty->close(tty) < 0)) {
+			return errno;
+		}
+	}
+	tty->count--;
 	if(!tty->count) {
 		tty->reset(tty);
 		termios_reset(tty);

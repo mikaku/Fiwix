@@ -42,7 +42,7 @@ struct tty {
 	struct clist read_q;
 	struct clist cooked_q;
 	struct clist write_q;
-	unsigned short int count;
+	short int count;
 	struct termios termios;
 	struct winsize winsize;
 	__pid_t pid, pgid, sid;
@@ -59,11 +59,8 @@ struct tty {
 	void (*reset)(struct tty *);
 	void (*input)(struct tty *);
 	void (*output)(struct tty *);
-	// FIXME!!
-	int (*open)(struct inode *, struct fd *);
-	int (*close)(struct inode *, struct fd *);
-	int (*ioctl)(struct inode *, int cmd, unsigned long int);
-	int (*select)(struct inode *, int);
+	int (*open)(struct tty *);
+	int (*close)(struct tty *);
 };
 extern struct tty tty_table[];
 
