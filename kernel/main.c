@@ -357,6 +357,13 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 void stop_kernel(void)
 {
 	struct proc *p;
+	int n;
+
+	/* stop and disable all interrupts! */
+	CLI();
+	for(n = 0; n < NR_IRQS; n++) {
+		disable_irq(n);
+	}
 
 	printk("\n");
 	printk("**    Safe to Power Off    **\n");
@@ -370,16 +377,14 @@ void stop_kernel(void)
 		p->sigpending = 0;
 	}
 
-	/* TODO: disable all interrupts */
-	CLI();
-	disable_irq(TIMER_IRQ);
+	/* enable keyboard only */
+	STI();
+	enable_irq(KEYBOARD_IRQ);
 
 	/* switch to IDLE process */
 	if(current) {
 		do_sched();
 	}
 
-	STI();
-	enable_irq(KEYBOARD_IRQ);
 	cpu_idle();
 }
