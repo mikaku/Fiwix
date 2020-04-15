@@ -95,7 +95,8 @@ short int current_cons;
 char ctrl_alt_del = 1;
 char any_key_to_reboot = 0;
 
-static struct bh keyboard_bh = { 0, &do_keyboard_bh, NULL };
+static struct bh keyboard_bh = { 0, &irq_keyboard_bh, NULL };
+static struct interrupt irq_config_keyboard = { 0, "keyboard", &irq_keyboard, NULL };
 
 struct diacritic *diacr;
 static char *diacr_chars = "`'^ \"";
@@ -402,7 +403,7 @@ void set_leds(unsigned char leds)
 	keyboard_wait_ack();
 }
 
-void irq_keyboard(void)
+void irq_keyboard(int num, struct sigcontext *sc)
 {
 	__key_t key, type;
 	unsigned char scode, mod;
@@ -636,7 +637,7 @@ void irq_keyboard(void)
 	return;
 }
 
-void do_keyboard_bh(void)
+void irq_keyboard_bh(void)
 {
 	int n;
 	struct tty *tty;
@@ -685,7 +686,7 @@ void keyboard_init(void)
 
 	printk("keyboard  0x%04X-0x%04X    %d    type=%s %s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_iface & 0x1 ? "MCA" : "AT", ps2_active_ports, ps2_supp_ports);
 
-	if(!register_irq(KEYBOARD_IRQ, "keyboard", irq_keyboard)) {
+	if(!register_irq(KEYBOARD_IRQ, &irq_config_keyboard)) {
 		enable_irq(KEYBOARD_IRQ);
 	}
 }

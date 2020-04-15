@@ -10,6 +10,7 @@
 
 #include <fiwix/fs.h>
 #include <fiwix/part.h>
+#include <fiwix/sigcontext.h>
 
 #define IDE0_IRQ		14	/* primary controller interrupt */
 #define IDE1_IRQ		15	/* secondary controller interrupt */
@@ -250,9 +251,9 @@ extern int ide1_need_reset;
 extern int ide1_wait_interrupt;
 extern int ide1_timeout;
 
-void irq_ide0(void);
+void irq_ide0(int, struct sigcontext *);
 void ide0_timer(unsigned int);
-void irq_ide1(void);
+void irq_ide1(int, struct sigcontext *);
 void ide1_timer(unsigned int);
 
 void ide_error(struct ide *, int);

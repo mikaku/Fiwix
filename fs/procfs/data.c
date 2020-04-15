@@ -158,12 +158,20 @@ int data_proc_filesystems(char *buffer, __pid_t pid)
 
 int data_proc_interrupts(char *buffer, __pid_t pid)
 {
+	struct interrupt *irq;
 	int n, size;
 
 	size = 0;
 	for(n = 0; n < NR_IRQS; n++) {
-		if(irq_table[n].registered) {
-			size += sprintk(buffer + size, "%3d: %9u %s\n", n, irq_table[n].ticks, irq_table[n].name);
+		irq = irq_table[n];
+		if(irq) {
+			size += sprintk(buffer + size, "%3d: %9u %s", n, irq->ticks, irq->name);
+			irq = irq->next;
+			while(irq) {
+				size += sprintk(buffer + size, ",%s", irq->name);
+				irq = irq->next;
+			}
+			size += sprintk(buffer + size, "\n");
 		}
 	}
 	size += sprintk(buffer + size, "SPU: %9u %s\n", kstat.sirqs, "Spurious interrupts");
@@ -337,6 +345,7 @@ int data_proc_stat(char *buffer, __pid_t pid)
 {
 	int n, size;
 	unsigned int idle;
+	struct interrupt *irq;
 
 	idle = kstat.ticks - (kstat.cpu_user + kstat.cpu_nice + kstat.cpu_system);
 	size = 0;
@@ -346,7 +355,10 @@ int data_proc_stat(char *buffer, __pid_t pid)
 	size += sprintk(buffer + size, "swap 0 0\n");
 	size += sprintk(buffer + size, "intr %u", kstat.irqs);
 	for(n = 0; n < NR_IRQS; n++) {
-		size += sprintk(buffer + size, " %u", irq_table[n].ticks);
+		irq = irq_table[n];
+		if(irq) {
+			size += sprintk(buffer + size, " %u", irq->ticks);
+		}
 	}
 	size += sprintk(buffer + size, "\n");
 	size += sprintk(buffer + size, "ctxt %u\n", kstat.ctxt);

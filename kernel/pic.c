@@ -19,6 +19,7 @@
 #define IRQ0_ADDR	0x20
 #define IRQ8_ADDR	0x28
 
+struct interrupt *irq_table[NR_IRQS];
 static struct bh *bh_table = NULL;
 
 /*
@@ -31,6 +32,60 @@ static unsigned short int pic_get_irq_reg(int ocw3)
 	outport_b(PIC_MASTER, ocw3);
 	outport_b(PIC_SLAVE, ocw3);
 	return (inport_b(PIC_SLAVE) << 8) | inport_b(PIC_MASTER);
+}
+
+int register_irq(int num, struct interrupt *new_irq)
+{
+	struct interrupt **irq;
+
+	if(num < 0  || num >= NR_IRQS) {
+		return -EINVAL;
+	}
+
+	irq = &irq_table[num];
+	if(*irq) {
+		do {
+			if(*irq == new_irq) {
+				printk("WARNING: %s(): interrupt %d already registered!\n", __FUNCTION__, num);
+				return -EINVAL;
+			}
+			irq = &(*irq)->next;
+		} while(*irq);
+	}
+	*irq = new_irq;
+	new_irq->ticks = 0;
+	return 0;
+}
+
+int unregister_irq(int num, struct interrupt *old_irq)
+{
+	struct interrupt **irq, *prev_irq;
+
+	if(num < 0  || num >= NR_IRQS) {
+		return -EINVAL;
+	}
+
+	irq = &irq_table[num];
+	prev_irq = NULL;
+
+	if(*irq) {
+		do {
+			if(*irq == old_irq) {
+				if((*irq)->next) {
+					printk("WARNING: %s(): cannot unregister interrupt %d.\n", __FUNCTION__, num);
+					return -EINVAL;
+				}
+				*irq = NULL;
+				if(prev_irq) {
+					prev_irq->next = NULL;
+				}
+				break;
+			}
+			prev_irq = *irq;
+			irq = &(*irq)->next;
+		} while(*irq);
+	}
+	return 0;
 }
 
 void add_bh(struct bh *new)
@@ -72,50 +127,22 @@ void disable_irq(int irq)
 	outport_b(addr, inport_b(addr) | (1 << irq));
 }
 
-int register_irq(int irq, char *name, void *addr)
-{
-	if(irq < 0  || irq >= NR_IRQS) {
-		return -EINVAL;
-	}
-
-	if(irq_table[irq].registered) {
-		printk("WARNING: %s(): interrupt %d already registered!\n", __FUNCTION__, irq);
-		return -EINVAL;
-	}
-	irq_table[irq].ticks = 0;
-	irq_table[irq].name = name;
-	irq_table[irq].registered = 1;
-	irq_table[irq].handler = addr;
-	return 0;
-}
-
-int unregister_irq(int irq)
-{
-	if(irq < 0  || irq >= NR_IRQS) {
-		return -EINVAL;
-	}
-
-	if(!irq_table[irq].registered) {
-		printk("WARNING: %s(): trying to unregister an unregistered interrupt %d.\n", __FUNCTION__, irq);
-		return -EINVAL;
-	}
-	memset_b(&irq_table[irq], NULL, sizeof(struct interrupts));
-	return 0;
-}
-
 /* each ISR points to this function */
-void irq_handler(int irq, struct sigcontext sc)
+void irq_handler(int num, struct sigcontext sc)
 {
+	struct interrupt *irq;
 	int real;
 
 	/* this should help to detect hardware problems */
-	if(irq == -1) {
+	if(num == -1) {
 		printk("Unknown IRQ received!\n");
 		return;
 	}
 
+	irq = irq_table[num];
+
 	/* spurious interrupt treatment */
-	if(!irq_table[irq].handler) {
+	if(!irq) {
 		real = pic_get_irq_reg(PIC_READ_ISR);
 		if(!real) {
 			/*
@@ -123,37 +150,40 @@ void irq_handler(int irq, struct sigcontext sc)
 			 * an EOI to master because it doesn't know if the IRQ
 			 * was a spurious interrupt from slave.
 			 */
-			if(irq > 7) {
+			if(num > 7) {
 				outport_b(PIC_MASTER, EOI);
 			}
 			if(kstat.sirqs < MAX_SPU_NOTICES) {
-				printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", irq);
+				printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", num);
 			} else if(kstat.sirqs == MAX_SPU_NOTICES) {
 				printk("WARNING: too many spurious interrupts; not logging any more.\n");
 			}
 			kstat.sirqs++;
 			return;
 		}
-		if(irq > 7) {
+		if(num > 7) {
 			outport_b(PIC_SLAVE, EOI);
 		}
 		outport_b(PIC_MASTER, EOI);
 		return;
 	}
 
-	disable_irq(irq);
-	if(irq > 7) {
+	disable_irq(num);
+	if(num > 7) {
 		outport_b(PIC_SLAVE, EOI);
 	}
 	outport_b(PIC_MASTER, EOI);
 
 	kstat.irqs++;
-	irq_table[irq].ticks++;
-	irq_table[irq].handler(&sc);
-	enable_irq(irq);
+	irq->ticks++;
+	while(irq) {
+		irq->handler(num, &sc);
+		irq = irq->next;
+	}
+	enable_irq(num);
 }
 
-/* do bottom halves (interrupts are (not yet, FIXME) enabled) */
+/* do bottom halves (interrupts are (FIXME: not yet) enabled) */
 void do_bh(void)
 {
 	struct bh *b;

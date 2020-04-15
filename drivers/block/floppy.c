@@ -125,6 +125,8 @@ static struct device floppy_device = {
 	NULL
 };
 
+static struct interrupt irq_config_floppy = { 0, "floppy", &irq_floppy, NULL };
+
 static int fdc_in(void)
 {
 	int n;
@@ -453,7 +455,7 @@ static void set_current_fdd_type(int minor)
 	}
 }
 
-void irq_floppy(void)
+void irq_floppy(int num, struct sigcontext *sc)
 {
 	if(!fdc_wait_interrupt) {
 		printk("WARNING: %s(): fd%d: unexpected interrupt on %s.\n", __FUNCTION__, current_fdd, floppy_device.name);
@@ -806,7 +808,7 @@ void floppy_init(void)
 	}
 
 	if(master) {
-		if(!register_irq(FLOPPY_IRQ, floppy_device.name, irq_floppy)) {
+		if(!register_irq(FLOPPY_IRQ, &irq_config_floppy)) {
 			enable_irq(FLOPPY_IRQ);
 		}
 		printk("fd0       0x%04X-0x%04X   %2d    ", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
@@ -830,7 +832,7 @@ void floppy_init(void)
 	slave = cmosval & 0x0F;
 	if(slave) {
 		if(!master) {
-			if(!register_irq(FLOPPY_IRQ, floppy_device.name, irq_floppy)) {
+			if(!register_irq(FLOPPY_IRQ, &irq_config_floppy)) {
 				enable_irq(FLOPPY_IRQ);
 			}
 		}

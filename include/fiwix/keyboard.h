@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/types.h>
+#include <fiwix/sigcontext.h>
 
 #ifndef _FIWIX_KEYBOARD_H
 #define _FIWIX_KEYBOARD_H
@@ -127,8 +128,8 @@ struct diacritic {
 extern __key_t keymap[NR_MODIFIERS * NR_SCODES];
 
 void set_leds(unsigned char);
-void irq_keyboard(void);
-void do_keyboard_bh(void);
+void irq_keyboard(int num, struct sigcontext *);
+void irq_keyboard_bh(void);
 void keyboard_init(void);
 
 #endif /* _FIWIX_KEYBOARD_H */

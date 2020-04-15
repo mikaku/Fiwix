@@ -111,6 +111,9 @@ static struct device ide1_device = {
 	NULL
 };
 
+static struct interrupt irq_config_ide0 = { 0, "ide0", &irq_ide0, NULL };
+static struct interrupt irq_config_ide1 = { 0, "ide1", &irq_ide1, NULL };
+
 static int ide_identify(struct ide *ide, int drive)
 {
 	short int status, *buffer;
@@ -371,7 +374,7 @@ static void ide_results(struct ide *ide, int drive)
 	*/
 }
 
-void irq_ide0(void)
+void irq_ide0(int num, struct sigcontext *sc)
 {
 	if(!ide0_wait_interrupt) {
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
@@ -382,7 +385,7 @@ void irq_ide0(void)
 	}
 }
 
-void irq_ide1(void)
+void irq_ide1(int num, struct sigcontext *sc)
 {
 	if(!ide1_wait_interrupt) {
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
@@ -721,7 +724,7 @@ void ide_init(void)
 	int devices, errno;
 	struct ide *ide;
 
-	if(!register_irq(IDE0_IRQ, ide0_device.name, irq_ide0)) {
+	if(!register_irq(IDE0_IRQ, &irq_config_ide0)) {
 		enable_irq(IDE0_IRQ);
 	}
 	devices = 0;
@@ -768,10 +771,10 @@ void ide_init(void)
 	}
 	if(!devices) {
 		disable_irq(IDE0_IRQ);
-		unregister_irq(IDE0_IRQ);
+		unregister_irq(IDE0_IRQ, &irq_config_ide0);
 	}
 
-	if(!register_irq(IDE1_IRQ, ide1_device.name, irq_ide1)) {
+	if(!register_irq(IDE1_IRQ, &irq_config_ide1)) {
 		enable_irq(IDE1_IRQ);
 	}
 	devices = 0;
@@ -817,6 +820,6 @@ void ide_init(void)
 	}
 	if(!devices) {
 		disable_irq(IDE1_IRQ);
-		unregister_irq(IDE1_IRQ);
+		unregister_irq(IDE1_IRQ, &irq_config_ide1);
 	}
 }

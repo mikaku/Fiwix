@@ -41,8 +41,9 @@ struct callout *callout_head;
 static char month[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 unsigned int avenrun[3] = { 0, 0, 0 };
 
-static struct bh timer_bh = { 0, &do_timer_bh, NULL };
+static struct bh timer_bh = { 0, &irq_timer_bh, NULL };
 static struct bh callouts_bh = { 0, &do_callouts_bh, NULL };
+static struct interrupt irq_config_timer = { 0, "timer", &irq_timer, NULL };
 
 static unsigned int count_active_procs(void)
 {
@@ -173,7 +174,7 @@ void del_callout(struct callout_req *creq)
 	return;
 }
 
-void do_timer(struct sigcontext *sc)
+void irq_timer(int num, struct sigcontext *sc)
 {
 	if((++kstat.ticks % HZ) == 0) {
 		CURRENT_TIME++;
@@ -282,7 +283,7 @@ unsigned long int mktime(struct mt *mt)
 	return seconds;
 }
 
-void do_timer_bh(void)
+void irq_timer_bh(void)
 {
 	struct proc *p;
 
@@ -452,7 +453,7 @@ void timer_init(void)
 	callout_head = NULL;
 
 	printk("clock     -                %d    type=PIT Hz=%d\n", TIMER_IRQ, HZ);
-	if(!register_irq(TIMER_IRQ, "timer", do_timer)) {
+	if(!register_irq(TIMER_IRQ, &irq_config_timer)) {
 		enable_irq(TIMER_IRQ);
 	}
 }

@@ -28,13 +28,13 @@
 /* Operational Command Words */
 #define OCW1		0xFF	/* mask (disable) all IRQs */
 
-struct interrupts {
+struct interrupt {
 	unsigned int ticks;
 	char *name;
-	char registered;
-	void (*handler)(void *);
+	void (*handler)(int, struct sigcontext *);
+	struct interrupt *next;
 };
-struct interrupts irq_table[NR_IRQS];
+extern struct interrupt *irq_table[NR_IRQS];
 
 
 #define BH_ACTIVE	0x01
@@ -48,8 +48,8 @@ struct bh {
 void add_bh(struct bh *);
 void enable_irq(int);
 void disable_irq(int);
-int register_irq(int, char *, void *);
-int unregister_irq(int);
+int register_irq(int, struct interrupt *);
+int unregister_irq(int, struct interrupt *);
 void irq_handler(int, struct sigcontext);
 void do_bh(void);
 void pic_init(void);

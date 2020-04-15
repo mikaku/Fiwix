@@ -9,6 +9,7 @@
 #define _FIWIX_FLOPPY_H
 
 #include <fiwix/fs.h>
+#include <fiwix/sigcontext.h>
 
 #define FLOPPY_IRQ	6
 #define FLOPPY_DMA	2	/* DMA channel */
@@ -85,7 +86,7 @@ struct fddt {
 	char *name;		/* unit name */
 };
 
-void irq_floppy(void);
+void irq_floppy(int, struct sigcontext *);
 void fdc_timer(unsigned int);
 
 int fdc_open(struct inode *, struct fd *);
