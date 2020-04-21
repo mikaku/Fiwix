@@ -104,7 +104,6 @@ void add_bh(struct bh *new)
 	*b = new;
 
 	RESTORE_FLAGS(flags);
-	return;
 }
 
 void enable_irq(int irq)
@@ -133,7 +132,6 @@ void irq_handler(int num, struct sigcontext sc)
 	struct interrupt *irq;
 	int real;
 
-	/* this should help to detect hardware problems */
 	if(num == -1) {
 		printk("Unknown IRQ received!\n");
 		return;
@@ -176,10 +174,10 @@ void irq_handler(int num, struct sigcontext sc)
 
 	kstat.irqs++;
 	irq->ticks++;
-	while(irq) {
+	do {
 		irq->handler(num, &sc);
 		irq = irq->next;
-	}
+	} while(irq);
 	enable_irq(num);
 }
 
@@ -189,8 +187,7 @@ void do_bh(void)
 	struct bh *b;
 	void (*fn)(void);
 
-	b = bh_table;
-	if(b) {
+	if((b = bh_table)) {
 		do {
 			if(b->flags & BH_ACTIVE) {
 				b->flags &= ~BH_ACTIVE;
