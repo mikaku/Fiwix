@@ -653,7 +653,7 @@ void irq_keyboard_bh(void)
 	}
 
 	tty = &tty_table[0];
-	for(n = 0; n < NR_TTYS; n++, tty++) {
+	for(n = 0; n < NR_VCONSOLES; n++, tty++) {
 		if(!tty->read_q.count) {
 			continue;
 		}
