@@ -21,18 +21,6 @@ typedef unsigned char cc_t;
 /* Type of baud rate specifiers.  */
 typedef long int speed_t;
 
-#define NCCS 19
-
-/* Terminal control structure.  */
-struct termios {
-	tcflag_t c_iflag;	/* Input mode flags */
-	tcflag_t c_oflag;	/* Output mode flags */
-	tcflag_t c_cflag;	/* Control mode flags */
-	tcflag_t c_lflag;	/* Local mode flags */
-	cc_t c_line;		/* Line discipline */
-	cc_t c_cc[NCCS];	/* Control characters */
-};
-
 /* c_iflag bits */
 #define IGNBRK	0000001		/* Ignore break condition */
 #define BRKINT	0000002		/* Signal interrupt on break */
