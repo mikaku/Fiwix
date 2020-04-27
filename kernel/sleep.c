@@ -166,27 +166,27 @@ void unlock_resource(struct resource *resource)
 	RESTORE_FLAGS(flags);
 }
 
-int lock_area(unsigned int flag)
+int lock_area(unsigned int type)
 {
 	unsigned long int flags;
 	int retval;
 
 	SAVE_FLAGS(flags); CLI();
-	retval = area & flag;
-	area |= flag;
+	retval = area & type;
+	area |= type;
 	RESTORE_FLAGS(flags);
 
 	return retval;
 }
 
-int unlock_area(unsigned int flag)
+int unlock_area(unsigned int type)
 {
 	unsigned long int flags;
 	int retval;
 
 	SAVE_FLAGS(flags); CLI();
-	retval = area & flag;
-	area &= ~flag;
+	retval = area & type;
+	area &= ~type;
 	RESTORE_FLAGS(flags);
 
 	return retval;
