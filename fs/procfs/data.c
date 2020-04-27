@@ -163,13 +163,10 @@ int data_proc_interrupts(char *buffer, __pid_t pid)
 
 	size = 0;
 	for(n = 0; n < NR_IRQS; n++) {
-		irq = irq_table[n];
-		if(irq) {
+		if((irq = irq_table[n])) {
 			size += sprintk(buffer + size, "%3d: %9u %s", n, irq->ticks, irq->name);
-			irq = irq->next;
-			while(irq) {
+			while((irq = irq->next)) {
 				size += sprintk(buffer + size, ",%s", irq->name);
-				irq = irq->next;
 			}
 			size += sprintk(buffer + size, "\n");
 		}
