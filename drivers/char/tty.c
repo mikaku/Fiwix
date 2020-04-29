@@ -32,31 +32,31 @@ static void wait_vtime_off(unsigned int arg)
 	wakeup(fn);
 }
 
-static void get_termio(struct tty *tty, struct termio *termio)
+static void termios2termio(struct termios *termios, struct termio *termio)
 {
 	int n;
 
-	termio->c_iflag = tty->termios.c_iflag;
-	termio->c_oflag = tty->termios.c_oflag;
-	termio->c_cflag = tty->termios.c_cflag;
-	termio->c_lflag = tty->termios.c_lflag;
-	termio->c_line = tty->termios.c_line;
+	termio->c_iflag = termios->c_iflag;
+	termio->c_oflag = termios->c_oflag;
+	termio->c_cflag = termios->c_cflag;
+	termio->c_lflag = termios->c_lflag;
+	termio->c_line = termios->c_line;
 	for(n = 0; n < NCC; n++) {
-		termio->c_cc[n] = tty->termios.c_cc[n];
+		termio->c_cc[n] = termios->c_cc[n];
 	}
 }
 
-static void set_termio(struct tty *tty, struct termio *termio)
+static void termio2termios(struct termio *termio, struct termios *termios)
 {
 	int n;
 
-	tty->termios.c_iflag = termio->c_iflag;
-	tty->termios.c_oflag = termio->c_oflag;
-	tty->termios.c_cflag = termio->c_cflag;
-	tty->termios.c_lflag = termio->c_lflag;
-	tty->termios.c_line = termio->c_line;
+	termios->c_iflag = termio->c_iflag;
+	termios->c_oflag = termio->c_oflag;
+	termios->c_cflag = termio->c_cflag;
+	termios->c_lflag = termio->c_lflag;
+	termios->c_line = termio->c_line;
 	for(n = 0; n < NCC; n++) {
-		tty->termios.c_cc[n] = termio->c_cc[n];
+		termios->c_cc[n] = termio->c_cc[n];
 	}
 }
 
@@ -163,6 +163,21 @@ static void erase_char(struct tty *tty, unsigned char erasechar)
 	}
 }
 
+static void set_termios(struct tty *tty, struct termios *new_termios)
+{
+	memcpy_b(&tty->termios, new_termios, sizeof(struct termios));
+	if(tty->set_termios) {
+		tty->set_termios(tty);
+	}
+}
+
+static void set_termio(struct tty *tty, struct termio *new_termio)
+{
+	struct termios new_termios;
+
+	termio2termios(new_termio, &new_termios);
+}
+
 int register_tty(__dev_t dev)
 {
 	int n;
@@ -209,10 +224,9 @@ struct tty * get_tty(__dev_t dev)
 	}
 
 	for(n = 0; n < NR_TTYS; n++) {
-		if(tty_table[n].dev != dev) {
-			continue;
+		if(tty_table[n].dev == dev) {
+			return &tty_table[n];
 		}
-		return &tty_table[n];
 	}
 	return NULL;
 }
@@ -242,7 +256,7 @@ void termios_reset(struct tty *tty)
 {
 	tty->termios.c_iflag = ICRNL | IXON | IXOFF;
 	tty->termios.c_oflag = OPOST | ONLCR;
-	tty->termios.c_cflag = B38400 | CS8 | HUPCL | CREAD | CLOCAL;
+	tty->termios.c_cflag = B9600 | CS8 | HUPCL | CREAD | CLOCAL;
 	tty->termios.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | IEXTEN;
 	tty->termios.c_line = 0;
 	tty->termios.c_cc[VINTR]    = 3;	/* ^C */
@@ -402,27 +416,23 @@ void do_cook(struct tty *tty)
 int tty_open(struct inode *i, struct fd *fd_table)
 {
 	int noctty_flag;
-	__dev_t dev;
 	struct tty *tty;
 	int errno;
 	 
 	noctty_flag = fd_table->flags & O_NOCTTY;
 
-	dev = i->rdev;
-
 	if(MAJOR(i->rdev) == SYSCON_MAJOR && MINOR(i->rdev) == 0) {
 		if(!current->ctty) {
 			return -ENXIO;
 		}
-		dev = i->rdev;
 	}
 
-	if(MAJOR(dev) == VCONSOLES_MAJOR && MINOR(dev) == 0) {
+	if(MAJOR(i->rdev) == VCONSOLES_MAJOR && MINOR(i->rdev) == 0) {
 		noctty_flag = 1;
 	}
 
-	if(!(tty = get_tty(dev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, dev);
+	if(!(tty = get_tty(i->rdev))) {
+		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
 		printk("_syscondev = %x\n", _syscondev);
 		return -ENXIO;
 	}
@@ -477,10 +487,11 @@ int tty_close(struct inode *i, struct fd *fd_table)
 
 int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	unsigned int n, min;
+	unsigned int min;
 	unsigned char ch;
 	struct tty *tty;
 	struct callout_req creq;
+	int n;
 
 	if(!(tty = get_tty(i->rdev))) {
 		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
@@ -561,10 +572,12 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						creq.arg = (unsigned int)&tty->cooked_q;
 						add_callout(&creq, timeout);
 						if(fd_table->flags & O_NONBLOCK) {
-							return -EAGAIN;
+							n = -EAGAIN;
+							break;
 						}
 						if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
-							return -EINTR;
+							n = -EINTR;
+							break;
 						}
 						if(!tty->cooked_q.count) {
 							break;
@@ -588,14 +601,16 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 			}
 		}
 		if(fd_table->flags & O_NONBLOCK) {
-			return -EAGAIN;
+			n = -EAGAIN;
+			break;
 		}
 		if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
-			return -EINTR;
+			n = -EINTR;
+			break;
 		}
 	}
 
-	if(n > 0) {
+	if(n) {
 		i->i_atime = CURRENT_TIME;
 	}
 	return n;
@@ -648,7 +663,8 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 		}
 		if(tty->write_q.count > 0) {
 			if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
-				return -EINTR;
+				n = -EINTR;
+				break;
 			}
 		}
 		do_sched();
@@ -681,7 +697,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(struct termios)))) {
 				return errno;
 			}
-			memcpy_b((void *)arg, &tty->termios, sizeof(struct termios));
+			memcpy_b((struct termios *)arg, &tty->termios, sizeof(struct termios));
 			break;
 
 		/*
@@ -692,7 +708,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termios)))) {
 				return errno;
 			}
-			memcpy_b(&tty->termios, (void *)arg, sizeof(struct termios));
+			set_termios(tty, (struct termios *)arg);
 			break;
 
 		/*
@@ -703,7 +719,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termios)))) {
 				return errno;
 			}
-			memcpy_b(&tty->termios, (void *)arg, sizeof(struct termios));
+			set_termios(tty, (struct termios *)arg);
 			break;
 
 		/*
@@ -714,19 +730,19 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termios)))) {
 				return errno;
 			}
-			memcpy_b(&tty->termios, (void *)arg, sizeof(struct termios));
+			set_termios(tty, (struct termios *)arg);
 			tty_queue_flush(&tty->read_q);
 			break;
 
 		/*
-		 * Fetches and stores the current terminal parameters to a
-		 * termio structure pointed to by the argument.
+		 * Fetch and store the current terminal parameters to a termio
+		 * structure pointed to by the argument.
 		 */
 		case TCGETA:
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(struct termio)))) {
 				return errno;
 			}
-			get_termio(tty, (struct termio *)arg);
+			termios2termio(&tty->termios, (struct termio *)arg);
 			break;
 
 		/*
@@ -741,7 +757,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			break;
 
 		/*
-		 * Same a TCSET except it doesn't take effect until all
+		 * Same as TCSET except it doesn't take effect until all
 		 * the characters queued for output have been transmitted.
 		 */
 		case TCSETAW:
@@ -760,6 +776,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 				return errno;
 			}
 			set_termio(tty, (struct termio *)arg);
+			tty_queue_flush(&tty->read_q);
 			break;
 
 		/* Perform start/stop control */
