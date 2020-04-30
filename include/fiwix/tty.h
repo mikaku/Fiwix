@@ -10,8 +10,10 @@
 
 #include <fiwix/termios.h>
 #include <fiwix/fs.h>
+#include <fiwix/console.h>
+#include <fiwix/serial.h>
 
-#define NR_TTYS		16	/* 12 vconsoles + 4 serials */
+#define NR_TTYS		NR_VCONSOLES + NR_SERIAL
 
 #define CBSIZE		32	/* number of characters in cblock */
 #define NR_CB_QUEUE	10	/* number of cblocks per queue */
@@ -52,7 +54,7 @@ struct tty {
 	char tab_stop[132];
 	int column;
 
-	/* formerly tty_operations */
+	/* formerly tty driver operations */
 	void (*stop)(struct tty *);
 	void (*start)(struct tty *);
 	void (*deltab)(struct tty *);
@@ -61,6 +63,7 @@ struct tty {
 	void (*output)(struct tty *);
 	int (*open)(struct tty *);
 	int (*close)(struct tty *);
+	void (*set_termios)(struct tty *);
 };
 extern struct tty tty_table[];
 

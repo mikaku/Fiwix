@@ -12,6 +12,7 @@
 #include <fiwix/sched.h>
 #include <fiwix/tty.h>
 #include <fiwix/memdev.h>
+#include <fiwix/serial.h>
 #include <fiwix/lp.h>
 #include <fiwix/ramdisk.h>
 #include <fiwix/floppy.h>
@@ -30,6 +31,7 @@ int kswapd(void)
 
 	/* char devices */
 	memdev_init();
+	serial_init();
 	lp_init();
 
 	/* block devices */

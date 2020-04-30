@@ -10,8 +10,9 @@
 
 #include <fiwix/process.h>
 
-#define AREA_TTY_READ	0x00000001
-#define AREA_CALLOUT	0x00000002
+#define AREA_TTY_READ		0x00000001
+#define AREA_CALLOUT		0x00000002
+#define AREA_SERIAL_READ	0x00000004
 
 struct sleep {
 	unsigned short int next;
