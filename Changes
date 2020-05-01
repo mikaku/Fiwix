@@ -1,3 +1,21 @@
+1.2.0 - DD-MMM-2020
+===================
+- Added support for serial (RS-232) devices.
+- Completely rewritten the way how the device table is handled.
+- Completely rewritten the way how the interrupt table is handled.
+- Added the ability to share the same IRQ between multiple devices.
+- Completely rewritten the way how bottom halves are managed.
+- Added the 'doc/devices.txt' document.
+- Added basic functionality of OPOST functions to tty.
+- Added to reschedule the keyboard bottom-half if it was busy.
+- Added support of O_NONBLOCK in tty_write().
+- Improved termios and other aspects of the tty driver to accomodate the new
+  serial driver.
+- Fixed a bug in tty_read and tty_write the caused to send the SIGTTIN signal
+  to the foreground process.
+- Small fixes and cosmetic changes.
+
+
 1.1.0 - 24-Mar-2020
 ===================
 - Added support for an initial RAMdisk (initrd) image.
@@ -28,7 +46,7 @@
 - Fixed to set properly the timestamp on every read and write in all ttys.
 - Fixed the start time value in /proc/PID/stat of every single process.
 - Fixed to use a long long variable type to be able support block devices bigger
-  tan 4GB.
+  than 4GB.
 - Fixed a memory corruption bug processing the VT100 'CSI n J' sequence.
 - Small fixes and cosmetic changes.
 
