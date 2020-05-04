@@ -5,6 +5,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
 #include <fiwix/fs.h>
 #include <fiwix/time.h>
 #include <fiwix/timer.h>
@@ -20,6 +21,7 @@
 int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 {
 	int errno;
+	unsigned long int nsec;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_nanosleep(0x%08x, 0x%08x)\n", current->pid, (unsigned int)req, (unsigned int)rem);
@@ -32,7 +34,17 @@ int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 		return -EINVAL;
 	}
 
-	current->timeout = (req->tv_sec * HZ) + (req->tv_nsec * HZ / 1000000000L);
+	/*
+	 * Since the current maximum precision of the kernel is only 10ms, we
+	 * need to convert any lower request to a minimum of 10ms, even knowing
+	 * that this might increase the sleep a bit more than the requested.
+	 */
+	nsec = req->tv_nsec;
+	if(nsec < 10000000L) {
+		nsec *= 10;
+	}
+
+	current->timeout = (req->tv_sec * HZ) + (nsec * HZ / 1000000000L);
 	if(current->timeout) {
 		sleep(&sys_nanosleep, PROC_INTERRUPTIBLE);
 		if(current->timeout) {
