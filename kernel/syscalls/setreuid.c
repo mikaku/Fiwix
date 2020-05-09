@@ -20,30 +20,34 @@ int sys_setreuid(__uid_t uid, __uid_t euid)
 #endif /*__DEBUG__ */
 
 	if(IS_SUPERUSER) {
-		if(euid >= 0) {
-			if(uid >= 0 || (current->euid >= 0 && current->uid != euid)) {
+		if(euid != (__uid_t)-1) {
+			if(uid != (__uid_t)-1 || (current->euid >= 0 && current->uid != euid)) {
 				current->suid = euid;
 			}
 			current->euid = euid;
 		}
-		if(uid >= 0) {
+		if(uid != (__uid_t)-1) {
 			current->uid = uid;
 		}
 	} else {
-		if(euid >= 0 && (current->uid == euid || current->euid == euid || current->suid == euid)) {
-			if(uid >= 0 || (current->euid >= 0 && current->uid != euid)) {
+		if(euid != (__uid_t)-1 && (current->uid == euid || current->euid == euid || current->suid == euid)) {
+			if(uid != (__uid_t)-1 || (current->euid >= 0 && current->uid != euid)) {
 				current->suid = euid;
 			}
 			current->euid = euid;
 		} else {
 			return -EPERM;
 		}
-		if(uid >= 0 && (current->uid == uid || current->euid == uid)) {
+		if(uid != (__uid_t)-1 && (current->uid == uid || current->euid == uid)) {
 			current->uid = uid;
 		} else {
 			return -EPERM;
 		}
 	}
+
+#ifdef __DEBUG__
+	printk(" 0\n");
+#endif /*__DEBUG__ */
 
 	return 0;
 }
