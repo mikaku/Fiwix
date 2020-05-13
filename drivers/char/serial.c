@@ -563,5 +563,9 @@ void serial_init(void)
 				enable_irq(SERIAL3_IRQ);
 			}
 		}
+
+		if(is_serial(_syscondev)) {
+			register_console(console_flush_log_buf);
+		}
 	}
 }

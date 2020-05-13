@@ -4,7 +4,8 @@ Fiwix kernel parameters
 The following is a list of the current kernel parameters:
 
 console=	Set the output console device
-		Options: /dev/tty[1..12]
+		Options: /dev/tty[1..12], /dev/ttyS[0..3]
+		Serial consoles have fixed settings: 9600,N,8,1
 
 initrd=		The initial ramdisk image file which will be loaded by GRUB
 

@@ -15,7 +15,7 @@
 #define MAX_BUF		1024	/* printk() and sprintk() size limit */
 
 static char log_buf[LOG_BUF_LEN];
-static unsigned int log_start;
+static unsigned int log_count;
 
 static void puts(char *buffer)
 {
@@ -38,8 +38,8 @@ static void puts(char *buffer)
 
 	while(count--) {
 		if(!tty) {
-			if(log_start < LOG_BUF_LEN) {
-		 		log_buf[log_start++] = *(b++);
+			if(log_count < LOG_BUF_LEN) {
+		 		log_buf[log_count++] = *(b++);
 			}
 		} else {
 		 	tty_queue_putchar(tty, &tty->write_q, *(b++));
@@ -344,7 +344,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 
 void register_console(void (*fn)(char *, unsigned int))
 {
-	(*fn)(log_buf, log_start);
+	(*fn)(log_buf, log_count);
 }
 
 void printk(const char *format, ...)

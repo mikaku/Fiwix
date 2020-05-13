@@ -166,8 +166,11 @@ static int check_parm(struct kparms *parm, const char *value)
 	if(!strcmp(parm->name, "console=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
-				_syscondev = parm->sysval[n];
-				return 0;
+				if(parm->sysval[n]) {
+					_syscondev = parm->sysval[n];
+					return 0;
+				}
+				printk("WARNING: device name for '%s' is not defined!\n", parm->name);
 			}
 		}
 		return 1;

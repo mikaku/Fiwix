@@ -51,11 +51,13 @@ static struct kparms parm_table[] = {
 	{ "console=",
 	   { "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4", "/dev/tty5",
 	     "/dev/tty6", "/dev/tty7", "/dev/tty8", "/dev/tty9", "/dev/tty10",
-	     "/dev/tty11", "/dev/tty12"
+	     "/dev/tty11", "/dev/tty12", "/dev/ttyS0", "/dev/ttyS1",
+	     "/dev/ttyS2", "/dev/ttyS3"
 	   },
 	   { 0x401, 0x402, 0x403, 0x404, 0x405,
 	     0x406, 0x407, 0x408, 0x409, 0x410,
-	     0x411, 0x412
+	     0x411, 0x412, 0x440, 0x441, 0x442,
+	     0x443
 	   }
 	},
 

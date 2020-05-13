@@ -142,6 +142,15 @@ unsigned short int ansi_color_table[] = {
 	COLOR_WHITE
 };
 
+static int is_vconsole(__dev_t dev)
+{
+	if(MAJOR(dev) == VCONSOLES_MAJOR && MINOR(dev) <= NR_VCONSOLES) {
+		return 1;
+	}
+
+	return 0;
+}
+
 static void update_curpos(struct vconsole *vc)
 {
 	unsigned short int curpos;
@@ -1102,12 +1111,20 @@ void console_flush_log_buf(char *buffer, unsigned int count)
 	char *b;
 	struct tty *tty;
 
-	tty = get_tty(_syscondev);
+	if(!(tty = get_tty(_syscondev))) {
+		_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
+		tty = get_tty(_syscondev);
+	}
 	b = buffer;
 
 	while(count) {
 		if(tty_queue_putchar(tty, &tty->write_q, *b) < 0) {
 			tty->output(tty);
+			if(!is_vconsole(tty->dev)) {
+				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+					break;
+				}
+			}
 			continue;
 		}
 		count--;
@@ -1173,5 +1190,8 @@ void vconsole_init(void)
 
 	register_device(CHR_DEV, &console_device);
 	register_device(CHR_DEV, &tty_device);
-	register_console(console_flush_log_buf);
+
+	if(is_vconsole(_syscondev)) {
+		register_console(console_flush_log_buf);
+	}
 }
