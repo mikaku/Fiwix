@@ -9,10 +9,13 @@
 - Added basic functionality of OPOST functions to tty.
 - Added to reschedule the keyboard bottom-half if it was busy.
 - Added support of O_NONBLOCK in tty_write().
+- Added remote serial console support.
 - Improved termios and other aspects of the tty driver to accomodate the new
   serial driver.
 - Fixed a bug in tty_read and tty_write the caused to send the SIGTTIN signal
   to the foreground process.
+- Fixed nanosleep() to force to 10ms any request lower than 10ms.
+- Fixed a signedness bug in setreuid() and setregid().
 - Small fixes and cosmetic changes.
 
 
