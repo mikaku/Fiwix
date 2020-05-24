@@ -13,7 +13,7 @@ noramdisk	Disable RAM disk driver
 
 ramdisksize=	Size of the RAM disk device in kilobytes (KB)
 
-root=		Root filesystem
+root=		Root device name
 		Options: /dev/fd0, /dev/hda1, ...
 
 rootfstype=	Set the root filesystem type
