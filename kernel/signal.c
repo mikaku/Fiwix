@@ -60,6 +60,18 @@ int send_sig(struct proc *p, __sigset_t signum)
 			break;
 	}
 
+	/*
+	 * Force some signals, that the process cannot ignore, by changing the
+	 * signal disposition to SIG_DFL.
+	 */
+	switch(signum) {
+		case SIGFPE:
+			if(p->sigaction[signum - 1].sa_handler == SIG_IGN) {
+				p->sigaction[signum - 1].sa_handler = SIG_DFL;
+			}
+			break;
+	}
+
 	if(p->sigaction[signum - 1].sa_handler == SIG_IGN && signum != SIGCHLD) {
 		return 0;
 	}
