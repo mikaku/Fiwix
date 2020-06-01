@@ -19,6 +19,7 @@
 #include <fiwix/sleep.h>
 #include <fiwix/process.h>
 #include <fiwix/fcntl.h>
+#include <fiwix/kd.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -254,6 +255,7 @@ void disassociate_ctty(struct tty *tty)
 
 void termios_reset(struct tty *tty)
 {
+	tty->kbd.mode = K_XLATE;
 	tty->termios.c_iflag = ICRNL | IXON | IXOFF;
 	tty->termios.c_oflag = OPOST | ONLCR;
 	tty->termios.c_cflag = B9600 | CS8 | HUPCL | CREAD | CLOCAL;
@@ -509,6 +511,20 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 
 	n = min = 0;
 	while(count > 0) {
+		if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
+			n = 0;
+			while(n < count) {
+				if((ch = tty_queue_getchar(&tty->read_q))) {
+					buffer[n++] = ch;
+				} else {
+					break;
+				}
+			}
+			if(n) {
+				break;
+			}
+		}
+
 		if(tty->termios.c_lflag & ICANON) {
 			if((ch = LAST_CHAR(&tty->cooked_q))) {
 				if(ch == '\n' || ch == tty->termios.c_cc[VEOL] || ch == tty->termios.c_cc[VEOF] || (tty->termios.c_lflag & IEXTEN && ch == tty->termios.c_cc[VEOL2] && tty->termios.c_cc[VEOL2] != 0)) {

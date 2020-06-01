@@ -39,6 +39,10 @@ struct cblock {
 	struct cblock *next;
 };
 
+struct kbd_state {
+	char mode;
+};
+
 struct tty {
 	__dev_t dev;
 	struct clist read_q;
@@ -47,6 +51,7 @@ struct tty {
 	short int count;
 	struct termios termios;
 	struct winsize winsize;
+	struct kbd_state kbd;
 	__pid_t pid, pgid, sid;
 	unsigned char lnext;
 	void *driver_data;

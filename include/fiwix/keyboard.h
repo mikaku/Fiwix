@@ -5,9 +5,6 @@
  * Distributed under the terms of the Fiwix License.
  */
 
-#include <fiwix/types.h>
-#include <fiwix/sigcontext.h>
-
 #ifndef _FIWIX_KEYBOARD_H
 #define _FIWIX_KEYBOARD_H
 
@@ -26,6 +23,21 @@
 #define L(ch)		((ch) | LETTER_KEYS)
 
 #define SLASH_NPAD	53
+
+#define E0ENTER		96
+#define RCTRL		97
+#define E0SLASH		98
+#define ALTGR		100
+#define E0HOME		102
+#define E0UP		103
+#define E0PGUP		104
+#define E0LEFT		105
+#define E0RIGHT		106
+#define E0END		107
+#define E0DOWN		108
+#define E0PGDN		109
+#define E0INS		110
+#define E0DEL		111
 
 #define MOD_BASE	0
 #define MOD_SHIFT	1
@@ -77,9 +89,11 @@
 #define DIERE		(0x04 + DEAD_KEYS)
 
 #define SHIFT		(0x00 + SHIFT_KEYS)
-#define ALTGR		(0x01 + SHIFT_KEYS)
 #define CTRL		(0x02 + SHIFT_KEYS)
 #define ALT		(0x03 + SHIFT_KEYS)
+#define LSHIFT		(0x04 + SHIFT_KEYS)
+#define RSHIFT		(0x05 + SHIFT_KEYS)
+#define LCTRL		(0x06 + SHIFT_KEYS)
 
 #define F1		(0x00 + FN_KEYS)
 #define F2		(0x01 + FN_KEYS)
@@ -120,6 +134,11 @@
 #define AF11		(0x0A + CONS_KEYS)
 #define AF12		(0x0B + CONS_KEYS)
 
+#ifdef __KERNEL__
+
+#include <fiwix/types.h>
+#include <fiwix/sigcontext.h>
+
 struct diacritic {
 	unsigned char letter;
 	unsigned char code;
@@ -131,5 +150,7 @@ void set_leds(unsigned char);
 void irq_keyboard(int num, struct sigcontext *);
 void irq_keyboard_bh(void);
 void keyboard_init(void);
+
+#endif /* __KERNEL__ */
 
 #endif /* _FIWIX_KEYBOARD_H */

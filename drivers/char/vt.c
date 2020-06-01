@@ -15,6 +15,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+int kbdmode = 0;
+
 int vt_ioctl(struct tty *tty, int cmd, unsigned long int arg)
 {
 	struct vconsole *vc;
@@ -43,6 +45,10 @@ int vt_ioctl(struct tty *tty, int cmd, unsigned long int arg)
 			set_leds(vc->led_status);
 			break;
 
+		/* FIXME: implement KDGKBLED and KDSKBLED
+		 * it will need to convert 'scrlock, numlock, capslock' into led_flags.
+		 */
+
 		case KDGKBTYPE:
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned char)))) {
 				return errno;
@@ -69,6 +75,21 @@ int vt_ioctl(struct tty *tty, int cmd, unsigned long int arg)
 				return errno;
 			}
 			memset_b((void *)arg, vc->vc_mode, sizeof(char));
+			break;
+
+		case KDGKBMODE:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned char)))) {
+				return errno;
+			}
+			memset_b((void *)arg, tty->kbd.mode, sizeof(unsigned char));
+			break;
+
+		case KDSKBMODE:
+			if(arg != K_RAW && arg != K_XLATE && arg != K_MEDIUMRAW) {
+				arg = K_XLATE;
+			}
+			tty->kbd.mode = arg;
+			tty_queue_flush(&tty->read_q);
 			break;
 
 		case KDSKBENT:

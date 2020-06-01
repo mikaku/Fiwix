@@ -76,6 +76,25 @@
 
 __key_t *keymap_line;
 
+static unsigned char e0_keys[128] = {
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x00-0x07 */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x08-0x0f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x10-0x17 */
+	0, 0, 0, 0, E0ENTER, RCTRL, 0, 0,		/* 0x18-0x1f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x20-0x27 */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x28-0x2f */
+	0, 0, 0, 0, 0, E0SLASH, 0, 0,			/* 0x30-0x37 */
+	ALTGR, 0, 0, 0, 0, 0, 0, 0,			/* 0x38-0x3f */
+	0, 0, 0, 0, 0, 0, 0, E0HOME,			/* 0x40-0x47 */
+	E0UP, E0PGUP, 0, E0LEFT, 0, E0RIGHT, 0, E0END,	/* 0x48-0x4f */
+	E0DOWN, E0PGDN, E0INS, E0DEL, 0, 0, 0, 0,	/* 0x50-0x57 */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x58-0x5f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x60-0x67 */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x68-0x6f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x70-0x77 */
+	0, 0, 0, 0, 0, 0, 0, 0				/* 0x78-0x7f */
+};
+
 static unsigned char leds = 0;
 static unsigned char shift = 0;
 static unsigned char altgr = 0;
@@ -420,7 +439,14 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	screen_on();
 	keyboard_bh.flags |= BH_ACTIVE;
 
+	/* keyboard said all is OK, perfect */
 	if(scode == KB_ACK) {
+		return;
+	}
+
+	/* if in pure raw mode just queue the scan code and return */
+	if(tty->kbd.mode == K_RAW) {
+		putc(tty, scode);
 		return;
 	}
 
@@ -428,13 +454,27 @@ void irq_keyboard(int num, struct sigcontext *sc)
 		extkey = 1;
 		return;
 	}
+	
+	if(extkey) {
+		key = e0_keys[scode & 0x7f];
+	} else {
+		key = scode & 0x7F;
+	}
+
+	if(tty->kbd.mode == K_MEDIUMRAW) {
+		putc(tty, key | (scode & 0x80));
+		extkey = 0;
+		return;
+	}
 
 	key = keymap[NR_MODIFIERS * (scode & 0x7F)];
 
-	/* a key has been released */
+	/* bit 7 enabled means a key has been released */
 	if(scode & NR_SCODES) {
 		switch(key) {
 			case CTRL:
+			case LCTRL:
+			case RCTRL:
 				ctrl = 0;
 				break;
 			case ALT:
@@ -445,6 +485,8 @@ void irq_keyboard(int num, struct sigcontext *sc)
 				}
 				break;
 			case SHIFT:
+			case LSHIFT:
+			case RSHIFT:
 				if(!extkey) {
 					shift = 0;
 				}
@@ -487,6 +529,8 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			leds = 1;
 			return;
 		case CTRL:
+		case LCTRL:
+		case RCTRL:
 			ctrl = 1;
 			return;
 		case ALT:
@@ -497,6 +541,8 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			}
 			return;
 		case SHIFT:
+		case LSHIFT:
+		case RSHIFT:
 			shift = 1;
 			extkey = 0;
 			return;
@@ -655,6 +701,10 @@ void irq_keyboard_bh(void)
 	tty = &tty_table[0];
 	for(n = 0; n < NR_VCONSOLES; n++, tty++) {
 		if(!tty->read_q.count) {
+			continue;
+		}
+		if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
+			wakeup(&tty_read);
 			continue;
 		}
 		if(lock_area(AREA_TTY_READ)) {
