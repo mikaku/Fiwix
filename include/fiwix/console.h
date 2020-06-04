@@ -67,19 +67,23 @@
 #define DEF_MODE		(COLOR_WHITE | BG_BLACK)
 #define BLANK_MEM		(DEF_MODE | ' ')
 
-#define SCREEN_COLS		80
-#define SCREEN_LINES		25
-#define SCREEN_SIZE		(SCREEN_COLS * SCREEN_LINES * 2)
+#define SCROLL_UP		1
+#define SCROLL_DOWN		2
 
-#define BS			127	/* backspace */
-
-#define VC_BUF_LINES		(SCREEN_LINES * SCREENS_LOG)
-#define VC_BUF_SIZE		(SCREEN_COLS * VC_BUF_LINES * 2)
 #define VC_BUF_UP		1
 #define VC_BUF_DOWN		2
 
-unsigned int video_port;
+#define BS			127	/* backspace */
+
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
+
+struct video_parms {
+	short int *address;
+	int port;
+	char *type;
+	int columns;
+	int lines;
+};
 
 struct vconsole {
 	int x;		/* current column */
@@ -93,9 +97,9 @@ struct vconsole {
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
 	int insert_mode;
-	unsigned short int *vidmem;
+	short int *vidmem;
 	short int has_focus;
-	unsigned short int scrbuf[SCREEN_SIZE / 2];
+	short int *scrbuf;
 	int saved_x;
 	int saved_y;
 	struct vt_mode vt_mode;
@@ -121,6 +125,7 @@ void vconsole_stop(struct tty *);
 void vconsole_beep(void);
 void vconsole_deltab(struct tty *);
 void console_flush_log_buf(char *, unsigned int);
+void get_video_parms(void);
 void vconsole_init(void);
 
 #endif /* _FIWIX_CONSOLE_H */

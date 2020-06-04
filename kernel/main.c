@@ -298,10 +298,6 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 
 	printk("kernel    0x%08X       -    cmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
 
-	timer_init();
-	vconsole_init();
-	keyboard_init();
-
 	if(CHECK_FLAG(mbi.flags, 3)) {
 		int n;
 		struct module *mod;
@@ -327,8 +323,14 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 		bios_map_init(NULL, 0);
 	}
 
+	timer_init();
+	get_video_parms();
+
 	_last_data_addr = stack - KERNEL_BASE_ADDR;
 	mem_init();
+
+	keyboard_init();
+	vconsole_init();
 	proc_init();
 
 	if(!(CHECK_FLAG(mbi.flags, 5))) {
