@@ -86,7 +86,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 	struct page *pg;
 
 	if(!vma) {
-		if(cr2 >= (sc->oldesp - 32)) {
+		if(cr2 >= (sc->oldesp - 32) && cr2 < KERNEL_BASE_ADDR) {
 			if(!(vma = find_vma_region(KERNEL_BASE_ADDR - 1))) {
 				printk("WARNING: %s(): process %d doesn't have an stack region in vma!\n", __FUNCTION__, current->pid);
 				send_sigsegv(sc);
