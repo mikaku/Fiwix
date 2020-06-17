@@ -8,7 +8,7 @@
 #ifndef _FIWIX_KPARMS_H
 #define _FIWIX_KPARMS_H
 
-#define CMDL_ARG_LEN	25	/* max length of cmdline argument */
+#define CMDL_ARG_LEN	100	/* max length of cmdline argument */
 #define CMDL_NUM_VALUES	30	/* max values of cmdline parameter */
 
 struct kparms {

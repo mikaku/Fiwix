@@ -8,7 +8,7 @@
 #ifndef _FIWIX_LIMITS_H
 #define _FIWIX_LIMITS_H
 
-#define DEVNAME_MAX	25	/* device name length in mount table */
+#define DEVNAME_MAX	50	/* device name length in mount table */
 #define ARG_MAX		32	/* length (in pages) of argv+env in 'execve' */
 #define CHILD_MAX	64	/* simultaneous processes per real user ID */
 #define LINK_MAX	255	/* maximum number of links to a file */
