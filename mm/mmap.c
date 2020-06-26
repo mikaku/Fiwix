@@ -358,6 +358,10 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 		return start;
 	}
 
+	if(start > KERNEL_BASE_ADDR || start + length > KERNEL_BASE_ADDR) {
+		return -EINVAL;
+	}
+
 	/* file mapping */
 	if(i) {
 		if(!S_ISREG(i->i_mode) && !S_ISCHR(i->i_mode)) {
