@@ -78,7 +78,7 @@ References
 
 License
 -------
-Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.
+Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.  
 Copyright (C) 2018-2020, Jordi Sanfeliu.
 
 Credits
