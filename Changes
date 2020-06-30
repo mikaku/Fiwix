@@ -10,12 +10,17 @@
 - Added to reschedule the keyboard bottom-half if it was busy.
 - Added support of O_NONBLOCK in tty_write().
 - Added remote serial console support.
+- Added to force some signals that a process cannot ignore by changing their
+  dispositions to SIG_DFL.
+- Added support for K_RAW and K_MEDIUMRAW keyboard modes.
 - Improved termios and other aspects of the tty driver to accomodate the new
   serial driver.
+- Small optimizations and bug fixes in console.
 - Fixed a bug in tty_read and tty_write the caused to send the SIGTTIN signal
   to the foreground process.
 - Fixed nanosleep() to force to 10ms any request lower than 10ms.
 - Fixed a signedness bug in setreuid() and setregid().
+- Fixed to delimitate better the stack-related page faults in the vma region.
 - Small fixes and cosmetic changes.
 
 
