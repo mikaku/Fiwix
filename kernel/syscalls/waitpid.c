@@ -17,7 +17,7 @@
 int sys_waitpid(__pid_t pid, int *status, int options)
 {
 #ifdef __DEBUG__
-	printk("(pid %d) sys_waitpid(%d, 0x%08x, %d)\n", current->pid, pid,  *status, options);
+	printk("(pid %d) sys_waitpid(%d, 0x%08x, %d)\n", current->pid, pid,  status ? *status : 0, options);
 #endif /*__DEBUG__ */
 	return sys_wait4(pid, status, options, NULL);
 }
