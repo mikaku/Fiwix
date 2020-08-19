@@ -49,14 +49,14 @@
 	call	irq_handler						;\
 	addl	$4, %esp
 
-/*
- * Check only for signals if we are returning from user-mode. issig() function
- * returns 1 if there are signals or 0 otherwise. If there are signals psig()
- * function is called with the stack as the first argument.
- */
+#define BOTTOM_HALVES							\
+	cmpl	$0, intr_count						;\
+	jne	2f							;\
+	incl	intr_count						;\
+	call	do_bh							;\
+	decl	intr_count
+
 #define CHECK_SIGNALS							\
-	cmpw	$KERNEL_CS, CS(%esp)					;\
-	je	1f							;\
 	call	issig							;\
 	cmpl	$0, %eax						;\
 	je	1f							;\
@@ -68,13 +68,9 @@
 
 #define SCHEDULE							\
 	cmpl	$0, need_resched					;\
-	je	1f							;\
+	je	2f							;\
 	call	do_sched						;\
-1:
-
-#define BOTTOM_HALVES							\
-/*	sti							*/	;\
-	call	do_bh
+2:
 
 #define RESTORE_ALL							\
 	popl	%gs							;\
@@ -82,7 +78,7 @@
 	popl	%es							;\
 	popl	%ds							;\
 	popal								;\
-	addl	$4, %esp	# suppress error code (or padding) from stack
+	addl	$4, %esp	/* suppress error code from stack */
 
 
 .text
@@ -92,9 +88,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x0)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -103,9 +99,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x1)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -114,9 +110,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x2)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -125,9 +121,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x3)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -136,9 +132,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x4)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -147,9 +143,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x5)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -158,9 +154,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x6)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -170,9 +166,9 @@
 	SAVE_ALL
 	EXCEPTION(0x7)
 	clts			# floating-opcode cached!
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -180,9 +176,9 @@
 .globl except8; except8:	# DOUBLE FAULT
 	SAVE_ALL
 	EXCEPTION(0x8)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -191,9 +187,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x9)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -201,9 +197,9 @@
 .globl exceptA; exceptA:	# INVALID TSS
 	SAVE_ALL
 	EXCEPTION(0xA)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -211,9 +207,9 @@
 .globl exceptB; exceptB:	# SEGMENT NOT PRESENT
 	SAVE_ALL
 	EXCEPTION(0xB)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -221,9 +217,9 @@
 .globl exceptC; exceptC:	# STACK SEGMENT FAULT
 	SAVE_ALL
 	EXCEPTION(0xC)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -231,9 +227,9 @@
 .globl exceptD; exceptD:	# GENERAL PROTECTION FAULT
 	SAVE_ALL
 	EXCEPTION(0xD)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -241,9 +237,9 @@
 .globl exceptE; exceptE:	# PAGE FAULT
 	SAVE_ALL
 	EXCEPTION(0xE)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -252,9 +248,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0xF)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -262,18 +258,18 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x10)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
 .globl except11; except11:	# ALIGNMENT CHECK
 	EXCEPTION(0x11)
 	SAVE_ALL
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -281,9 +277,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x12)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -291,9 +287,9 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x13)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
@@ -312,187 +308,41 @@
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
 	EXCEPTION(0x14)
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 	RESTORE_ALL
 	iret
 
-.align 4
-.globl irq0; irq0:		# TIMER
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(0)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
+
+#define BUILD_IRQ(num, name)						\
+.align 4								;\
+.globl name; name:							;\
+	pushl	$0		/* save simulated error code to stack */;\
+	SAVE_ALL							;\
+	IRQ(num)							;\
+	BOTTOM_HALVES							;\
+	CHECK_SIGNALS							;\
+	SCHEDULE							;\
+	RESTORE_ALL							;\
 	iret
 
-.align 4
-.globl irq1; irq1:		# KEYBOARD
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(1)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq2; irq2:		# CASCADE
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(2)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq3; irq3:		# SERIAL
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(3)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq4; irq4:		# SERIAL
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(4)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq5; irq5:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(5)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq6; irq6:		# FLOPPY
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(6)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq7; irq7:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(7)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq8; irq8:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(8)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq9; irq9:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(9)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq10; irq10:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(10)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq11; irq11:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(11)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq12; irq12:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(12)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq13; irq13:
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(13)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq14; irq14:		# IDE Primary
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(14)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl irq15; irq15:		# IDE Secondary
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	IRQ(15)
-	CHECK_SIGNALS
-	SCHEDULE
-	BOTTOM_HALVES
-	RESTORE_ALL
-	iret
+BUILD_IRQ(0, irq0)
+BUILD_IRQ(1, irq1)
+BUILD_IRQ(2, irq2)
+BUILD_IRQ(3, irq3)
+BUILD_IRQ(4, irq4)
+BUILD_IRQ(5, irq5)
+BUILD_IRQ(6, irq6)
+BUILD_IRQ(7, irq7)
+BUILD_IRQ(8, irq8)
+BUILD_IRQ(9, irq9)
+BUILD_IRQ(10, irq10)
+BUILD_IRQ(11, irq11)
+BUILD_IRQ(12, irq12)
+BUILD_IRQ(13, irq13)
+BUILD_IRQ(14, irq14)
+BUILD_IRQ(15, irq15)
 
 .align 4
 .globl unknown_irq; unknown_irq:
@@ -559,9 +409,9 @@
 	addl	$24, %esp		# suppress all 6 pushl from the stack
 	movl	%eax, EAX(%esp)		# save the return value
 
+	BOTTOM_HALVES
 	CHECK_SIGNALS
 	SCHEDULE
-	BOTTOM_HALVES
 .align 4
 .globl return_from_syscall; return_from_syscall:
 	RESTORE_ALL

@@ -35,6 +35,7 @@ struct interrupt {
 	struct interrupt *next;
 };
 extern struct interrupt *irq_table[NR_IRQS];
+extern unsigned int intr_count;
 
 
 #define BH_ACTIVE	0x01
