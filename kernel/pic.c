@@ -14,6 +14,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/sigcontext.h>
+#include <fiwix/sleep.h>
 
 /* interrupt vector base addresses */
 #define IRQ0_ADDR	0x20
@@ -21,6 +22,7 @@
 
 struct interrupt *irq_table[NR_IRQS];
 static struct bh *bh_table = NULL;
+unsigned int intr_count = 0;
 
 /*
  * This sends the command OCW3 to PIC (master or slave) to obtain the register
@@ -166,7 +168,9 @@ void irq_handler(int num, struct sigcontext sc)
 		return;
 	}
 
+	/* all handlers execute with interrupts disabled */
 	disable_irq(num);
+
 	if(num > 7) {
 		outport_b(PIC_SLAVE, EOI);
 	}
@@ -178,6 +182,7 @@ void irq_handler(int num, struct sigcontext sc)
 		irq->handler(num, &sc);
 		irq = irq->next;
 	} while(irq);
+
 	enable_irq(num);
 }
 
@@ -187,15 +192,20 @@ void do_bh(void)
 	struct bh *b;
 	void (*fn)(void);
 
-	if((b = bh_table)) {
-		do {
-			if(b->flags & BH_ACTIVE) {
-				b->flags &= ~BH_ACTIVE;
-				fn = b->fn;
-				(*fn)();
-			}
-			b = b->next;
-		} while(b);
+	if(!lock_area(AREA_BH)) {
+		//FIXME: STI();
+		if((b = bh_table)) {
+			do {
+				if(b->flags & BH_ACTIVE) {
+					b->flags &= ~BH_ACTIVE;
+					fn = b->fn;
+					(*fn)();
+				}
+				b = b->next;
+			} while(b);
+		}
+		//FIXME: CLI();
+		unlock_area(AREA_BH);
 	}
 }
 
