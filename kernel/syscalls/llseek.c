@@ -23,7 +23,7 @@ int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long in
 	int errno;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_llseek(%d, %d, %d, %08x, %d)", current->pid, ufd, offset_high, offset_low, result, whence);
+	printk("(pid %d) sys_llseek(%d, %u, %u, %08x, %d)", current->pid, ufd, offset_high, offset_low, result, whence);
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);
@@ -47,10 +47,11 @@ int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long in
 	}
 	fd_table[current->fd[ufd]].offset = new_offset;
 
+	memcpy_b(result, &new_offset, sizeof(__loff_t));
+
 #ifdef __DEBUG__
-	printk(" -> returning %d\n", new_offset);
+	printk(" -> returning %u\n", *result);
 #endif /*__DEBUG__ */
 
-	memcpy_b(result, &new_offset, sizeof(__loff_t));
 	return 0;
 }
