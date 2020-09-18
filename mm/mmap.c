@@ -235,11 +235,7 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 					write_page(pg, vma->inode, addr, length);
 				}
 
-				if(pgtbl[pte] < KERNEL_BASE_ADDR) {
-					kfree(P2V(pgtbl[pte]) & PAGE_MASK);
-				} else {
-					kfree(pgtbl[pte] & PAGE_MASK);
-				}
+				kfree(P2V(pgtbl[pte]) & PAGE_MASK);
 				current->rss--;
 				pgtbl[pte] = NULL;
 
