@@ -421,7 +421,9 @@ void serial_set_termios(struct tty *tty)
 	s = (struct serial *)tty->driver_data;
 	lctrl = 0;
 
-	baud = tty->termios.c_cflag & CBAUD;
+	if(!(baud = tty->termios.c_cflag & CBAUD)) {
+		return;
+	}
 	divisor = 115200 / baud_table[baud];
 
 	outport_b(s->addr + UART_LCR, UART_LCR_DLAB);	/* enable DLAB */
