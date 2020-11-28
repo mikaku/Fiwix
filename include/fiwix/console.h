@@ -40,12 +40,14 @@
 #define CURSOR_MASK		0x1F
 #define CURSOR_DISABLE		0x20
 
-#define COLOR_NORMAL		0
-#define COLOR_BOLD		1
-#define COLOR_BOLD_OFF		2
-#define COLOR_UNDERLINE		4
-#define COLOR_BLINK		5
-#define COLOR_REVERSE		7
+/* Graphic Rendition Combination Modes */
+#define GRCM_DEFAULT		0	/* back to the default rendition */
+#define GRCM_BOLD		1	/* set bold */
+#define GRCM_LOW_BRIGHT		2	/* set low bright */
+#define GRCM_BLINK		5	/* set slowly blinking */
+#define GRCM_REVERSE		7	/* set reverse video */
+#define GRCM_BLINK_OFF		25	/* unset blinking */
+#define GRCM_REVERSE_OFF	27	/* unset reverse video */
 
 #define COLOR_BLACK		0x0000
 #define COLOR_BLUE		0x0100

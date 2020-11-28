@@ -400,6 +400,7 @@ static void default_color_attr(struct vconsole *vc)
 	vc->reverse = 0;
 }
 
+/* Select Graphic Rendition */
 static void csi_m(struct vconsole *vc)
 {
 	if(vc->reverse) {
@@ -407,29 +408,30 @@ static void csi_m(struct vconsole *vc)
 	}
 
 	switch(vc->parmv1) {
-		case COLOR_NORMAL:
+		case GRCM_DEFAULT:
 			default_color_attr(vc);
 			break;
-		case COLOR_BOLD:
+		case GRCM_BOLD:
 			vc->bold = 1;
 			break;
-		case COLOR_BOLD_OFF:
+		case GRCM_LOW_BRIGHT:
 			vc->bold = 0;
 			break;
-		case COLOR_BLINK:
+		case GRCM_BLINK:
 			vc->blink = 1;
 			break;
-		case COLOR_REVERSE:
+		case GRCM_REVERSE:
 			vc->reverse = 1;
 			break;
+		/* normal intensity */
 		case 21:
 		case 22:
-			vc->bold = 1;
+			vc->bold = 0;
 			break;
-		case 25:
+		case GRCM_BLINK_OFF:
 			vc->blink = 0;
 			break;
-		case 27:
+		case GRCM_REVERSE_OFF:
 			vc->reverse = 0;
 			break;
 	}
@@ -447,6 +449,8 @@ static void csi_m(struct vconsole *vc)
 	}
 	if(vc->bold) {
 		vc->color_attr |= 0x0800;
+	} else {
+		vc->color_attr &= ~0x0800;
 	}
 	if(vc->blink) {
 		vc->color_attr |= 0x8000;
@@ -640,47 +644,64 @@ void vconsole_write(struct tty *tty)
 					case '?':
 						vc->question = 1;
 						continue;
-					case 'A':	/* Cursor Up <ESC>[{COUNT}A */
+					case '@':	/* Insert Character(s) <ESC>[ n @ */
+						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
+						csi_at(vc, vc->parmv1);
+						CSE;
+						continue;
+					case 'A':	/* Cursor Up <ESC>[ n A */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, vc->x, vc->y - vc->parmv1);
 						CSE;
 						continue;
-					case 'B':	/* Cursor Down <ESC>[{COUNT}B */
+					case 'B':	/* Cursor Down <ESC>[ n B */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, vc->x, vc->y + vc->parmv1);
 						CSE;
 						continue;
-					case 'C':	/* Cursor Forward <ESC>[{COUNT}C */
+					case 'C':	/* Cursor Forward <ESC>[ n C */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, vc->x + vc->parmv1, vc->y);
 						CSE;
 						continue;
-					case 'D':	/* Cursor Backward <ESC>[{COUNT}D */
+					case 'D':	/* Cursor Backward <ESC>[ n D */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, vc->x - vc->parmv1, vc->y);
 						CSE;
 						continue;
-					case 'E':	/* Cursor Next Line(s) <ESC>[{COUNT}E */
+					case 'E':	/* Cursor Next Line(s) <ESC>[ n E */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, 0, vc->y + vc->parmv1);
 						CSE;
 						continue;
-					case 'F':	/* Cursor Previous Line(s) <ESC>[{COUNT}F */
+					case 'F':	/* Cursor Previous Line(s) <ESC>[ n F */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						adjust(vc, 0, vc->y - vc->parmv1);
 						CSE;
 						continue;
-					case 'G':	/* Cursor Horizontal Position <ESC>[{NUM1}G */
+					case 'G':	/* Cursor Horizontal Position <ESC>[ n G */
 					case '`':
 						vc->parmv1 = vc->parmv1 ? vc->parmv1 - 1 : vc->parmv1;
 						adjust(vc, vc->parmv1, vc->y);
 						CSE;
 						continue;
-					case 'H':	/* Cursor Home <ESC>[{ROW};{COLUMN}H */
-					case 'f':	/* Force Cursor Position <ESC>[{ROW};{COLUMN}f */
+					case 'H':	/* Cursor Home <ESC>[ ROW ; COLUMN H */
+					case 'f':	/* Horizontal Vertical Position <ESC>[ ROW ; COLUMN f */
 						vc->parmv1 = vc->parmv1 ? vc->parmv1 - 1 : vc->parmv1;
 						vc->parmv2 = vc->parmv2 ? vc->parmv2 - 1 : vc->parmv2;
 						adjust(vc, vc->parmv2, vc->parmv1);
+						CSE;
+						continue;
+					case 'I':	/* Cursor Forward Tabulation <ESC>[ n I */
+						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
+						while(vc->parmv1--){
+							while(vc->x < (vc->columns - 1)) {
+								if(vc->tty->tab_stop[++vc->x]) {
+									break;
+								}
+							}
+						}
+						adjust(vc, vc->x, vc->y);
 						CSE;
 						continue;
 					case 'J':	/* Erase (Down/Up/Screen) <ESC>[J */
@@ -691,24 +712,33 @@ void vconsole_write(struct tty *tty)
 						csi_K(vc, vc->parmv1);
 						CSE;
 						continue;
-					case 'L':	/* Insert Line(s) <ESC>[{COUNT}L */
+					case 'L':	/* Insert Line(s) <ESC>[ n L */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						csi_L(vc, vc->parmv1);
 						CSE;
 						continue;
-					case 'M':	/* Delete Line(s) <ESC>[{COUNT}M */
+					case 'M':	/* Delete Line(s) <ESC>[ n M */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						csi_M(vc, vc->parmv1);
 						CSE;
 						continue;
-					case 'P':	/* Delete Character(s) <ESC>[{COUNT}P */
+					case 'P':	/* Delete Character(s) <ESC>[ n P */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
 						csi_P(vc, vc->parmv1);
 						CSE;
 						continue;
-					case '@':	/* Insert Character(s) <ESC>[{COUNT}@ */
+					case 'S':	/* Scroll Up <ESC>[ n S */
 						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
-						csi_at(vc, vc->parmv1);
+						while(vc->parmv1--) {
+							scroll_screen(vc, 0, SCROLL_UP);
+						}
+						CSE;
+						continue;
+					case 'T':	/* Scroll Down <ESC>[ n T */
+						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
+						while(vc->parmv1--) {
+							scroll_screen(vc, 0, SCROLL_DOWN);
+						}
 						CSE;
 						continue;
 					case 'c':	/* Query Device Code <ESC>[c */
@@ -717,7 +747,7 @@ void vconsole_write(struct tty *tty)
 						}
 						CSE;
 						continue;
-					case 'd':	/* Cursor Vertical Position <ESC>[{NUM1}d */
+					case 'd':	/* Cursor Vertical Position <ESC>[ n d */
 						vc->parmv1 = vc->parmv1 ? vc->parmv1 - 1 : vc->parmv1;
 						adjust(vc, vc->x, vc->parmv1);
 						CSE;
@@ -728,6 +758,7 @@ void vconsole_write(struct tty *tty)
 								vc->tty->tab_stop[vc->x] = 0;
 								break;
 							case 3:	/* Clear All Tabs <ESC>[3g */
+							case 5:	/* Clear All Tabs <ESC>[5g */
 								for(n = 0; n < MAX_TAB_COLS; n++)
 									vc->tty->tab_stop[n] = 0;
 								break;
@@ -762,7 +793,7 @@ void vconsole_write(struct tty *tty)
 						}
 						CSE;
 						continue;
-					case 'm':	/* Character Attributes <ESC>{NUM1}{NUM2}m */
+					case 'm':	/* Select Graphic Rendition <ESC> n ... m */
 						csi_m(vc);
 						CSE;
 						continue;
@@ -830,7 +861,7 @@ void vconsole_write(struct tty *tty)
 						vc->y = vc->saved_y;
 						CSE;
 						continue;
-					case 'D':	/* Scroll Down <ESC>D */
+					case 'D':	/* Scroll Up <ESC>D */
 						lf(vc);
 						CSE;
 						continue;
@@ -843,7 +874,7 @@ void vconsole_write(struct tty *tty)
 						vc->tty->tab_stop[vc->x] = 1;
 						CSE;
 						continue;
-					case 'M':	/* Scroll Up <ESC>M */
+					case 'M':	/* Scroll Down <ESC>M */
 						ri(vc);
 						CSE;
 						continue;
