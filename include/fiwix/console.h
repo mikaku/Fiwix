@@ -41,13 +41,38 @@
 #define CURSOR_DISABLE		0x20
 
 /* Graphic Rendition Combination Modes */
-#define GRCM_DEFAULT		0	/* back to the default rendition */
-#define GRCM_BOLD		1	/* set bold */
-#define GRCM_LOW_BRIGHT		2	/* set low bright */
-#define GRCM_BLINK		5	/* set slowly blinking */
-#define GRCM_REVERSE		7	/* set reverse video */
-#define GRCM_BLINK_OFF		25	/* unset blinking */
-#define GRCM_REVERSE_OFF	27	/* unset reverse video */
+#define SGR_DEFAULT		0	/* back to the default rendition */
+#define SGR_BOLD		1	/* set bold */
+#define SGR_BLINK		5	/* set slowly blinking */
+#define SGR_REVERSE		7	/* set reverse video */
+#define SGR_BOLD_OFF		21	/* unset bold */
+#define SGR_BLINK_OFF		25	/* unset blinking */
+#define SGR_REVERSE_OFF		27	/* unset reverse video */
+
+#define SGR_BLACK_FG		30	/* set black foreground */
+#define SGR_RED_FG		31	/* set red foreground */
+#define SGR_GREEN_FG		32	/* set green foreground */
+#define SGR_BROWN_FG		33	/* set brown foreground */
+#define SGR_BLUE_FG		34	/* set blue foreground */
+#define SGR_MAGENTA_FG		35	/* set magenta foreground */
+#define SGR_CYAN_FG		36	/* set cyan foreground */
+#define SGR_WHITE_FG		37	/* set white foreground */
+
+#define SGR_DEFAULT_FG_U_ON	38	/* set def. fg color (underline on) */
+#define SGR_DEFAULT_FG_U_OFF	39	/* set def. fg color (underline off) */
+
+#define SGR_BLACK_BG		40	/* set black background */
+#define SGR_RED_BG		41	/* set red background */
+#define SGR_GREEN_BG		42	/* set green background */
+#define SGR_BROWN_BG		43	/* set brown background */
+#define SGR_BLUE_BG		44	/* set blue background */
+#define SGR_MAGENTA_BG		45	/* set magenta background */
+#define SGR_CYAN_BG		46	/* set cyan background */
+#define SGR_WHITE_BG		47	/* set white background */
+
+#define SGR_DEFAULT_BG		49	/* set default background color */
+
+#define NPARMS			16
 
 #define COLOR_BLACK		0x0000
 #define COLOR_BLUE		0x0100
@@ -96,6 +121,7 @@ struct vconsole {
 	unsigned char scrlock, numlock, capslock;
 	unsigned char esc, sbracket, semicolon, question;
 	int parmv1, parmv2;
+	int nparms, parms[NPARMS];
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
 	int insert_mode;

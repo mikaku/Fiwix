@@ -403,49 +403,65 @@ static void default_color_attr(struct vconsole *vc)
 /* Select Graphic Rendition */
 static void csi_m(struct vconsole *vc)
 {
+	int n;
+
 	if(vc->reverse) {
 		vc->color_attr = ((vc->color_attr & 0x7000) >> 4) | ((vc->color_attr & 0x0700) << 4) | (vc->color_attr & 0x8800); 
 	}
 
-	switch(vc->parmv1) {
-		case GRCM_DEFAULT:
-			default_color_attr(vc);
-			break;
-		case GRCM_BOLD:
-			vc->bold = 1;
-			break;
-		case GRCM_LOW_BRIGHT:
-			vc->bold = 0;
-			break;
-		case GRCM_BLINK:
-			vc->blink = 1;
-			break;
-		case GRCM_REVERSE:
-			vc->reverse = 1;
-			break;
-		/* normal intensity */
-		case 21:
-		case 22:
-			vc->bold = 0;
-			break;
-		case GRCM_BLINK_OFF:
-			vc->blink = 0;
-			break;
-		case GRCM_REVERSE_OFF:
-			vc->reverse = 0;
-			break;
-	}
-	if(vc->parmv1 >= 30 && vc->parmv1 <= 37) {
-		vc->color_attr = (vc->color_attr & 0xF8FF) | (ansi_color_table[vc->parmv1 - 30]);
-	}
-	if(vc->parmv1 >= 40 && vc->parmv1 <= 47) {
-		vc->color_attr = (vc->color_attr & 0x8FFF) | ((ansi_color_table[vc->parmv1 - 40]) << 4);
-	}
-	if(vc->parmv2 >= 30 && vc->parmv2 <= 37) {
-		vc->color_attr = (vc->color_attr & 0xF8FF) | (ansi_color_table[vc->parmv2 - 30]);
-	}
-	if(vc->parmv2 >= 40 && vc->parmv2 <= 47) {
-		vc->color_attr = (vc->color_attr & 0x8FFF) | ((ansi_color_table[vc->parmv2 - 40]) << 4);
+	for(n = 0; n < vc->nparms; n++) {
+		switch(vc->parms[n]) {
+			case SGR_DEFAULT:
+				default_color_attr(vc);
+				break;
+			case SGR_BOLD:
+				vc->bold = 1;
+				break;
+			case SGR_BLINK:
+				vc->blink = 1;
+				break;
+			case SGR_REVERSE:
+				vc->reverse = 1;
+				break;
+			/* normal intensity */
+			case 21:
+			case 22:
+				vc->bold = 0;
+				break;
+			case SGR_BLINK_OFF:
+				vc->blink = 0;
+				break;
+			case SGR_REVERSE_OFF:
+				vc->reverse = 0;
+				break;
+			case SGR_BLACK_FG:
+			case SGR_RED_FG:
+			case SGR_GREEN_FG:
+			case SGR_BROWN_FG:
+			case SGR_BLUE_FG:
+			case SGR_MAGENTA_FG:
+			case SGR_CYAN_FG:
+			case SGR_WHITE_FG:
+				vc->color_attr = (vc->color_attr & 0xF8FF) | (ansi_color_table[vc->parms[n] - 30]);
+				break;
+			case SGR_DEFAULT_FG_U_ON:
+			case SGR_DEFAULT_FG_U_OFF:
+				/* not supported yet */
+				break;
+			case SGR_BLACK_BG:
+			case SGR_RED_BG:
+			case SGR_GREEN_BG:
+			case SGR_BROWN_BG:
+			case SGR_BLUE_BG:
+			case SGR_MAGENTA_BG:
+			case SGR_CYAN_BG:
+			case SGR_WHITE_BG:
+				vc->color_attr = (vc->color_attr & 0x8FFF) | ((ansi_color_table[vc->parms[n] - 40]) << 4);
+				break;
+			case SGR_DEFAULT_BG:
+				/* not supported yet */
+				break;
+		}
 	}
 	if(vc->bold) {
 		vc->color_attr |= 0x0800;
@@ -578,6 +594,8 @@ void vconsole_reset(struct tty *tty)
 	vc->scrlock = vc->numlock = vc->capslock = 0;
 	vc->esc = vc->sbracket = vc->semicolon = vc->question = 0;
 	vc->parmv1 = vc->parmv2 = 0;
+	vc->nparms = 0;
+	memset_b(vc->parms, 0, sizeof(vc->parms));
 	default_color_attr(vc);
 	vc->insert_mode = 0;
 	vc->saved_x = vc->saved_y = 0;
@@ -634,12 +652,15 @@ void vconsole_write(struct tty *tty)
 						vc->parmv1 *= 10;
 						vc->parmv1 += ch - '0';
 					}
+					vc->parms[vc->nparms] *= 10;
+					vc->parms[vc->nparms] += ch - '0';
 					continue;
 				}
 				switch(ch) {
 					case ';':
 						vc->semicolon = 1;
 						vc->parmv2 = 0;
+						vc->nparms++;
 						continue;
 					case '?':
 						vc->question = 1;
@@ -794,6 +815,7 @@ void vconsole_write(struct tty *tty)
 						CSE;
 						continue;
 					case 'm':	/* Select Graphic Rendition <ESC> n ... m */
+						vc->nparms++;
 						csi_m(vc);
 						CSE;
 						continue;
@@ -850,6 +872,8 @@ void vconsole_write(struct tty *tty)
 						vc->semicolon = 0;
 						vc->question = 0;
 						vc->parmv1 = vc->parmv2 = 0;
+						vc->nparms = 0;
+						memset_b(vc->parms, 0, sizeof(vc->parms));
 						continue;
 					case '7':	/* Save Cursor & Attrs <ESC>7 */
 						vc->saved_x = vc->x;
