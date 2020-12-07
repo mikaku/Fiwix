@@ -351,6 +351,15 @@ static void csi_K(struct vconsole *vc, int mode)
 	memset_w(vc->vidmem + from, vc->color_attr, count);
 }
 
+static void csi_X(struct vconsole *vc, int count)
+{
+	int from;
+
+	from = (vc->y * vc->columns) + vc->x;
+	count = count > (vc->columns - vc->x) ? vc->columns - vc->x : count;
+	memset_w(vc->vidmem + from, vc->color_attr, count * 2);
+}
+
 static void csi_L(struct vconsole *vc, int count)
 {
 	if(count > (vc->bottom - vc->top)) {
@@ -470,6 +479,8 @@ static void csi_m(struct vconsole *vc)
 	}
 	if(vc->blink) {
 		vc->color_attr |= 0x8000;
+	} else {
+		vc->color_attr &= ~0x8000;
 	}
 	if(vc->reverse) {
 		vc->color_attr = ((vc->color_attr & 0x7000) >> 4) | ((vc->color_attr & 0x0700) << 4) | (vc->color_attr & 0x8800); 
@@ -760,6 +771,11 @@ void vconsole_write(struct tty *tty)
 						while(vc->parmv1--) {
 							scroll_screen(vc, 0, SCROLL_DOWN);
 						}
+						CSE;
+						continue;
+					case 'X':	/* Erase Character(s) <ESC>[ n X */
+						vc->parmv1 = !vc->parmv1 ? 1 : vc->parmv1;
+						csi_X(vc, vc->parmv1);
 						CSE;
 						continue;
 					case 'c':	/* Query Device Code <ESC>[c */
