@@ -142,6 +142,9 @@ int clone_pages(struct proc *child)
 
 	for(n = 0, pages = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
 		for(n2 = vma->start; n2 < vma->end; n2 += PAGE_SIZE) {
+			if(vma->flags & MAP_SHARED) {
+				continue;
+			}
 			pde = GET_PGDIR(n2);
 			pte = GET_PGTBL(n2);
 			if(src_pgdir[pde] & PAGE_PRESENT) {
@@ -164,7 +167,7 @@ int clone_pages(struct proc *child)
 						continue;
 					}
 					src_pgtbl[pte] &= ~PAGE_RW;
-					/* mark as COW only writable pages */
+					/* mark write-only pages as COW*/
 					if(vma->prot & PROT_WRITE) {
 						pg->flags |= PAGE_COW;
 					}
