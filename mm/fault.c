@@ -128,7 +128,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 			}
 			pg = &page_table[V2P(page) >> PAGE_SHIFT];
 			if(bread_page(pg, vma->inode, file_offset, vma->prot, vma->flags)) {
-				unmap_page(page);
+				unmap_page(cr2);
 				return 1;
 			}
 			current->usage.ru_majflt++;
