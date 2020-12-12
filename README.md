@@ -4,8 +4,6 @@ Fiwix is an operating system kernel written from scratch, based on the UNIX arch
 
 Features
 --------
-It offers many UNIX-like features:
-
  - Mostly written in C language (Assembly only used in the needed parts).
  - GRUB Multiboot Specification v1 compliant.
  - Full 32bit protected mode non-preemptive kernel.
@@ -32,6 +30,7 @@ It offers many UNIX-like features:
  - SVGAlib based applications support.
  - Keyboard driver with Linux keymaps support.
  - Serial port (RS-232) driver support.
+ - Remote serial console support.
  - Parallel port printer driver support.
  - Basic implementation of a Pseudo-Random Number Generator.
  - Floppy disk device driver and DMA management.
@@ -48,7 +47,7 @@ Keep in mind that the kernel doesn't do anything on its own, you need to create 
 
 Installing
 ----------
-You can proceed to install FiwixOS on a hard disk either by booting from the Live CD-ROM or from a floppy. If you chosen the latter, you will also need the Live CD-ROM inserted in order to install the packages that form all the system environment.
+You can proceed to install [FiwixOS](https://www.fiwix.org/downloads.html) on a hard disk either by booting from the CD-ROM or from a floppy. If you chosen the latter, you will also need the Installation CD-ROM inserted in order to install the packages that form all the system environment.
 
 Let the system boot either from the CD-ROM or floppy and, when you are ready, just type `install.sh`.
 
@@ -58,7 +57,7 @@ The minimal hardware requirements are as follows:
  - i386 processor or higher.
  - 3MB of RAM memory (128MB recommended).
  - IDE/ATAPI CD-ROM or floppy disk (3.5", 1.44MB).
- - 500MB ATA hard disk (1GB recommended).
+ - 1GB ATA hard disk.
 
 Please keep in mind that this is a kernel in its very early stages and may well have serious bugs and broken features which have not yet been identified or resolved.
 
