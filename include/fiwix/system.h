@@ -10,7 +10,7 @@
 
 #define UTS_SYSNAME	"Fiwix"
 #define UTS_NODENAME	"(none)"
-#define UTS_RELEASE	"1.1.0"
+#define UTS_RELEASE	"1.2.0"
 #define UTS_DOMAINNAME	"(none)"
 
 struct sysinfo {

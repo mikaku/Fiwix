@@ -1,4 +1,4 @@
-1.2.0 - DD-MMM-2020
+1.2.0 - 12-Dec-2020
 ===================
 - Added support for serial (RS-232) devices.
 - Completely rewritten the way how the device table is handled.
@@ -10,17 +10,26 @@
 - Added to reschedule the keyboard bottom-half if it was busy.
 - Added support of O_NONBLOCK in tty_write().
 - Added remote serial console support.
-- Added to force some signals that a process cannot ignore by changing their
-  dispositions to SIG_DFL.
 - Added support for K_RAW and K_MEDIUMRAW keyboard modes.
+- Added and fixed some ECMA-48 CSI sequences in console.
 - Improved termios and other aspects of the tty driver to accomodate the new
   serial driver.
 - Small optimizations and bug fixes in console.
-- Fixed a bug in tty_read and tty_write the caused to send the SIGTTIN signal
+- Improved the macros that build the interrupt service routines.
+- Fixed to force some signals that a process cannot ignore by changing their
+  dispositions to SIG_DFL.
+- Fixed a bug in tty_read and tty_write that caused to send the SIGTTIN signal
   to the foreground process.
 - Fixed nanosleep() to force to 10ms any request lower than 10ms.
 - Fixed a signedness bug in setreuid() and setregid().
 - Fixed to delimitate better the stack-related page faults in the vma region.
+- Fixed a NULL pointer dereference when __DEBUG__ is enabled in sys_waitpid().
+- Fixed to avoid freeing an invalid page that generated PANICs in SVGAlib
+  programs.
+- Fixed a bug that, under certain conditions, page_not_present() unmapped a
+  wrong page number.
+- Fixed to not clone MAP_SHARED pages during fork().
+- Saved twice the 'signum' value before calling the signal handler.
 - Small fixes and cosmetic changes.
 
 
