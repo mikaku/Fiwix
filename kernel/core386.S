@@ -379,9 +379,17 @@ BUILD_IRQ(15, irq15)
 
 .align 4
 .globl sighandler_trampoline; sighandler_trampoline:
-	pushl	%eax
+	/*
+	 * This pushes twice the %eax register in order to save the 'signum'
+	 * value from being clobbered by functions like printf(), during the
+	 * signal handler calling.
+	 * FIXME: is this a bug in Newlib or in my side?
+	 */
+	pushl	%eax			# save 'signum'
+	pushl	%eax			# 'signum' is the argument of the handler
 	call	*%ecx
-	popl	%ebx
+	addl	$4, %esp		# discard the first push
+	popl	%ebx			# restore 'signum'
 
 	movl	$SYS_sigreturn, %eax
 	int	$0x80
@@ -399,11 +407,11 @@ BUILD_IRQ(15, irq15)
 	pushl	%eax			# save the system call number
 	SAVE_ALL
 
-	pushl	%edi			# \ 5th parameter
-	pushl	%esi			# | 4th parameter
-	pushl	%edx			# | 3rd parameter
-	pushl	%ecx			# | 2nd parameter
-	pushl	%ebx			# / 1st parameter
+	pushl	%edi			# \ 5th argument
+	pushl	%esi			# | 4th argument
+	pushl	%edx			# | 3rd argument
+	pushl	%ecx			# | 2nd argument
+	pushl	%ebx			# / 1st argument
 	pushl	%eax			# system call number
 	call	do_syscall
 	addl	$24, %esp		# suppress all 6 pushl from the stack
