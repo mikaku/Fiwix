@@ -32,7 +32,7 @@ int procfs_read_inode(struct inode *i)
 		lev = PROC_PID_LEV;
 	} else {
 		if(!(d = get_procfs_by_inode(i))) {
-			return NULL;
+			return -ENOENT;
 		}
 		mode = d->mode;
 		nlink = d->nlink;
