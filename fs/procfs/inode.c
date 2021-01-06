@@ -51,7 +51,6 @@ int procfs_read_inode(struct inode *i)
 	i->i_flags = 0;
 	i->locked = 1;
 	i->dirty = 0;
-	i->mount_point = NULL;
 	i->count = 1;
 	i->u.procfs.i_lev = lev;
 	switch(i->i_mode & S_IFMT) {
