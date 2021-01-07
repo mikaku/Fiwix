@@ -393,3 +393,13 @@ void stop_kernel(void)
 
 	cpu_idle();
 }
+
+void cpu_idle()
+{
+	for(;;) {
+		if(need_resched) {
+			do_sched();
+		}
+		HLT();
+	}
+}

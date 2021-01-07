@@ -139,10 +139,6 @@ multiboot_entry:
 	pushl	%ebx			/* save Multiboot info structure */
 	pushl	%ecx			/* save Multiboot magic value */
 	call	start_kernel
-
-.align 4
-.globl cpu_idle; cpu_idle:
-	hlt
 	jmp	cpu_idle
 
 .align 4
