@@ -106,6 +106,10 @@ int ramdisk_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	size = rd_sizes[MINOR(dev)] * 1024;
 	offset = block * blksize;
+	if(offset > size) {
+		printk("%s(): block %d is beyond the size of the ramdisk.\n", __FUNCTION__, block);
+		return -EIO;
+	}
 	blksize = MIN(blksize, size - offset);
 	memcpy_b((void *)buffer, ramdisk->addr + offset, blksize);
 	return blksize;
@@ -123,6 +127,10 @@ int ramdisk_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	size = rd_sizes[MINOR(dev)] * 1024;
 	offset = block * blksize;
+	if(offset > size) {
+		printk("%s(): block %d is beyond the size of the ramdisk.\n", __FUNCTION__, block);
+		return -EIO;
+	}
 	blksize = MIN(blksize, size - offset);
 	memcpy_b((void *)ramdisk->addr + offset, buffer, blksize);
 	return blksize;
