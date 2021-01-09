@@ -93,7 +93,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #endif /*__DEBUG__ */
 
 	/* copy the value of 'argc' into the stack */
-	memcpy_l((void *)sp, &barg->argc, 1);
+	*sp = barg->argc;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> argc\n", sp);
 #endif /*__DEBUG__ */
@@ -102,7 +102,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	/* copy as many pointers to strings as 'argc' */
 	current->argv = (char **)sp;
 	for(n = 0; n < barg->argc; n++) {
-		memcpy_l((void *)sp, &str_ptr, 1);
+		*sp = str_ptr;
 		str = (char *)str_ptr;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> str_ptr(%d) = 0x%08x (+ %d)\n", sp, n, str_ptr, strlen(str) + 1);
@@ -112,7 +112,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	}
 
 	/* the last element of 'argv[]' must be a NULL-pointer */
-	memset_l((void *)sp, NULL, 1);
+	*sp = NULL;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> -------------- = 0x%08x\n", sp, 0);
 #endif /*__DEBUG__ */
@@ -121,7 +121,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	/* copy as many pointers to strings as 'envc' */
 	current->envp = (char **)sp;
 	for(n = 0; n < barg->envc; n++) {
-		memcpy_l((void *)sp, &str_ptr, 1);
+		*sp = str_ptr;
 		str = (char *)str_ptr;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> str_ptr(%d) = 0x%08x (+ %d)\n", sp, n, str_ptr, strlen(str) + 1);
@@ -131,7 +131,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	}
 
 	/* the last element of 'envp[]' must be a NULL-pointer */
-	memset_l((void *)sp, NULL, 1);
+	*sp = NULL;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> -------------- = 0x%08x\n", sp, 0);
 #endif /*__DEBUG__ */
@@ -280,7 +280,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #endif /*__DEBUG__ */
 	sp++;
 
-	memset_l((void *)sp, NULL, 1);
+	*sp = NULL;
 #ifdef __DEBUG__
 	printk("\t\tAT_NULL = %d\n", *sp);
 #endif /*__DEBUG__ */
