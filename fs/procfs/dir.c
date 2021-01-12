@@ -134,18 +134,7 @@ static int proc_listfd(struct inode *i, char *buffer)
 }
 */
 
-int procfs_dir_open(struct inode *i, struct fd *fd_table)
-{
-	fd_table->offset = 0;
-	return 0;
-}
-
-int procfs_dir_close(struct inode *i, struct fd *fd_table)
-{
-	return 0;
-}
-
-int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	__off_t total_read;
 	unsigned int bytes;
@@ -185,6 +174,22 @@ int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	return total_read;
 }
 
+int procfs_dir_open(struct inode *i, struct fd *fd_table)
+{
+	fd_table->offset = 0;
+	return 0;
+}
+
+int procfs_dir_close(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+{
+	return -EISDIR;
+}
+
 int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, unsigned int count)
 {
 	unsigned int offset, boffset, dirent_offset, doffset;
@@ -195,9 +200,6 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 	char *buffer;
 	int lev;
 
-	if(!i->fsop || !i->fsop->read) {
-		return -EBADF;
-	}
 	if(!(buffer = (void *)kmalloc())) {
 		return -ENOMEM;
 	}
@@ -210,7 +212,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 
 	boffset = offset % PAGE_SIZE;
 
-	total_read = i->fsop->read(i, fd_table, buffer, PAGE_SIZE);
+	total_read = dir_read(i, fd_table, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {
 		kfree((unsigned int)buffer);
 		return dirent_offset;
