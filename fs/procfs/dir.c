@@ -165,6 +165,7 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 
 	if((len + bytes) > (count - 1)) {
 		printk("WARNING: %s(): len (%d) > count (%d).\n", __FUNCTION__, len, count);
+		kfree((unsigned int)buf);
 		return 0;
 	}
 	memcpy_b(buf + len, (char *)&procfs_array[lev], bytes);
