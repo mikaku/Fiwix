@@ -58,7 +58,7 @@ struct fs_operations procfs_dir_fsop = {
 	NULL			/* release_superblock */
 };
 
-static int proc_listdir(char *buffer)
+static int proc_listdir(char *buffer, int count)
 {
 	int n;
 	struct proc *p;
@@ -84,7 +84,7 @@ static int proc_listdir(char *buffer)
 			d.name = p->pidstr;
 			d.data_fn = NULL;
 
-			if(size + sizeof(struct procfs_dir_entry) >= PAGE_SIZE) {
+			if(size + sizeof(struct procfs_dir_entry) > (count - 1)) {
 				printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
 				break;
 			}
@@ -98,7 +98,7 @@ static int proc_listdir(char *buffer)
 }
 
 /*
-static int proc_listfd(struct inode *i, char *buffer)
+static int proc_listfd(struct inode *i, char *buffer, int count)
 {
 	int n;
 	struct proc *p;
@@ -119,7 +119,7 @@ static int proc_listfd(struct inode *i, char *buffer)
 			d.name_len = sprintk(d.name, "%d", n);
 			d.data_fn = NULL;
 
-			if(size + sizeof(struct procfs_dir_entry) >= 4096) {
+			if(size + sizeof(struct procfs_dir_entry) > (count - 1)) {
 				printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
 				break;
 			}
@@ -148,12 +148,12 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	/* create the list of directories for each process */
 	len = 0;
 	if(i->inode == PROC_ROOT_INO) {
-		len = proc_listdir(buf);
+		len = proc_listdir(buf, count);
 	}
 
 	/* TODO: create the list of fds used for each process
 	if((i->inode & 0xF0000FFF) == PROC_PID_FD) {
-		len = proc_listfd(i, buf);
+		len = proc_listfd(i, buf, count);
 	}
 	*/
 
@@ -163,13 +163,14 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	/* assigns the size of the level without the last entry (NULL) */
 	bytes = sizeof(procfs_array[lev]) - sizeof(struct procfs_dir_entry);
 
-	if((len + bytes) > (PAGE_SIZE - 1)) {
-		printk("WARNING: %s(): len > 4095 (%d).\n", __FUNCTION__, len);
+	if((len + bytes) > (count - 1)) {
+		printk("WARNING: %s(): len (%d) > count (%d).\n", __FUNCTION__, len, count);
+		return 0;
 	}
 	memcpy_b(buf + len, (char *)&procfs_array[lev], bytes);
 	len += bytes;
 	total_read = fd_table->offset = len;
-	memcpy_b(buffer, buf, PAGE_SIZE);
+	memcpy_b(buffer, buf, len);
 	kfree((unsigned int)buf);
 	return total_read;
 }
