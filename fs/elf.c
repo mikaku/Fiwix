@@ -93,6 +93,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #endif /*__DEBUG__ */
 
 	/* copy the value of 'argc' into the stack */
+	current->argc = barg->argc;
 	*sp = barg->argc;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> argc\n", sp);

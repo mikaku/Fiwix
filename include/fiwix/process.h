@@ -125,6 +125,7 @@ struct proc {
 	struct inode *pwd;		/* process working directory */
 	unsigned int entry_address;
 	char argv0[NAME_MAX + 1];
+	int argc;
 	char **argv;
 	char **envp;
 	char pidstr[5];			/* pid number converted to string */

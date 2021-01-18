@@ -439,23 +439,26 @@ int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 	int n, size;
 	char *arg;
 	char **argv;
-	unsigned int paddr, offset;
+	unsigned int addr, offset;
 	struct proc *p;
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(p->argv) {
-			offset = (int)p->argv & ~PAGE_MASK;
-			paddr = get_mapped_addr(p, (int)p->argv) & PAGE_MASK;
-			paddr = P2V(paddr);
-			argv = (char **)(paddr + offset);
-			for(n = 0; argv[n]; n++) {
-				offset = (int)argv[n] & ~PAGE_MASK;
-				paddr = get_mapped_addr(p, (int)argv[n]) & PAGE_MASK;
-				paddr = P2V(paddr);
-				arg = (char *)(paddr + offset);
+		for(n = 0; n < p->argc && (p->argv + n); n++) {
+			argv = p->argv + n;
+			offset = (int)argv & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)argv) & PAGE_MASK;
+			addr = P2V(addr);
+			argv = (char **)(addr + offset);
+			offset = (int)argv[0] & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)argv[0]) & PAGE_MASK;
+			addr = P2V(addr);
+			arg = (char *)(addr + offset);
+			if(size + strlen(arg) < (PAGE_SIZE - 1)) {
 				size += sprintk(buffer + size, "%s", arg);
 				buffer[size++] = NULL;
+			} else {
+				break;
 			}
 		}
 	}
@@ -487,23 +490,28 @@ int data_proc_pid_environ(char *buffer, __pid_t pid)
 	int n, size;
 	char *env;
 	char **envp;
-	unsigned int paddr, offset;
+	unsigned int addr, offset;
 	struct proc *p;
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
 		if(p->envp) {
 			offset = (int)p->envp & ~PAGE_MASK;
-			paddr = get_mapped_addr(p, (int)p->envp) & PAGE_MASK;
-			paddr = P2V(paddr);
-			envp = (char **)(paddr + offset);
+			addr = get_mapped_addr(p, (int)p->envp) & PAGE_MASK;
+			addr = P2V(addr);
+			envp = (char **)(addr + offset);
 			for(n = 0; envp[n]; n++) {
 				offset = (int)envp[n] & ~PAGE_MASK;
-				paddr = get_mapped_addr(p, (int)envp[n]) & PAGE_MASK;
-				paddr = P2V(paddr);
-				env = (char *)(paddr + offset);
-				size += sprintk(buffer + size, "%s", env);
-				buffer[size++] = NULL;
+				addr = get_mapped_addr(p, (int)envp[n]) & PAGE_MASK;
+				addr = P2V(addr);
+				env = (char *)(addr + offset);
+				if(size + strlen(env) < (PAGE_SIZE - 1)) {
+					size += sprintk(buffer + size, "%s", env);
+					buffer[size++] = NULL;
+					continue;
+				} else {
+					break;
+				}
 			}
 		}
 	}
