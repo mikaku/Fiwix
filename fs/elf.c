@@ -120,6 +120,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	sp++;
 
 	/* copy as many pointers to strings as 'envc' */
+	current->envc = barg->envc;
 	current->envp = (char **)sp;
 	for(n = 0; n < barg->envc; n++) {
 		*sp = str_ptr;

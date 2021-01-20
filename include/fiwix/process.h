@@ -127,6 +127,7 @@ struct proc {
 	char argv0[NAME_MAX + 1];
 	int argc;
 	char **argv;
+	int envc;
 	char **envp;
 	char pidstr[5];			/* pid number converted to string */
 	struct vma vma[VMA_REGIONS];	/* virtual memory-map addresses */

@@ -495,23 +495,21 @@ int data_proc_pid_environ(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(p->envp) {
-			offset = (int)p->envp & ~PAGE_MASK;
-			addr = get_mapped_addr(p, (int)p->envp) & PAGE_MASK;
+		for(n = 0; n < p->envc && (p->envp + n); n++) {
+			envp = p->envp + n;
+			offset = (int)envp & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)envp) & PAGE_MASK;
 			addr = P2V(addr);
 			envp = (char **)(addr + offset);
-			for(n = 0; envp[n]; n++) {
-				offset = (int)envp[n] & ~PAGE_MASK;
-				addr = get_mapped_addr(p, (int)envp[n]) & PAGE_MASK;
-				addr = P2V(addr);
-				env = (char *)(addr + offset);
-				if(size + strlen(env) < (PAGE_SIZE - 1)) {
-					size += sprintk(buffer + size, "%s", env);
-					buffer[size++] = NULL;
-					continue;
-				} else {
-					break;
-				}
+			offset = (int)envp[0] & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)envp[0]) & PAGE_MASK;
+			addr = P2V(addr);
+			env = (char *)(addr + offset);
+			if(size + strlen(env) < (PAGE_SIZE - 1)) {
+				size += sprintk(buffer + size, "%s", env);
+				buffer[size++] = NULL;
+			} else {
+				break;
 			}
 		}
 	}
