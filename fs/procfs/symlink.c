@@ -11,6 +11,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/fs_proc.h>
+#include <fiwix/mm.h>
 #include <fiwix/stat.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
@@ -59,8 +60,9 @@ struct fs_operations procfs_symlink_fsop = {
 
 int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 {
-	__off_t size_read;
+	int size_read;
 	struct procfs_dir_entry *d;
+	char *buf;
 
 	if(!(d = get_procfs_by_inode(i))) {
 		return -EINVAL;
@@ -70,7 +72,17 @@ int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 		return -EINVAL;
 	}
 
-	size_read = d->data_fn(buffer, (i->inode >> 12) & 0xFFFF);
+	if(!(buf = (char *)kmalloc())) {
+		return -ENOMEM;
+	}
+
+	if((size_read = d->data_fn(buf, (i->inode >> 12) & 0xFFFF)) > 0) {
+		if(size_read > count) {
+			size_read = count;
+		}
+		memcpy_b(buffer, buf, size_read);
+	}
+	kfree((unsigned int)buf);
 	return size_read;
 }
 
