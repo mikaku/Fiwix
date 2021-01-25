@@ -303,22 +303,26 @@ static void serial_send(struct tty *tty)
 
 static int serial_receive(struct serial *s)
 {
-	int status, count;
+	int status, errno;
 	unsigned char ch;
 	struct tty *tty;
+	int room;
 
-	count = 0;
+	errno = 0;
 	tty = s->tty;
 
 	do {
+		if(!(room = tty_queue_room(&tty->read_q))) {
+			errno = -EAGAIN;
+			break;
+		}
 		ch = inport_b(s->addr + UART_RD);
 		tty_queue_putchar(tty, &tty->read_q, ch);
-		count++;
-		// FIXME: do_sched()?
 		status = inport_b(s->addr + UART_LSR);
 	} while(status & UART_LSR_RDA);
 
-	return count;
+	serial_bh.flags |= BH_ACTIVE;
+	return errno;
 }
 
 void irq_serial(int num, struct sigcontext *sc)
@@ -336,7 +340,7 @@ void irq_serial(int num, struct sigcontext *sc)
 					status = inport_b(s->addr + UART_LSR);
 					if(status & UART_LSR_RDA) {
 						if(serial_receive(s)) {
-							count++;
+							break;
 						}
 					}
 					if(status & UART_LSR_THRE) {
@@ -347,9 +351,6 @@ void irq_serial(int num, struct sigcontext *sc)
 			}
 			s = s->next;
 		} while(s);
-	}
-	if(count) {
-		serial_bh.flags |= BH_ACTIVE;
 	}
 }
 
