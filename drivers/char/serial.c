@@ -306,13 +306,12 @@ static int serial_receive(struct serial *s)
 	int status, errno;
 	unsigned char ch;
 	struct tty *tty;
-	int room;
 
 	errno = 0;
 	tty = s->tty;
 
 	do {
-		if(!(room = tty_queue_room(&tty->read_q))) {
+		if(!tty_queue_room(&tty->read_q)) {
 			errno = -EAGAIN;
 			break;
 		}
