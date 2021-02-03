@@ -473,8 +473,6 @@ int tty_close(struct inode *i, struct fd *fd_table)
 	}
 	tty->count--;
 	if(!tty->count) {
-		tty->reset(tty);
-		termios_reset(tty);
 		tty->pgid = tty->sid = 0;
 
 		/* this tty is no longer the controlling tty of any process */
