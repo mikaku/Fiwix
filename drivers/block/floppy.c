@@ -246,7 +246,10 @@ static void fdc_reset(void)
 	creq.fn = fdc_timer;
 	creq.arg = FDC_TR_DEFAULT;
 	add_callout(&creq, WAIT_FDC);
-	sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	/* avoid sleep if interrupt already happened */
+	if(fdc_wait_interrupt) {
+		sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	}
 	if(fdc_timeout) {
 		need_reset = 1;
 		printk("WARNING: %s(): fd%d: timeout on %s.\n", __FUNCTION__, current_fdd, floppy_device.name);
@@ -291,7 +294,10 @@ static int fdc_recalibrate(void)
 	creq.fn = fdc_timer;
 	creq.arg = FDC_TR_DEFAULT;
 	add_callout(&creq, WAIT_FDC);
-	sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	/* avoid sleep if interrupt already happened */
+	if(fdc_wait_interrupt) {
+		sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	}
 	if(fdc_timeout) {
 		need_reset = 1;
 		printk("WARNING: %s(): fd%d: timeout on %s.\n", __FUNCTION__, current_fdd, floppy_device.name);
@@ -346,7 +352,10 @@ static int fdc_seek(int track, int head)
 	creq.fn = fdc_timer;
 	creq.arg = FDC_TR_DEFAULT;
 	add_callout(&creq, WAIT_FDC);
-	sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	/* avoid sleep if interrupt already happened */
+	if(fdc_wait_interrupt) {
+		sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+	}
 	if(fdc_timeout) {
 		need_reset = 1;
 		printk("WARNING: %s(): fd%d: timeout on %s.\n", __FUNCTION__, current_fdd, floppy_device.name);
@@ -579,7 +588,10 @@ int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		creq.fn = fdc_timer;
 		creq.arg = FDC_TR_DEFAULT;
 		add_callout(&creq, WAIT_FDC);
-		sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+		/* avoid sleep if interrupt already happened */
+		if(fdc_wait_interrupt) {
+			sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+		}
 		if(fdc_timeout) {
 			need_reset = 1;
 			printk("WARNING: %s(): fd%d: timeout on %s device %d,%d.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
@@ -688,7 +700,10 @@ int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		creq.fn = fdc_timer;
 		creq.arg = FDC_TR_DEFAULT;
 		add_callout(&creq, WAIT_FDC);
-		sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+		/* avoid sleep if interrupt already happened */
+		if(fdc_wait_interrupt) {
+			sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+		}
 		if(fdc_timeout) {
 			need_reset = 1;
 			printk("WARNING: %s(): fd%d: timeout on %s device %d,%d.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
