@@ -16,7 +16,7 @@
 #define NR_TTYS		NR_VCONSOLES + NR_SERIAL
 
 #define CBSIZE		32	/* number of characters in cblock */
-#define NR_CB_QUEUE	10	/* number of cblocks per queue */
+#define NR_CB_QUEUE	8	/* number of cblocks per queue */
 #define CB_POOL_SIZE	128	/* number of cblocks in the central pool */
 
 #define TAB_SIZE	8

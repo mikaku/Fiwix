@@ -241,7 +241,7 @@ void tty_queue_flush(struct clist *q)
 
 int tty_queue_room(struct clist *q)
 {
-	return (NR_CB_QUEUE * CB_POOL_SIZE) - q->count;
+	return (NR_CB_QUEUE * CBSIZE) - q->count;
 }
 
 void tty_queue_init(struct tty *tty)
