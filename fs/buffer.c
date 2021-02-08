@@ -136,7 +136,6 @@ static struct buffer * get_free_buffer(void)
 		}
 	}
 
-	buf = buffer_head;
 	remove_from_free_list(buf);
 	buf->locked = 1;
 
