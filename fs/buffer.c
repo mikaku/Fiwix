@@ -6,8 +6,9 @@
  */
 
 /*
- * buffer.c implements a cache with a free list as a doubly circular linked
- * list and a chained hash table with doubly linked lists.
+ * buffer.c implements a cache using the LRU (Least Recently Used) algorithm,
+ * with a free list as a doubly circular linked list and a chained hash table
+ * with doubly linked lists.
  *
  * hash table
  * +--------+  +--------------+  +--------------+  +--------------+
@@ -314,7 +315,10 @@ void brelse(struct buffer *buf)
 		buffer_head->prev_free->next_free = buf;
 		buffer_head->prev_free = buf;
 
-		/* if not valid place the buffer at the head of the free list */
+		/*
+		 * If the buffer is marked as not valid then it places
+		 * the buffer at the beginning of the free list.
+		 */
 		if(!buf->valid) {
 			buffer_head = buf;
 		}
