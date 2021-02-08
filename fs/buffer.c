@@ -347,7 +347,6 @@ void sync_buffers(__dev_t dev)
 		buf++;
 	}
 	unlock_resource(&sync_resource);
-	return;
 }
 
 void invalidate_buffers(__dev_t dev)
