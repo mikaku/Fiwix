@@ -393,7 +393,6 @@ int reclaim_buffers(void)
 			continue;
 		}
 
-		remove_from_hash(buf);
 		if(buf->dirty) {
 			sync_one_buffer(buf);
 		}
@@ -412,6 +411,7 @@ int reclaim_buffers(void)
 		if(buf->data) {
 			kfree((unsigned int)buf->data);
 			buf->data = NULL;
+			remove_from_hash(buf);
 			kstat.buffers -= (PAGE_SIZE / 1024);
 			reclaimed++;
 			if(reclaimed == NR_BUF_RECLAIM) {
