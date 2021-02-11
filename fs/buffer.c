@@ -428,6 +428,16 @@ int reclaim_buffers(void)
 	}
 
 	wakeup(&buffer_wait);
+
+	/*
+	 * If the total number of buffers reclaimed was less or equal to
+	 * NR_BUF_RECLAIM, then wakeup any process waiting for a new page
+	 * because release_page() won't do it.
+	 */
+	if(reclaimed <= NR_BUF_RECLAIM) {
+		wakeup(&get_free_page);
+	}
+
 	return reclaimed;
 }
 

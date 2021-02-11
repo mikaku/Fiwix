@@ -217,7 +217,16 @@ void release_page(unsigned int page)
 	kstat.free_pages++;
 
 	RESTORE_FLAGS(flags);
-	wakeup(&get_free_page);
+
+	/*
+	 * We need to wait for free pages to be greater than NR_BUF_RECLAIM,
+	 * otherwise get_free_pages() could run out of pages _again_, and it
+	 * would think that 'definitely there are no more free pages', killing
+	 * the current process prematurely.
+	 */
+	if(kstat.free_pages > NR_BUF_RECLAIM) {
+		wakeup(&get_free_page);
+	}
 }
 
 int valid_page(unsigned int page)
@@ -324,7 +333,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 				 * the page cache. This will speed up things by
 				 * keeping in buffer cache the writable pages
 				 * with its original (disk) content (i.e. pages
-				 * of the data section of an ELF).
+				 * from the data section of an ELF).
 				 */
 				if(!(buf = bread(i->dev, block, blksize))) {
 					return 1;
