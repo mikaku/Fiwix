@@ -7,8 +7,16 @@
 
 #include <fiwix/const.h>
 
-#define ASM	1		/* GRUB stuff */
-#include <fiwix/multiboot.h>
+#define ASM_FILE	1	/* GRUB stuff */
+#include <fiwix/multiboot1.h>
+
+/* The flags for the Multiboot header. */
+#ifdef __ELF__
+# define AOUT_KLUDGE 0
+#else
+# define AOUT_KLUDGE MULTIBOOT_AOUT_KLUDGE
+#endif
+#define MULTIBOOT_HEADER_FLAGS	MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_VIDEO_MODE | AOUT_KLUDGE
 
 #define CR0_MP	0x00000002	/* CR0 bit-01 MP (Monitor Coprocessor) */
 #define CR0_NE	0x00000020	/* CR0 bit-05 NE (Numeric Error) */
@@ -50,10 +58,6 @@ tmp_gdt:
 
 .text
 
-.globl start; start:
-	cli
-	jmp	multiboot_entry
-
 .align 4
 multiboot_header:			/* multiboot header */
 	.long	MULTIBOOT_HEADER_MAGIC	/* magic */
@@ -61,20 +65,23 @@ multiboot_header:			/* multiboot header */
 	/* checksum */
 	.long	-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
-#ifndef __ELF__
-	.long	multiboot_header	/* header_addr */
-	.long	_start			/* load_addr */
-	.long	_edata			/* load_end_addr */
-	.long	_end			/* bss_end_addr */
-	.long	multiboot_entry		/* entry_addr */
-#endif /* ! __ELF__ */
+	.long	0			/* header_addr */
+	.long	0			/* load_addr */
+	.long	0			/* load_end_addr */
+	.long	0			/* bss_end_addr */
+	.long	0			/* entry_addr */
+
+	.long	0			/* mode_type */
+	.long	1024			/* width */
+	.long	768			/* height */
+	.long	32			/* depth */
 
 /*
  * We use the CX register in order to keep intact the values in AX and BX
  * registers, since they are holding the Multiboot values 'magic' and 'info'
  * respectively.
  */
-multiboot_entry:
+.globl start; start:
 	lgdt	tmp_gdtr		/* load GDTR with the temporary GDT */
 	movw	$KERNEL_DS, %cx
 	movw	%cx, %ds
