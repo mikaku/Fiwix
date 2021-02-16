@@ -19,7 +19,7 @@ int addr_in_bios_map(unsigned int addr)
 
 	bmm = &bios_mem_map[0];
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
-		if(bmm->to && bmm->type == BIOS_MEM_AVAIL) {
+		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_AVAILABLE) {
 			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
 				return 1;
 			}
@@ -28,54 +28,58 @@ int addr_in_bios_map(unsigned int addr)
 	return 0;	/* not in BIOS map or not available (reserved, ...) */
 }
 
-void bios_map_init(memory_map_t *bmmap_addr, unsigned long int bmmap_length)
+void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bmmap_length)
 {
-	unsigned int n;
-	unsigned int mem_from, mem_to, len_low, len_high;
-	memory_map_t *bmmap;
-	char *bios_mem_type[] = { NULL, "available" , "reserved",
-				  "ACPI Reclaim", "ACPI NVS", "unusable",
-				  "disabled" };
+	struct multiboot_mmap_entry *bmmap;
+	unsigned int from_high, from_low, to_high, to_low;
+	unsigned long long to;
+	char *bios_mem_type[] = { NULL,
+				  "available",
+				  "reserved",
+				  "ACPI Reclaim",
+				  "ACPI NVS",
+				  "unusable",
+				  "disabled"
+				};
+	int n;
 
 	bmmap = bmmap_addr;
 	if(bmmap) {
 		n = 0;
 
 		while((unsigned int)bmmap < (unsigned int)bmmap_addr + bmmap_length) {
-			mem_from = (unsigned int)bmmap->base_addr_low;
-			len_low = (unsigned int)bmmap->length_low;
-			if((((mem_from >> 16) & 0xFFFF) + ((len_low >> 16) & 0xFFFF)) > 0xFFFF) {
-				mem_to = ~0;
-				len_high = (mem_from >> 16) + (len_low >> 16);
-				len_high >>= 16;
-			} else {
-				mem_to = mem_from + len_low;
-				len_high = 0;
-			}
+			from_high = (unsigned int)(bmmap->addr >> 32);
+			from_low = (unsigned int)(bmmap->addr & 0xFFFFFFFF);
+			to = bmmap->addr + bmmap->len;
+			to_high = (unsigned int)(to >> 32);
+			to_low = (unsigned int)(to & 0xFFFFFFFF);
 			printk("%s    0x%08X%08X-0x%08X%08X %s\n",
 				n ? "      " : "memory",
-				bmmap->base_addr_high, bmmap->base_addr_low,
-				len_high, mem_from + len_low,
-				bios_mem_type[(int)bmmap->type]);
+				from_high,
+				from_low,
+				to_high,
+				to_low,
+				bios_mem_type[(int)bmmap->type]
+			);
 			/* only memory addresses below 4GB are accepted */
-			if(!bmmap->base_addr_high) {
-				if(n < NR_BIOS_MM_ENT && len_low) {
-					bios_mem_map[n].from = mem_from;
-					bios_mem_map[n].to = mem_to;
+			if(!from_high) {
+				if(n < NR_BIOS_MM_ENT && bmmap->len) {
+					bios_mem_map[n].from = from_low;
+					bios_mem_map[n].to = to_low;
 					bios_mem_map[n].type = (int)bmmap->type;
 					n++;
 				}
 			}
-			bmmap = (memory_map_t *)((unsigned int)bmmap + bmmap->size + sizeof(bmmap->size));
+			bmmap = (struct multiboot_mmap_entry *)((unsigned int)bmmap + bmmap->size + sizeof(bmmap->size));
 		}
 	} else {
 		printk("WARNING: your BIOS has not provided a memory map.\n");
 		bios_mem_map[0].from = 0;
 		bios_mem_map[0].to = _memsize * 1024;
-		bios_mem_map[0].type = BIOS_MEM_AVAIL;
+		bios_mem_map[0].type = MULTIBOOT_MEMORY_AVAILABLE;
 		bios_mem_map[1].from = 0x00100000;
 		bios_mem_map[1].to = (_extmemsize + 1024) * 1024;
-		bios_mem_map[1].type = BIOS_MEM_AVAIL;
+		bios_mem_map[1].type = MULTIBOOT_MEMORY_AVAILABLE;
 	}
 	kstat.physical_pages = (_extmemsize + 1024) >> 2;
 

@@ -81,6 +81,7 @@ struct kernel_stat {
 extern struct kernel_stat kstat;
 
 unsigned int get_last_boot_addr(unsigned int);
+void multiboot(unsigned long, unsigned long);
 void start_kernel(unsigned long, unsigned long, unsigned int);
 void stop_kernel(void);
 void init_init(void);
