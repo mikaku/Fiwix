@@ -10,13 +10,7 @@
 #define ASM_FILE	1	/* GRUB stuff */
 #include <fiwix/multiboot1.h>
 
-/* The flags for the Multiboot header. */
-#ifdef __ELF__
-# define AOUT_KLUDGE 0
-#else
-# define AOUT_KLUDGE MULTIBOOT_AOUT_KLUDGE
-#endif
-#define MULTIBOOT_HEADER_FLAGS	MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_VIDEO_MODE | AOUT_KLUDGE
+#define MULTIBOOT_HEADER_FLAGS	MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO
 
 #define CR0_MP	0x00000002	/* CR0 bit-01 MP (Monitor Coprocessor) */
 #define CR0_NE	0x00000020	/* CR0 bit-05 NE (Numeric Error) */
@@ -65,16 +59,18 @@ multiboot_header:			/* multiboot header */
 	/* checksum */
 	.long	-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
+	/* no used */
 	.long	0			/* header_addr */
 	.long	0			/* load_addr */
 	.long	0			/* load_end_addr */
 	.long	0			/* bss_end_addr */
 	.long	0			/* entry_addr */
 
+	/* valid only for GRUB2 */
 	.long	0			/* mode_type */
-	.long	1024			/* width */
-	.long	768			/* height */
-	.long	32			/* depth */
+	.long	0			/* width */
+	.long	0			/* height */
+	.long	0			/* depth */
 
 /*
  * We use the CX register in order to keep intact the values in AX and BX
