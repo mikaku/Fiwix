@@ -180,6 +180,10 @@ int mount_root(void)
 	 * check if '_rootdev' is a device successfully registered.
 	 */
 
+	if(!_rootdev) {
+		PANIC("root device not defined.\n");
+	}
+
 	if(!(fs = get_filesystem(_rootfstype))) {
 		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'minix'.\n", __FUNCTION__, _rootfstype);
 		if(!(fs = get_filesystem("minix"))) {
