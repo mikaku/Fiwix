@@ -1199,11 +1199,6 @@ void console_flush_log_buf(char *buffer, unsigned int count)
 	while(count) {
 		if(tty_queue_putchar(tty, &tty->write_q, *b) < 0) {
 			tty->output(tty);
-			if(!is_vconsole(tty->dev)) {
-				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
-					break;
-				}
-			}
 			continue;
 		}
 		count--;
