@@ -66,7 +66,7 @@ multiboot_header:			/* multiboot header */
 	.long	0			/* bss_end_addr */
 	.long	0			/* entry_addr */
 
-	/* valid only for GRUB2 */
+	/* valid only with GRUB2 */
 	.long	0			/* mode_type */
 	.long	0			/* width */
 	.long	0			/* height */
