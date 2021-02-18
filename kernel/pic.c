@@ -22,7 +22,6 @@
 
 struct interrupt *irq_table[NR_IRQS];
 static struct bh *bh_table = NULL;
-unsigned int intr_count = 0;
 
 /*
  * This sends the command OCW3 to PIC (master or slave) to obtain the register
