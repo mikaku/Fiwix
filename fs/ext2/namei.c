@@ -692,7 +692,6 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 	int n, errno;
 
 	errno = 0;
-	buf_new = NULL;
 
 	if(is_prefix(dir_new, i_old)) {
 		return -EINVAL;
@@ -709,25 +708,33 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 		goto end;
 	}
 	if(dir_old == dir_new) {
-		buf_old->locked = 0;
+		/* free that buffer now to not block buf_new */
+		brelse(buf_old);
+		buf_old = NULL;
 	}
 
 	if(i_new) {
 		if(S_ISDIR(i_old->i_mode)) {
 			if(!is_dir_empty(i_new)) {
-				brelse(buf_old);
+				if(buf_old) {
+					brelse(buf_old);
+				}
 				errno = -ENOTEMPTY;
 				goto end;
 			}
 		}
 		if(!(buf_new = find_dir_entry(dir_new, i_new, &d_new, newpath))) {
-			brelse(buf_old);
+			if(buf_old) {
+				brelse(buf_old);
+			}
 			errno = -ENOENT;
 			goto end;
 		}
 	} else {
 		if(!(buf_new = add_dir_entry(dir_new, &d_new, newpath))) {
-			brelse(buf_old);
+			if(buf_old) {
+				brelse(buf_old);
+			}
 			errno = -ENOSPC;
 			goto end;
 		}
@@ -747,7 +754,6 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 		}
 	}
 
-	d_old->inode = 0;
 	d_new->inode = i_old->inode;
 	dir_new->i_mtime = CURRENT_TIME;
 	dir_new->i_ctime = CURRENT_TIME;
@@ -758,11 +764,16 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 	dir_old->i_ctime = CURRENT_TIME;
 	i_old->dirty = 1;
 	dir_old->dirty = 1;
+	bwrite(buf_new);
 
-	bwrite(buf_old);
-	if(buf_new) {
-		bwrite(buf_new);
+	if(!buf_old) {
+		if(!(buf_old = find_dir_entry(dir_old, i_old, &d_old, oldpath))) {
+			errno = -ENOENT;
+			goto end;
+		}
 	}
+	d_old->inode = 0;
+	bwrite(buf_old);
 
 end:
 	inode_unlock(i_old);
