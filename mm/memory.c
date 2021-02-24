@@ -390,25 +390,25 @@ void mem_init(void)
 		if(!_ramdisksize) {
 			_ramdisksize = RAMDISK_SIZE;
 		}
-		if(!addr_in_bios_map(V2P(_last_data_addr) + (_ramdisksize * 1024))) {
-			printk("WARNING: RAMdisk device disabled (not enough physical memory).\n");
-			_noramdisk = 1;
+		/*
+		 * If the 'initrd=' parameter was supplied, then the first
+		 * ramdisk device was already assigned to the initial ramdisk
+		 * image.
+		 */
+		if(ramdisk_table[0].addr) {
+			n = 1;
 		} else {
-			/*
-			 * If the 'initrd=' parameter was supplied, then the first
-			 * ramdisk was already assigned to the initial ramdisk image.
-			 */
-			if(ramdisk_table[0].addr) {
-				n = 1;
-				_last_data_addr += _ramdisksize * 1024;
-			} else {
-				n = 0;
+			n = 0;
+		}
+		for(; n < RAMDISK_MINORS; n++) {
+			if(!addr_in_bios_map(V2P(_last_data_addr) + (_ramdisksize * 1024))) {
+				printk("WARNING: RAMdisk device disabled (not enough physical memory).\n");
+				_noramdisk = 1;
+				break;
 			}
-			for(; n < RAMDISK_MINORS; n++) {
-/*				printk("_last_data_addr = 0x%08x-0x%08x (/dev/ram%d)\n", _last_data_addr, _last_data_addr + (_ramdisksize * 1024), n); */
-				ramdisk_table[n].addr = (char *)_last_data_addr;
-				_last_data_addr += _ramdisksize * 1024;
-			}
+/*			printk("_last_data_addr = 0x%08x-0x%08x (/dev/ram%d)\n", _last_data_addr, _last_data_addr + (_ramdisksize * 1024), n); */
+			ramdisk_table[n].addr = (char *)_last_data_addr;
+			_last_data_addr += _ramdisksize * 1024;
 		}
 	}
 
