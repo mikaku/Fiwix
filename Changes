@@ -1,3 +1,39 @@
+1.3.0 - DD-MMM-2021
+===================
+- Updated the header file to support the latest GRUB Multiboot Specification v1.
+- Moved 'cpu_idle()' to a C function to include more easily some tasks to do.
+- Isolated the multiboot code in order to prepare the kernel to support multiple
+  bootloader protocols.
+- Arrange boot.S to be compatible only with GRUB Multiboot Specification v1.
+- Fixed the RAMdisk driver to not access blocks beyond its size.
+- Fixed a race condition in floppy drive when the interrupt occurred right
+  before going to sleep.
+- Fixed a bug during the RAMdisk memory initialization that reserved twice the
+  size of the initrd image.
+- Fixed to return EISDIR when trying to read a directory in procfs.
+- Fixed a memory corruption bug in procfs_readlink() that was leading to
+  instability in user programs that read the procfs.
+- Fixed to use a simple assignment in elf_create_stack() instead of using a
+  function to copy a numeric value.
+- Fixed a longstanding memory corruption bug when returning the contents of the
+  '/proc/<PID>/cmdline' file.
+- Fixed a possible memory corruption bug when returning the contents of the
+  '/proc/<PID>/environ' file.
+- Fixed a missing queue handling in the serial driver.
+- Fixed to remove the calls to reset termios and tty on tty_close().
+- Fixed an extra buffer_head assignment in get_free_buffer() which reduced to
+  50% the buffer space, and could also potentially use an already locked buffer.
+- Fixed a very longstanding buffer corruption bug, in rename functions of ext2
+  and minix filesystems, that led to crashes with the message 'getblk(): no more
+  buffers on free list!' after a heavy filesystem use.
+- Fixed the tty_queue_room() function and aligned to 8 the number of cblocks per
+  queue.
+- Fixed the way how release_page() and reclaim_buffers() cooperate when there
+  are no more free memory pages, in order to avoid killing the current process
+  prematurely.
+- Fixed to avoid sleeping during console_flush_log_buf().
+
+
 1.2.0 - 12-Dec-2020
 ===================
 - Added support for serial (RS-232) devices.
