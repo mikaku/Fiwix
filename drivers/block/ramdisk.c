@@ -16,6 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+struct ramdisk ramdisk_table[RAMDISK_MINORS];
 static unsigned int rd_sizes[256];
 
 static struct fs_operations ramdisk_driver_fsop = {

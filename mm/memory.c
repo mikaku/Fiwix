@@ -48,8 +48,6 @@ struct fd *fd_table;
 unsigned int mount_table_size = 0;
 struct mount *mount_table;
 
-struct ramdisk ramdisk_table[RAMDISK_MINORS];
-
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
 struct page *page_table;
