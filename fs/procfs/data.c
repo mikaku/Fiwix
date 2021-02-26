@@ -220,7 +220,7 @@ int data_proc_meminfo(char *buffer, __pid_t pid)
 	int n, size;
 
 	kstat.shared = 0;
-	for(n = 0; n < kstat.physical_pages; n ++) {
+	for(n = 0; n < kstat.physical_pages; n++) {
 		pg = &page_table[n];
 		if(pg->flags & PAGE_RESERVED) {
 			continue;
