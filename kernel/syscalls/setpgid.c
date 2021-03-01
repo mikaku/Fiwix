@@ -29,7 +29,9 @@ int sys_setpgid(__pid_t pid, __pid_t pgid)
 		pid = current->pid;
 	}
 
-	p = get_proc_by_pid(pid);
+	if(!(p = get_proc_by_pid(pid))) {
+		return -EINVAL;
+	}
 	if(!pgid) {
 		pgid = p->pid;
 	}

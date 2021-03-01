@@ -179,6 +179,10 @@ __pid_t remove_zombie(struct proc *p)
 int is_orphaned_pgrp(__pid_t pgid)
 {
 	struct proc *p, *pp;
+	int retval;
+
+	retval = 0;
+	lock_resource(&slot_resource);
 
 	FOR_EACH_PROCESS(p) {
 		if(p->pgid != pgid) {
@@ -188,11 +192,13 @@ int is_orphaned_pgrp(__pid_t pgid)
 			pp = get_proc_by_pid(p->ppid);
 			/* return if only one is found that breaks the rule */
 			if(pp->pgid != pgid || pp->sid == p->sid) {
-				return 0;
+				break;
 			}
 		}
 	}
-	return 1;
+
+	unlock_resource(&slot_resource);
+	return retval;
 }
 
 struct proc * get_proc_free(void)
@@ -291,7 +297,6 @@ struct proc * get_proc_by_pid(__pid_t pid)
 		}
 	}
 
-	PANIC("would return NULL! (current->pid=%d pid=%d)\n", current->pid, pid);
 	return NULL;
 }
 

@@ -153,6 +153,7 @@ void psig(unsigned int stack)
 	__sigset_t signum;
 	unsigned int mask;
 	struct sigcontext *sc;
+	struct proc *p;
 
 	sc = (struct sigcontext *)stack;
 	for(signum = 1, mask = 1; signum < NSIG; signum++, mask <<= 1) {
@@ -195,9 +196,11 @@ void psig(unsigned int stack)
 						current->exit_code = signum;
 						current->state = PROC_STOPPED;
 						if(!(current->sigaction[signum - 1].sa_flags & SA_NOCLDSTOP)) {
-							send_sig(get_proc_by_pid(current->ppid), SIGCHLD);
-							/* needed for job control */
-							wakeup(&sys_wait4);
+							if((p = get_proc_by_pid(current->ppid))) {
+								send_sig(p, SIGCHLD);
+								/* needed for job control */
+								wakeup(&sys_wait4);
+							}
 						}
 						need_resched = 1;
 						break;
