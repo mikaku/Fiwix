@@ -310,8 +310,7 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 
 	count = (fd_table->offset + count > device_size) ? device_size - fd_table->offset : count;
 	if(!count || fd_table->offset > device_size) {
-		printk("%s(): I/O error on device %d,%d, offset %u.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev), fd_table->offset);
-		return -EIO;
+		return -ENOSPC;
 	}
 	while(count) {
 		boffset = fd_table->offset % blksize;
