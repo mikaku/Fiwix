@@ -987,5 +987,6 @@ int tty_select(struct inode *i, int flag)
 
 void tty_init(void)
 {
+	tty_queue_init();
 	memset_b(tty_table, NULL, sizeof(tty_table));
 }

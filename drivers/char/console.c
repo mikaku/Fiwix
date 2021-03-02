@@ -1254,7 +1254,6 @@ void vconsole_init(void)
 			vc[n].vidmem = vc[n].scrbuf;
 			memset_w(vc[n].scrbuf, BLANK_MEM, SCREEN_SIZE / sizeof(short int));
 			vconsole_reset(tty);
-			tty_queue_init(tty);
 		}
 	}
 	current_cons = 1;

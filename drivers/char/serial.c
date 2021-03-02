@@ -535,7 +535,6 @@ void serial_init(void)
 				tty->close = serial_close;
 				tty->set_termios = serial_set_termios;
 				serial_reset(tty);
-				tty_queue_init(tty);
 				for(n2 = 0; n2 < MAX_TAB_COLS; n2++) {
 					if(!(n2 % TAB_SIZE)) {
 						tty->tab_stop[n2] = 1;

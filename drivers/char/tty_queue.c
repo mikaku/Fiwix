@@ -244,7 +244,7 @@ int tty_queue_room(struct clist *q)
 	return (NR_CB_QUEUE * CBSIZE) - q->count;
 }
 
-void tty_queue_init(struct tty *tty)
+void tty_queue_init(void)
 {
 	int n;
 	struct cblock *cb;
@@ -258,7 +258,4 @@ void tty_queue_init(struct tty *tty)
 		cb = &cblock_pool[n];
 		put_free_cblock(cb);
 	}
-	tty->read_q.head = tty->read_q.tail = NULL;
-	tty->cooked_q.head = tty->cooked_q.tail = NULL;
-	tty->write_q.head = tty->write_q.tail = NULL;
 }
