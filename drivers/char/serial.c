@@ -203,8 +203,7 @@ static void serial_start(struct tty *tty)
 
 static void serial_deltab(struct tty *tty)
 {
-	unsigned short int col, n;
-	unsigned char count;
+	unsigned short int col, n, count;
 	struct cblock *cb;
 	unsigned char ch;
 
@@ -327,10 +326,9 @@ static int serial_receive(struct serial *s)
 void irq_serial(int num, struct sigcontext *sc)
 {
 	struct serial *s;
-	int status, count;
+	int status;
 
 	s = serial_ports;
-	count = 0;
 
 	if(s) {
 		do {
