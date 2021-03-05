@@ -32,6 +32,9 @@
   are no more free memory pages, in order to avoid killing the current process
   prematurely.
 - Fixed to avoid sleeping during console_flush_log_buf().
+- Fixed to return ENOSPC when trying to write beyond the size of a block device.
+- Fixed get_proc_by_pid() to not PANIC anymore if the process didn't exist.
+- Fixed to avoid multiple calls to tty_queue_init().
 
 
 1.2.0 - 12-Dec-2020
