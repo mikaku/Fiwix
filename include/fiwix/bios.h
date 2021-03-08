@@ -15,7 +15,7 @@
 struct bios_mem_map {
 	unsigned long int from;
 	unsigned long int to;
-	unsigned long int type;
+	int type;
 };
 struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
 
