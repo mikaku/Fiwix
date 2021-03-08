@@ -8,8 +8,6 @@
 #ifndef _FIWIX_SERIAL_H
 #define _FIWIX_SERIAL_H
 
-//#include <fiwix/fs.h>
-
 #define SERIAL4_IRQ	4	/* IRQ for serial ports 1 and 3 */
 #define SERIAL3_IRQ	3	/* IRQ for serial ports 2 and 4 */
 
