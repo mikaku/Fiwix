@@ -70,7 +70,7 @@ static void map_kaddr(unsigned int from, unsigned int to, int flags)
 			memset_b((void *)addr, NULL, PAGE_SIZE);
 		}
 		pgtbl = (unsigned int *)(kpage_dir[pde] & PAGE_MASK);
-		pgtbl[pte] = (kpage_table[(pde * 1024) + pte] & PAGE_MASK) | flags;
+		pgtbl[pte] = (n << PAGE_SHIFT) | flags;
 	}
 }
 
@@ -284,13 +284,25 @@ void mem_init(void)
 	/* Page Directory and Page Tables initialization */
 	for(n = 0; n < kstat.physical_pages; n++) {
 		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
-	}
-	for(n = 0; n < physical_page_tables; n++) {
-		kpage_dir[GET_PGDIR(KERNEL_BASE_ADDR) + n] = (unsigned int)&kpage_table[n * 1024] | PAGE_PRESENT | PAGE_RW;
+		if(!(n % 1024)) {
+			kpage_dir[GET_PGDIR(KERNEL_BASE_ADDR) + (n / 1024)] = (unsigned int)&kpage_table[n] | PAGE_PRESENT | PAGE_RW;
+		}
 	}
 
-	map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);
+	map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);	// FIXME: PROVISIONAL (DEBUG IN TIMER)!!
 	map_kaddr(KERNEL_ENTRY_ADDR, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+
+	/*
+	 * FIXME: this is ugly!
+	 * It should go in console_init() once we have a proper kernel memory/page management.
+	 * Then map_kaddr will be a public function (not static).
+	 */
+	if(video.flags & VPF_VGA) {
+		map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);
+	};
+	if(video.flags & VPF_VESAFB) {
+		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.size, PAGE_PRESENT | PAGE_RW);
+	}
 /*	printk("_last_data_addr = 0x%08x-0x%08x (kernel)\n", KERNEL_ENTRY_ADDR, _last_data_addr); */
 	activate_kpage_dir();
 
