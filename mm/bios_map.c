@@ -11,6 +11,16 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+static char *bios_mem_type[] = {
+	NULL,
+	"available",
+	"reserved",
+	"ACPI Reclaim",
+	"ACPI NVS",
+	"unusable",
+	"disabled"
+};
+
 /* check if an specific address is available in the BIOS memory map */
 int addr_in_bios_map(unsigned int addr)
 {
@@ -25,7 +35,37 @@ int addr_in_bios_map(unsigned int addr)
 			}
 		}
 	}
+
 	return 0;	/* not in BIOS map or not available (reserved, ...) */
+}
+
+void bios_map_add(unsigned long int from, unsigned long int to, int from_type, int to_type)
+{
+	int n;
+
+	for(n = 0; n < NR_BIOS_MM_ENT; n++) {
+		if(!bios_mem_map[n].type) {
+			break;
+		}
+	}
+
+	if(from_type == to_type) {
+		printk("memory    0x%08X%08X-0x%08X%08X %s\n",
+			0, from,
+			0, to,
+			bios_mem_type[to_type]
+		);
+	} else {
+		printk("memory    0x%08X%08X-0x%08X%08X %s -> %s\n",
+			0, from,
+			0, to,
+			bios_mem_type[from_type],
+			bios_mem_type[to_type]
+		);
+	}
+	bios_mem_map[n].from = from;
+	bios_mem_map[n].to = to;
+	bios_mem_map[n].type = to_type;
 }
 
 void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bmmap_length)
@@ -33,14 +73,6 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 	struct multiboot_mmap_entry *bmmap;
 	unsigned int from_high, from_low, to_high, to_low;
 	unsigned long long to;
-	char *bios_mem_type[] = { NULL,
-				  "available",
-				  "reserved",
-				  "ACPI Reclaim",
-				  "ACPI NVS",
-				  "unusable",
-				  "disabled"
-				};
 	int n;
 
 	bmmap = bmmap_addr;
