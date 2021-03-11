@@ -22,7 +22,7 @@
 #define KERNEL_DATA_SIZE	((int)_edata - (int)_etext)
 #define KERNEL_BSS_SIZE		((int)_end - (int)_edata)
 
-#define PGDIR_4MB_ADDR		0x90000
+#define PGDIR_4MB_ADDR		0x50000
 
 unsigned int *kpage_dir;
 unsigned int *kpage_table;

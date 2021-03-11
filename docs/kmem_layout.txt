@@ -4,7 +4,7 @@
 0x00000000
 	.
 	.
-0x00090000
+0x00050000
 	+-------------------+
 	| 4KB kpage_dir     | this page will be reused once the definitive
 	| only used at boot | kpage_dir is installed
