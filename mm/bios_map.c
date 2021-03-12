@@ -24,19 +24,31 @@ static char *bios_mem_type[] = {
 /* check if an specific address is available in the BIOS memory map */
 int addr_in_bios_map(unsigned int addr)
 {
-	int n;
+	int n, retval;
 	struct bios_mem_map *bmm;
 
+	retval = 0;
 	bmm = &bios_mem_map[0];
+
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
 		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_AVAILABLE) {
 			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
-				return 1;
+				retval = 1;
 			}
 		}
 	}
 
-	return 0;	/* not in BIOS map or not available (reserved, ...) */
+	/* this second pass is necessary because the array is not sorted */
+	bmm = &bios_mem_map[0];
+	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
+		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_RESERVED) {
+			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
+				retval = 0;
+			}
+		}
+	}
+
+	return retval;	/* not in BIOS map or not available (reserved, ...) */
 }
 
 void bios_map_add(unsigned long int from, unsigned long int to, int from_type, int to_type)
