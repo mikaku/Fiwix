@@ -205,9 +205,10 @@ int chr_dev_open(struct inode *i, struct fd *fd_table)
 		if(i->fsop && i->fsop->open) {
 			return i->fsop->open(i, fd_table);
 		}
+		return -EINVAL;
 	}
 
-	return -EINVAL;
+	return -ENXIO;
 }
 
 int blk_dev_open(struct inode *i, struct fd *fd_table)
@@ -218,9 +219,10 @@ int blk_dev_open(struct inode *i, struct fd *fd_table)
 		if(d->fsop && d->fsop->open) {
 			return d->fsop->open(i, fd_table);
 		}
+		return -EINVAL;
 	}
 
-	return -EINVAL;
+	return -ENXIO;
 }
 
 int blk_dev_close(struct inode *i, struct fd *fd_table)
@@ -231,10 +233,11 @@ int blk_dev_close(struct inode *i, struct fd *fd_table)
 		if(d->fsop && d->fsop->close) {
 			return d->fsop->close(i, fd_table);
 		}
+		printk("WARNING: %s(): block device %d,%d does not have the close() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
+		return -EINVAL;
 	}
 
-	printk("WARNING: %s(): block device %d,%d does not have the close() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
-	return -EINVAL;
+	return -ENXIO;
 }
 
 int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
@@ -248,7 +251,7 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 	struct device *d;
 
 	if(!(d = get_device(BLK_DEV, i->rdev))) {
-		return -EINVAL;
+		return -ENXIO;
 	}
 
 	blksize = d->blksize ? d->blksize : BLKSIZE_1K;
@@ -295,7 +298,7 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	struct device *d;
 
 	if(!(d = get_device(BLK_DEV, i->rdev))) {
-		return -EINVAL;
+		return -ENXIO;
 	}
 
 	blksize = d->blksize ? d->blksize : BLKSIZE_1K;
@@ -339,10 +342,11 @@ int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		if(d->fsop && d->fsop->ioctl) {
 			return d->fsop->ioctl(i, cmd, arg);
 		}
+		printk("WARNING: %s(): block device %d,%d does not have the ioctl() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
+		return -EINVAL;
 	}
 
-	printk("WARNING: %s(): block device %d,%d does not have the ioctl() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
-	return -EINVAL;
+	return -ENXIO;
 }
 
 int blk_dev_lseek(struct inode *i, __off_t offset)
