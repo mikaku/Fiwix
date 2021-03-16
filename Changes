@@ -1,10 +1,15 @@
 1.3.0 - DD-MMM-2021
 ===================
+- Added framebuffer driver support for VBE 2.0 compliant graphics cards.
 - Updated the header file to support the latest GRUB Multiboot Specification v1.
 - Moved 'cpu_idle()' to a C function to include more easily some tasks to do.
 - Isolated the multiboot code in order to prepare the kernel to support multiple
   bootloader protocols.
 - Arrange boot.S to be compatible only with GRUB Multiboot Specification v1.
+- Changed from 0x90000 to 0x50000 the memory location of the 4MB temporary Page
+  Directory to be able to hold bigger initrd images.
+- Added the ability to insert extra regions to the memory map provided by the
+  boot loader.
 - Fixed the RAMdisk driver to not access blocks beyond its size.
 - Fixed a race condition in floppy drive when the interrupt occurred right
   before going to sleep.
@@ -35,6 +40,7 @@
 - Fixed to return ENOSPC when trying to write beyond the size of a block device.
 - Fixed get_proc_by_pid() to not PANIC anymore if the process didn't exist.
 - Fixed to avoid multiple calls to tty_queue_init().
+- Fixed to return ENXIO when the device does not exist.
 
 
 1.2.0 - 12-Dec-2020
