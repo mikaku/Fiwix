@@ -301,7 +301,7 @@ void mem_init(void)
 		map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);
 	};
 	if(video.flags & VPF_VESAFB) {
-		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.size, PAGE_PRESENT | PAGE_RW);
+		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.fb_memsize, PAGE_PRESENT | PAGE_RW);
 	}
 /*	printk("_last_data_addr = 0x%08x-0x%08x (kernel)\n", KERNEL_ENTRY_ADDR, _last_data_addr); */
 	activate_kpage_dir();
@@ -422,6 +422,16 @@ void mem_init(void)
 		}
 	}
 
+	/*
+	 * FIXME: this is ugly!
+	 * It should go in console_init() once we have a proper kernel memory/page management.
+	 */
+	#include <fiwix/console.h>
+	for(n = 1; n <= NR_VCONSOLES; n++) {
+		printk("_last_data_addr = 0x%08x\n", _last_data_addr);
+		vc_screen[n] = (short int *)_last_data_addr;
+		_last_data_addr += (video.columns * video.lines * 2);
+	}
 
 	/* the last one must be the page_table structure */
 	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
