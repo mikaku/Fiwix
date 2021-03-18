@@ -178,7 +178,7 @@ static void csi_J(struct vconsole *vc, int mode)
 
 	switch(mode) {
 		case CSI_J_CUR2END:	/* Erase Down <ESC>[J */
-			from = ((vc->y * vc->columns) + vc->x) * 2;
+			from = (vc->y * vc->columns) + vc->x;
 			count = (SCREEN_SIZE - from) / sizeof(short int);
 			break;
 		case CSI_J_STA2CUR:	/* Erase Up <ESC>[1J */
