@@ -8,37 +8,12 @@
 #ifndef _FIWIX_CONSOLE_H
 #define _FIWIX_CONSOLE_H
 
-#include <fiwix/config.h>
-#include <fiwix/termios.h>
 #include <fiwix/vt.h>
 
 #define NR_VCONSOLES		12	/* number of virtual consoles */
 
 #define VCONSOLES_MAJOR		4	/* virtual consoles major number */
 #define SYSCON_MAJOR		5	/* system console major number */
-
-#define MONO_ADDR		0xB0000L
-#define COLOR_ADDR		0xB8000L
-
-#define MONO_6845_ADDR		0x3B4	/* i/o address (+1 for data register) */
-#define COLOR_6845_ADDR		0x3D4	/* i/o address (+1 for data register) */
-
-#define ATTR_CONTROLLER		0x3C0	/* attribute controller registrer */
-#define ATTR_CONTROLLER_PAS	0x20	/* palette address source */
-#define INPUT_STAT1		0x3DA	/* input status #1 register */
-#define BLANK_INTERVAL	(600 * HZ)	/* 600 seconds (10 minutes) */
-
-#define CRT_INDEX		0
-#define CRT_DATA		1
-#define CRT_CURSOR_STR		0xA
-#define CRT_CURSOR_END		0xB
-#define CRT_START_ADDR_HI	0xC
-#define CRT_START_ADDR_LO	0xD
-#define CRT_CURSOR_POS_HI	0xE
-#define CRT_CURSOR_POS_LO	0xF
-
-#define CURSOR_MASK		0x1F
-#define CURSOR_DISABLE		0x20
 
 /* Graphic Rendition Combination Modes */
 #define SGR_DEFAULT		0	/* back to the default rendition */
@@ -97,20 +72,18 @@
 #define SCROLL_UP		1
 #define SCROLL_DOWN		2
 
-#define VC_BUF_UP		1
-#define VC_BUF_DOWN		2
-
 #define BS			127	/* backspace */
+
+#define VPF_VGA			0x01	/* VGA text mode */
+#define VPF_VESAFB		0x02	/* x86 frame buffer */
+#define VPF_CURSOR_ON		0x04	/* draw cursor */
+
+#define ON			1
+#define OFF			0
 
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 
-struct video_parms {
-	short int *address;
-	int port;
-	char *type;
-	int columns;
-	int lines;
-};
+short int *vc_screen[NR_VCONSOLES + 1];
 
 struct vconsole {
 	int x;		/* current column */
@@ -127,15 +100,50 @@ struct vconsole {
 	int insert_mode;
 	short int *vidmem;
 	short int has_focus;
-	short int *scrbuf;
-	int saved_x;
-	int saved_y;
+	short int *screen;
+	int saved_x, cursor_x;
+	int saved_y, cursor_y;
 	struct vt_mode vt_mode;
 	unsigned char vc_mode;
 	unsigned char blanked;
 	int switchto_tty;
 	struct tty *tty;
 };
+
+struct video_parms {
+	int flags;
+	unsigned int *address;
+	int port;
+	char *type;
+	int columns;
+	int lines;
+	int buf_y;
+	int buf_top;
+	int fb_memsize;
+	int fb_version;
+	int fb_width;
+	int fb_height;
+	int fb_char_width;
+	int fb_char_height;
+	int fb_bpp;
+	int fb_pixelwidth;
+	int fb_pitch;
+	int fb_size;
+
+	/* formerly video driver operations */
+	void (*put_char)(struct vconsole *, unsigned char);
+	void (*insert_char)(struct vconsole *);
+	void (*delete_char)(struct vconsole *);
+	void (*update_curpos)(struct vconsole *);
+	void (*show_cursor)(int);
+	void (*screen_on)(void);
+	void (*get_curpos)(struct vconsole *);
+	void (*scroll_screen)(struct vconsole *, int, int);
+	void (*buf_scroll_up)(void);
+	void (*buf_refresh)(struct vconsole *);
+	void (*buf_scroll)(struct vconsole *, int);
+};
+extern struct video_parms video;
 
 void vconsole_reset(struct tty *);
 void vconsole_write(struct tty *);
@@ -146,14 +154,11 @@ void vconsole_restore(struct vconsole *);
 void vconsole_buffer_scrl(int);
 void blank_screen(struct vconsole *);
 void unblank_screen(struct vconsole *);
-void screen_on(void);
-void screen_off(unsigned int);
 void vconsole_start(struct tty *);
 void vconsole_stop(struct tty *);
 void vconsole_beep(void);
 void vconsole_deltab(struct tty *);
 void console_flush_log_buf(char *, unsigned int);
-void get_video_parms(void);
-void vconsole_init(void);
+void console_init(void);
 
 #endif /* _FIWIX_CONSOLE_H */

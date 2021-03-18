@@ -10,6 +10,7 @@
 #include <fiwix/limits.h>
 #include <fiwix/keyboard.h>
 #include <fiwix/console.h>
+#include <fiwix/vgacon.h>
 #include <fiwix/pic.h>
 #include <fiwix/signal.h>
 #include <fiwix/process.h>
@@ -103,8 +104,9 @@ static unsigned char alt = 0;
 static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
 
-static unsigned char do_scrl_buf = 0;
+static unsigned char do_buf_scroll = 0;
 static char do_switch_console = -1;
+struct video_parms video;
 
 unsigned char kb_identify[2] = {0, 0};
 char ps2_active_ports = 0;
@@ -436,7 +438,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 	scode = inport_b(KB_DATA);
 
-	screen_on();
+	video.screen_on();
 	keyboard_bh.flags |= BH_ACTIVE;
 
 	/* keyboard said all is OK, perfect */
@@ -585,12 +587,12 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	}
 
 	if(shift && (key == PGUP)) {
-		do_scrl_buf = VC_BUF_UP;
+		do_buf_scroll = SCROLL_UP;
 		return;
 	}
 
 	if(shift && (key == PGDN)) {
-		do_scrl_buf = VC_BUF_DOWN;
+		do_buf_scroll = SCROLL_DOWN;
 		return;
 	}
 
@@ -687,15 +689,19 @@ void irq_keyboard_bh(void)
 {
 	int n;
 	struct tty *tty;
+	struct vconsole *vc;
+
+	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
+	vc = (struct vconsole *)tty->driver_data;
 
 	if(do_switch_console >= 0) {
 		vconsole_select(do_switch_console);
 		do_switch_console = -1;
 	}
 
-	if(do_scrl_buf) {
-		vconsole_buffer_scrl(do_scrl_buf);
-		do_scrl_buf = 0;
+	if(do_buf_scroll) {
+		video.buf_scroll(vc, do_buf_scroll);
+		do_buf_scroll = 0;
 	}
 
 	tty = &tty_table[0];

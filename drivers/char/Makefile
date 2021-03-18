@@ -9,7 +9,8 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = console.o tty.o tty_queue.o vt.o defkeymap.o keyboard.o memdev.o serial.o lp.o fb.o
+OBJS = console.o tty.o tty_queue.o vt.o defkeymap.o keyboard.o memdev.o \
+       serial.o lp.o vgacon.o fb.o fbcon.o
 
 char:	$(OBJS)
 	$(LD) $(LDFLAGS) -r $(OBJS) -o char.o

@@ -84,12 +84,12 @@ int fb_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	unsigned int addr;
 
-	if(fd_table->offset >= video.size) {
+	if(fd_table->offset >= video.fb_memsize) {
 		return 0;
 	}
 
 	addr = (unsigned int)video.address + fd_table->offset;
-	count = MIN(count, video.size - fd_table->offset);
+	count = MIN(count, video.fb_memsize - fd_table->offset);
 	memcpy_b(buffer, (void *)addr, count);
 	fd_table->offset += count;
 	return count;
@@ -99,12 +99,12 @@ int fb_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t 
 {
 	unsigned int addr;
 
-	if(fd_table->offset >= video.size) {
+	if(fd_table->offset >= video.fb_memsize) {
 		return -ENOSPC;
 	}
 
 	addr = (unsigned int)video.address + fd_table->offset;
-	count = MIN(count, video.size - fd_table->offset);
+	count = MIN(count, video.fb_memsize - fd_table->offset);
 	memcpy_b((void *)addr, buffer, count);
 	fd_table->offset += count;
 	return count;
@@ -125,18 +125,18 @@ void fb_init(void)
 	unsigned int limit;
 
 	SET_MINOR(fb_device.minors, 0);
-	limit = (unsigned int)video.address + video.size;
+	limit = (unsigned int)video.address + video.fb_memsize;
 
 	printk("fb0       0x%08X-0x%08X type=%s %X.%X resolution=%dx%dx%d size=%dMB\n",
 		video.address,
 		limit,
 		video.type,
-		video.version >> 8,
-		video.version & 0xFF,
-		video.xresolution,
-		video.yresolution,
-		video.bpp,
-		video.size / 1024 / 1024
+		video.fb_version >> 8,
+		video.fb_version & 0xFF,
+		video.fb_width,
+		video.fb_height,
+		video.fb_bpp,
+		video.fb_memsize / 1024 / 1024
 	);
 	if(register_device(CHR_DEV, &fb_device)) {
 		printk("ERROR: %s(): unable to register fb device.\n", __FUNCTION__);
