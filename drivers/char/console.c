@@ -437,8 +437,6 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 			} else {
 				vc->check_x = 1;
 			}
-			vc->cursor_x = vc->x;
-			vc->cursor_y = vc->y;
 		}
 		if(vc->y >= vc->bottom) {
 			video.scroll_screen(vc, 0, SCROLL_UP);
