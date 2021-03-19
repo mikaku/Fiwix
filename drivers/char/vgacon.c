@@ -263,6 +263,7 @@ void vgacon_init(void)
 		video.port = COLOR_6845_ADDR;
 		video.type = "VGA color 80x25";
 	}
+	video.memsize = 384 * 1024;
 	video.flags = VPF_VGA;
 	video.columns = 80;
 	video.lines = 25;

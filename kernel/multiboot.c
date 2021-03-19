@@ -309,10 +309,10 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.flags = VPF_VESAFB;
 		video.address = (unsigned int *)vbem->phys_base;
 		video.port = 0;
+		video.memsize = vbec->total_memory * vbem->win_size * 1024;
 		video.type = (char *)vbec->signature;
 		video.columns = vbem->x_resolution / vbem->x_char_size;
 		video.lines = vbem->y_resolution / vbem->y_char_size;
-		video.fb_memsize = vbec->total_memory * vbem->win_size * 1024;
 		video.fb_version = vbec->version;
 		video.fb_width = vbem->x_resolution;
 		video.fb_height = vbem->y_resolution;
@@ -324,10 +324,10 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.fb_size = vbem->x_resolution * vbem->y_resolution * video.fb_pixelwidth;
 
 		from = (unsigned long int)video.address;
-		to = from + video.fb_memsize;
+		to = from + video.memsize;
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_AVAILABLE);
 		from = (unsigned long int)video.address - KERNEL_BASE_ADDR;
-		to = (from + video.fb_memsize);
+		to = (from + video.memsize);
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
 		fb_init();
 		fbcon_init();

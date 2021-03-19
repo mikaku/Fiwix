@@ -298,10 +298,10 @@ void mem_init(void)
 	 * Then map_kaddr will be a public function (not static).
 	 */
 	if(video.flags & VPF_VGA) {
-		map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);
+		map_kaddr(0xA0000, 0xA0000 + video.memsize, PAGE_PRESENT | PAGE_RW);
 	};
 	if(video.flags & VPF_VESAFB) {
-		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.fb_memsize, PAGE_PRESENT | PAGE_RW);
+		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, PAGE_PRESENT | PAGE_RW);
 	}
 /*	printk("_last_data_addr = 0x%08x-0x%08x (kernel)\n", KERNEL_ENTRY_ADDR, _last_data_addr); */
 	activate_kpage_dir();
@@ -428,7 +428,6 @@ void mem_init(void)
 	 */
 	#include <fiwix/console.h>
 	for(n = 1; n <= NR_VCONSOLES; n++) {
-		printk("_last_data_addr = 0x%08x\n", _last_data_addr);
 		vc_screen[n] = (short int *)_last_data_addr;
 		_last_data_addr += (video.columns * video.lines * 2);
 	}

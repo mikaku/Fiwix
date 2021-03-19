@@ -114,12 +114,12 @@ struct video_parms {
 	int flags;
 	unsigned int *address;
 	int port;
+	int memsize;
 	char *type;
 	int columns;
 	int lines;
 	int buf_y;
 	int buf_top;
-	int fb_memsize;
 	int fb_version;
 	int fb_width;
 	int fb_height;
