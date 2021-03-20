@@ -183,6 +183,22 @@ void fbcon_get_curpos(struct vconsole *vc)
 {
 }	
 
+void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
+{
+	short int *vidmem;
+
+	if(vc->has_focus) {
+		from = from * video.fb_char_width * video.fb_char_height;
+		from = from * video.fb_pixelwidth;
+		count = count * video.fb_char_width * video.fb_char_height;
+		count = count * video.fb_pixelwidth;
+		memset_b(vc->vidmem + from, color, count);
+	} else {
+		vidmem = vc->vidmem;
+		memset_w(vidmem + from, color, count);
+	}
+}
+
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
@@ -245,9 +261,10 @@ void fbcon_init(void)
 	video.delete_char = fbcon_delete_char;
 	video.update_curpos = fbcon_update_curpos;
 	video.show_cursor = fbcon_show_cursor;
-	video.screen_on = fbcon_screen_on;
 	video.get_curpos = fbcon_get_curpos;
+	video.write_screen = fbcon_write_screen;
 	video.scroll_screen = fbcon_scroll_screen;
+	video.screen_on = fbcon_screen_on;
 	video.buf_scroll_up = fbcon_buf_scroll_up;
 	video.buf_refresh = fbcon_buf_refresh;
 }

@@ -51,8 +51,11 @@ unsigned char screen_is_off = 0;
 
 void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 {
+	short int *vidmem;
+
 	ch = iso8859[ch];
-	vc->vidmem[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
+	vidmem = (short int *)vc->vidmem;
+	vidmem[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 
 	if(vc->has_focus) {
 		vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
@@ -62,14 +65,15 @@ void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 void vgacon_insert_char(struct vconsole *vc)
 {
 	int n, offset;
-	short int tmp, last_char;
+	short int tmp, last_char, *vidmem;
 
+	vidmem = (short int *)vc->vidmem;
 	offset = (vc->y * vc->columns) + vc->x;
 	n = vc->x;
 	last_char = BLANK_MEM;
 	while(n++ < vc->columns) {
-		memcpy_w(&tmp, vc->vidmem + offset, 1);
-		memset_w(vc->vidmem + offset, last_char, 1);
+		memcpy_w(&tmp, vidmem + offset, 1);
+		memset_w(vidmem + offset, last_char, 1);
 		last_char = tmp;
 		offset++;
 	}
@@ -78,11 +82,13 @@ void vgacon_insert_char(struct vconsole *vc)
 void vgacon_delete_char(struct vconsole *vc)
 {
 	int offset, count;
+	short int *vidmem;
 
+	vidmem = (short int *)vc->vidmem;
 	offset = (vc->y * vc->columns) + vc->x;
 	count = vc->columns - vc->x;
-	memcpy_w(vc->vidmem + offset, vc->vidmem + offset + 1, count);
-	memset_w(vc->vidmem + offset + count, BLANK_MEM, 1);
+	memcpy_w(vidmem + offset, vidmem + offset + 1, count);
+	memset_w(vidmem + offset + count, BLANK_MEM, 1);
 }
 
 void vgacon_update_curpos(struct vconsole *vc)
@@ -129,9 +135,20 @@ void vgacon_get_curpos(struct vconsole *vc)
 	vc->y = curpos / vc->columns;
 }	
 
+void vgacon_write_screen(struct vconsole *vc, int from, int count, int color)
+{
+	short int *vidmem;
+
+	vidmem = (short int *)vc->vidmem;
+	memset_w(vidmem + from, color, count);
+}
+
 void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
+	short int *vidmem;
+
+	vidmem = (short int *)vc->vidmem;
 
 	if(!top) {
 		top = vc->top;
@@ -141,15 +158,15 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			count = vc->columns * (vc->bottom - top - 1);
 			offset = top * vc->columns;
 			top = (top + 1) * vc->columns;
-			memcpy_w(vc->vidmem + offset, vc->vidmem + top, count);
-			memset_w(vc->vidmem + offset + count, BLANK_MEM, top);
+			memcpy_w(vidmem + offset, vidmem + top, count);
+			memset_w(vidmem + offset + count, BLANK_MEM, top);
 			break;
 		case SCROLL_DOWN:
 			count = vc->columns;
 			for(n = vc->bottom - 1; n >= top; n--) {
-				memcpy_w(vc->vidmem + (vc->columns * (n + 1)), vc->vidmem + (vc->columns * n), count);
+				memcpy_w(vidmem + (vc->columns * (n + 1)), vidmem + (vc->columns * n), count);
 			}
-			memset_w(vc->vidmem + (top * vc->columns), BLANK_MEM, count);
+			memset_w(vidmem + (top * vc->columns), BLANK_MEM, count);
 			break;
 	}
 	return;
@@ -191,15 +208,22 @@ void vgacon_buf_scroll_up(void)
 
 void vgacon_buf_refresh(struct vconsole *vc)
 {
+	short int *vidmem;
+
+	vidmem = (short int *)vc->vidmem;
 	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE / sizeof(short int));
-	memcpy_w(vcbuf, vc->vidmem, SCREEN_SIZE / sizeof(short int));
+	memcpy_w(vcbuf, vidmem, SCREEN_SIZE / sizeof(short int));
 }
 
 void vgacon_buf_scroll(struct vconsole *vc, int mode)
 {
+	short int *vidmem;
+
 	if(video.buf_y <= SCREEN_LINES) {
 		return;
 	}
+
+	vidmem = (short int *)vc->vidmem;
 	if(mode == SCROLL_UP) {
 		if(video.buf_top < 0) {
 			return;
@@ -214,7 +238,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		if(video.buf_top < 0) {
 			video.buf_top = 0;
 		}
-		memcpy_b(vc->vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
+		memcpy_b(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
 		if(!video.buf_top) {
 			video.buf_top = -1;
 		}
@@ -239,7 +263,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 			video.update_curpos(vc);
 			return;
 		}
-		memcpy_b(vc->vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
+		memcpy_b(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
 		return;
 	}
 }
@@ -272,9 +296,10 @@ void vgacon_init(void)
 	video.delete_char = vgacon_delete_char;
 	video.update_curpos = vgacon_update_curpos;
 	video.show_cursor = vgacon_show_cursor;
-	video.screen_on = vgacon_screen_on;
 	video.get_curpos = vgacon_get_curpos;
+	video.write_screen = vgacon_write_screen;
 	video.scroll_screen = vgacon_scroll_screen;
+	video.screen_on = vgacon_screen_on;
 	video.buf_scroll_up = vgacon_buf_scroll_up;
 	video.buf_refresh = vgacon_buf_refresh;
 	video.buf_scroll = vgacon_buf_scroll;

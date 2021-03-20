@@ -40,7 +40,7 @@
 #define DEVICE_OK	"\033[0n"
 #define DEVICE_NOT_OK	"\033[3n"
 
-#define SCREEN_SIZE	(video.columns * video.lines * 2)
+#define SCREEN_SIZE	(video.columns * video.lines)
 #define VC_BUF_LINES	(video.lines * SCREENS_LOG)
 
 
@@ -179,20 +179,20 @@ static void csi_J(struct vconsole *vc, int mode)
 	switch(mode) {
 		case CSI_J_CUR2END:	/* Erase Down <ESC>[J */
 			from = (vc->y * vc->columns) + vc->x;
-			count = (SCREEN_SIZE - from) / sizeof(short int);
+			count = SCREEN_SIZE - from;
 			break;
 		case CSI_J_STA2CUR:	/* Erase Up <ESC>[1J */
 			from = 0;
-			count = (((vc->y * vc->columns) + vc->x) * 2) / sizeof(short int);
+			count = (vc->y * vc->columns) + vc->x;
 			break;
 		case CSI_J_SCREEN:	/* Erase Screen <ESC>[2J */
 			from = 0;
-			count = SCREEN_SIZE / sizeof(short int);
+			count = SCREEN_SIZE;
 			break;
 		default:
 			return;
 	}
-	memset_w(vc->vidmem + from, vc->color_attr, count);
+	video.write_screen(vc, from, count, vc->color_attr);
 }
 
 static void csi_K(struct vconsole *vc, int mode)
@@ -202,20 +202,20 @@ static void csi_K(struct vconsole *vc, int mode)
 	switch(mode) {
 		case CSI_K_CUR2END:	/* Erase End of Line <ESC>[K */
 			from = (vc->y * vc->columns) + vc->x;
-			count = ((vc->columns - vc->x) * 2) / sizeof(short int);
+			count = vc->columns - vc->x;
 			break;
 		case CSI_K_STA2CUR:	/* Erase Start of Line <ESC>[1K */
 			from = vc->y * vc->columns;
-			count = (vc->x * 2) / sizeof(short int);
+			count = vc->x;
 			break;
 		case CSI_K_LINE:	/* Erase Line <ESC>[2K */
 			from = vc->y * vc->columns;
-			count = (vc->columns * 2) / sizeof(short int);
+			count = vc->columns;
 			break;
 		default:
 			return;
 	}
-	memset_w(vc->vidmem + from, vc->color_attr, count);
+	video.write_screen(vc, from, count, vc->color_attr);
 }
 
 static void csi_X(struct vconsole *vc, int count)
@@ -224,7 +224,7 @@ static void csi_X(struct vconsole *vc, int count)
 
 	from = (vc->y * vc->columns) + vc->x;
 	count = count > (vc->columns - vc->x) ? vc->columns - vc->x : count;
-	memset_w(vc->vidmem + from, vc->color_attr, count * 2);
+	video.write_screen(vc, from, count, vc->color_attr);
 }
 
 static void csi_L(struct vconsole *vc, int count)
@@ -868,12 +868,12 @@ void vconsole_select_final(int new_cons)
 
 void vconsole_save(struct vconsole *vc)
 {
-	memcpy_b(vc->screen, vc->vidmem, SCREEN_SIZE);
+	memcpy_w(vc->screen, vc->vidmem, SCREEN_SIZE);
 }
 
 void vconsole_restore(struct vconsole *vc)
 {
-	memcpy_b(vc->vidmem, vc->screen, SCREEN_SIZE);
+	memcpy_w(vc->vidmem, vc->screen, SCREEN_SIZE);
 }
 
 void blank_screen(struct vconsole *vc)
@@ -882,7 +882,7 @@ void blank_screen(struct vconsole *vc)
 		return;
 	}
 	vconsole_save(vc);
-	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE / sizeof(short int));
+	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE);
 	vc->blanked = 1;
 	video.show_cursor(OFF);
 }
@@ -1023,7 +1023,7 @@ void console_init(void)
 				vc[n].screen = vc_screen[n];
 			}
 			vc[n].vidmem = vc[n].screen;
-			memset_w(vc[n].screen, BLANK_MEM, SCREEN_SIZE / sizeof(short int));
+			memset_w(vc[n].screen, BLANK_MEM, SCREEN_SIZE);
 			vconsole_reset(tty);
 		}
 	}

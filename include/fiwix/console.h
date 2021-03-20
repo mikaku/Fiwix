@@ -98,7 +98,7 @@ struct vconsole {
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
 	int insert_mode;
-	short int *vidmem;
+	unsigned char *vidmem;
 	short int has_focus;
 	short int *screen;
 	int saved_x, cursor_x;
@@ -136,9 +136,9 @@ struct video_parms {
 	void (*delete_char)(struct vconsole *);
 	void (*update_curpos)(struct vconsole *);
 	void (*show_cursor)(int);
-	void (*screen_on)(void);
 	void (*get_curpos)(struct vconsole *);
 	void (*scroll_screen)(struct vconsole *, int, int);
+	void (*screen_on)(void);
 	void (*buf_scroll_up)(void);
 	void (*buf_refresh)(struct vconsole *);
 	void (*buf_scroll)(struct vconsole *, int);
