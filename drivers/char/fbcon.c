@@ -98,11 +98,16 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 {
 	int color;
-	unsigned char *addr;
+	short int *vidmem;
+
+	if(!vc->has_focus) {
+		vidmem = (short int *)vc->vidmem;
+		vidmem[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
+		return;
+	}
 
 	color = 0xAAAAAA;
-	addr = (unsigned char *)video.address;  // FIXME: vc->vidmem;
-	draw_glyph(addr, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
+	draw_glyph(vc->vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
 }
 
 void fbcon_insert_char(struct vconsole *vc)
@@ -111,7 +116,7 @@ void fbcon_insert_char(struct vconsole *vc)
 	short int tmp, last_char;
 	unsigned char *addr, *ch;
 
-	addr = (unsigned char *)video.address;	// FIXME: vc->vidmem;
+	addr = vc->vidmem;
 	offset = (vc->y * video.fb_width * video.fb_char_height) + (vc->x * video.fb_char_width);
 	addr += offset * video.fb_pixelwidth;
 	ch = &font_data[32 * video.fb_char_height];
@@ -134,7 +139,7 @@ void fbcon_delete_char(struct vconsole *vc)
 	int offset, count, color;
 	unsigned char *addr, *ch;
 
-	addr = (unsigned char *)video.address;	// FIXME: vc->vidmem;
+	addr = vc->vidmem;
 	offset = (vc->y * video.fb_width * video.fb_char_height) + (vc->x * video.fb_char_width);
 	addr += offset * video.fb_pixelwidth;
 	ch = &font_data[32 * video.fb_char_height];
@@ -148,7 +153,6 @@ void fbcon_delete_char(struct vconsole *vc)
 void fbcon_update_curpos(struct vconsole *vc)
 {
 	int color;
-	unsigned char *addr;
 
 	if(!vc->has_focus) {
 		return;
@@ -156,13 +160,12 @@ void fbcon_update_curpos(struct vconsole *vc)
 
 	/* remove old cursor */
 	color = 0;	// FIXME: should be the background color
-	addr = (unsigned char *)video.address;  // FIXME: vc->vidmem;
 	if(vc->x != vc->cursor_x || vc->y != vc->cursor_y) {
-		draw_glyph(addr, vc->cursor_x, vc->cursor_y, &cursor_shape[0], color);
+		draw_glyph(vc->vidmem, vc->cursor_x, vc->cursor_y, &cursor_shape[0], color);
 	}
 
 	color = 0xAAAAAA;
-	draw_glyph(addr, vc->x, vc->y, &cursor_shape[0], color);
+	draw_glyph(vc->vidmem, vc->x, vc->y, &cursor_shape[0], color);
 	vc->cursor_x = vc->x;
 	vc->cursor_y = vc->y;
 }
@@ -185,26 +188,39 @@ void fbcon_get_curpos(struct vconsole *vc)
 
 void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 {
+	int n, n2, lines, columns, x, y;
 	short int *vidmem;
+	unsigned char *ch;
 
-	if(vc->has_focus) {
-		from = from * video.fb_char_width * video.fb_char_height;
-		from = from * video.fb_pixelwidth;
-		count = count * video.fb_char_width * video.fb_char_height;
-		count = count * video.fb_pixelwidth;
-		memset_b(vc->vidmem + from, color, count);
-	} else {
-		vidmem = vc->vidmem;
+	if(!vc->has_focus) {
+		vidmem = (short int *)vc->vidmem;
 		memset_w(vidmem + from, color, count);
+		return;
+	}
+
+	ch = &font_data[32 * video.fb_char_height];
+	x = from % vc->columns;
+	y = from / vc->columns;
+	lines = count / vc->columns;
+	columns = x + count;
+	if(!lines) {
+		lines = 1;
+	}
+	if(!columns) {
+		columns = vc->columns;
+	}
+	for(n = 0; n < lines; n++) {
+		for(n2 = x; n2 < columns; n2++) {
+			draw_glyph(vc->vidmem, n2, y + n, ch, color);
+		}
+		x = 0;
+		columns = vc->columns;
 	}
 }
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
-	unsigned char *addr;
-
-	addr = (unsigned char *)video.address;
 
 	if(!top) {
 		top = vc->top;
@@ -219,8 +235,8 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 			memset_b(addr + offset + count, BLANK_MEM, top);
 		*/
 			count = video.fb_pitch * video.fb_char_height;
-			memcpy_b(addr, addr + count, video.fb_size - count);
-			memset_b(addr + video.fb_size - count, 0, count);
+			memcpy_b(vc->vidmem, vc->vidmem + count, video.fb_size - count);
+			memset_b(vc->vidmem + video.fb_size - count, 0, count);
 			if(vc->cursor_y) {
 				vc->cursor_y--;
 			}

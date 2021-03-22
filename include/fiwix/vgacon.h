@@ -39,6 +39,7 @@ void vgacon_delete_char(struct vconsole *);
 void vgacon_update_curpos(struct vconsole *);
 void vgacon_show_cursor(int);
 void vgacon_get_curpos(struct vconsole *);
+void vgacon_write_screen(struct vconsole *, int, int, int);
 void vgacon_screen_on(void);
 void vgacon_screen_off(unsigned int);
 void vgacon_init(void);

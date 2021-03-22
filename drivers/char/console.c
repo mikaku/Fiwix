@@ -179,11 +179,17 @@ static void csi_J(struct vconsole *vc, int mode)
 	switch(mode) {
 		case CSI_J_CUR2END:	/* Erase Down <ESC>[J */
 			from = (vc->y * vc->columns) + vc->x;
+			count = vc->columns - vc->x;
+			video.write_screen(vc, from, count, vc->color_attr);
+			from = ((vc->y + 1) * vc->columns);
 			count = SCREEN_SIZE - from;
 			break;
 		case CSI_J_STA2CUR:	/* Erase Up <ESC>[1J */
+			from = vc->y * vc->columns;
+			count = vc->x + 1;
+			video.write_screen(vc, from, count, vc->color_attr);
 			from = 0;
-			count = (vc->y * vc->columns) + vc->x;
+			count = vc->y * vc->columns;
 			break;
 		case CSI_J_SCREEN:	/* Erase Screen <ESC>[2J */
 			from = 0;
@@ -206,7 +212,7 @@ static void csi_K(struct vconsole *vc, int mode)
 			break;
 		case CSI_K_STA2CUR:	/* Erase Start of Line <ESC>[1K */
 			from = vc->y * vc->columns;
-			count = vc->x;
+			count = vc->x + 1;
 			break;
 		case CSI_K_LINE:	/* Erase Line <ESC>[2K */
 			from = vc->y * vc->columns;

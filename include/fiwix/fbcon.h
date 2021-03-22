@@ -9,10 +9,12 @@
 #define _FIWIX_FBCON_H
 
 void fbcon_put_char(struct vconsole *, unsigned char);
+
 void fbcon_delete_char(struct vconsole *);
 void fbcon_update_curpos(struct vconsole *);
 void fbcon_show_cursor(int);
 void fbcon_get_curpos(struct vconsole *);
+void fbcon_write_screen(struct vconsole *, int, int, int);
 void fbcon_screen_on(void);
 void fbcon_screen_off(unsigned int);
 void fbcon_init(void);
