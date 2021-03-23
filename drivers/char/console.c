@@ -858,7 +858,7 @@ void vconsole_select_final(int new_cons)
 		}
 		vc[current_cons].vidmem = vc[current_cons].screen;
 		vc[current_cons].has_focus = 0;
-		vc[new_cons].vidmem = (short int *)video.address;
+		vc[new_cons].vidmem = video.address;
 		vc[new_cons].has_focus = 1;
 		vconsole_restore(&vc[new_cons]);
 		current_cons = new_cons;
@@ -1035,7 +1035,7 @@ void console_init(void)
 	}
 
 	current_cons = 1;
-	vc[current_cons].vidmem = (short int *)video.address;
+	vc[current_cons].vidmem = video.address;
 	vc[current_cons].has_focus = 1;
 
 	video.get_curpos(&vc[current_cons]);

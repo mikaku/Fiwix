@@ -39,10 +39,8 @@ static const char *iso8859 =
 /*
  * This is the scrollback history buffer which is used only in the active
  * vconsole. Everytime a vconsole is switched, the screen content of the
- * previous vconsole is copied from video memory to kernel memory, and the
- * screen content of the new vconsole is copied from kernel memory to video
- * memory. Only the visible screen is copied, so switching vconsoles means
- * losing the scrollback history.
+ * new vconsole is copied back to this buffer. Only the visible screen is
+ * copied, so switching vconsoles means losing the scrollback history.
  */
 short int vcbuf[80 * 25 * SCREENS_LOG * 2];	/* FIXME: allocate this dynamically */
 
@@ -51,13 +49,15 @@ unsigned char screen_is_off = 0;
 
 void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 {
-	short int *vidmem;
+	short int *vidmem, *screen;
 
 	ch = iso8859[ch];
 	vidmem = (short int *)vc->vidmem;
 	vidmem[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 
 	if(vc->has_focus) {
+		screen = (short int *)vc->screen;
+		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 		vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
 	}
 }
@@ -65,15 +65,21 @@ void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 void vgacon_insert_char(struct vconsole *vc)
 {
 	int n, offset;
-	short int tmp, last_char, *vidmem;
+	short int tmp, last_char, *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
+	screen = (short int *)vc->screen;
 	offset = (vc->y * vc->columns) + vc->x;
 	n = vc->x;
 	last_char = BLANK_MEM;
+
 	while(n++ < vc->columns) {
 		memcpy_w(&tmp, vidmem + offset, 1);
 		memset_w(vidmem + offset, last_char, 1);
+		if(vc->has_focus) {
+			memcpy_w(&tmp, screen + offset, 1);
+			memset_w(screen + offset, last_char, 1);
+		}
 		last_char = tmp;
 		offset++;
 	}
@@ -82,13 +88,19 @@ void vgacon_insert_char(struct vconsole *vc)
 void vgacon_delete_char(struct vconsole *vc)
 {
 	int offset, count;
-	short int *vidmem;
+	short int *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
 	offset = (vc->y * vc->columns) + vc->x;
 	count = vc->columns - vc->x;
+
 	memcpy_w(vidmem + offset, vidmem + offset + 1, count);
 	memset_w(vidmem + offset + count, BLANK_MEM, 1);
+	if(vc->has_focus) {
+		screen = (short int *)vc->screen;
+		memcpy_w(screen + offset, screen + offset + 1, count);
+		memset_w(screen + offset + count, BLANK_MEM, 1);
+	}
 }
 
 void vgacon_update_curpos(struct vconsole *vc)
@@ -137,18 +149,24 @@ void vgacon_get_curpos(struct vconsole *vc)
 
 void vgacon_write_screen(struct vconsole *vc, int from, int count, int color)
 {
-	short int *vidmem;
+	short int *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
+
 	memset_w(vidmem + from, color, count);
+	if(vc->has_focus) {
+		screen = (short int *)vc->screen;
+		memset_w(screen + from, color, count);
+	}
 }
 
 void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
-	short int *vidmem;
+	short int *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
+	screen = (short int *)vc->screen;
 
 	if(!top) {
 		top = vc->top;
@@ -158,15 +176,25 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			count = vc->columns * (vc->bottom - top - 1);
 			offset = top * vc->columns;
 			top = (top + 1) * vc->columns;
-			memcpy_w(vidmem + offset, vidmem + top, count);
+			memcpy_w(vidmem + offset, screen + top, count);
 			memset_w(vidmem + offset + count, BLANK_MEM, top);
+			if(vc->has_focus) {
+				memcpy_w(screen + offset, screen + top, count);
+				memset_w(screen + offset + count, BLANK_MEM, top);
+			}
 			break;
 		case SCROLL_DOWN:
 			count = vc->columns;
 			for(n = vc->bottom - 1; n >= top; n--) {
-				memcpy_w(vidmem + (vc->columns * (n + 1)), vidmem + (vc->columns * n), count);
+				memcpy_w(vidmem + (vc->columns * (n + 1)), screen + (vc->columns * n), count);
+				if(vc->has_focus) {
+					memcpy_w(screen + (vc->columns * (n + 1)), screen + (vc->columns * n), count);
+				}
 			}
 			memset_w(vidmem + (top * vc->columns), BLANK_MEM, count);
+			if(vc->has_focus) {
+				memset_w(screen + (top * vc->columns), BLANK_MEM, count);
+			}
 			break;
 	}
 	return;
@@ -208,11 +236,11 @@ void vgacon_buf_scroll_up(void)
 
 void vgacon_buf_refresh(struct vconsole *vc)
 {
-	short int *vidmem;
+	short int *screen;
 
-	vidmem = (short int *)vc->vidmem;
+	screen = (short int *)vc->screen;
 	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE / sizeof(short int));
-	memcpy_w(vcbuf, vidmem, SCREEN_SIZE / sizeof(short int));
+	memcpy_w(vcbuf, screen, SCREEN_SIZE / sizeof(short int));
 }
 
 void vgacon_buf_scroll(struct vconsole *vc, int mode)
