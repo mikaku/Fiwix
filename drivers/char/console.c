@@ -853,9 +853,6 @@ void vconsole_select_final(int new_cons)
 			video.buf_top = 0;
 			video.update_curpos(&vc[current_cons]);
 		}
-		if(vc[current_cons].vc_mode != KD_GRAPHICS) {
-			vconsole_save(&vc[current_cons]);
-		}
 		vc[current_cons].vidmem = vc[current_cons].screen;
 		vc[current_cons].has_focus = 0;
 		vc[new_cons].vidmem = video.address;
@@ -872,11 +869,6 @@ void vconsole_select_final(int new_cons)
 	}
 }
 
-void vconsole_save(struct vconsole *vc)
-{
-	memcpy_w(vc->screen, vc->vidmem, SCREEN_SIZE);
-}
-
 void vconsole_restore(struct vconsole *vc)
 {
 	memcpy_w(vc->vidmem, vc->screen, SCREEN_SIZE);
@@ -887,7 +879,6 @@ void blank_screen(struct vconsole *vc)
 	if(vc->blanked) {
 		return;
 	}
-	vconsole_save(vc);
 	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE);
 	vc->blanked = 1;
 	video.show_cursor(OFF);

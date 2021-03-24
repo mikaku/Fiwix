@@ -150,7 +150,6 @@ void vconsole_reset(struct tty *);
 void vconsole_write(struct tty *);
 void vconsole_select(int);
 void vconsole_select_final(int);
-void vconsole_save(struct vconsole *);
 void vconsole_restore(struct vconsole *);
 void vconsole_buffer_scrl(int);
 void blank_screen(struct vconsole *);
