@@ -139,6 +139,7 @@ struct video_parms {
 	void (*get_curpos)(struct vconsole *);
 	void (*write_screen)(struct vconsole *, int, int, int);
 	void (*scroll_screen)(struct vconsole *, int, int);
+	void (*restore_screen)(struct vconsole *);
 	void (*screen_on)(void);
 	void (*buf_scroll_up)(void);
 	void (*buf_refresh)(struct vconsole *);

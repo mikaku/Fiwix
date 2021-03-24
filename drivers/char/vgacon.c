@@ -200,6 +200,11 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 	return;
 }
 
+void vgacon_restore_screen(struct vconsole *vc)
+{
+	memcpy_w(vc->vidmem, vc->screen, SCREEN_SIZE);
+}
+
 void vgacon_screen_on(void)
 {
 	unsigned long int flags;
@@ -284,7 +289,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		video.buf_top += (SCREEN_LINES / 2) * SCREEN_COLS;
 		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
-			vconsole_restore(vc);
+			video.restore_screen(vc);
 			video.buf_top = 0;
 			video.show_cursor(ON);
 			video.update_curpos(vc);
@@ -326,6 +331,7 @@ void vgacon_init(void)
 	video.get_curpos = vgacon_get_curpos;
 	video.write_screen = vgacon_write_screen;
 	video.scroll_screen = vgacon_scroll_screen;
+	video.restore_screen = vgacon_restore_screen;
 	video.screen_on = vgacon_screen_on;
 	video.buf_scroll_up = vgacon_buf_scroll_up;
 	video.buf_refresh = vgacon_buf_refresh;

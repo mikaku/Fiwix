@@ -386,7 +386,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 
 	if(vc->has_focus) {
 		if(video.buf_top) {
-			vconsole_restore(vc);
+			video.restore_screen(vc);
 			video.show_cursor(ON);
 			video.buf_top = 0;
 		}
@@ -510,7 +510,7 @@ void vconsole_write(struct tty *tty)
 	vc = (struct vconsole *)tty->driver_data;
 
 	if(video.buf_top) {
-		vconsole_restore(vc);
+		video.restore_screen(vc);
 		video.buf_top = 0;
 		video.show_cursor(ON);
 		video.update_curpos(vc);
@@ -849,7 +849,7 @@ void vconsole_select_final(int new_cons)
 			}
 		}
 		if(video.buf_top) {
-			vconsole_restore(&vc[current_cons]);
+			video.restore_screen(&vc[current_cons]);
 			video.buf_top = 0;
 			video.update_curpos(&vc[current_cons]);
 		}
@@ -857,7 +857,7 @@ void vconsole_select_final(int new_cons)
 		vc[current_cons].has_focus = 0;
 		vc[new_cons].vidmem = video.address;
 		vc[new_cons].has_focus = 1;
-		vconsole_restore(&vc[new_cons]);
+		video.restore_screen(&vc[new_cons]);
 		current_cons = new_cons;
 		set_leds(vc[current_cons].led_status);
 		video.update_curpos(&vc[current_cons]);
@@ -867,11 +867,6 @@ void vconsole_select_final(int new_cons)
 		video.buf_refresh(&vc[current_cons]);
 		video.show_cursor(ON);
 	}
-}
-
-void vconsole_restore(struct vconsole *vc)
-{
-	memcpy_w(vc->vidmem, vc->screen, SCREEN_SIZE);
 }
 
 void blank_screen(struct vconsole *vc)
@@ -889,7 +884,7 @@ void unblank_screen(struct vconsole *vc)
 	if(!vc->blanked) {
 		return;
 	}
-	vconsole_restore(vc);
+	video.restore_screen(vc);
 	vc->blanked = 0;
 	video.show_cursor(ON);
 }
