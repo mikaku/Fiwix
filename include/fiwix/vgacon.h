@@ -19,7 +19,6 @@
 #define ATTR_CONTROLLER		0x3C0	/* attribute controller registrer */
 #define ATTR_CONTROLLER_PAS	0x20	/* palette address source */
 #define INPUT_STAT1		0x3DA	/* input status #1 register */
-#define BLANK_INTERVAL	(600 * HZ)	/* 600 seconds (10 minutes) */
 
 #define CRT_INDEX		0
 #define CRT_DATA		1
