@@ -7,13 +7,16 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/fb.h>
+#include <fiwix/fbcon.h>
 #include <fiwix/console.h>
 #include <fiwix/tty.h>
+#include <fiwix/timer.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include "font-lat0-sun16.c"
 
 struct video_parms video;
+static unsigned char screen_is_off = 0;
 
 static unsigned char cursor_shape[] = {
         0x00,   /* -------- */
@@ -256,10 +259,29 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 
 void fbcon_screen_on(void)
 {
+	unsigned long int flags;
+	struct callout_req creq;
+
+	if(screen_is_off) {
+		SAVE_FLAGS(flags); CLI();
+		//restore_screen();
+		printk("[*ON*]");
+		RESTORE_FLAGS(flags);
+	}
+	creq.fn = fbcon_screen_off;
+	creq.arg = 0;
+	add_callout(&creq, BLANK_INTERVAL);
 }
 
 void fbcon_screen_off(unsigned int arg)
 {
+	unsigned long int flags;
+
+	screen_is_off = 1;
+	SAVE_FLAGS(flags); CLI();
+	//blank_screen();
+	printk("[*OFF*]");
+	RESTORE_FLAGS(flags);
 }
 
 void fbcon_buf_scroll_up(void)
