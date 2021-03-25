@@ -869,16 +869,6 @@ void vconsole_select_final(int new_cons)
 	}
 }
 
-void blank_screen(struct vconsole *vc)
-{
-	if(vc->blanked) {
-		return;
-	}
-	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE);
-	vc->blanked = 1;
-	video.show_cursor(OFF);
-}
-
 void unblank_screen(struct vconsole *vc)
 {
 	if(!vc->blanked) {

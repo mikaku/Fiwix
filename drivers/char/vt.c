@@ -63,7 +63,7 @@ int vt_ioctl(struct tty *tty, int cmd, unsigned long int arg)
 			if(vc->vc_mode != arg) {
 				vc->vc_mode = arg;
 				if(arg == KD_GRAPHICS) {
-					blank_screen(vc);
+					video.blank_screen(vc);
 				} else {
 					unblank_screen(vc);
 				}

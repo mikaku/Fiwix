@@ -159,6 +159,16 @@ void vgacon_write_screen(struct vconsole *vc, int from, int count, int color)
 	}
 }
 
+void vgacon_blank_screen(struct vconsole *vc)
+{
+	if(vc->blanked) {
+		return;
+	}
+	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE);
+	vc->blanked = 1;
+	video.show_cursor(OFF);
+}
+
 void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
@@ -329,6 +339,7 @@ void vgacon_init(void)
 	video.show_cursor = vgacon_show_cursor;
 	video.get_curpos = vgacon_get_curpos;
 	video.write_screen = vgacon_write_screen;
+	video.blank_screen = vgacon_blank_screen;
 	video.scroll_screen = vgacon_scroll_screen;
 	video.restore_screen = vgacon_restore_screen;
 	video.screen_on = vgacon_screen_on;
