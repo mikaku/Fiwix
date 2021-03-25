@@ -103,7 +103,7 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 {
 	int color;
-	short int *vidmem;
+	short int *vidmem, *screen;
 
 	if(!vc->has_focus) {
 		vidmem = (short int *)vc->vidmem;
@@ -113,6 +113,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 
 	color = 0xAAAAAA;
 	draw_glyph(vc->vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
+	vc->screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 }
 
 void fbcon_insert_char(struct vconsole *vc)
