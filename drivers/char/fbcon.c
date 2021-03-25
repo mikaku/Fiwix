@@ -15,6 +15,8 @@
 #include <fiwix/string.h>
 #include "font-lat0-sun16.c"
 
+#define SPACE_CHAR	32
+
 struct video_parms video;
 static unsigned char screen_is_off = 0;
 
@@ -122,7 +124,7 @@ void fbcon_insert_char(struct vconsole *vc)
 	addr = vc->vidmem;
 	offset = (vc->y * video.fb_width * video.fb_char_height) + (vc->x * video.fb_char_width);
 	addr += offset * video.fb_pixelwidth;
-	ch = &font_data[32 * video.fb_char_height];
+	ch = &font_data[SPACE_CHAR * video.fb_char_height];
 
 	color = 0;	// FIXME: should be the background color
 	/*
@@ -145,7 +147,7 @@ void fbcon_delete_char(struct vconsole *vc)
 	addr = vc->vidmem;
 	offset = (vc->y * video.fb_width * video.fb_char_height) + (vc->x * video.fb_char_width);
 	addr += offset * video.fb_pixelwidth;
-	ch = &font_data[32 * video.fb_char_height];
+	ch = &font_data[SPACE_CHAR * video.fb_char_height];
 
 	color = 0;	// FIXME: should be the background color
 	count = (vc->columns - vc->x) * video.fb_char_height * video.fb_bpp;
@@ -201,7 +203,7 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 		return;
 	}
 
-	ch = &font_data[32 * video.fb_char_height];
+	ch = &font_data[SPACE_CHAR * video.fb_char_height];
 	x = from % vc->columns;
 	y = from / vc->columns;
 	lines = count / vc->columns;
