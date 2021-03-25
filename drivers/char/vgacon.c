@@ -49,15 +49,14 @@ unsigned char screen_is_off = 0;
 
 void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 {
-	short int *vidmem, *screen;
+	short int *vidmem;
 
 	ch = iso8859[ch];
 	vidmem = (short int *)vc->vidmem;
 	vidmem[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 
 	if(vc->has_focus) {
-		screen = (short int *)vc->screen;
-		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
+		vc->screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 		vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
 	}
 }
