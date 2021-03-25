@@ -45,7 +45,7 @@ static const char *iso8859 =
 short int vcbuf[80 * 25 * SCREENS_LOG * 2];	/* FIXME: allocate this dynamically */
 
 struct video_parms video;
-unsigned char screen_is_off = 0;
+static unsigned char screen_is_off = 0;
 
 void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 {
@@ -166,7 +166,7 @@ void vgacon_blank_screen(struct vconsole *vc)
 	}
 	memset_w(vc->vidmem, BLANK_MEM, SCREEN_SIZE);
 	vc->blanked = 1;
-	video.show_cursor(OFF);
+	vgacon_show_cursor(OFF);
 }
 
 void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
@@ -283,7 +283,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		if(!video.buf_top) {
 			video.buf_top = -1;
 		}
-		video.show_cursor(OFF);
+		vgacon_show_cursor(OFF);
 		return;
 	}
 	if(mode == SCROLL_DOWN) {
@@ -298,10 +298,10 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		video.buf_top += (SCREEN_LINES / 2) * SCREEN_COLS;
 		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
-			video.restore_screen(vc);
+			vgacon_restore_screen(vc);
 			video.buf_top = 0;
-			video.show_cursor(ON);
-			video.update_curpos(vc);
+			vgacon_show_cursor(ON);
+			vgacon_update_curpos(vc);
 			return;
 		}
 		memcpy_b(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
