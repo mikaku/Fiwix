@@ -55,6 +55,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 {
 	struct proc *init, *p_kswapd;
 
+	_last_data_addr = stack - KERNEL_BASE_ADDR;
 	memset_b(&kstat, NULL, sizeof(kstat));
 
 	/* default kernel values */
@@ -73,17 +74,14 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	printk("               (GCC %s, built on %s)\n", __VERSION__, UTS_VERSION);
 	printk("\n");
 	printk("DEVICE    ADDRESS         IRQ   COMMENT\n");
-	printk("-------------------------------------------------------------------------------\n");
+	printk("--------------------------------------------------------------------------------\n");
 
 	cpu_init();
 	multiboot(magic, info);
 	timer_init();
-	get_video_parms();
-
-	_last_data_addr = stack - KERNEL_BASE_ADDR;
 	mem_init();
+	console_init();
 	keyboard_init();
-	vconsole_init();
 	proc_init();
 
 	/* IDLE is now the current process */
@@ -114,10 +112,12 @@ void stop_kernel(void)
 	int n;
 
 	/* stop and disable all interrupts! */
+	/*
 	CLI();
 	for(n = 0; n < NR_IRQS; n++) {
 		disable_irq(n);
 	}
+	*/
 
 	printk("\n");
 	printk("**    Safe to Power Off    **\n");
