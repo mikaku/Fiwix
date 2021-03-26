@@ -112,12 +112,10 @@ void stop_kernel(void)
 	int n;
 
 	/* stop and disable all interrupts! */
-	/*
 	CLI();
 	for(n = 0; n < NR_IRQS; n++) {
 		disable_irq(n);
 	}
-	*/
 
 	printk("\n");
 	printk("**    Safe to Power Off    **\n");
