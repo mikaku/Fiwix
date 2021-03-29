@@ -146,13 +146,12 @@ void fbcon_delete_char(struct vconsole *vc)
 	unsigned char *addr, *ch;
 
 	addr = vc->vidmem;
-	offset = (vc->y * video.fb_width * video.fb_char_height) + (vc->x * video.fb_char_width);
-	addr += offset * video.fb_pixelwidth;
+	offset = (vc->y * video.fb_pitch * video.fb_char_height) + (vc->x * video.fb_char_width * video.fb_pixelwidth);
 	ch = &font_data[SPACE_CHAR * video.fb_char_height];
 
 	color = 0;	// FIXME: should be the background color
 	count = (vc->columns - vc->x) * video.fb_char_height * video.fb_bpp;
-	memcpy_b(addr, addr + video.fb_bpp, count);
+	memcpy_b(addr + offset, addr + offset + video.fb_bpp, count);
 	draw_glyph(addr, vc->columns - 1, vc->y, ch, color);
 }
 
