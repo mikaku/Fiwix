@@ -224,6 +224,25 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 	}
 }
 
+void fbcon_blank_screen(struct vconsole *vc)
+{
+	int n, count;
+	unsigned char *addr;
+
+	if(vc->blanked) {
+		return;
+	}
+
+	addr = vc->vidmem;
+	for(n = 0, count = 0; n < video.lines; n++) {
+		count = video.fb_pitch * video.fb_char_height;
+		memset_b(addr, 0, count);
+		addr += count;
+	}
+	vc->blanked = 1;
+	fbcon_show_cursor(OFF);
+}
+
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
@@ -260,30 +279,55 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	return;
 }
 
-void fbcon_screen_on(void)
+void fbcon_restore_screen(struct vconsole *vc)
+{
+	int x, y, color;
+	unsigned char *ch, c;
+
+	color = 0xAAAAAA;
+
+	if(!screen_is_off) {
+		fbcon_blank_screen(vc);
+	}
+	for(y = 0; y < video.lines; y++) {
+		for(x = 0; x < vc->columns; x++) {
+			c = vc->screen[(y * vc->columns) + x] & 0xFF;
+			if(!c || c == SPACE_CHAR) {
+				continue;
+			}
+			ch = &font_data[c * video.fb_char_height];
+			draw_glyph(vc->vidmem, x, y, ch, color);
+		}
+	}
+	vc->blanked = 0;
+}
+
+void fbcon_screen_on(struct vconsole *vc)
 {
 	unsigned long int flags;
 	struct callout_req creq;
 
 	if(screen_is_off) {
 		SAVE_FLAGS(flags); CLI();
-		//restore_screen();
-		printk("[*ON*]");
+		fbcon_restore_screen(vc);
 		RESTORE_FLAGS(flags);
+		vc->blanked = 0;
+		screen_is_off = 0;
 	}
 	creq.fn = fbcon_screen_off;
-	creq.arg = 0;
+	creq.arg = (unsigned int)vc;
 	add_callout(&creq, BLANK_INTERVAL);
 }
 
 void fbcon_screen_off(unsigned int arg)
 {
+	struct vconsole *vc;
 	unsigned long int flags;
 
+	vc = (struct vconsole *)arg;
 	screen_is_off = 1;
 	SAVE_FLAGS(flags); CLI();
-	//blank_screen();
-	printk("[*OFF*]");
+	fbcon_blank_screen(vc);
 	RESTORE_FLAGS(flags);
 }
 
@@ -304,8 +348,11 @@ void fbcon_init(void)
 	video.show_cursor = fbcon_show_cursor;
 	video.get_curpos = fbcon_get_curpos;
 	video.write_screen = fbcon_write_screen;
+	video.blank_screen = fbcon_blank_screen;
 	video.scroll_screen = fbcon_scroll_screen;
+	video.restore_screen = fbcon_restore_screen;
 	video.screen_on = fbcon_screen_on;
 	video.buf_scroll_up = fbcon_buf_scroll_up;
 	video.buf_refresh = fbcon_buf_refresh;
+//	video.buf_scroll = fbcon_buf_scroll;
 }

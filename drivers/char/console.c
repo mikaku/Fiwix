@@ -985,7 +985,6 @@ void console_init(void)
 	if(video.flags & VPF_VESAFB) {
 		printk("console                    -    color frame buffer, %dx%d (%d virtual consoles)\n", video.columns, video.lines, NR_VCONSOLES);
 	}
-	video.screen_on();
 
 	for(n = 1; n <= NR_VCONSOLES; n++) {
 		if(!register_tty(MKDEV(VCONSOLES_MAJOR, n))) {

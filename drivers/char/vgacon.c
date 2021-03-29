@@ -214,7 +214,7 @@ void vgacon_restore_screen(struct vconsole *vc)
 	memcpy_w(vc->vidmem, vc->screen, SCREEN_SIZE);
 }
 
-void vgacon_screen_on(void)
+void vgacon_screen_on(struct vconsole *vc)
 {
 	unsigned long int flags;
 	struct callout_req creq;
