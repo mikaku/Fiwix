@@ -438,7 +438,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 	scode = inport_b(KB_DATA);
 
-	video.screen_on();
+	video.screen_on(vc);
 	keyboard_bh.flags |= BH_ACTIVE;
 
 	/* keyboard said all is OK, perfect */
@@ -724,8 +724,14 @@ void irq_keyboard_bh(void)
 
 void keyboard_init(void)
 {
-	add_bh(&keyboard_bh);
+	struct tty *tty;
+	struct vconsole *vc;
 
+	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
+	vc = (struct vconsole *)tty->driver_data;
+	video.screen_on(vc);
+
+	add_bh(&keyboard_bh);
 	keyboard_reset();
 
 	/* flush buffers */
