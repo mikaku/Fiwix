@@ -249,25 +249,28 @@ void fbcon_blank_screen(struct vconsole *vc)
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
-	int n, offset, count;
+	int n, offset, soffset, count, scount;
+	short int *screen;
+
+	screen = (short int *)vc->screen;
 
 	if(!top) {
 		top = vc->top;
 	}
 	switch(mode) {
 		case SCROLL_UP:
-		/*
-			count = vc->columns * (vc->bottom - top - 1);
-			offset = top * vc->columns;
-			top = (top + 1) * vc->columns;
-			memcpy_b(addr + offset, addr + top, count);
-			memset_b(addr + offset + count, BLANK_MEM, top);
-		*/
 			count = video.fb_pitch * video.fb_char_height;
+			scount = vc->columns * (vc->bottom - top - 1);
+			soffset = top * vc->columns;
+			top = (top + 1) * vc->columns;
 			memcpy_b(vc->vidmem, vc->vidmem + count, video.fb_size - count);
 			memset_b(vc->vidmem + video.fb_size - count, 0, count);
 			if(vc->cursor_y) {
 				vc->cursor_y--;
+			}
+			if(vc->has_focus) {
+				memcpy_w(screen + offset, screen + top, scount);
+				memset_w(screen + offset + scount, BLANK_MEM, top);
 			}
 			break;
 		case SCROLL_DOWN:
