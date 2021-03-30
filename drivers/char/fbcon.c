@@ -145,19 +145,31 @@ void fbcon_insert_char(struct vconsole *vc)
 
 void fbcon_delete_char(struct vconsole *vc)
 {
-	int offset, count, color;
-	unsigned char *addr, *ch;
+	int n, soffset, color;
+	short int sch;
+	unsigned char *ch;
+	short int *screen;
 
-	addr = vc->vidmem;
-	offset = (vc->y * video.fb_pitch * video.fb_char_height) + (vc->x * video.fb_char_width * video.fb_pixelwidth);
-	ch = &font_data[SPACE_CHAR * video.fb_char_height];
+	screen = (short int *)vc->screen;
+	soffset = (vc->y * vc->columns) + vc->x;
+	color = 0xAAAAAA;	// FIXME: should be the background color
+	n = vc->x;
 
-	color = 0;	// FIXME: should be the background color
-	count = (vc->columns - vc->x) * video.fb_char_height * video.fb_bpp;
-	memcpy_b(addr + offset, addr + offset + video.fb_bpp, count);
-	draw_glyph(addr, vc->columns - 1, vc->y, ch, color);
-
-	// FIXME: vc->screen must be also updated if has focus!
+	while(n < vc->columns) {
+		sch = vc->screen[soffset + 1];
+		if(vc->has_focus) {
+			if(sch & 0xFF) {
+				ch = &font_data[(sch & 0xFF) * video.fb_char_height];
+			} else {
+				ch = &font_data[SPACE_CHAR * video.fb_char_height];
+			}
+			draw_glyph(vc->vidmem, n, vc->y, ch, color);
+		}
+		memset_w(screen + soffset, sch, 1);
+		soffset++;
+		n++;
+	}
+	memset_w(screen + soffset, BLANK_MEM, 1);
 }
 
 void fbcon_update_curpos(struct vconsole *vc)
