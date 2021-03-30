@@ -238,6 +238,7 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 		x = 0;
 		columns = vc->columns;
 	}
+	memset_w(vc->screen + from, color, count);
 }
 
 void fbcon_blank_screen(struct vconsole *vc)
