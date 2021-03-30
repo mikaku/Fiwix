@@ -281,8 +281,8 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 				vc->cursor_y--;
 			}
 			if(vc->has_focus) {
-				memcpy_w(screen + offset, screen + top, scount);
-				memset_w(screen + offset + scount, BLANK_MEM, top);
+				memcpy_w(screen + soffset, screen + top, scount);
+				memset_w(screen + soffset + scount, BLANK_MEM, top);
 			}
 			break;
 		case SCROLL_DOWN:
