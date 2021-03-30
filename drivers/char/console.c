@@ -1013,6 +1013,10 @@ void console_init(void)
 	vc[current_cons].vidmem = (unsigned char *)video.address;
 	vc[current_cons].has_focus = 1;
 
+	if(video.flags & VPF_VGA) {
+		memcpy_w(vc[current_cons].screen, video.address, SCREEN_SIZE);
+	}
+
 	video.get_curpos(&vc[current_cons]);
 	video.update_curpos(&vc[current_cons]);
 	video.buf_y = vc[current_cons].y;
