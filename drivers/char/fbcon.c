@@ -254,29 +254,49 @@ void fbcon_blank_screen(struct vconsole *vc)
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
-	int n, offset, soffset, count, scount;
+	int soffset, poffset, count;
+	int x, y, sch, pch, color;
 	short int *screen;
+	unsigned char *vidmem, *ch;
 
+	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
+	color = 0xAAAAAA;	// FIXME: should be the background color
 
 	if(!top) {
 		top = vc->top;
 	}
 	switch(mode) {
 		case SCROLL_UP:
-			count = video.fb_pitch * video.fb_char_height;
-			scount = vc->columns * (vc->bottom - top - 1);
+			if(vc->has_focus) {
+				for(y = 1; y < vc->bottom - top; y++) {
+					for(x = 0; x < vc->columns; x++) {
+						soffset = (y * vc->columns) + x;
+						poffset = ((y - 1) * vc->columns) + x;
+						sch = screen[soffset] & 0xFF;
+						pch = screen[poffset] & 0xFF;
+						if(sch == pch) {
+							continue;
+						}
+						if(sch) {
+							ch = &font_data[sch * video.fb_char_height];
+						} else {
+							ch = &font_data[SPACE_CHAR * video.fb_char_height];
+						}
+						draw_glyph(vidmem, x, y - 1, ch, color);
+					}
+				}
+				count = video.fb_pitch * video.fb_char_height;
+				memset_l(vidmem + video.fb_size - count, 0, count / sizeof(unsigned int));
+			}
+			count = vc->columns * (vc->bottom - top - 1);
 			soffset = top * vc->columns;
 			top = (top + 1) * vc->columns;
-			memcpy_b(vc->vidmem, vc->vidmem + count, video.fb_size - count);
-			memset_b(vc->vidmem + video.fb_size - count, 0, count);
 			if(vc->cursor_y) {
 				vc->cursor_y--;
 			}
-			if(vc->has_focus) {
-				memcpy_w(screen + soffset, screen + top, scount);
-				memset_w(screen + soffset + scount, BLANK_MEM, top);
-			}
+			memcpy_w(screen + soffset, screen + top, count);
+			memset_w(screen + soffset + count, BLANK_MEM, top);
 			break;
 		case SCROLL_DOWN:
 			/*
