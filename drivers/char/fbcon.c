@@ -243,19 +243,11 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 
 void fbcon_blank_screen(struct vconsole *vc)
 {
-	int n, count;
-	unsigned char *addr;
-
 	if(vc->blanked) {
 		return;
 	}
 
-	addr = vc->vidmem;
-	for(n = 0, count = 0; n < video.lines; n++) {
-		count = video.fb_pitch * video.fb_char_height;
-		memset_b(addr, 0, count);
-		addr += count;
-	}
+	memset_b(vc->vidmem, 0, video.fb_size);
 	vc->blanked = 1;
 	fbcon_show_cursor(OFF);
 }
