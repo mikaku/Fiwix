@@ -322,6 +322,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.fb_pixelwidth = vbem->bits_per_pixel / 8;
 		video.fb_pitch = vbem->bytes_per_scanline;
 		video.fb_size = vbem->x_resolution * vbem->y_resolution * video.fb_pixelwidth;
+		video.fb_vsize = video.lines * video.fb_pitch * video.fb_char_height;
 
 		from = (unsigned long int)video.address;
 		to = from + video.memsize;
