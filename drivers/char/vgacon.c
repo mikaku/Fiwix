@@ -167,19 +167,16 @@ void vgacon_write_screen(struct vconsole *vc, int from, int count, int color)
 
 void vgacon_blank_screen(struct vconsole *vc)
 {
-	short int *vidmem, *screen;
+	short int *vidmem;
 
 	if(vc->blanked) {
 		return;
 	}
 
-	vidmem = (short int *)vc->vidmem;
-	screen = (short int *)vc->screen;
-
 	if(vc->has_focus) {
+		vidmem = (short int *)vc->vidmem;
 		memset_w(vidmem, BLANK_MEM, SCREEN_SIZE);
 	}
-	memset_w(screen, BLANK_MEM, SCREEN_SIZE);
 	vc->blanked = 1;
 	vgacon_show_cursor(OFF);
 }
