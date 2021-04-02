@@ -69,8 +69,8 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 {
 	int n, b, offset;
 
-	offset = (y * video.fb_width * video.fb_char_height) + (x * video.fb_char_width);
-	addr += offset * video.fb_pixelwidth;
+	offset = (y * video.fb_linesize) + (x * video.fb_bpp);
+	addr += offset;
 
 	for(n = 0; n < video.fb_char_height; n++) {
 		if(*(ch + n) == 0) {

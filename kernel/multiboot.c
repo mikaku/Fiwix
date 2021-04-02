@@ -321,6 +321,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.fb_bpp = vbem->bits_per_pixel;
 		video.fb_pixelwidth = vbem->bits_per_pixel / 8;
 		video.fb_pitch = vbem->bytes_per_scanline;
+		video.fb_linesize = video.fb_pitch * video.fb_char_height;
 		video.fb_size = vbem->x_resolution * vbem->y_resolution * video.fb_pixelwidth;
 		video.fb_vsize = video.lines * video.fb_pitch * video.fb_char_height;
 

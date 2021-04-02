@@ -129,6 +129,7 @@ struct video_parms {
 	int fb_bpp;
 	int fb_pixelwidth;
 	int fb_pitch;
+	int fb_linesize;
 	int fb_size;	/* size of screen based on resolution */
 	int fb_vsize;	/* size of screen based on columns x lines */
 
