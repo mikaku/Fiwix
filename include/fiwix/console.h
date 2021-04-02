@@ -99,9 +99,9 @@ struct vconsole {
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
 	int insert_mode;
-	unsigned char *vidmem;
+	unsigned char *vidmem;	/* write here only when console has focus */
 	short int has_focus;
-	short int *screen;
+	short int *screen;	/* the back-buffer of the screen */
 	int saved_x, cursor_x;
 	int saved_y, cursor_y;
 	struct vt_mode vt_mode;
@@ -129,7 +129,8 @@ struct video_parms {
 	int fb_bpp;
 	int fb_pixelwidth;
 	int fb_pitch;
-	int fb_size;
+	int fb_size;	/* size of screen based on resolution */
+	int fb_vsize;	/* size of screen based on columns x lines */
 
 	/* formerly video driver operations */
 	void (*put_char)(struct vconsole *, unsigned char);
