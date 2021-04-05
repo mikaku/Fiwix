@@ -205,6 +205,11 @@ void fbcon_update_curpos(struct vconsole *vc)
 void fbcon_show_cursor(struct vconsole *vc, int mode)
 {
 	switch(mode) {
+		case COND:
+			if(!(video.flags & VPF_CURSOR_ON)) {
+				break;
+			}
+			/* fall through */
 		case ON:
 			video.flags |= VPF_CURSOR_ON;
 			fbcon_update_curpos(vc);
@@ -363,7 +368,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 	color = 0xAAAAAA;
 
 	if(!screen_is_off) {
-		fbcon_blank_screen(vc);
+		memset_b(vidmem, 0, video.fb_size);
 	}
 	for(y = 0; y < video.lines; y++) {
 		for(x = 0; x < vc->columns; x++) {

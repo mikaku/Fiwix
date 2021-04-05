@@ -81,6 +81,7 @@
 
 #define ON			1
 #define OFF			0
+#define COND			2
 
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 

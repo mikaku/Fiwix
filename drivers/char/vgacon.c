@@ -124,15 +124,22 @@ void vgacon_show_cursor(struct vconsole *vc, int mode)
 	int status;
 
 	switch(mode) {
+		case COND:
+			if(!(video.flags & VPF_CURSOR_ON)) {
+				break;
+			}
+			/* fall through */
 		case ON:
 			outport_b(video.port + CRT_INDEX, CRT_CURSOR_STR);
 			status = inport_b(video.port + CRT_DATA);
 			outport_b(video.port + CRT_DATA, status & CURSOR_MASK);
+			video.flags |= VPF_CURSOR_ON;
 			break;
 		case OFF:
 			outport_b(video.port + CRT_INDEX, CRT_CURSOR_STR);
 			status = inport_b(video.port + CRT_DATA);
 			outport_b(video.port + CRT_DATA, status | CURSOR_DISABLE);
+			video.flags &= ~VPF_CURSOR_ON;
 			break;
 	}
 }

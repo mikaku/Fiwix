@@ -865,7 +865,7 @@ void vconsole_select_final(int new_cons)
 		video.buf_y = vc[current_cons].y;
 		video.buf_top = 0;
 		video.buf_refresh(&vc[current_cons]);
-		video.show_cursor(&vc[current_cons], ON);
+		video.show_cursor(&vc[current_cons], COND);
 	}
 }
 
