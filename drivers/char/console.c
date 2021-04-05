@@ -387,7 +387,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 	if(vc->has_focus) {
 		if(video.buf_top) {
 			video.restore_screen(vc);
-			video.show_cursor(ON);
+			video.show_cursor(vc, ON);
 			video.buf_top = 0;
 		}
 	}
@@ -512,7 +512,7 @@ void vconsole_write(struct tty *tty)
 	if(video.buf_top) {
 		video.restore_screen(vc);
 		video.buf_top = 0;
-		video.show_cursor(ON);
+		video.show_cursor(vc, ON);
 		video.update_curpos(vc);
 	}
 
@@ -676,7 +676,7 @@ void vconsole_write(struct tty *tty)
 							switch(vc->parmv1) {
 								/* DEC modes */
 								case 25: /* Switch Cursor Visible <ESC>[?25h */
-									video.show_cursor(ON);
+									video.show_cursor(vc, ON);
 									break;
 								case 4:
 									vc->insert_mode = ON; /* not used */
@@ -690,7 +690,7 @@ void vconsole_write(struct tty *tty)
 							switch(vc->parmv1) {
 								/* DEC modes */
 								case 25: /* Switch Cursor Invisible <ESC>[?25l */
-									video.show_cursor(OFF);
+									video.show_cursor(vc, OFF);
 									break;
 								case 4:
 									vc->insert_mode = OFF; /* not used */
@@ -865,7 +865,7 @@ void vconsole_select_final(int new_cons)
 		video.buf_y = vc[current_cons].y;
 		video.buf_top = 0;
 		video.buf_refresh(&vc[current_cons]);
-		video.show_cursor(ON);
+		video.show_cursor(&vc[current_cons], ON);
 	}
 }
 
@@ -876,7 +876,7 @@ void unblank_screen(struct vconsole *vc)
 	}
 	video.restore_screen(vc);
 	vc->blanked = 0;
-	video.show_cursor(ON);
+	video.show_cursor(vc, ON);
 }
 
 void vconsole_start(struct tty *tty)
@@ -978,7 +978,6 @@ void console_init(void)
 	int n;
 	struct tty *tty;
 
-	video.show_cursor(ON);
 	if(video.flags & VPF_VGA) {
 		printk("console   0x%04X-0x%04X    -    %s (%d virtual consoles)\n", video.port, video.port + 1, video.type, NR_VCONSOLES);
 	}
@@ -1010,6 +1009,7 @@ void console_init(void)
 	}
 
 	current_cons = 1;
+	video.show_cursor(&vc[current_cons], ON);
 	vc[current_cons].vidmem = (unsigned char *)video.address;
 	vc[current_cons].has_focus = 1;
 

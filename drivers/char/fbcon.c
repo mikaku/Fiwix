@@ -194,17 +194,20 @@ void fbcon_update_curpos(struct vconsole *vc)
 		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, &cursor_shape[0], color);
 	}
 
-	color = 0xAAAAAA;
-	draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], color);
+	if(video.flags & VPF_CURSOR_ON) {
+		color = 0xAAAAAA;
+		draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], color);
+	}
 	vc->cursor_x = vc->x;
 	vc->cursor_y = vc->y;
 }
 
-void fbcon_show_cursor(int mode)
+void fbcon_show_cursor(struct vconsole *vc, int mode)
 {
 	switch(mode) {
 		case ON:
 			video.flags |= VPF_CURSOR_ON;
+			fbcon_update_curpos(vc);
 			break;
 		case OFF:
 			video.flags &= ~VPF_CURSOR_ON;
@@ -266,7 +269,7 @@ void fbcon_blank_screen(struct vconsole *vc)
 
 	memset_b(vidmem, 0, video.fb_size);
 	vc->blanked = 1;
-	fbcon_show_cursor(OFF);
+	fbcon_show_cursor(vc, OFF);
 }
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
@@ -383,6 +386,7 @@ void fbcon_screen_on(struct vconsole *vc)
 	if(screen_is_off) {
 		SAVE_FLAGS(flags); CLI();
 		fbcon_restore_screen(vc);
+		fbcon_update_curpos(vc);
 		RESTORE_FLAGS(flags);
 		vc->blanked = 0;
 		screen_is_off = 0;

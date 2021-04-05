@@ -119,7 +119,7 @@ void vgacon_update_curpos(struct vconsole *vc)
 	}
 }
 
-void vgacon_show_cursor(int mode)
+void vgacon_show_cursor(struct vconsole *vc, int mode)
 {
 	int status;
 
@@ -178,7 +178,7 @@ void vgacon_blank_screen(struct vconsole *vc)
 		memset_w(vidmem, BLANK_MEM, SCREEN_SIZE);
 	}
 	vc->blanked = 1;
-	vgacon_show_cursor(OFF);
+	vgacon_show_cursor(vc, OFF);
 }
 
 void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
@@ -303,7 +303,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		if(!video.buf_top) {
 			video.buf_top = -1;
 		}
-		vgacon_show_cursor(OFF);
+		vgacon_show_cursor(vc, OFF);
 		return;
 	}
 	if(mode == SCROLL_DOWN) {
@@ -320,7 +320,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
 			vgacon_restore_screen(vc);
 			video.buf_top = 0;
-			vgacon_show_cursor(ON);
+			vgacon_show_cursor(vc, ON);
 			vgacon_update_curpos(vc);
 			return;
 		}
