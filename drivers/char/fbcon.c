@@ -288,7 +288,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	switch(mode) {
 		case SCROLL_UP:
 			if(vc->has_focus) {
-				for(y = 1; y < vc->bottom - top; y++) {
+				for(y = top + 1; y < vc->bottom; y++) {
 					for(x = 0; x < vc->columns; x++) {
 						soffset = (y * vc->columns) + x;
 						poffset = ((y - 1) * vc->columns) + x;
