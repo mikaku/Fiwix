@@ -853,7 +853,7 @@ void vconsole_select_final(int new_cons)
 			video.buf_top = 0;
 			video.update_curpos(&vc[current_cons]);
 		}
-		vc[current_cons].vidmem = (unsigned char *)vc[current_cons].screen;
+		vc[current_cons].vidmem = NULL;
 		vc[current_cons].has_focus = 0;
 		vc[new_cons].vidmem = (unsigned char *)video.address;
 		vc[new_cons].has_focus = 1;
@@ -1003,7 +1003,7 @@ void console_init(void)
 			if(video.flags & VPF_VESAFB) {
 				vc[n].screen = vc_screen[n];
 			}
-			vc[n].vidmem = (unsigned char *)vc[n].screen;
+			vc[n].vidmem = NULL;
 			memset_w(vc[n].screen, BLANK_MEM, SCREEN_SIZE);
 			vconsole_reset(tty);
 		}

@@ -260,6 +260,10 @@ void fbcon_blank_screen(struct vconsole *vc)
 	}
 
 	vidmem = vc->vidmem;
+	if(!(int)vidmem) {
+		return;
+	}
+
 	memset_b(vidmem, 0, video.fb_size);
 	vc->blanked = 1;
 	fbcon_show_cursor(OFF);
