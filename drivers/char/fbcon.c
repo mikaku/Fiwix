@@ -113,9 +113,11 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 		return;
 	}
 
-	color = 0xAAAAAA;
-	vidmem = vc->vidmem;
-	draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
+	if(!screen_is_off) {
+		color = 0xAAAAAA;
+		vidmem = vc->vidmem;
+		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
+	}
 	screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 }
 
