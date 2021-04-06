@@ -276,7 +276,6 @@ void fbcon_blank_screen(struct vconsole *vc)
 
 	memset_b(vidmem, 0, video.fb_size);
 	vc->blanked = 1;
-	fbcon_show_cursor(vc, OFF);
 }
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
