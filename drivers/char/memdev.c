@@ -334,15 +334,29 @@ int kmem_close(struct inode *i, struct fd *fd_table)
 
 int kmem_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	memcpy_b(buffer, (void *)P2V(fd_table->offset), count);
-	fd_table->offset += count;
+	unsigned int physical_memory;
+
+	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
+	if(P2V(fd_table->offset + count) < physical_memory) {
+		memcpy_b(buffer, (void *)P2V(fd_table->offset), count);
+		fd_table->offset += count;
+	} else {
+		count = 0;
+	}
 	return count;
 }
 
 int kmem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
-	memcpy_b((void *)P2V(fd_table->offset), buffer, count);
-	fd_table->offset += count;
+	unsigned int physical_memory;
+
+	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
+	if(P2V(fd_table->offset + count) < physical_memory) {
+		memcpy_b((void *)P2V(fd_table->offset), buffer, count);
+		fd_table->offset += count;
+	} else {
+		count = 0;
+	}
 	return count;
 }
 
