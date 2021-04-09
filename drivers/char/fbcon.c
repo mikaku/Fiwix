@@ -19,6 +19,7 @@
 
 struct video_parms video;
 static unsigned char screen_is_off = 0;
+extern short int *fb_vcbuf;
 
 static unsigned char cursor_shape[] = {
         0x00,   /* -------- */
@@ -119,6 +120,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
 	}
 	screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
+	fb_vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
 }
 
 void fbcon_insert_char(struct vconsole *vc)
@@ -423,12 +425,99 @@ void fbcon_screen_off(unsigned int arg)
 	RESTORE_FLAGS(flags);
 }
 
+// FIXME: must go in console.h (also those in vgacon.c)!!
+#define SCREEN_COLS	video.columns
+#define SCREEN_LINES	video.lines
+#define SCREEN_SIZE	(video.columns * video.lines)
+#define VC_BUF_LINES	(video.lines * SCREENS_LOG)
+#define VC_BUF_SIZE	(video.columns * VC_BUF_LINES)
+
 void fbcon_buf_scroll_up(void)
 {
+	memcpy_w(fb_vcbuf, fb_vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);
 }
 
 void fbcon_buf_refresh(struct vconsole *vc)
 {
+	short int *screen;
+
+	screen = (short int *)vc->screen;
+	memset_w(fb_vcbuf, BLANK_MEM, VC_BUF_SIZE);
+	memcpy_w(fb_vcbuf, screen, SCREEN_SIZE);
+}
+
+void fbcon_buf_scroll(struct vconsole *vc, int mode)
+{
+	short int sch;
+	int y, x, offset, color;
+	unsigned char *vidmem, *ch;
+
+	if(video.buf_y <= SCREEN_LINES) {
+		return;
+	}
+
+	vidmem = vc->vidmem;
+	color = 0xAAAAAA;
+
+	if(mode == SCROLL_UP) {
+		if(video.buf_top < 0) {
+			return;
+		}
+		if(!video.buf_top) {
+			video.buf_top = (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS;
+		}
+		video.buf_top -= (SCREEN_LINES / 2) * SCREEN_COLS;
+		if(video.buf_top < 0) {
+			video.buf_top = 0;
+		}
+		for(offset = 0, y = 0; y < video.lines; y++) {
+			for(x = 0; x < vc->columns; x++, offset++) {
+				sch = fb_vcbuf[video.buf_top + offset] & 0xFF;
+				if(sch) {
+					ch = &font_data[sch * video.fb_char_height];
+				} else {
+					ch = &font_data[SPACE_CHAR * video.fb_char_height];
+				}
+				draw_glyph(vidmem, x, y, ch, color);
+			}
+		}
+		if(!video.buf_top) {
+			video.buf_top = -1;
+		}
+		fbcon_show_cursor(vc, OFF);
+		return;
+	}
+	if(mode == SCROLL_DOWN) {
+		if(!video.buf_top) {
+			return;
+		}
+		if(video.buf_top == video.buf_y * SCREEN_COLS) {
+			return;
+		}
+		if(video.buf_top < 0) {
+			video.buf_top = 0;
+		}
+		video.buf_top += (SCREEN_LINES / 2) * SCREEN_COLS;
+		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
+			fbcon_restore_screen(vc);
+			video.buf_top = 0;
+			fbcon_show_cursor(vc, ON);
+			fbcon_update_curpos(vc);
+			return;
+		}
+		for(offset = 0, y = 0; y < video.lines; y++) {
+			for(x = 0; x < vc->columns; x++, offset++) {
+				sch = fb_vcbuf[video.buf_top + offset] & 0xFF;
+				if(sch) {
+					ch = &font_data[sch * video.fb_char_height];
+				} else {
+					ch = &font_data[SPACE_CHAR * video.fb_char_height];
+				}
+				draw_glyph(vidmem, x, y, ch, color);
+			}
+		}
+		return;
+	}
 }
 
 void fbcon_init(void)
@@ -446,5 +535,5 @@ void fbcon_init(void)
 	video.screen_on = fbcon_screen_on;
 	video.buf_scroll_up = fbcon_buf_scroll_up;
 	video.buf_refresh = fbcon_buf_refresh;
-//	video.buf_scroll = fbcon_buf_scroll;
+	video.buf_scroll = fbcon_buf_scroll;
 }
