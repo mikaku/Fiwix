@@ -15,9 +15,9 @@
 
 #define SCREEN_COLS	video.columns
 #define SCREEN_LINES	video.lines
-#define SCREEN_SIZE	(SCREEN_COLS * SCREEN_LINES * 2)
+#define SCREEN_SIZE	(SCREEN_COLS * SCREEN_LINES)
 #define VC_BUF_LINES	(SCREEN_LINES * SCREENS_LOG)
-#define VC_BUF_SIZE	(SCREEN_COLS * VC_BUF_LINES * 2)
+#define VC_BUF_SIZE	(SCREEN_COLS * VC_BUF_LINES)
 
 /* ISO/IEC 8859-1:1998 (aka latin1, IBM819, CP819), same as in Linux */
 static const char *iso8859 =
@@ -38,7 +38,7 @@ static const char *iso8859 =
 
 /*
  * This is the scrollback history buffer which is used only in the active
- * vconsole. Everytime a vconsole is switched, the screen content of the
+ * vconsole. Everytime a vconsole is switched, the screen contents of the
  * new vconsole is copied back to this buffer. Only the visible screen is
  * copied, so switching vconsoles means losing the scrollback history.
  */
@@ -272,7 +272,7 @@ void vgacon_screen_off(unsigned int arg)
 
 void vgacon_buf_scroll_up(void)
 {
-	memcpy_w(vcbuf, vcbuf + SCREEN_COLS, VC_BUF_SIZE - SCREEN_COLS);
+	memcpy_w(vcbuf, vcbuf + SCREEN_COLS, (VC_BUF_SIZE - SCREEN_COLS) * 2);
 }
 
 void vgacon_buf_refresh(struct vconsole *vc)
@@ -280,8 +280,8 @@ void vgacon_buf_refresh(struct vconsole *vc)
 	short int *screen;
 
 	screen = (short int *)vc->screen;
-	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE / sizeof(short int));
-	memcpy_w(vcbuf, screen, SCREEN_SIZE / sizeof(short int));
+	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE);
+	memcpy_w(vcbuf, screen, SCREEN_SIZE);
 }
 
 void vgacon_buf_scroll(struct vconsole *vc, int mode)
@@ -306,7 +306,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		if(video.buf_top < 0) {
 			video.buf_top = 0;
 		}
-		memcpy_b(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
+		memcpy_w(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
 		if(!video.buf_top) {
 			video.buf_top = -1;
 		}
@@ -331,7 +331,7 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 			vgacon_update_curpos(vc);
 			return;
 		}
-		memcpy_b(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
+		memcpy_w(vidmem, vcbuf + video.buf_top, SCREEN_SIZE);
 		return;
 	}
 }
@@ -374,5 +374,5 @@ void vgacon_init(void)
 	video.buf_refresh = vgacon_buf_refresh;
 	video.buf_scroll = vgacon_buf_scroll;
 
-	memcpy_b(vcbuf, video.address, SCREEN_SIZE);
+	memcpy_w(vcbuf, video.address, SCREEN_SIZE * 2);
 }
