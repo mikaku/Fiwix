@@ -299,10 +299,8 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		if(!video.buf_top) {
 			video.buf_top = (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS;
-			video.buf_top -= (SCREEN_LINES / 2) * SCREEN_COLS;
-		} else {
-			video.buf_top -= (SCREEN_LINES / 2) * SCREEN_COLS;
 		}
+		video.buf_top -= (SCREEN_LINES / 2) * SCREEN_COLS;
 		if(video.buf_top < 0) {
 			video.buf_top = 0;
 		}
