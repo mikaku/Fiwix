@@ -36,7 +36,7 @@
 
 
 /* percentage of memory assigned to the inode table and hash table */
-#define INODE_PERCENTAGE	5
+#define INODE_PERCENTAGE	1
 #define INODE_HASH_PERCENTAGE	10
 
 /* percentage of memory assigned to the page hash table */
