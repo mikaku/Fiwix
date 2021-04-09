@@ -181,23 +181,32 @@ void fbcon_delete_char(struct vconsole *vc)
 
 void fbcon_update_curpos(struct vconsole *vc)
 {
-	int color;
-	unsigned char *vidmem;
+	int soffset, color;
+	short int sch;
+	unsigned char *vidmem, *ch;
+	short int *screen;
 
 	if(!vc->has_focus) {
 		return;
 	}
 
 	vidmem = vc->vidmem;
+	screen = (short int *)vc->screen;
+	soffset = (vc->cursor_y * vc->columns) + vc->cursor_x;
+	color = 0xAAAAAA;
 
 	/* remove old cursor */
-	color = 0;	// FIXME: should be the background color
 	if(vc->x != vc->cursor_x || vc->y != vc->cursor_y) {
-		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, &cursor_shape[0], color);
+		sch = screen[soffset];
+		if(sch & 0xFF) {
+			ch = &font_data[(sch & 0xFF) * video.fb_char_height];
+		} else {
+			ch = &font_data[SPACE_CHAR * video.fb_char_height];
+		}
+		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, ch, color);
 	}
 
 	if(video.flags & VPF_CURSOR_ON) {
-		color = 0xAAAAAA;
 		draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], color);
 	}
 	vc->cursor_x = vc->x;
