@@ -499,11 +499,7 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		video.buf_top += (SCREEN_LINES / 2) * SCREEN_COLS;
 		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
-			fbcon_restore_screen(vc);
-			video.buf_top = 0;
-			fbcon_show_cursor(vc, ON);
-			fbcon_update_curpos(vc);
-			return;
+			video.buf_top = (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS;
 		}
 		for(offset = 0, y = 0; y < video.lines; y++) {
 			for(x = 0; x < vc->columns; x++, offset++) {
@@ -515,6 +511,10 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 				}
 				draw_glyph(vidmem, x, y, ch, color);
 			}
+		}
+		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
+			fbcon_show_cursor(vc, ON);
+			fbcon_update_curpos(vc);
 		}
 		return;
 	}
