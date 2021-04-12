@@ -425,13 +425,6 @@ void fbcon_screen_off(unsigned int arg)
 	RESTORE_FLAGS(flags);
 }
 
-// FIXME: must go in console.h (also those in vgacon.c)!!
-#define SCREEN_COLS	video.columns
-#define SCREEN_LINES	video.lines
-#define SCREEN_SIZE	(video.columns * video.lines)
-#define VC_BUF_LINES	(video.lines * SCREENS_LOG)
-#define VC_BUF_SIZE	(video.columns * VC_BUF_LINES)
-
 void fbcon_buf_scroll_up(void)
 {
 	memcpy_w(fb_vcbuf, fb_vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);

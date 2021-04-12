@@ -70,6 +70,12 @@
 #define DEF_MODE		(COLOR_WHITE | BG_BLACK)
 #define BLANK_MEM		(DEF_MODE | ' ')
 
+#define SCREEN_COLS		video.columns
+#define SCREEN_LINES		video.lines
+#define SCREEN_SIZE		(video.columns * video.lines)
+#define VC_BUF_LINES		(video.lines * SCREENS_LOG)
+#define VC_BUF_SIZE		(video.columns * VC_BUF_LINES)
+
 #define SCROLL_UP		1
 #define SCROLL_DOWN		2
 
@@ -86,6 +92,9 @@
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 
 short int *vc_screen[NR_VCONSOLES + 1];
+
+// FIXME: this is ugly, it must be allocated dynamically
+short int *fb_vcbuf;
 
 struct vconsole {
 	int x;		/* current column */

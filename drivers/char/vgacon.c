@@ -13,12 +13,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define SCREEN_COLS	video.columns
-#define SCREEN_LINES	video.lines
-#define SCREEN_SIZE	(SCREEN_COLS * SCREEN_LINES)
-#define VC_BUF_LINES	(SCREEN_LINES * SCREENS_LOG)
-#define VC_BUF_SIZE	(SCREEN_COLS * VC_BUF_LINES)
-
 /* ISO/IEC 8859-1:1998 (aka latin1, IBM819, CP819), same as in Linux */
 static const char *iso8859 =
 	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
