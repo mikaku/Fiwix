@@ -30,14 +30,6 @@ static const char *iso8859 =
 	"\376\244\225\242\223\376\224\366\355\227\243\226\201\376\376\230"
 ;
 
-/*
- * This is the scrollback history buffer which is used only in the active
- * vconsole. Everytime a vconsole is switched, the screen contents of the
- * new vconsole is copied back to this buffer. Only the visible screen is
- * copied, so switching vconsoles means losing the scrollback history.
- */
-static short int vcbuf[80 * 25 * SCREENS_LOG * 2];	/* FIXME: allocate this dynamically */
-
 struct video_parms video;
 static unsigned char screen_is_off = 0;
 

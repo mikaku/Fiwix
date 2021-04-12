@@ -93,8 +93,13 @@ extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 
 short int *vc_screen[NR_VCONSOLES + 1];
 
-// FIXME: this is ugly, it must be allocated dynamically
-short int *fb_vcbuf;
+/*
+ * This is the scrollback history buffer which is used only in the active
+ * vconsole. Everytime a vconsole is switched, the screen contents of the
+ * new vconsole is copied back to this buffer. Only the visible screen is
+ * copied, so switching vconsoles means losing the scrollback history.
+ */
+short int *vcbuf;
 
 struct vconsole {
 	int x;		/* current column */

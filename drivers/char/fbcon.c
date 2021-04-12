@@ -19,7 +19,6 @@
 
 struct video_parms video;
 static unsigned char screen_is_off = 0;
-extern short int *fb_vcbuf;
 
 static unsigned char cursor_shape[] = {
         0x00,   /* -------- */
@@ -120,7 +119,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
 	}
 	screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
-	fb_vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
+	vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
 }
 
 void fbcon_insert_char(struct vconsole *vc)
@@ -427,7 +426,7 @@ void fbcon_screen_off(unsigned int arg)
 
 void fbcon_buf_scroll_up(void)
 {
-	memcpy_w(fb_vcbuf, fb_vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);
+	memcpy_w(vcbuf, vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);
 }
 
 void fbcon_buf_refresh(struct vconsole *vc)
@@ -435,8 +434,8 @@ void fbcon_buf_refresh(struct vconsole *vc)
 	short int *screen;
 
 	screen = (short int *)vc->screen;
-	memset_w(fb_vcbuf, BLANK_MEM, VC_BUF_SIZE);
-	memcpy_w(fb_vcbuf, screen, SCREEN_SIZE);
+	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE);
+	memcpy_w(vcbuf, screen, SCREEN_SIZE);
 }
 
 void fbcon_buf_scroll(struct vconsole *vc, int mode)
@@ -465,7 +464,7 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		for(offset = 0, y = 0; y < video.lines; y++) {
 			for(x = 0; x < vc->columns; x++, offset++) {
-				sch = fb_vcbuf[video.buf_top + offset] & 0xFF;
+				sch = vcbuf[video.buf_top + offset] & 0xFF;
 				if(sch) {
 					ch = &font_data[sch * video.fb_char_height];
 				} else {
@@ -496,7 +495,7 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		for(offset = 0, y = 0; y < video.lines; y++) {
 			for(x = 0; x < vc->columns; x++, offset++) {
-				sch = fb_vcbuf[video.buf_top + offset] & 0xFF;
+				sch = vcbuf[video.buf_top + offset] & 0xFF;
 				if(sch) {
 					ch = &font_data[sch * video.fb_char_height];
 				} else {
