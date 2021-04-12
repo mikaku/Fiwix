@@ -849,7 +849,6 @@ void vconsole_select_final(int new_cons)
 			}
 		}
 		if(video.buf_top) {
-			video.restore_screen(&vc[current_cons]);
 			video.buf_top = 0;
 			video.update_curpos(&vc[current_cons]);
 		}
