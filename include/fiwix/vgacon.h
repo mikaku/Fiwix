@@ -44,6 +44,7 @@ void vgacon_scroll_screen(struct vconsole *, int, int);
 void vgacon_restore_screen(struct vconsole *);
 void vgacon_screen_on(struct vconsole *);
 void vgacon_screen_off(unsigned int);
+void vgacon_buf_scroll(struct vconsole *, int);
 void vgacon_init(void);
 
 #endif /* _FIWIX_VGACON_H */

@@ -380,6 +380,20 @@ static void insert_seq(struct tty *tty, char *buf, int count)
 	tty->input(tty);
 }
 
+static void vcbuf_scroll_up(void)
+{
+	memcpy_w(vcbuf, vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);
+}
+
+static void vcbuf_refresh(struct vconsole *vc)
+{
+	short int *screen;
+
+	screen = (short int *)vc->screen;
+	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE);
+	memcpy_w(vcbuf, screen, SCREEN_SIZE);
+}
+
 static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int count)
 {
 	unsigned char ch;
@@ -450,7 +464,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 		}
 		if(vc->has_focus) {
 			if(video.buf_y >= VC_BUF_LINES) {
-				video.buf_scroll_up();
+				vcbuf_scroll_up();
 				video.buf_y--;
 			}
 		}
@@ -850,6 +864,7 @@ void vconsole_select_final(int new_cons)
 		}
 		if(video.buf_top) {
 			video.buf_top = 0;
+			video.show_cursor(&vc[current_cons], ON);
 			video.update_curpos(&vc[current_cons]);
 		}
 		vc[current_cons].vidmem = NULL;
@@ -863,7 +878,7 @@ void vconsole_select_final(int new_cons)
 
 		video.buf_y = vc[current_cons].y;
 		video.buf_top = 0;
-		video.buf_refresh(&vc[current_cons]);
+		vcbuf_refresh(&vc[current_cons]);
 		video.show_cursor(&vc[current_cons], COND);
 	}
 }

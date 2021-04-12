@@ -22,6 +22,7 @@ void fbcon_scroll_screen(struct vconsole *, int, int);
 void fbcon_restore_screen(struct vconsole *);
 void fbcon_screen_on(struct vconsole *);
 void fbcon_screen_off(unsigned int);
+void fbcon_buf_scroll(struct vconsole *, int);
 void fbcon_init(void);
 
 #endif /* _FIWIX_FBCON_H */

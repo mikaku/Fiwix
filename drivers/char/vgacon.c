@@ -256,20 +256,6 @@ void vgacon_screen_off(unsigned int arg)
 	RESTORE_FLAGS(flags);
 }
 
-void vgacon_buf_scroll_up(void)
-{
-	memcpy_w(vcbuf, vcbuf + SCREEN_COLS, (VC_BUF_SIZE - SCREEN_COLS) * 2);
-}
-
-void vgacon_buf_refresh(struct vconsole *vc)
-{
-	short int *screen;
-
-	screen = (short int *)vc->screen;
-	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE);
-	memcpy_w(vcbuf, screen, SCREEN_SIZE);
-}
-
 void vgacon_buf_scroll(struct vconsole *vc, int mode)
 {
 	short int *vidmem;
@@ -354,8 +340,6 @@ void vgacon_init(void)
 	video.scroll_screen = vgacon_scroll_screen;
 	video.restore_screen = vgacon_restore_screen;
 	video.screen_on = vgacon_screen_on;
-	video.buf_scroll_up = vgacon_buf_scroll_up;
-	video.buf_refresh = vgacon_buf_refresh;
 	video.buf_scroll = vgacon_buf_scroll;
 
 	memcpy_w(vcbuf, video.address, SCREEN_SIZE * 2);

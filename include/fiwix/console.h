@@ -160,8 +160,6 @@ struct video_parms {
 	void (*scroll_screen)(struct vconsole *, int, int);
 	void (*restore_screen)(struct vconsole *);
 	void (*screen_on)(struct vconsole *);
-	void (*buf_scroll_up)(void);
-	void (*buf_refresh)(struct vconsole *);
 	void (*buf_scroll)(struct vconsole *, int);
 };
 extern struct video_parms video;

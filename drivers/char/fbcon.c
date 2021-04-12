@@ -424,20 +424,6 @@ void fbcon_screen_off(unsigned int arg)
 	RESTORE_FLAGS(flags);
 }
 
-void fbcon_buf_scroll_up(void)
-{
-	memcpy_w(vcbuf, vcbuf + video.columns, (VC_BUF_SIZE - video.columns) * 2);
-}
-
-void fbcon_buf_refresh(struct vconsole *vc)
-{
-	short int *screen;
-
-	screen = (short int *)vc->screen;
-	memset_w(vcbuf, BLANK_MEM, VC_BUF_SIZE);
-	memcpy_w(vcbuf, screen, SCREEN_SIZE);
-}
-
 void fbcon_buf_scroll(struct vconsole *vc, int mode)
 {
 	short int sch;
@@ -525,7 +511,5 @@ void fbcon_init(void)
 	video.scroll_screen = fbcon_scroll_screen;
 	video.restore_screen = fbcon_restore_screen;
 	video.screen_on = fbcon_screen_on;
-	video.buf_scroll_up = fbcon_buf_scroll_up;
-	video.buf_refresh = fbcon_buf_refresh;
 	video.buf_scroll = fbcon_buf_scroll;
 }
