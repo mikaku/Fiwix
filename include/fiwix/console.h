@@ -169,8 +169,6 @@ void vconsole_write(struct tty *);
 void vconsole_select(int);
 void vconsole_select_final(int);
 void vconsole_restore(struct vconsole *);
-void vconsole_buffer_scrl(int);
-void blank_screen(struct vconsole *);
 void unblank_screen(struct vconsole *);
 void vconsole_start(struct tty *);
 void vconsole_stop(struct tty *);
