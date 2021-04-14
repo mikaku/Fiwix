@@ -318,12 +318,12 @@ void vgacon_init(void)
 		/* monochrome = 0x30 */
 		video.address = (void *)MONO_ADDR;
 		video.port = MONO_6845_ADDR;
-		video.type = "VGA monochrome 80x25";
+		strcpy((char *)video.type, "VGA monochrome 80x25");
 	} else {
 		/* color = 0x00 || 0x20 */
 		video.address = (void *)COLOR_ADDR;
 		video.port = COLOR_6845_ADDR;
-		video.type = "VGA color 80x25";
+		strcpy((char *)video.type, "VGA color 80x25");
 	}
 	video.memsize = 384 * 1024;
 	video.flags = VPF_VGA;

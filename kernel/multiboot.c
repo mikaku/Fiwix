@@ -310,7 +310,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.address = (unsigned int *)vbem->phys_base;
 		video.port = 0;
 		video.memsize = vbec->total_memory * vbem->win_size * 1024;
-		video.type = (char *)vbec->signature;
+		strcpy((char *)video.type, (char *)vbec->signature);
 		video.columns = vbem->x_resolution / vbem->x_char_size;
 		video.lines = vbem->y_resolution / vbem->y_char_size;
 		video.fb_version = vbec->version;
