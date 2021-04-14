@@ -10,7 +10,7 @@
 
 #include <fiwix/multiboot1.h>
 
-#define NR_BIOS_MM_ENT		25	/* entries in BIOS memory map */
+#define NR_BIOS_MM_ENT		50	/* entries in BIOS memory map */
 
 struct bios_mem_map {
 	unsigned long int from;
