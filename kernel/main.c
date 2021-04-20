@@ -15,6 +15,7 @@
 #include <fiwix/utsname.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/video.h>
 #include <fiwix/console.h>
 #include <fiwix/pic.h>
 #include <fiwix/segments.h>
@@ -78,9 +79,10 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 
 	cpu_init();
 	multiboot(magic, info);
-	timer_init();
 	mem_init();
+	video_init();
 	console_init();
+	timer_init();
 	keyboard_init();
 	proc_init();
 

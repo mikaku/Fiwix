@@ -192,13 +192,17 @@ void multiboot(unsigned long magic, unsigned long info)
 {
 	struct multiboot_info mbi;
 
+	memset_b(&video, 0, sizeof(struct video_parms));
+
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", (unsigned long int)magic);
 		memset_b(&mbi, NULL, sizeof(struct multiboot_info));
 		_memsize = 640;
 		_extmemsize = 3072;
 		bios_map_init(NULL, 0);
-		vgacon_init();
+		video.columns = 80;
+		video.lines = 25;
+		video.flags = VPF_VGA;
 		return;
 	}
 
@@ -268,43 +272,6 @@ void multiboot(unsigned long magic, unsigned long info)
 
 		vbec = (struct vbe_controller *)mbi.vbe_control_info;
 		vbem = (struct vbe_mode *)mbi.vbe_mode_info;
-		memset_b(&video, 0, sizeof(struct video_parms));
-
-		/*
-		printk("vbe_control_info  = 0x%08x\n", mbi.vbe_control_info);
-		printk("\tvbe_controller.signature        = '%s'\n", vbec->signature);
-		printk("\tvbe_controller.version          = %x\n", vbec->version);
-		printk("\tvbe_controller.oem_string       = '%s'\n", vbec->oem_string);
-		printk("\tvbe_controller.capabilities     = 0x%08x\n", vbec->capabilities);
-		printk("\tvbe_controller.video_mode       = 0x%08x\n", vbec->video_mode);
-		printk("\tvbe_controller.total_memory     = 0x%08x\n", vbec->total_memory);
-		printk("\tvbe_controller.oem_software_rev = 0x%08x\n", vbec->oem_software_rev);
-		printk("\tvbe_controller.oem_vendor_name  = '%s'\n", vbec->oem_vendor_name);
-		printk("\tvbe_controller.oem_product_name = '%s'\n", vbec->oem_product_name);
-		printk("\tvbe_controller.oem_product_rev  = '%s'\n", vbec->oem_product_rev);
-
-		printk("vbe_mode_info     = 0x%08x\n", mbi.vbe_mode_info);
-		printk("\tvbe_mode.mode_attributes    = 0b%08b\n", vbem->mode_attributes);
-		printk("\tvbe_mode.win_size           = %d\n", vbem->win_size);
-		printk("\tvbe_mode.win_a_segment      = 0x%04x\n", vbem->win_a_segment);
-		printk("\tvbe_mode.win_b_segment      = 0x%04x\n", vbem->win_b_segment);
-		printk("\tvbe_mode.bytes_per_scanline = %d\n", vbem->bytes_per_scanline);
-		printk("\tvbe_mode.x_resolution       = %d\n", vbem->x_resolution);
-		printk("\tvbe_mode.y_resolution       = %d\n", vbem->y_resolution);
-		printk("\tvbe_mode.x_char_size        = %d\n", vbem->x_char_size);
-		printk("\tvbe_mode.y_char_size        = %d\n", vbem->y_char_size);
-		printk("\tvbe_mode.number_of_planes   = %d\n", vbem->number_of_planes);
-		printk("\tvbe_mode.bits_per_pixel     = %d\n", vbem->bits_per_pixel);
-		printk("\tvbe_mode.number_of_banks    = %d\n", vbem->number_of_banks);
-		printk("\tvbe_mode.memory_model       = %d\n", vbem->memory_model);
-		printk("\tvbe_mode.number_of_image_pa = %d\n", vbem->number_of_image_pages);
-		printk("\tvbe_mode.phys_base          = 0x%08x\n", vbem->phys_base);
-
-		printk("vbe_mode          = 0x%08x\n", mbi.vbe_mode);
-		printk("vbe_interface_seg = 0x%08x\n", mbi.vbe_interface_seg);
-		printk("vbe_interface_off = 0x%08x\n", mbi.vbe_interface_off);
-		printk("vbe_interface_len = 0x%08x\n", mbi.vbe_interface_len);
-		*/
 
 		video.flags = VPF_VESAFB;
 		video.address = (unsigned int *)vbem->phys_base;
@@ -331,9 +298,9 @@ void multiboot(unsigned long magic, unsigned long info)
 		from = (unsigned long int)video.address - KERNEL_BASE_ADDR;
 		to = (from + video.memsize);
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
-		fb_init();
-		fbcon_init();
 	} else {
-		vgacon_init();
+		video.columns = 80;
+		video.lines = 25;
+		video.flags = VPF_VGA;
 	}
 }
