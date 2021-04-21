@@ -88,6 +88,8 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 	int n;
 
 	bmmap = bmmap_addr;
+	kstat.physical_pages = 0;
+
 	if(bmmap) {
 		n = 0;
 
@@ -111,10 +113,18 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 					bios_mem_map[n].from = from_low;
 					bios_mem_map[n].to = to_low;
 					bios_mem_map[n].type = (int)bmmap->type;
+					if(bios_mem_map[n].type == MULTIBOOT_MEMORY_AVAILABLE) {
+						from_low = bios_mem_map[n].from & PAGE_MASK;
+						to_low = bios_mem_map[n].to & PAGE_MASK;
+						kstat.physical_pages += (to_low - from_low) / PAGE_SIZE;
+					}
 					n++;
 				}
 			}
 			bmmap = (struct multiboot_mmap_entry *)((unsigned int)bmmap + bmmap->size + sizeof(bmmap->size));
+		}
+		if(kstat.physical_pages > (0x40000000 >> PAGE_SHIFT)) {
+			printk("WARNING: detected a total of %dMB of available memory below 4GB.\n", (kstat.physical_pages << 2) / 1024);
 		}
 	} else {
 		printk("WARNING: your BIOS has not provided a memory map.\n");
@@ -124,8 +134,8 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 		bios_mem_map[1].from = 0x00100000;
 		bios_mem_map[1].to = (_extmemsize + 1024) * 1024;
 		bios_mem_map[1].type = MULTIBOOT_MEMORY_AVAILABLE;
+		kstat.physical_pages = (_extmemsize + 1024) >> 2;
 	}
-	kstat.physical_pages = (_extmemsize + 1024) >> 2;
 
 	/*
 	 * This truncates to 1GB since it's the maximum physical memory
