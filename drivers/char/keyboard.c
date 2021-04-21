@@ -438,13 +438,13 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 	scode = inport_b(KB_DATA);
 
-	video.screen_on(vc);
-	keyboard_bh.flags |= BH_ACTIVE;
-
 	/* keyboard said all is OK, perfect */
 	if(scode == KB_ACK) {
 		return;
 	}
+
+	video.screen_on(vc);
+	keyboard_bh.flags |= BH_ACTIVE;
 
 	/* if in pure raw mode just queue the scan code and return */
 	if(tty->kbd.mode == K_RAW) {
