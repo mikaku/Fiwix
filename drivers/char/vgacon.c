@@ -179,9 +179,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int n, offset, count;
 	short int *vidmem, *screen;
-	unsigned long int flags;
 
-	SAVE_FLAGS(flags); CLI();
 	vidmem = (short int *)vc->vidmem;
 	screen = (short int *)vc->screen;
 
@@ -214,7 +212,6 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			}
 			break;
 	}
-	RESTORE_FLAGS(flags);
 	return;
 }
 

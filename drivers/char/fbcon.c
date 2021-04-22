@@ -294,9 +294,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	int x, y, sch, pch, color;
 	short int *screen;
 	unsigned char *vidmem, *ch;
-	unsigned long int flags;
 
-	SAVE_FLAGS(flags); CLI();
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
 	color = 0xAAAAAA;	// FIXME: should be the background color
@@ -364,7 +362,6 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 			memset_w(screen + (top * vc->columns), BLANK_MEM, vc->columns);
 			break;
 	}
-	RESTORE_FLAGS(flags);
 	return;
 }
 
