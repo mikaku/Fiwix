@@ -526,14 +526,16 @@ void vconsole_write(struct tty *tty)
 
 	vc = (struct vconsole *)tty->driver_data;
 
-	if(video.buf_top) {
-		video.restore_screen(vc);
-		video.buf_top = 0;
-		video.show_cursor(vc, ON);
-		video.update_curpos(vc);
+	if(vc->has_focus) {
+		if(video.buf_top) {
+			video.restore_screen(vc);
+			video.buf_top = 0;
+			video.show_cursor(vc, ON);
+			video.update_curpos(vc);
+		}
 	}
 
-	numeric = 0;
+	ch = numeric = 0;
 
 	while(!vc->scrlock && tty->write_q.count > 0) {
 		ch = tty_queue_getchar(&tty->write_q);
@@ -833,10 +835,12 @@ void vconsole_write(struct tty *tty)
 				continue;
 		}
 	}
-	if(vc->vc_mode != KD_GRAPHICS) {
-		video.update_curpos(vc);
+	if(ch) {
+		if(vc->vc_mode != KD_GRAPHICS) {
+			video.update_curpos(vc);
+		}
+		wakeup(&tty_write);
 	}
-	wakeup(&tty_write);
 }
 
 void vconsole_select(int new_cons)
