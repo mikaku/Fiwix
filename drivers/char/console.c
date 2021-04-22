@@ -397,7 +397,9 @@ static void vcbuf_refresh(struct vconsole *vc)
 static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int count)
 {
 	unsigned char ch;
+	unsigned long int flags;
 
+	SAVE_FLAGS(flags); CLI();
 	if(vc->has_focus) {
 		if(video.buf_top) {
 			video.restore_screen(vc);
@@ -470,6 +472,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 		}
 	}
 	video.update_curpos(vc);
+	RESTORE_FLAGS(flags);
 }
 
 void vconsole_reset(struct tty *tty)
