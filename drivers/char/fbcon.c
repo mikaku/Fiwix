@@ -39,10 +39,50 @@ static unsigned char cursor_shape[] = {
         0xFF,   /* ######## */
 };
 
+/* RGB colors */
+static int color_table[] = {
+	0x000000,	/* black */
+	0x0000AA,	/* blue */
+	0x00AA00,	/* green */
+	0x00AAAA,	/* cyan */
+	0xAA0000,	/* red */
+	0xAA00AA,	/* magenta */
+	0xAA5000,	/* brown */
+	0xAAAAAA,	/* gray */
+
+	0x555555,	/* dark gray */
+	0x5555FF,	/* light blue */
+	0x55FF55,	/* light green */
+	0x55FFFF,	/* light cyan */
+	0xFF5555,	/* light red */
+	0xFF55FF,	/* light magenta */
+	0xFFFF55,	/* yellow */
+	0xFFFFFF,	/* white */
+};
+
+static int get_fg_color(unsigned char color)
+{
+	int fg, bright;
+
+	fg = color & 7;
+	bright = (color & 0xF) & 8;
+	return color_table[bright + fg];
+}
+
+static int get_bg_color(unsigned char color)
+{
+	int bg;
+
+	bg = (color >> 4) & 7;
+	return color_table[bg];
+}
+
 static void set_color(void *addr, int color)
 {
 	unsigned int *addr32;
+	unsigned short int *addr16;
 	unsigned char *addr8;
+	short int r, g, b;
 
 	switch(video.fb_bpp) {
 		case 32:
@@ -56,11 +96,19 @@ static void set_color(void *addr, int color)
 			*(addr8++) = (color >> 16) & 0xFF;
 			break;
 		case 16:
+			/* 0:5:6:5 */
+			r = ((color >> 16) & 0xFF) << 8;
+			g = ((color >> 8) & 0xFF) << 8;
+			b = (color & 0xFF) << 8;
+			addr16 = (unsigned short int *)addr;
+			*addr16 = (r & 0xf800) | ((g & 0xfc00) >>  5) | ((b  & 0xf800) >> 11);
 		case 15:
-			/* FIXME: 15bpp=5:5:5, 16bpp=5:6:5 */
-			addr8 = (unsigned char *)addr;
-			*(addr8++) = color & 0xFF;
-			*(addr8++) = (color >> 8) & 0xFF;
+			/* 1:5:5:5 */
+			r = ((color >> 16) & 0xFF) << 8;
+			g = ((color >> 8) & 0xFF) << 8;
+			b = (color & 0xFF) << 8;
+			addr16 = (unsigned short int *)addr;
+			*addr16 = ((r & 0xf800) >> 1) | ((g & 0xf800) >>  6) | ((b  & 0xf800) >> 11);
 			break;
 	}
 }
@@ -80,7 +128,7 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 			}
 			b = video.fb_char_width - 1;
 			do {
-				set_color(addr, 0);
+				set_color(addr, get_bg_color(color));
 				addr += video.fb_pixelwidth;
 				b--;
 			} while(b >= 0);
@@ -88,9 +136,9 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 			b = video.fb_char_width - 1;
 			do {
 				if(*(ch + n) & (1 << b)) {
-					set_color(addr, color);
+					set_color(addr, get_fg_color(color));
 				} else {
-					set_color(addr, 0);
+					set_color(addr, get_bg_color(color));
 				}
 				addr += video.fb_pixelwidth;
 				b--;
@@ -102,7 +150,6 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 
 void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 {
-	int color;
 	short int *screen;
 	unsigned char *vidmem;
 
@@ -114,9 +161,8 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 	}
 
 	if(!screen_is_off) {
-		color = 0xAAAAAA;
 		vidmem = vc->vidmem;
-		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], color);
+		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], vc->color_attr >> 8);
 	}
 	screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 	vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
@@ -124,7 +170,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 
 void fbcon_insert_char(struct vconsole *vc)
 {
-	int n, soffset, color;
+	int n, soffset;
 	short int tmp, slast_ch;
 	unsigned char *vidmem, *last_ch;
 	short int *screen;
@@ -132,7 +178,6 @@ void fbcon_insert_char(struct vconsole *vc)
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
 	soffset = (vc->y * vc->columns) + vc->x;
-	color = 0xAAAAAA;	// FIXME: should be the background color
 	n = vc->x;
 	last_ch = &font_data[SPACE_CHAR * video.fb_char_height];
 	slast_ch = BLANK_MEM;
@@ -140,7 +185,7 @@ void fbcon_insert_char(struct vconsole *vc)
 	while(n < vc->columns) {
 		tmp = screen[soffset];
 		if(vc->has_focus) {
-			draw_glyph(vidmem, n, vc->y, last_ch, color);
+			draw_glyph(vidmem, n, vc->y, last_ch, vc->color_attr >> 8);
 			last_ch = &font_data[(tmp & 0xFF) * video.fb_char_height];
 		}
 		memset_w(screen + soffset, slast_ch, 1);
@@ -152,7 +197,7 @@ void fbcon_insert_char(struct vconsole *vc)
 
 void fbcon_delete_char(struct vconsole *vc)
 {
-	int n, soffset, color;
+	int n, soffset;
 	short int sch;
 	unsigned char *vidmem, *ch;
 	short int *screen;
@@ -160,7 +205,6 @@ void fbcon_delete_char(struct vconsole *vc)
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
 	soffset = (vc->y * vc->columns) + vc->x;
-	color = 0xAAAAAA;	// FIXME: should be the background color
 	n = vc->x;
 
 	while(n < vc->columns) {
@@ -171,7 +215,7 @@ void fbcon_delete_char(struct vconsole *vc)
 			} else {
 				ch = &font_data[SPACE_CHAR * video.fb_char_height];
 			}
-			draw_glyph(vidmem, n, vc->y, ch, color);
+			draw_glyph(vidmem, n, vc->y, ch, vc->color_attr >> 8);
 		}
 		memset_w(screen + soffset, sch, 1);
 		soffset++;
@@ -182,10 +226,9 @@ void fbcon_delete_char(struct vconsole *vc)
 
 void fbcon_update_curpos(struct vconsole *vc)
 {
-	int soffset, color;
-	short int sch;
+	int soffset;
 	unsigned char *vidmem, *ch;
-	short int *screen;
+	short int *screen, sch;
 
 	if(!vc->has_focus) {
 		return;
@@ -194,7 +237,6 @@ void fbcon_update_curpos(struct vconsole *vc)
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
 	soffset = (vc->cursor_y * vc->columns) + vc->cursor_x;
-	color = 0xAAAAAA;
 
 	/* remove old cursor */
 	if(vc->x != vc->cursor_x || vc->y != vc->cursor_y) {
@@ -204,11 +246,11 @@ void fbcon_update_curpos(struct vconsole *vc)
 		} else {
 			ch = &font_data[SPACE_CHAR * video.fb_char_height];
 		}
-		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, ch, color);
+		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, ch, sch >> 8);
 	}
 
 	if(video.flags & VPF_CURSOR_ON) {
-		draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], color);
+		draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], DEF_MODE >> 8);
 	}
 	vc->cursor_x = vc->x;
 	vc->cursor_y = vc->y;
@@ -263,7 +305,7 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
 	}
 	for(n = 0; n < lines; n++) {
 		for(n2 = x; n2 < columns; n2++) {
-			draw_glyph(vidmem, n2, y + n, ch, color);
+			draw_glyph(vidmem, n2, y + n, ch, color >> 8);
 		}
 		x = 0;
 		columns = vc->columns;
@@ -291,13 +333,12 @@ void fbcon_blank_screen(struct vconsole *vc)
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 {
 	int soffset, poffset, count;
-	int x, y, sch, pch, color;
-	short int *screen;
+	int x, y;
+	short int *screen, sch, pch;
 	unsigned char *vidmem, *ch;
 
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
-	color = 0xAAAAAA;	// FIXME: should be the background color
 
 	if(!top) {
 		top = vc->top;
@@ -309,17 +350,17 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 					for(x = 0; x < vc->columns; x++) {
 						soffset = (y * vc->columns) + x;
 						poffset = ((y - 1) * vc->columns) + x;
-						sch = screen[soffset] & 0xFF;
-						pch = screen[poffset] & 0xFF;
+						sch = screen[soffset];
+						pch = screen[poffset];
 						if(sch == pch) {
 							continue;
 						}
-						if(sch) {
-							ch = &font_data[sch * video.fb_char_height];
+						if(sch & 0xFF) {
+							ch = &font_data[(sch & 0xFF) * video.fb_char_height];
 						} else {
 							ch = &font_data[SPACE_CHAR * video.fb_char_height];
 						}
-						draw_glyph(vidmem, x, y - 1, ch, color);
+						draw_glyph(vidmem, x, y - 1, ch, sch >> 8);
 					}
 				}
 				count = video.fb_pitch * video.fb_char_height;
@@ -340,17 +381,17 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 					if(vc->has_focus) {
 						soffset = (y * vc->columns) + x;
 						poffset = ((y + 1) * vc->columns) + x;
-						sch = screen[soffset] & 0xFF;
-						pch = screen[poffset] & 0xFF;
+						sch = screen[soffset];
+						pch = screen[poffset];
 						if(sch == pch) {
 							continue;
 						}
-						if(sch) {
-							ch = &font_data[sch * video.fb_char_height];
+						if(sch & 0xFF) {
+							ch = &font_data[(sch & 0xFF) * video.fb_char_height];
 						} else {
 							ch = &font_data[SPACE_CHAR * video.fb_char_height];
 						}
-						draw_glyph(vidmem, x, y + 1, ch, color);
+						draw_glyph(vidmem, x, y + 1, ch, sch >> 8);
 					}
 				}
 				memcpy_w(screen + (vc->columns * (y + 1)), screen + (vc->columns * y), vc->columns);
@@ -367,25 +408,25 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 
 void fbcon_restore_screen(struct vconsole *vc)
 {
-	int x, y, color;
-	short int *screen;
+	int x, y;
+	short int *screen, sch;
 	unsigned char *vidmem, *ch, c;
 
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
-	color = 0xAAAAAA;
 
 	if(!screen_is_off) {
 		memset_b(vidmem, 0, video.fb_size);
 	}
 	for(y = 0; y < video.lines; y++) {
 		for(x = 0; x < vc->columns; x++) {
-			c = screen[(y * vc->columns) + x] & 0xFF;
+			sch = screen[(y * vc->columns) + x];
+			c = sch & 0xFF;
 			if(!c || c == SPACE_CHAR) {
 				continue;
 			}
 			ch = &font_data[c * video.fb_char_height];
-			draw_glyph(vidmem, x, y, ch, color);
+			draw_glyph(vidmem, x, y, ch, sch >> 8);
 		}
 	}
 	vc->blanked = 0;
@@ -424,7 +465,7 @@ void fbcon_screen_off(unsigned int arg)
 void fbcon_buf_scroll(struct vconsole *vc, int mode)
 {
 	short int sch;
-	int y, x, offset, color;
+	int y, x, offset;
 	unsigned char *vidmem, *ch;
 
 	if(video.buf_y <= SCREEN_LINES) {
@@ -432,7 +473,6 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 	}
 
 	vidmem = vc->vidmem;
-	color = 0xAAAAAA;
 
 	if(mode == SCROLL_UP) {
 		if(video.buf_top < 0) {
@@ -447,13 +487,13 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		for(offset = 0, y = 0; y < video.lines; y++) {
 			for(x = 0; x < vc->columns; x++, offset++) {
-				sch = vcbuf[video.buf_top + offset] & 0xFF;
-				if(sch) {
-					ch = &font_data[sch * video.fb_char_height];
+				sch = vcbuf[video.buf_top + offset];
+				if(sch & 0xFF) {
+					ch = &font_data[(sch & 0xFF) * video.fb_char_height];
 				} else {
 					ch = &font_data[SPACE_CHAR * video.fb_char_height];
 				}
-				draw_glyph(vidmem, x, y, ch, color);
+				draw_glyph(vidmem, x, y, ch, sch >> 8);
 			}
 		}
 		if(!video.buf_top) {
@@ -478,13 +518,13 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 		}
 		for(offset = 0, y = 0; y < video.lines; y++) {
 			for(x = 0; x < vc->columns; x++, offset++) {
-				sch = vcbuf[video.buf_top + offset] & 0xFF;
-				if(sch) {
-					ch = &font_data[sch * video.fb_char_height];
+				sch = vcbuf[video.buf_top + offset];
+				if(sch & 0xFF) {
+					ch = &font_data[(sch & 0xFF) * video.fb_char_height];
 				} else {
 					ch = &font_data[SPACE_CHAR * video.fb_char_height];
 				}
-				draw_glyph(vidmem, x, y, ch, color);
+				draw_glyph(vidmem, x, y, ch, sch >> 8);
 			}
 		}
 		if(video.buf_top >= (video.buf_y - SCREEN_LINES + 1) * SCREEN_COLS) {
