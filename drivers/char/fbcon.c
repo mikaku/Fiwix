@@ -270,6 +270,7 @@ void fbcon_show_cursor(struct vconsole *vc, int mode)
 			break;
 		case OFF:
 			video.flags &= ~VPF_CURSOR_ON;
+			fbcon_update_curpos(vc);
 			break;
 	}
 }
