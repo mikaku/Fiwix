@@ -148,6 +148,33 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 	}
 }
 
+static void remove_cursor(struct vconsole *vc)
+{
+	int soffset;
+	unsigned char *vidmem, *ch;
+	short int *screen, sch;
+
+	vidmem = vc->vidmem;
+	screen = (short int *)vc->screen;
+	soffset = (vc->cursor_y * vc->columns) + vc->cursor_x;
+
+	sch = screen[soffset];
+	if(sch & 0xFF) {
+		ch = &font_data[(sch & 0xFF) * video.fb_char_height];
+	} else {
+		ch = &font_data[SPACE_CHAR * video.fb_char_height];
+	}
+	draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, ch, sch >> 8);
+}
+
+static void draw_cursor(struct vconsole *vc)
+{
+	unsigned char *vidmem;
+
+	vidmem = vc->vidmem;
+	draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], DEF_MODE >> 8);
+}
+
 void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 {
 	short int *screen;
@@ -226,31 +253,17 @@ void fbcon_delete_char(struct vconsole *vc)
 
 void fbcon_update_curpos(struct vconsole *vc)
 {
-	int soffset;
-	unsigned char *vidmem, *ch;
-	short int *screen, sch;
-
 	if(!vc->has_focus) {
 		return;
 	}
 
-	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
-	soffset = (vc->cursor_y * vc->columns) + vc->cursor_x;
-
 	/* remove old cursor */
 	if(vc->x != vc->cursor_x || vc->y != vc->cursor_y) {
-		sch = screen[soffset];
-		if(sch & 0xFF) {
-			ch = &font_data[(sch & 0xFF) * video.fb_char_height];
-		} else {
-			ch = &font_data[SPACE_CHAR * video.fb_char_height];
-		}
-		draw_glyph(vidmem, vc->cursor_x, vc->cursor_y, ch, sch >> 8);
+		remove_cursor(vc);
 	}
 
 	if(video.flags & VPF_CURSOR_ON) {
-		draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], DEF_MODE >> 8);
+		draw_cursor(vc);
 	}
 	vc->cursor_x = vc->x;
 	vc->cursor_y = vc->y;
@@ -536,6 +549,30 @@ void fbcon_buf_scroll(struct vconsole *vc, int mode)
 	}
 }
 
+void fbcon_cursor_blink(unsigned int arg)
+{
+	struct vconsole *vc;
+	struct callout_req creq;
+	static int blink_on = 0;
+
+	vc = (struct vconsole *)arg;
+	if(!vc->has_focus) {
+		return;
+	}
+
+	if(video.flags & VPF_CURSOR_ON) {
+		if(blink_on) {
+			draw_cursor(vc);
+		} else {
+			remove_cursor(vc);
+		}
+	}
+	blink_on = !blink_on;
+	creq.fn = fbcon_cursor_blink;
+	creq.arg = arg;
+	add_callout(&creq, 25);		/* 250ms */
+}
+
 void fbcon_init(void)
 {
 	video.put_char = fbcon_put_char;
@@ -550,4 +587,5 @@ void fbcon_init(void)
 	video.restore_screen = fbcon_restore_screen;
 	video.screen_on = fbcon_screen_on;
 	video.buf_scroll = fbcon_buf_scroll;
+	video.cursor_blink = fbcon_cursor_blink;
 }

@@ -304,6 +304,11 @@ void vgacon_buf_scroll(struct vconsole *vc, int mode)
 	}
 }
 
+void vgacon_cursor_blink(unsigned int arg)
+{
+	/* not used */
+}
+
 void vgacon_init(void)
 {
 	short int *bios_data;
@@ -337,6 +342,7 @@ void vgacon_init(void)
 	video.restore_screen = vgacon_restore_screen;
 	video.screen_on = vgacon_screen_on;
 	video.buf_scroll = vgacon_buf_scroll;
+	video.cursor_blink = vgacon_cursor_blink;
 
 	memcpy_w(vcbuf, video.address, SCREEN_SIZE * 2);
 }

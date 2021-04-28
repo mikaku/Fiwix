@@ -161,6 +161,7 @@ struct video_parms {
 	void (*restore_screen)(struct vconsole *);
 	void (*screen_on)(struct vconsole *);
 	void (*buf_scroll)(struct vconsole *, int);
+	void (*cursor_blink)(unsigned int);
 };
 extern struct video_parms video;
 
