@@ -287,11 +287,11 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	size_read = 0;
 
 	if(!(d = get_device(BLK_DEV, i->dev))) {
-		printk("WARNING: %s: device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
+		printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
 		return 1;
 	}
 	if(!d->fsop || !d->fsop->read_block) {
-		printk("WARNING: %s: device %d,%d does not have the read_block() method!\n", __FUNCTION__, MAJOR(i->dev), MINOR(i->dev));
+		printk("WARNING: %s(): device %d,%d does not have the read_block() method!\n", __FUNCTION__, MAJOR(i->dev), MINOR(i->dev));
 		return 1;
 	}
 
