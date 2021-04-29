@@ -436,7 +436,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 		for(x = 0; x < vc->columns; x++) {
 			sch = screen[(y * vc->columns) + x];
 			c = sch & 0xFF;
-			if(!c || c == SPACE_CHAR) {
+			if(!c || (c == SPACE_CHAR && !(sch >> 8))) {
 				continue;
 			}
 			ch = &font_data[c * video.fb_char_height];
