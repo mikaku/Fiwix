@@ -431,6 +431,13 @@ void mem_init(void)
 		vc_screen[n] = (short int *)_last_data_addr;
 		_last_data_addr += (video.columns * video.lines * 2);
 	}
+	/*
+	 * FIXME: this is ugly!
+	 * It should go in console_init() once we have a proper kernel memory/page management.
+	 */
+	vcbuf = (short int *)_last_data_addr;
+	_last_data_addr += (video.columns * video.lines * SCREENS_LOG * 2 * sizeof(short int));
+
 
 	/* the last one must be the page_table structure */
 	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
