@@ -730,7 +730,7 @@ void keyboard_init(void)
 	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
 	vc = (struct vconsole *)tty->driver_data;
 	video.screen_on(vc);
-	video.cursor_blink(vc);
+	video.cursor_blink((unsigned int)vc);
 
 	add_bh(&keyboard_bh);
 	keyboard_reset();

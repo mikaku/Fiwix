@@ -887,7 +887,7 @@ void vconsole_select_final(int new_cons)
 		video.buf_top = 0;
 		vcbuf_refresh(&vc[current_cons]);
 		video.show_cursor(&vc[current_cons], COND);
-		video.cursor_blink(&vc[current_cons]);
+		video.cursor_blink((unsigned int)&vc[current_cons]);
 	}
 }
 
