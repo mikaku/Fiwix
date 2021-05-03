@@ -144,7 +144,3 @@ multiboot_header:			/* multiboot header */
 	call	start_kernel
 	jmp	cpu_idle
 
-.align 4
-.org 0x1000
-.globl  _fdc_transfer_area
-_fdc_transfer_area:	.fill 512*2*18,1,0

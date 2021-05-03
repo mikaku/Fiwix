@@ -54,8 +54,8 @@ static struct fddt fdd_type[] = {
 /*	{ 5760, 2880, 80, 36, 2, 0x38, 0x53, 3, 0xDF, 0x02, "2.88MB 3.5\"" },*/
 };
 
-/* maximum size of a track for floppy types of 1.44MB */
-extern char _fdc_transfer_area[BPS * 2 * 18];
+/* buffer area used for I/O operations (1KB) */
+char fdc_transfer_area[BPS * 2];
 
 struct fdd_status {
 	char type;		/* floppy disk drive type */
@@ -567,7 +567,7 @@ int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			continue;
 		}
 
-		start_dma(FLOPPY_DMA, _fdc_transfer_area, blksize, DMA_MODE_WRITE | DMA_MODE_SINGLE);
+		start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_WRITE | DMA_MODE_SINGLE);
 
 		/* send READ command */
 		fdc_wait_interrupt = FDC_READ;
@@ -626,7 +626,7 @@ int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -EIO;
 	}
 
-	memcpy_b(buffer, (void *)_fdc_transfer_area, blksize);
+	memcpy_b(buffer, (void *)fdc_transfer_area, blksize);
 
 	unlock_resource(&floppy_resource);
 	return sectors_read * BPS;
@@ -678,8 +678,8 @@ int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			continue;
 		}
 
-		start_dma(FLOPPY_DMA, _fdc_transfer_area, blksize, DMA_MODE_READ | DMA_MODE_SINGLE);
-		memcpy_b((void *)_fdc_transfer_area, buffer, blksize);
+		start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_READ | DMA_MODE_SINGLE);
+		memcpy_b((void *)fdc_transfer_area, buffer, blksize);
 
 		/* send WRITE command */
 		fdc_wait_interrupt = FDC_WRITE;
