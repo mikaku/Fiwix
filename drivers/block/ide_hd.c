@@ -484,6 +484,10 @@ int ide_hd_init(struct ide *ide, int drive)
 	assign_minors(rdev, ide, part);
 	printk("                                partition summary: ");
 	for(n = 0; n < NR_PARTITIONS; n++) {
+		/* status values other than 0x00 and 0x80 are invalid */
+		if(part[n].status && part[n].status != 0x80) {
+			continue;
+		}
 		if(part[n].type) {
 			printk("%s%d ", ide->drive[drive].dev_name, n + 1);
 		}
