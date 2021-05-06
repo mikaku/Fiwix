@@ -101,14 +101,14 @@ static void set_color(void *addr, int color)
 			g = ((color >> 8) & 0xFF) << 8;
 			b = (color & 0xFF) << 8;
 			addr16 = (unsigned short int *)addr;
-			*addr16 = (r & 0xf800) | ((g & 0xfc00) >>  5) | ((b  & 0xf800) >> 11);
+			*addr16 = (r & 0xf800) | ((g & 0xfc00) >> 5) | ((b & 0xf800) >> 11);
 		case 15:
 			/* 1:5:5:5 */
 			r = ((color >> 16) & 0xFF) << 8;
 			g = ((color >> 8) & 0xFF) << 8;
 			b = (color & 0xFF) << 8;
 			addr16 = (unsigned short int *)addr;
-			*addr16 = ((r & 0xf800) >> 1) | ((g & 0xf800) >>  6) | ((b  & 0xf800) >> 11);
+			*addr16 = ((r & 0xf800) >> 1) | ((g & 0xf800) >> 6) | ((b & 0xf800) >> 11);
 			break;
 	}
 }
@@ -560,7 +560,7 @@ void fbcon_cursor_blink(unsigned int arg)
 		return;
 	}
 
-	if(video.flags & VPF_CURSOR_ON) {
+	if(video.flags & VPF_CURSOR_ON && !screen_is_off) {
 		if(blink_on) {
 			draw_cursor(vc);
 		} else {
