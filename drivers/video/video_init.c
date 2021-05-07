@@ -1,5 +1,5 @@
 /*
- * fiwix/drivers/char/video.c
+ * fiwix/drivers/char/video_init.c
  *
  * Copyright 2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.

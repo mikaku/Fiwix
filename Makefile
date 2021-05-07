@@ -16,9 +16,11 @@ LD = $(CROSS_COMPILE)ld
 CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 
-DIRS = kernel kernel/syscalls mm fs drivers/block drivers/char lib
+DIRS = kernel kernel/syscalls mm fs drivers/block drivers/char drivers/video \
+       lib
 OBJS = kernel/kernel.o kernel/syscalls/syscalls.o mm/mm.o fs/fs.o \
-       drivers/block/block.o drivers/char/char.o lib/lib.o
+       drivers/block/block.o drivers/char/char.o drivers/video/video.o \
+       lib/lib.o
 
 export CC LD CFLAGS LDFLAGS INCLUDE
 
