@@ -8,15 +8,16 @@
 #include <fiwix/asm.h>
 #include <fiwix/fb.h>
 #include <fiwix/fbcon.h>
+#include <fiwix/font.h>
 #include <fiwix/console.h>
 #include <fiwix/tty.h>
 #include <fiwix/timer.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
-#include "font-lat0-sun16.c"
 
 #define SPACE_CHAR	32
 
+unsigned char *font_data;
 struct video_parms video;
 static unsigned char screen_is_off = 0;
 
@@ -575,6 +576,8 @@ void fbcon_cursor_blink(unsigned int arg)
 
 void fbcon_init(void)
 {
+	struct fbcon_font_desc *font_desc;
+
 	video.put_char = fbcon_put_char;
 	video.insert_char = fbcon_insert_char;
 	video.delete_char = fbcon_delete_char;
@@ -588,4 +591,9 @@ void fbcon_init(void)
 	video.screen_on = fbcon_screen_on;
 	video.buf_scroll = fbcon_buf_scroll;
 	video.cursor_blink = fbcon_cursor_blink;
+
+	if(!(font_desc = fbcon_find_font(video.fb_char_height))) {
+		font_desc = fbcon_find_font(16);
+	}
+	font_data = font_desc->data;
 }
