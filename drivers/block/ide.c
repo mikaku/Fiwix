@@ -374,6 +374,24 @@ static void ide_results(struct ide *ide, int drive)
 	*/
 }
 
+/*
+ * Not all systems have two IDE controllers, so in order to know if a
+ * controller exists we write a value on two ports, and if we can read
+ * the same value then it's supposed the controller exists.
+ */
+static int is_ide_controller_present(struct ide *ide)
+{
+	outport_b(ide->base + IDE_SECCNT, 0xAA);
+	outport_b(ide->base + IDE_SECNUM, 0xBB);
+
+	if(inport_b(ide->base + IDE_SECCNT) == 0xAA &&
+	   inport_b(ide->base + IDE_SECNUM) == 0xBB) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void irq_ide0(int num, struct sigcontext *sc)
 {
 	if(!ide0_wait_interrupt) {
@@ -730,41 +748,43 @@ void ide_init(void)
 	devices = 0;
 
 	ide = &ide_table[IDE_PRIMARY];
-	errno = ide_softreset(ide);
-	if(!(errno & 1)) {
-		if(!(ide_identify(ide, IDE_MASTER))) {
-			get_device_size(&ide->drive[IDE_MASTER]);
-			ide_results(ide, IDE_MASTER);
-			SET_MINOR(ide0_device.minors, 0);
-			register_device(BLK_DEV, &ide0_device);
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_MASTER)) {
-					devices++;
+	if(is_ide_controller_present(ide)) {
+		errno = ide_softreset(ide);
+		if(!(errno & 1)) {
+			if(!(ide_identify(ide, IDE_MASTER))) {
+				get_device_size(&ide->drive[IDE_MASTER]);
+				ide_results(ide, IDE_MASTER);
+				SET_MINOR(ide0_device.minors, 0);
+				register_device(BLK_DEV, &ide0_device);
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
-			}
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_MASTER)) {
-					devices++;
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
 			}
 		}
-	}
-	if(!(errno & 0x10)) {
-		if(!(ide_identify(ide, IDE_SLAVE))) {
-			get_device_size(&ide->drive[IDE_SLAVE]);
-			ide_results(ide, IDE_SLAVE);
-			SET_MINOR(ide0_device.minors, 1 << IDE_SLAVE_MSF);
-			if(!devices) {
-				register_device(BLK_DEV, &ide0_device);
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_SLAVE)) {
-					devices++;
+		if(!(errno & 0x10)) {
+			if(!(ide_identify(ide, IDE_SLAVE))) {
+				get_device_size(&ide->drive[IDE_SLAVE]);
+				ide_results(ide, IDE_SLAVE);
+				SET_MINOR(ide0_device.minors, 1 << IDE_SLAVE_MSF);
+				if(!devices) {
+					register_device(BLK_DEV, &ide0_device);
 				}
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_SLAVE)) {
-					devices++;
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
+				}
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
 				}
 			}
 		}
@@ -779,41 +799,43 @@ void ide_init(void)
 	}
 	devices = 0;
 	ide = &ide_table[IDE_SECONDARY];
-	errno = ide_softreset(ide);
-	if(!(errno & 1)) {
-		if(!(ide_identify(ide, IDE_MASTER))) {
-			get_device_size(&ide->drive[IDE_MASTER]);
-			ide_results(ide, IDE_MASTER);
-			SET_MINOR(ide1_device.minors, 0);
-			register_device(BLK_DEV, &ide1_device);
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_MASTER)) {
-					devices++;
+	if(is_ide_controller_present(ide)) {
+		errno = ide_softreset(ide);
+		if(!(errno & 1)) {
+			if(!(ide_identify(ide, IDE_MASTER))) {
+				get_device_size(&ide->drive[IDE_MASTER]);
+				ide_results(ide, IDE_MASTER);
+				SET_MINOR(ide1_device.minors, 0);
+				register_device(BLK_DEV, &ide1_device);
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
-			}
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_MASTER)) {
-					devices++;
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
 			}
 		}
-	}
-	if(!(errno & 0x10)) {
-		if(!(ide_identify(ide, IDE_SLAVE))) {
-			get_device_size(&ide->drive[IDE_SLAVE]);
-			ide_results(ide, IDE_SLAVE);
-			SET_MINOR(ide1_device.minors, 1 << IDE_SLAVE_MSF);
-			if(!devices) {
-				register_device(BLK_DEV, &ide1_device);
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_SLAVE)) {
-					devices++;
+		if(!(errno & 0x10)) {
+			if(!(ide_identify(ide, IDE_SLAVE))) {
+				get_device_size(&ide->drive[IDE_SLAVE]);
+				ide_results(ide, IDE_SLAVE);
+				SET_MINOR(ide1_device.minors, 1 << IDE_SLAVE_MSF);
+				if(!devices) {
+					register_device(BLK_DEV, &ide1_device);
 				}
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_SLAVE)) {
-					devices++;
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
+				}
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
 				}
 			}
 		}
