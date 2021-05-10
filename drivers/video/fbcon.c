@@ -430,7 +430,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 	vidmem = vc->vidmem;
 	screen = (short int *)vc->screen;
 
-	if(!screen_is_off) {
+	if(!screen_is_off && !video.buf_top) {
 		memset_b(vidmem, 0, video.fb_size);
 	}
 	for(y = 0; y < video.lines; y++) {
