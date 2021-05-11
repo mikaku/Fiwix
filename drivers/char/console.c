@@ -1004,7 +1004,8 @@ void console_init(void)
 		printk("console   0x%04X-0x%04X    -    %s (%d virtual consoles)\n", video.port, video.port + 1, video.type, NR_VCONSOLES);
 	}
 	if(video.flags & VPF_VESAFB) {
-		printk("console                    -    color frame buffer, %dx%d (%d virtual consoles)\n", video.columns, video.lines, NR_VCONSOLES);
+		printk("console                    -    color frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
+		printk("\t\t\t\t(%d virtual consoles)\n", NR_VCONSOLES);
 	}
 
 	for(n = 1; n <= NR_VCONSOLES; n++) {
