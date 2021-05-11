@@ -23,15 +23,6 @@ static void puts(char *buffer)
 	unsigned short int count;
 	char *b;
 
-	/* for special debugging purposes only (X11, SVGAlib, ...)
-	{
-		struct inode dummy_i;
-		memset_b(&dummy_i, 0, sizeof(struct inode));
-		dummy_i.dev = dummy_i.rdev = 0x0600;		// /dev/lp0
-		lp_write(&dummy_i, NULL, buffer, strlen(buffer));
-	}
-	*/
-
 	tty = get_tty(_syscondev);
 	count = strlen(buffer);
 	b = buffer;
