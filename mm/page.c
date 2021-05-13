@@ -377,10 +377,9 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 				printk("%s(): returning -ENOMEM\n", __FUNCTION__);
 				return -ENOMEM;
 			}
-			page = V2P(page);
-			pg = &page_table[page >> PAGE_SHIFT];
+			pg = &page_table[V2P(page) >> PAGE_SHIFT];
 			if(bread_page(pg, i, fd_table->offset & PAGE_MASK, 0, MAP_SHARED)) {
-				kfree((unsigned int)pg->data);
+				kfree(page);
 				inode_unlock(i);
 				printk("%s(): returning -EIO\n", __FUNCTION__);
 				return -EIO;
@@ -397,7 +396,7 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 		poffset %= PAGE_SIZE;
 		fd_table->offset += bytes;
 		page_unlock(pg);
-		kfree((unsigned int)pg->data);
+		kfree(page);
 	}
 
 	inode_unlock(i);
