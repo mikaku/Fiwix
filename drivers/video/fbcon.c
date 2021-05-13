@@ -118,6 +118,10 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 {
 	int n, b, offset;
 
+	if(screen_is_off) {
+		return;
+	}
+
 	offset = (y * video.fb_linesize) + (x * video.fb_bpp);
 	addr += offset;
 
@@ -188,10 +192,8 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 		return;
 	}
 
-	if(!screen_is_off) {
-		vidmem = vc->vidmem;
-		draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], vc->color_attr >> 8);
-	}
+	vidmem = vc->vidmem;
+	draw_glyph(vidmem, vc->x, vc->y, &font_data[ch * video.fb_char_height], vc->color_attr >> 8);
 	screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 	vcbuf[(video.buf_y * vc->columns) + vc->x] = vc->color_attr | ch;
 }
@@ -378,8 +380,10 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 						draw_glyph(vidmem, x, y - 1, ch, sch >> 8);
 					}
 				}
-				count = video.fb_pitch * video.fb_char_height;
-				memset_l(vidmem + video.fb_vsize - count, 0, count / sizeof(unsigned int));
+				if(!screen_is_off) {
+					count = video.fb_pitch * video.fb_char_height;
+					memset_l(vidmem + video.fb_vsize - count, 0, count / sizeof(unsigned int));
+				}
 			}
 			count = vc->columns * (vc->bottom - top - 1);
 			soffset = top * vc->columns;
@@ -411,7 +415,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 				}
 				memcpy_w(screen + (vc->columns * (y + 1)), screen + (vc->columns * y), vc->columns);
 			}
-			if(vc->has_focus) {
+			if(vc->has_focus && !screen_is_off) {
 				count = video.fb_pitch * video.fb_char_height;
 				memset_l(vidmem + (top * count), 0, count / sizeof(unsigned int));
 			}
@@ -453,12 +457,12 @@ void fbcon_screen_on(struct vconsole *vc)
 	struct callout_req creq;
 
 	if(screen_is_off) {
+		screen_is_off = 0;
 		SAVE_FLAGS(flags); CLI();
 		fbcon_restore_screen(vc);
 		fbcon_update_curpos(vc);
 		RESTORE_FLAGS(flags);
 		vc->blanked = 0;
-		screen_is_off = 0;
 	}
 	creq.fn = fbcon_screen_off;
 	creq.arg = (unsigned int)vc;
