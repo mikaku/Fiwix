@@ -172,6 +172,16 @@ static int ide_identify(struct ide *ide, int drive)
 	memcpy_b(&ide->drive[drive].ident, (void *)buffer, sizeof(struct ide_drv_ident));
 	kfree((unsigned int)buffer);
 
+	/* some basic checks to make sure that data received makes sense */
+	if(ide->drive[drive].ident.logic_cyls > 0xF000 &&
+	   ide->drive[drive].ident.logic_heads > 0xF000 &&
+	   ide->drive[drive].ident.logic_spt > 0xF000 &&
+	   ide->drive[drive].ident.buffer_cache > 0xF000
+	) {
+		memset_b(&ide->drive[drive].ident, 0, sizeof(struct ide_drv_ident));
+		return 1;
+	}
+
 	if(ide->drive[drive].ident.gen_config == IDE_SUPPORTS_CFA) {
 		ide->drive[drive].flags |= DEVICE_IS_CFA;
 	}
