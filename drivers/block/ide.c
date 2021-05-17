@@ -129,13 +129,15 @@ static int ide_identify(struct ide *ide, int drive)
 		return status;
 	}
 
-	outport_b(ide->base + IDE_COMMAND, (ide->drive[drive].flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
 	if(ide->channel == IDE_PRIMARY) {
 		ide0_wait_interrupt = ide->base;
 		creq.fn = ide0_timer;
 		creq.arg = 0;
 		add_callout(&creq, WAIT_FOR_IDE);
-		sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
+		outport_b(ide->base + IDE_COMMAND, (ide->drive[drive].flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
+		if(ide0_wait_interrupt) {
+			sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
+		}
 		if(ide0_timeout) {
 			status = inport_b(ide->base + IDE_STATUS);
 			if((status & (IDE_STAT_RDY | IDE_STAT_DRQ)) != (IDE_STAT_RDY | IDE_STAT_DRQ)) {
@@ -149,7 +151,10 @@ static int ide_identify(struct ide *ide, int drive)
 		creq.fn = ide1_timer;
 		creq.arg = 0;
 		add_callout(&creq, WAIT_FOR_IDE);
-		sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
+		outport_b(ide->base + IDE_COMMAND, (ide->drive[drive].flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
+		if(ide1_wait_interrupt) {
+			sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
+		}
 		if(ide1_timeout) {
 			status = inport_b(ide->base + IDE_STATUS);
 			if((status & (IDE_STAT_RDY | IDE_STAT_DRQ)) != (IDE_STAT_RDY | IDE_STAT_DRQ)) {
