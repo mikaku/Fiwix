@@ -341,7 +341,6 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
-	CLI();
 	lock_resource(&ide_cd_resource);
 
 	if(!(buffer = (void *)kmalloc())) {

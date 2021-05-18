@@ -156,7 +156,6 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	part = ide->drive[drive].part_table;
 	offset = block2sector(block, blksize, part, minor);
 
-	CLI();
 	lock_resource(&ide_hd_resource);
 
 	n = 0;
@@ -276,7 +275,6 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	part = ide->drive[drive].part_table;
 	offset = block2sector(block, blksize, part, minor);
 
-	CLI();
 	lock_resource(&ide_hd_resource);
 
 	n = 0;
