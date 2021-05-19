@@ -296,7 +296,7 @@ void fbcon_get_curpos(struct vconsole *vc)
 	/* not used */
 }	
 
-void fbcon_write_screen(struct vconsole *vc, int from, int count, int color)
+void fbcon_write_screen(struct vconsole *vc, int from, int count, short int color)
 {
 	int n, n2, lines, columns, x, y;
 	unsigned char *vidmem, *ch;

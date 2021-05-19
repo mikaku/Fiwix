@@ -16,7 +16,7 @@ void fbcon_delete_char(struct vconsole *);
 void fbcon_update_curpos(struct vconsole *);
 void fbcon_show_cursor(struct vconsole *, int);
 void fbcon_get_curpos(struct vconsole *);
-void fbcon_write_screen(struct vconsole *, int, int, int);
+void fbcon_write_screen(struct vconsole *, int, int, short int);
 void fbcon_blank_screen(struct vconsole *);
 void fbcon_scroll_screen(struct vconsole *, int, int);
 void fbcon_restore_screen(struct vconsole *);

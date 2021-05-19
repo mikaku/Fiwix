@@ -144,7 +144,7 @@ void vgacon_get_curpos(struct vconsole *vc)
 	vc->y = curpos / vc->columns;
 }	
 
-void vgacon_write_screen(struct vconsole *vc, int from, int count, int color)
+void vgacon_write_screen(struct vconsole *vc, int from, int count, short int color)
 {
 	short int *vidmem, *screen;
 

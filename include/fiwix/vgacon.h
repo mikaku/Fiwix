@@ -38,7 +38,7 @@ void vgacon_delete_char(struct vconsole *);
 void vgacon_update_curpos(struct vconsole *);
 void vgacon_show_cursor(struct vconsole *, int);
 void vgacon_get_curpos(struct vconsole *);
-void vgacon_write_screen(struct vconsole *, int, int, int);
+void vgacon_write_screen(struct vconsole *, int, int, short int);
 void vgacon_blank_screen(struct vconsole *);
 void vgacon_scroll_screen(struct vconsole *, int, int);
 void vgacon_restore_screen(struct vconsole *);
