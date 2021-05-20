@@ -384,6 +384,8 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 				printk("%s(): returning -EIO\n", __FUNCTION__);
 				return -EIO;
 			}
+		} else {
+			page = (unsigned int)pg->data;
 		}
 
 		page_lock(pg);
