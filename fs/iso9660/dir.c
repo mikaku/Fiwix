@@ -163,15 +163,14 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 					doffset += isonum_711(d->length);
 					offset += isonum_711(d->length);
 				} else {
+					doffset &= ~(blksize - 1);
+					doffset += blksize;
 					break;
 				}
 			}
 			brelse(buf);
 		}
-		fd_table->offset &= ~(blksize - 1);
-		doffset = fd_table->offset;
-		doffset += blksize;
-		fd_table->offset += blksize;
+		fd_table->offset = doffset;
 	}
 	return size;
 }
