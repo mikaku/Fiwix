@@ -138,11 +138,15 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 								nm_len = get_rrip_filename(d, i, nm_name);
 							}
 							if(nm_len) {
-								memcpy_b(dirent->d_name, nm_name, nm_len);
-								dirent->d_name[nm_len] = NULL;
 								dirent->d_reclen = (base_dirent_len + nm_len + 1) + 3;
 								dirent->d_reclen &= ~3;	/* round up */
 								dirent_len = dirent->d_reclen;
+								if((size + dirent_len) < count) {
+									dirent->d_name[nm_len] = NULL;
+									memcpy_b(dirent->d_name, nm_name, nm_len);
+								} else {
+									break;
+								}
 							} else {
 								memcpy_b(dirent->d_name, d->name, isonum_711(d->name_len));
 								dirent->d_name[isonum_711(d->name_len)] = NULL;
