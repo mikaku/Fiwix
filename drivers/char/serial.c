@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/serial.c
  *
- * Copyright 2020, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2020-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
