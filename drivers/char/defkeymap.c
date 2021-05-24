@@ -102,7 +102,7 @@ __key_t keymap[NR_MODIFIERS * NR_SCODES] = {
 /*  81 - PGDN/3	*/	PGDN,	PGDN,	PGDN,	PGDN,	PGDN,	0,	0,	0,	NULL,	0,	0,	0,	0,	0,	0,	0,
 /*  82 - INS /0	*/	INS,	INS,	INS,	INS,	INS,	0,	0,	0,	NULL,	0,	0,	0,	0,	0,	0,	0,
 /*  83 - DEL /.	*/	DEL,	DEL,	DEL,	DEL,	DEL,	0,	0,	0,	DEL,	0,	0,	0,	0,	0,	0,	0,
-/*  84 - 	*/	NULL,	NULL,	NULL,	NULL,	NULL,	0,	0,	0,	NULL,	0,	0,	0,	0,	0,	0,	0,
+/*  84 - SYSRQ	*/	SYSRQ,	NULL,	NULL,	NULL,	NULL,	0,	0,	0,	SYSRQ,	0,	0,	0,	0,	0,	0,	0,
 /*  85 -	*/	NULL,	NULL,	NULL,	NULL,	NULL,	0,	0,	0,	NULL,	0,	0,	0,	0,	0,	0,	0,
 /*  86 - <>	*/	'<',	'>',	'|',	NULL,	NULL,	0,	0,	0,	A('<'),	0,	0,	0,	0,	0,	0,	0,
 /*  87 - F11	*/	SF1,	SF1,	NULL,	NULL,	F11,	0,	0,	0,	AF11,	0,	0,	0,	0,	0,	0,	0,

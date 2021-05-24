@@ -16,6 +16,7 @@
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>
 #include <fiwix/kd.h>
+#include <fiwix/sysrq.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -103,6 +104,8 @@ static unsigned char ctrl = 0;
 static unsigned char alt = 0;
 static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
+static unsigned char sysrq = 0;
+static int sysrq_op = 0;
 
 static unsigned char do_buf_scroll = 0;
 static char do_switch_console = -1;
@@ -482,6 +485,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			case ALT:
 				if(!extkey) {
 					alt = 0;
+					sysrq = 0;
 				} else {
 					altgr = 0;
 				}
@@ -608,6 +612,11 @@ void irq_keyboard(int num, struct sigcontext *sc)
 		type = key & 0xFF00;
 		c = key & 0xFF;
 
+		if(sysrq) {
+			/* treat 0-9 and a-z keys as normal */
+			type &= ~META_KEYS;
+		}
+
 		switch(type) {
 			case FN_KEYS:
 				puts(tty, fn_seq[c]);
@@ -617,6 +626,9 @@ void irq_keyboard(int num, struct sigcontext *sc)
 				switch(key) {
 					case CR:
 						putc(tty, C('M'));
+						break;
+					case SYSRQ:
+						sysrq = 1;
 						break;
 				}
 				break;
@@ -674,6 +686,20 @@ void irq_keyboard(int num, struct sigcontext *sc)
 				break;
 
 			default:
+				if(sysrq) {
+					switch(c) {
+						case 'l':
+							sysrq_op = SYSRQ_STACK;
+							break;
+						case 't':
+							sysrq_op = SYSRQ_TASKS;
+							break;
+						default:
+							sysrq_op = SYSRQ_UNDEF;
+							break;
+					}
+					return;
+				}
 				if(deadkey && c == ' ') {
 					c = diacr_chars[deadkey - 1];
 				}
@@ -719,6 +745,11 @@ void irq_keyboard_bh(void)
 		}
 		tty->input(tty);
 		unlock_area(AREA_TTY_READ);
+	}
+
+	if(sysrq_op) {
+		do_sysrq(sysrq_op);
+		sysrq_op = 0;
 	}
 }
 

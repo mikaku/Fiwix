@@ -62,6 +62,7 @@
 #define SCRL2		(0x02 + SPEC_KEYS)	/* SH_REGS (show registers) */
 #define SCRL3		(0x03 + SPEC_KEYS)	/* SH_MEM (show memory) */
 #define SCRL4		(0x04 + SPEC_KEYS)	/* SH_STAT (show status) */
+#define SYSRQ		(0x06 + SPEC_KEYS)
 #define CAPS		(0x07 + SPEC_KEYS)
 #define NUMS		(0x08 + SPEC_KEYS)
 #define SCRL		(0x09 + SPEC_KEYS)
