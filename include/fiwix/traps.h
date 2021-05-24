@@ -41,6 +41,8 @@ void do_simd_fault(unsigned int, struct sigcontext *);
 
 void trap_handler(unsigned int, struct sigcontext);
 
+const char * elf_lookup_symbol(unsigned int addr);
+void stack_backtrace(void);
 int dump_registers(unsigned int, struct sigcontext *);
 
 #endif /* _FIWIX_TRAPS_H */

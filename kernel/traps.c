@@ -262,7 +262,7 @@ void trap_handler(unsigned int trap, struct sigcontext sc)
 	sc.err = -sc.err;
 }
 
-static const char * elf_lookup_symbol(unsigned int addr)
+const char * elf_lookup_symbol(unsigned int addr)
 {
 	Elf32_Sym *sym;
 	unsigned int n;
@@ -279,11 +279,38 @@ static const char * elf_lookup_symbol(unsigned int addr)
 	return NULL;
 }
 
+void stack_backtrace(void)
+{
+	int n;
+	unsigned int addr, *sp;
+	const char *str;
+
+	printk("Stack:\n");
+	GET_ESP(sp);
+	sp = (unsigned int *)sp;
+	for(n = 1; n <= 32; n++) {
+		printk(" %08x", *sp);
+		sp++;
+		if(!(n % 8)) {
+			printk("\n");
+		}
+	}
+	printk("Backtrace:\n");
+	GET_ESP(sp);
+	sp = (unsigned int *)sp;
+	for(n = 0; n < 256; n++) {
+		addr = *sp;
+		str = elf_lookup_symbol(addr);
+		if(str) {
+			printk("<0x%08x> %s()\n", addr, str);
+		}
+		sp++;
+	}
+}
+
 int dump_registers(unsigned int trap, struct sigcontext *sc)
 {
-	unsigned int cr2, addr, n;
-	unsigned int *sp;
-	const char *str;
+	unsigned int cr2;
 
 	printk("\n");
 	if(trap == 14) {	/* Page Fault */
@@ -309,27 +336,7 @@ int dump_registers(unsigned int trap, struct sigcontext *sc)
 	printk(" ds: 0x%08x\t es: 0x%08x\t fs: 0x%08x\t gs: 0x%08x\n", sc->ds, sc->es, sc->fs, sc->gs);
 
 	if(sc->cs == KERNEL_CS) {
-		printk("Stack:\n");
-		GET_ESP(sp);
-		sp = (unsigned int *)sp;
-		for(n = 1; n <= 32; n++) {
-			printk(" %08x", *sp);
-			sp++;
-			if(!(n % 8)) {
-				printk("\n");
-			}
-		}
-		printk("Backtrace:\n");
-		GET_ESP(sp);
-		sp = (unsigned int *)sp;
-		for(n = 0; n < 128; n++) {
-			addr = *sp;
-			str = elf_lookup_symbol(addr);
-			if(str) {
-				printk("<0x%08x> %s()\n", addr, str);
-			}
-			sp++;
-		}
+		stack_backtrace();
 	}
 
 	/* panics if the exception has been in kernel mode */
