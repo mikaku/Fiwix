@@ -160,7 +160,7 @@ static void remove_cursor(struct vconsole *vc)
 	short int *screen, sch;
 
 	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	soffset = (vc->cursor_y * vc->columns) + vc->cursor_x;
 
 	sch = screen[soffset];
@@ -185,7 +185,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 	short int *screen;
 	unsigned char *vidmem;
 
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 
 	if(!vc->has_focus) {
 		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
@@ -206,7 +206,7 @@ void fbcon_insert_char(struct vconsole *vc)
 	short int *screen;
 
 	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	soffset = (vc->y * vc->columns) + vc->x;
 	n = vc->x;
 	last_ch = &font_data[SPACE_CHAR * video.fb_char_height];
@@ -233,7 +233,7 @@ void fbcon_delete_char(struct vconsole *vc)
 	short int *screen;
 
 	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	soffset = (vc->y * vc->columns) + vc->x;
 	n = vc->x;
 
@@ -302,7 +302,7 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, short int colo
 	unsigned char *vidmem, *ch;
 	short int *screen;
 
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	if(!vc->has_focus) {
 		memset_w(screen + from, color, count);
 		return;
@@ -355,7 +355,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	unsigned char *vidmem, *ch;
 
 	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 
 	if(!top) {
 		top = vc->top;
@@ -432,7 +432,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 	unsigned char *vidmem, *ch, c;
 
 	vidmem = vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 
 	if(!screen_is_off && !video.buf_top) {
 		memset_b(vidmem, 0, video.fb_size);

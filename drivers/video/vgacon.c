@@ -39,7 +39,7 @@ void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 	short int *vidmem, *screen;
 
 	ch = iso8859[ch];
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 
 	if(!vc->has_focus) {
 		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
@@ -58,7 +58,7 @@ void vgacon_insert_char(struct vconsole *vc)
 	short int tmp, last_char, *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	offset = (vc->y * vc->columns) + vc->x;
 	n = vc->x;
 	last_char = BLANK_MEM;
@@ -81,7 +81,7 @@ void vgacon_delete_char(struct vconsole *vc)
 	short int *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	offset = (vc->y * vc->columns) + vc->x;
 	count = vc->columns - vc->x;
 
@@ -148,7 +148,7 @@ void vgacon_write_screen(struct vconsole *vc, int from, int count, short int col
 {
 	short int *vidmem, *screen;
 
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 	if(!vc->has_focus) {
 		memset_w(screen + from, color, count);
 		return;
@@ -181,7 +181,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 	short int *vidmem, *screen;
 
 	vidmem = (short int *)vc->vidmem;
-	screen = (short int *)vc->screen;
+	screen = vc->screen;
 
 	if(!top) {
 		top = vc->top;
