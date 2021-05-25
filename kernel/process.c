@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/process.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -396,8 +396,4 @@ void proc_init(void)
 		free_proc_slots++;
 	} while(n--);
 	proc_table_head = proc_table_tail = NULL;
-
-	/* slot 0 is for the IDLE process */
-	current = get_proc_free();
-	proc_slot_init(current);
 }

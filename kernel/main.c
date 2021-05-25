@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/main.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -86,18 +86,21 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	keyboard_init();
 	proc_init();
 
-	/* IDLE is now the current process */
+	/* IDLE is now the current process (created manually as PID 0) */
+	current = get_proc_free();
+	proc_slot_init(current);
 	set_tss(current);
 	load_tr(TSS);
 	current->tss.cr3 = (unsigned int)kpage_dir;
 	current->flags |= PF_KPROC;
+	current->state = PROC_RUNNING;
 
-	/* slot 1 is for the INIT process */
+	/* PID 1 is for the INIT process */
 	init = get_proc_free();
 	proc_slot_init(init);
 	init->pid = get_unused_pid();
 
-	/* create and setup kswapd process */
+	/* PID 2 is for the kswapd process */
 	p_kswapd = kernel_process(kswapd);
 
 	/* kswapd will take over the rest of the kernel initialization */
