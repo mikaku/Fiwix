@@ -20,6 +20,8 @@
 #include <fiwix/fb.h>
 #include <fiwix/fbcon.h>
 
+Elf32_Shdr *symtab, *strtab;
+
 /* check the validity of a command line parameter */
 static int check_parm(struct kparms *parm, const char *value)
 {

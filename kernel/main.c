@@ -8,7 +8,6 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/limits.h>
-#include <fiwix/i386elf.h>
 #include <fiwix/fs.h>
 #include <fiwix/system.h>
 #include <fiwix/version.h>
@@ -26,7 +25,6 @@
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
 
-Elf32_Shdr *symtab, *strtab;
 unsigned int _last_data_addr;
 int _memsize;
 int _extmemsize;
