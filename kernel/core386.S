@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/core386.S
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -83,82 +83,36 @@
 
 .text
 
-.align 4
-.globl except0;	except0:	# DIVIDE ERROR
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x0)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
+#define BUILD_EXCEPTION_SIMUL_ERR(num, name)				\
+.align 4								;\
+.globl name; name:							;\
+	pushl	$0		/* save simulated error code to stack */;\
+	SAVE_ALL							;\
+	EXCEPTION(num)							;\
+	BOTTOM_HALVES							;\
+	CHECK_SIGNALS							;\
+	SCHEDULE							;\
+	RESTORE_ALL							;\
 	iret
 
-.align 4
-.globl except1;	except1:	# DEBUG
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x1)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
+#define BUILD_EXCEPTION(num, name)					\
+.align 4								;\
+.globl name; name:							;\
+	SAVE_ALL							;\
+	EXCEPTION(num)							;\
+	BOTTOM_HALVES							;\
+	CHECK_SIGNALS							;\
+	SCHEDULE							;\
+	RESTORE_ALL							;\
 	iret
 
-.align 4
-.globl except2;	except2:	# NMI INTERRUPT
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x2)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl except3; except3:	# BREAKPOINT INT3
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x3)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl except4; except4:	# OVERFLOW
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x4)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl except5; except5:	# BOUND
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x5)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl except6; except6:	# INVALID OPCODE
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x6)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
+BUILD_EXCEPTION_SIMUL_ERR(0, except0)	/* DIVIDE ERROR */
+BUILD_EXCEPTION_SIMUL_ERR(1, except1)	/* DEBUG */
+BUILD_EXCEPTION_SIMUL_ERR(2, except2)	/* NMI INTERRUPT */
+BUILD_EXCEPTION_SIMUL_ERR(3, except3)	/* BREAKPOINT INT3 */
+BUILD_EXCEPTION_SIMUL_ERR(4, except4)	/* OVERFLOW */
+BUILD_EXCEPTION_SIMUL_ERR(5, except5)	/* BOUND */
+BUILD_EXCEPTION_SIMUL_ERR(6, except6)	/* INVALID OPCODE */
 
 .align 4
 .globl except7; except7:	# NO MATH COPROCESSOR
@@ -172,147 +126,30 @@
 	RESTORE_ALL
 	iret
 
-.align 4
-.globl except8; except8:	# DOUBLE FAULT
-	SAVE_ALL
-	EXCEPTION(0x8)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl except9; except9:	# COPROCESSOR SEGMENT OVERRUN
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x9)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptA; exceptA:	# INVALID TSS
-	SAVE_ALL
-	EXCEPTION(0xA)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptB; exceptB:	# SEGMENT NOT PRESENT
-	SAVE_ALL
-	EXCEPTION(0xB)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptC; exceptC:	# STACK SEGMENT FAULT
-	SAVE_ALL
-	EXCEPTION(0xC)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptD; exceptD:	# GENERAL PROTECTION FAULT
-	SAVE_ALL
-	EXCEPTION(0xD)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptE; exceptE:	# PAGE FAULT
-	SAVE_ALL
-	EXCEPTION(0xE)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.align 4
-.globl exceptF; exceptF:	# INTEL RESERVED
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0xF)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.globl except10; except10:	# FLOATING POINT ERROR
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x10)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.globl except11; except11:	# ALIGNMENT CHECK
-	EXCEPTION(0x11)
-	SAVE_ALL
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.globl except12; except12:	# MACHINE CHECK
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x12)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.globl except13; except13:	# SIMD FLOATING POINT
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x13)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
-
-.globl except14; except14:	# INTEL RESERVED
-.globl except15; except15:	# INTEL RESERVED
-.globl except16; except16:	# INTEL RESERVED
-.globl except17; except17:	# INTEL RESERVED
-.globl except18; except18:	# INTEL RESERVED
-.globl except19; except19:	# INTEL RESERVED
-.globl except1A; except1A:	# INTEL RESERVED
-.globl except1B; except1B:	# INTEL RESERVED
-.globl except1C; except1C:	# INTEL RESERVED
-.globl except1D; except1D:	# INTEL RESERVED
-.globl except1E; except1E:	# INTEL RESERVED
-.globl except1F; except1F:	# INTEL RESERVED
-	pushl	$0		# save simulated error code to stack
-	SAVE_ALL
-	EXCEPTION(0x14)
-	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
-	RESTORE_ALL
-	iret
+BUILD_EXCEPTION(8, except8)		/* DOUBLE FAULT */
+BUILD_EXCEPTION_SIMUL_ERR(9, except9)	/* COPROCESSOR SEGMENT OVERRUN */
+BUILD_EXCEPTION(10, except10)		/* INVALID TSS */
+BUILD_EXCEPTION(11, except11)		/* SEGMENT NOT PRESENT */
+BUILD_EXCEPTION(12, except12)		/* STACK SEGMENT FAULT */
+BUILD_EXCEPTION(13, except13)		/* GENERAL PROTECTION FAULT */
+BUILD_EXCEPTION(14, except14)		/* PAGE FAULT */
+BUILD_EXCEPTION_SIMUL_ERR(15, except15)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(16, except16)	/* FLOATING POINT ERROR */
+BUILD_EXCEPTION(17, except17)		/* ALIGNMENT CHECK */
+BUILD_EXCEPTION_SIMUL_ERR(18, except18)	/* MACHINE CHECK */
+BUILD_EXCEPTION_SIMUL_ERR(19, except19)	/* SIMD FLOATING POINT */
+BUILD_EXCEPTION_SIMUL_ERR(20, except20)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(21, except21)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(22, except22)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(23, except23)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(24, except24)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(25, except25)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(26, except26)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(27, except27)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(28, except28)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(29, except29)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(30, except30)	/* INTEL RESERVED */
+BUILD_EXCEPTION_SIMUL_ERR(31, except31)	/* INTEL RESERVED */
 
 
 #define BUILD_IRQ(num, name)						\

@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/asm.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -18,12 +18,6 @@ extern void except6(void);
 extern void except7(void);
 extern void except8(void);
 extern void except9(void);
-extern void exceptA(void);
-extern void exceptB(void);
-extern void exceptC(void);
-extern void exceptD(void);
-extern void exceptE(void);
-extern void exceptF(void);
 extern void except10(void);
 extern void except11(void);
 extern void except12(void);
@@ -34,12 +28,18 @@ extern void except16(void);
 extern void except17(void);
 extern void except18(void);
 extern void except19(void);
-extern void except1A(void);
-extern void except1B(void);
-extern void except1C(void);
-extern void except1D(void);
-extern void except1E(void);
-extern void except1F(void);
+extern void except20(void);
+extern void except21(void);
+extern void except22(void);
+extern void except23(void);
+extern void except24(void);
+extern void except25(void);
+extern void except26(void);
+extern void except27(void);
+extern void except28(void);
+extern void except29(void);
+extern void except30(void);
+extern void except31(void);
 
 extern void irq0(void);
 extern void irq1(void);

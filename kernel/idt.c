@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/idt.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -20,9 +20,9 @@ struct desc_r idtr = {
 
 static void *except_handlers[] = {
 	&except0, &except1, &except2, &except3, &except4, &except5, &except6, &except7,
-	&except8, &except9, &exceptA, &exceptB, &exceptC, &exceptD, &exceptE, &exceptF,
-	&except10, &except11, &except12, &except13, &except14, &except15, &except16, &except17,
-	&except18, &except19, &except1A, &except1B, &except1C, &except1D, &except1E, &except1F
+	&except8, &except9, &except10, &except11, &except12, &except13, &except14, &except15,
+	&except16, &except17, &except18, &except19, &except20, &except21, &except22, &except23,
+	&except24, &except25, &except26, &except27, &except28, &except29, &except30, &except31
 };
 
 static void *irq_handlers[] = {
