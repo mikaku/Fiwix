@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/keyboard.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -80,21 +80,21 @@ __key_t *keymap_line;
 
 static unsigned char e0_keys[128] = {
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x00-0x07 */
-	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x08-0x0f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x08-0x0F */
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x10-0x17 */
-	0, 0, 0, 0, E0ENTER, RCTRL, 0, 0,		/* 0x18-0x1f */
+	0, 0, 0, 0, E0ENTER, RCTRL, 0, 0,		/* 0x18-0x1F */
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x20-0x27 */
-	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x28-0x2f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x28-0x2F */
 	0, 0, 0, 0, 0, E0SLASH, 0, 0,			/* 0x30-0x37 */
-	ALTGR, 0, 0, 0, 0, 0, 0, 0,			/* 0x38-0x3f */
+	ALTGR, 0, 0, 0, 0, 0, 0, 0,			/* 0x38-0x3F */
 	0, 0, 0, 0, 0, 0, 0, E0HOME,			/* 0x40-0x47 */
-	E0UP, E0PGUP, 0, E0LEFT, 0, E0RIGHT, 0, E0END,	/* 0x48-0x4f */
+	E0UP, E0PGUP, 0, E0LEFT, 0, E0RIGHT, 0, E0END,	/* 0x48-0x4F */
 	E0DOWN, E0PGDN, E0INS, E0DEL, 0, 0, 0, 0,	/* 0x50-0x57 */
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x58-0x5f */
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x60-0x67 */
-	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x68-0x6f */
+	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x68-0x6F */
 	0, 0, 0, 0, 0, 0, 0, 0,				/* 0x70-0x77 */
-	0, 0, 0, 0, 0, 0, 0, 0				/* 0x78-0x7f */
+	0, 0, 0, 0, 0, 0, 0, 0				/* 0x78-0x7F */
 };
 
 static unsigned char leds = 0;
@@ -461,7 +461,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	}
 	
 	if(extkey) {
-		key = e0_keys[scode & 0x7f];
+		key = e0_keys[scode & 0x7F];
 	} else {
 		key = scode & 0x7F;
 	}
