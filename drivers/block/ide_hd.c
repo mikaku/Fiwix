@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide_hd.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -22,8 +22,6 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
-
-static struct resource ide_hd_resource = { NULL, NULL };
 
 static struct fs_operations ide_hd_driver_fsop = {
 	0,
@@ -156,7 +154,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	part = ide->drive[drive].part_table;
 	offset = block2sector(block, blksize, part, minor);
 
-	lock_resource(&ide_hd_resource);
+	lock_resource(&ide->resource);
 
 	n = 0;
 
@@ -175,7 +173,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
 			if(ide_drvsel(ide, drive, IDE_LBA_MODE, (offset >> 24) & 0x0F)) {
 				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide_hd_resource);
+				unlock_resource(&ide->resource);
 				return -EIO;
 			}
 		} else {
@@ -185,7 +183,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_HCYL, (cyl >> 8));
 			if(ide_drvsel(ide, drive, IDE_CHS_MODE, head)) {
 				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide_hd_resource);
+				unlock_resource(&ide->resource);
 				return -EIO;
 			}
 		}
@@ -228,7 +226,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ide_error(ide, status);
 			printk("\tblock %d, sector %d.\n", block, offset);
 			inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
-			unlock_resource(&ide_hd_resource);
+			unlock_resource(&ide->resource);
 			return -EIO;
 		}
 
@@ -245,7 +243,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 	inport_b(ide->ctrl + IDE_ALT_STATUS);	/* ignore results */
 	inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
-	unlock_resource(&ide_hd_resource);
+	unlock_resource(&ide->resource);
 	return sectors_to_read * IDE_HD_SECTSIZE;
 }
 
@@ -280,7 +278,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	part = ide->drive[drive].part_table;
 	offset = block2sector(block, blksize, part, minor);
 
-	lock_resource(&ide_hd_resource);
+	lock_resource(&ide->resource);
 
 	n = 0;
 
@@ -299,7 +297,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
 			if(ide_drvsel(ide, drive, IDE_LBA_MODE, (offset >> 24) & 0x0F)) {
 				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide_hd_resource);
+				unlock_resource(&ide->resource);
 				return -EIO;
 			}
 		} else {
@@ -309,7 +307,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_HCYL, (cyl >> 8));
 			if(ide_drvsel(ide, drive, IDE_CHS_MODE, head)) {
 				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide_hd_resource);
+				unlock_resource(&ide->resource);
 				return -EIO;
 			}
 		}
@@ -327,7 +325,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ide_error(ide, status);
 			printk("\tblock %d, sector %d.\n", block, offset);
 			inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
-			unlock_resource(&ide_hd_resource);
+			unlock_resource(&ide->resource);
 			return -EIO;
 		}
 
@@ -372,7 +370,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 	inport_b(ide->ctrl + IDE_ALT_STATUS);	/* ignore results */
 	inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
-	unlock_resource(&ide_hd_resource);
+	unlock_resource(&ide->resource);
 	return sectors_to_write * IDE_HD_SECTSIZE;
 }
 

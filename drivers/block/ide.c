@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -29,13 +29,13 @@ int ide1_wait_interrupt = 0;
 int ide1_timeout = 0;
 
 struct ide ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ,
+	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { NULL, NULL },
 		{
 			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
 			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
 		}
 	},
-	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ,
+	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, {NULL, NULL },
 		{
 			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
 			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }

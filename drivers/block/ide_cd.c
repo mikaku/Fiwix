@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide_cd.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -25,8 +25,6 @@
 
 /* default size of 1GB is enough to read a whole CDROM */
 #define CDROM_DEFAULT_SIZE	(1024 * 1024)	/* in KBs */
-
-static struct resource ide_cd_resource = { NULL, NULL };
 
 static struct fs_operations ide_cd_driver_fsop = {
 	0,
@@ -341,10 +339,10 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
-	lock_resource(&ide_cd_resource);
+	lock_resource(&ide->resource);
 
 	if(!(buffer = (void *)kmalloc())) {
-		unlock_resource(&ide_cd_resource);
+		unlock_resource(&ide->resource);
 		return -ENOMEM;
 	}
 
@@ -370,7 +368,7 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 			sense_asc = (int)(buffer[12] & 0xFF);
 			if(sense_key == RS_NOT_READY && sense_asc == ASC_NO_MEDIUM) {
 				kfree((unsigned int)buffer);
-				unlock_resource(&ide_cd_resource);
+				unlock_resource(&ide->resource);
 				return -ENOMEDIUM;
 			}
 		}
@@ -379,7 +377,7 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 	if(retries == MAX_CD_ERR) {
 		if(sense_key == RS_NOT_READY) {
 			kfree((unsigned int)buffer);
-			unlock_resource(&ide_cd_resource);
+			unlock_resource(&ide->resource);
 			return -ENOMEDIUM;
 		}
 	}
@@ -393,7 +391,7 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 	atapi_read_data(i->rdev, buffer, ide, BLKSIZE_2K, 0);
 	kfree((unsigned int)buffer);
 
-	unlock_resource(&ide_cd_resource);
+	unlock_resource(&ide->resource);
 	return 0;
 }
 
@@ -456,12 +454,12 @@ int ide_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	pkt[10] = NULL;
 	pkt[11] = NULL;
 
-	lock_resource(&ide_cd_resource);
+	lock_resource(&ide->resource);
 	for(n = 0; n < sectors_to_read; n++, block++) {
 		for(retries = 0; retries < MAX_CD_ERR; retries++) {
 			if(send_packet_command(pkt, ide, drive, blksize)) {
 				printk("\tblock=%d, offset=%d\n", block, block * blksize);
-				unlock_resource(&ide_cd_resource);
+				unlock_resource(&ide->resource);
 				return -EIO;
 			}
 			if(atapi_read_data(dev, buffer, ide, blksize, n * IDE_CD_SECTSIZE)) {
@@ -478,12 +476,12 @@ int ide_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		}
 		if(retries == MAX_CD_ERR) {
 			printk("\tblock=%d, offset=%d\n", block, block * blksize);
-			unlock_resource(&ide_cd_resource);
+			unlock_resource(&ide->resource);
 			return -EIO;
 		}
 
 	}
-	unlock_resource(&ide_cd_resource);
+	unlock_resource(&ide->resource);
 	return sectors_to_read * IDE_CD_SECTSIZE;
 }
 

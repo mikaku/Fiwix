@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/ide.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -11,6 +11,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/part.h>
 #include <fiwix/sigcontext.h>
+#include <fiwix/sleep.h>
 
 #define IDE0_IRQ		14	/* primary controller interrupt */
 #define IDE1_IRQ		15	/* secondary controller interrupt */
@@ -239,6 +240,7 @@ struct ide {
 	int base;			/* base address */
 	int ctrl;			/* control port address */
 	short int irq;
+	struct resource resource;
 	struct ide_drv drive[NR_IDE_DRVS];
 };
 
