@@ -1,6 +1,6 @@
 1.3.0 - DD-MMM-2021
 ===================
-- Added framebuffer driver support for VBE 2.0 compliant graphics cards.
+- Added framebuffer driver support for VESA VBE 2.0+ compliant graphics cards.
 - Added support for the framebuffer console (fbcon).
 - Completely rewrite the console to support VGA text and framebuffer screens.
 - Improved the speed of VGA text consoles using double-buffering.
@@ -11,8 +11,19 @@
 - Arrange boot.S to be compatible only with GRUB Multiboot Specification v1.
 - Changed from 0x90000 to 0x50000 the memory location of the 4MB temporary Page
   Directory to be able to hold bigger initrd images.
+- Changed from 5% to 1% the amount of memory that will use the inode table.
 - Added the ability to insert extra regions to the memory map provided by the
   boot loader.
+- Added support to detect non-contiguous areas of available memory in the BIOS
+  memory map.
+- Added support for the 'magic SysRq key' to help to know the cause of a kernel
+  freeze on a disaster situation.
+- Added some basic checks on data received during IDE identify to make sure it
+  makes sense.
+- Added support to handle two ATA/ATAPI devices in the same IDE controller.
+- Reduced the size of the buffer area used in floppy I/O operations.
+- Increased to 50 the maximum of BIOS memory map entries.
+- Removed CLI() functions in ide_hd and ide_cd.
 - Fixed the RAMdisk driver to not access blocks beyond its size.
 - Fixed a race condition in floppy drive when the interrupt occurred right
   before going to sleep.
@@ -45,6 +56,14 @@
 - Fixed to avoid multiple calls to tty_queue_init().
 - Fixed to return ENXIO when the device does not exist.
 - Fixed the CSI J Erase in Display (ED) and other sequences in console.
+- Fixed /dev/kmem to not access beyond the end of the virtual memory.
+- Fixed to make sure that disk partitions with status value other than 0x00 and
+  0x80 are invalid.
+- Fixed a race condition in ATA identify/read when the interrupt occurred right
+  before going to sleep.
+- Fixed a buffer overrun in iso9660_dir_readdir().
+- Fixed a bug in iso9660_dir_readdir() that prevented from including some files
+  in the user dirent structure under certain conditions.
 
 
 1.2.0 - 12-Dec-2020
