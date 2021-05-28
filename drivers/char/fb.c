@@ -130,7 +130,7 @@ void fb_init(void)
 	printk("fb0       0x%08X-0x%08X type=%s %X.%X resolution=%dx%dx%d size=%dMB\n",
 		video.address,
 		limit,
-		video.type,
+		video.signature,
 		video.fb_version >> 8,
 		video.fb_version & 0xFF,
 		video.fb_width,

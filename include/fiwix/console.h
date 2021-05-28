@@ -131,7 +131,7 @@ struct video_parms {
 	unsigned int *address;
 	int port;
 	int memsize;
-	unsigned char type[32];
+	unsigned char signature[32];
 	int columns;
 	int lines;
 	int buf_y;
