@@ -363,7 +363,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	switch(mode) {
 		case SCROLL_UP:
 			if(vc->has_focus) {
-				for(y = top + 1; y < vc->bottom; y++) {
+				for(y = top + 1; y < vc->lines; y++) {
 					for(x = 0; x < vc->columns; x++) {
 						soffset = (y * vc->columns) + x;
 						poffset = ((y - 1) * vc->columns) + x;
@@ -385,7 +385,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 					memset_l(vidmem + video.fb_vsize - count, 0, count / sizeof(unsigned int));
 				}
 			}
-			count = vc->columns * (vc->bottom - top - 1);
+			count = vc->columns * (vc->lines - top - 1);
 			soffset = top * vc->columns;
 			top = (top + 1) * vc->columns;
 			if(vc->cursor_y) {
@@ -395,7 +395,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 			memset_w(screen + soffset + count, BLANK_MEM, top);
 			break;
 		case SCROLL_DOWN:
-			for(y = vc->bottom - 2; y >= top; y--) {
+			for(y = vc->lines - 2; y >= top; y--) {
 				for(x = 0; x < vc->columns; x++) {
 					if(vc->has_focus) {
 						soffset = (y * vc->columns) + x;

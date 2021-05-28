@@ -188,7 +188,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 	}
 	switch(mode) {
 		case SCROLL_UP:
-			count = vc->columns * (vc->bottom - top - 1);
+			count = vc->columns * (vc->lines - top - 1);
 			offset = top * vc->columns;
 			top = (top + 1) * vc->columns;
 			if(vc->has_focus) {
@@ -200,7 +200,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			break;
 		case SCROLL_DOWN:
 			count = vc->columns;
-			for(n = vc->bottom - 1; n >= top; n--) {
+			for(n = vc->lines - 1; n >= top; n--) {
 				memcpy_w(screen + (vc->columns * (n + 1)), screen + (vc->columns * n), count);
 				if(vc->has_focus) {
 					memcpy_w(vidmem + (vc->columns * (n + 1)), screen + (vc->columns * n), count);

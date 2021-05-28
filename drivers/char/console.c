@@ -142,8 +142,8 @@ static void adjust(struct vconsole *vc, int x, int y)
 	if(y < 0) {
 		y = 0;
 	}
-	if(y >= vc->bottom) {
-		y = vc->bottom - 1;
+	if(y >= vc->lines) {
+		y = vc->lines - 1;
 	}
 	vc->x = x;
 	vc->y = y;
@@ -156,7 +156,7 @@ static void cr(struct vconsole *vc)
 
 static void lf(struct vconsole *vc)
 {
-	if(vc->y == vc->bottom) {
+	if(vc->y == vc->lines) {
 		video.scroll_screen(vc, 0, SCROLL_UP);
 	} else {
 		vc->y++;
@@ -235,8 +235,8 @@ static void csi_X(struct vconsole *vc, int count)
 
 static void csi_L(struct vconsole *vc, int count)
 {
-	if(count > (vc->bottom - vc->top)) {
-		count = vc->bottom - vc->top;
+	if(count > (vc->lines - vc->top)) {
+		count = vc->lines - vc->top;
 	}
 	while(count--) {
 		video.scroll_screen(vc, vc->y, SCROLL_DOWN);
@@ -245,8 +245,8 @@ static void csi_L(struct vconsole *vc, int count)
 
 static void csi_M(struct vconsole *vc, int count)
 {
-	if(count > (vc->bottom - vc->top)) {
-		count = vc->bottom - vc->top;
+	if(count > (vc->lines - vc->top)) {
+		count = vc->lines - vc->top;
 	}
 	while(count--) {
 		video.scroll_screen(vc, vc->y, SCROLL_UP);
@@ -448,7 +448,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 					video.buf_y++;
 				}
 			}
-			if(vc->y >= vc->bottom) {
+			if(vc->y >= vc->lines) {
 				video.scroll_screen(vc, 0, SCROLL_UP);
 				vc->y--;
 			}
@@ -460,7 +460,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 				vc->check_x = 1;
 			}
 		}
-		if(vc->y >= vc->bottom) {
+		if(vc->y >= vc->lines) {
 			video.scroll_screen(vc, 0, SCROLL_UP);
 			vc->y--;
 		}
@@ -483,7 +483,7 @@ void vconsole_reset(struct tty *tty)
 	vc = (struct vconsole *)tty->driver_data;
 
 	vc->top = 0;
-	vc->bottom = video.lines;
+	vc->lines = video.lines;
 	vc->columns = video.columns;
 	vc->check_x = 0;
 	vc->led_status = 0;
@@ -506,7 +506,7 @@ void vconsole_reset(struct tty *tty)
 	}
 
 	termios_reset(tty);
-	vc->tty->winsize.ws_row = vc->bottom - vc->top;
+	vc->tty->winsize.ws_row = vc->lines - vc->top;
 	vc->tty->winsize.ws_col = vc->columns;
 	vc->tty->winsize.ws_xpixel = 0;
 	vc->tty->winsize.ws_ypixel = 0;
@@ -750,7 +750,7 @@ void vconsole_write(struct tty *tty)
 						}
 						if(vc->parmv1 < vc->parmv2 && vc->parmv2 <= video.lines) {
 							vc->top = vc->parmv1 - 1;
-							vc->bottom = vc->parmv2;
+							vc->lines = vc->parmv2;
 							adjust(vc, 0, 0);
 						}
 						CSE;

@@ -104,7 +104,7 @@ short int *vcbuf;
 struct vconsole {
 	int x;		/* current column */
 	int y;		/* current line */
-	int top, bottom, columns;
+	int top, lines, columns;
 	short int check_x;
 	unsigned char led_status;
 	unsigned char scrlock, numlock, capslock;
