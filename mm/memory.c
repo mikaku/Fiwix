@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/memory.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -225,8 +225,8 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 			addr = V2P(addr);
 			p->rss++;
 		}
+		pgtbl[pte] = addr | PAGE_PRESENT | PAGE_USER;
 	}
-	pgtbl[pte] = addr | PAGE_PRESENT | PAGE_USER;
 	if(prot & PROT_WRITE) {
 		pgtbl[pte] |= PAGE_RW;
 	}
