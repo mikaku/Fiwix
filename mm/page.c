@@ -189,7 +189,7 @@ void release_page(unsigned int page)
 	unsigned long int flags;
 	struct page *pg;
 
-	if(!valid_page(page)) {
+	if(!is_valid_page(page)) {
 		PANIC("Unexpected inconsistency in hash_table. Missing page %d (0x%x).\n", page, page);
 	}
 
@@ -230,7 +230,7 @@ void release_page(unsigned int page)
 	}
 }
 
-int valid_page(unsigned int page)
+int is_valid_page(unsigned int page)
 {
 	return (page >= 0 && page < NR_PAGES);
 }

@@ -170,7 +170,7 @@ int clone_pages(struct proc *child)
 						pg->flags |= PAGE_COW;
 					}
 					dst_pgtbl[pte] = src_pgtbl[pte];
-					if(!valid_page((dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT)) {
+					if(!is_valid_page((dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT)) {
 						PANIC("%s: missing page %d during copy-on-write process.\n", __FUNCTION__, (dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT);
 					}
 					pg = &page_table[(dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT];
