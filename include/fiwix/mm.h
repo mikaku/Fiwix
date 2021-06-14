@@ -53,8 +53,10 @@ struct page {
 	unsigned int count;	/* usage counter */
 	unsigned int flags;
 	unsigned char locked;	/* 1 = locked */
-	struct inode *inode;
+	unsigned char valid;	/* 1 = valid */
+	__ino_t inode;		/* inode of the file */
 	__off_t offset;		/* file offset */
+	__dev_t dev;		/* device where file resides */
 	char *data;		/* page contents */
 	struct page *prev_hash;
 	struct page *next_hash;

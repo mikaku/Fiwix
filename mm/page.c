@@ -37,7 +37,7 @@
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % NR_PAGE_HASH)
 #define NR_PAGES	page_table_size / sizeof(struct page)
-#define NR_PAGE_HASH	page_hash_table_size / sizeof(unsigned int)
+#define NR_PAGE_HASH	(page_hash_table_size / sizeof(unsigned int))
 
 struct page *page_table;		/* page pool */
 struct page *page_head;			/* page pool head */
@@ -48,7 +48,7 @@ static void insert_to_hash(struct page *pg)
 	struct page **h;
 	int i;
 
-	i = PAGE_HASH(pg->inode->inode, pg->offset);
+	i = PAGE_HASH(pg->inode, pg->offset);
 	h = &page_hash_table[i];
 
 	if(!*h) {
@@ -72,7 +72,7 @@ static void remove_from_hash(struct page *pg)
 		return;
 	}
 
-	i = PAGE_HASH(pg->inode->inode, pg->offset);
+	i = PAGE_HASH(pg->inode, pg->offset);
 	h = &page_hash_table[i];
 
 	while(*h) {
@@ -154,8 +154,9 @@ struct page * get_free_page(void)
 	remove_from_free_list(pg);
 	remove_from_hash(pg);	/* remove it from its old hash */
 	pg->count = 1;
-	pg->inode = NULL;
+	pg->inode = 0;
 	pg->offset = 0;
+	pg->dev = 0;
 
 	RESTORE_FLAGS(flags);
 	return pg;
@@ -170,7 +171,7 @@ struct page * search_page_hash(struct inode *inode, __off_t offset)
 	pg = page_hash_table[i];
 
 	while(pg) {
-		if(pg->inode == inode && pg->offset == offset) {
+		if(pg->inode == inode->inode && pg->offset == offset && pg->dev == inode->dev) {
 			if(!pg->count) {
 				remove_from_free_list(pg);
 			}
@@ -295,11 +296,9 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		return 1;
 	}
 
-	pg->inode = i;
-	pg->offset = offset;
 	if(!(prot & PROT_WRITE) || flags & MAP_SHARED) {
 		while(size_read < PAGE_SIZE) {
-			if((block = bmap(i, offset, FOR_READING)) < 0) {
+			if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
 				return 1;
 			}
 			if(block) {
@@ -317,13 +316,15 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 				memset_b(pg->data + size_read, 0, blksize);
 			}
 			size_read += blksize;
-			offset += blksize;
 		}
 		/* cache all read-only and public (shared) pages */
+		pg->inode = i->inode;
+		pg->offset = offset;
+		pg->dev = i->dev;
 		insert_to_hash(pg);
 	} else {
 		while(size_read < PAGE_SIZE) {
-			if((block = bmap(i, offset, FOR_READING)) < 0) {
+			if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
 				return 1;
 			}
 			if(block) {
@@ -342,10 +343,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 				brelse(buf);
 			}
 			size_read += blksize;
-			offset += blksize;
 		}
-		pg->inode = NULL;
-		pg->offset = 0;
 	}
 	return 0;
 }
