@@ -400,7 +400,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 	unsigned long int flags;
 
 	SAVE_FLAGS(flags); CLI();
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		if(video.buf_top) {
 			video.restore_screen(vc);
 			video.show_cursor(vc, ON);
@@ -427,7 +427,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 		} else if(ch == '\n') {
 			cr(vc);
 			vc->y++;
-			if(vc->has_focus) {
+			if(vc->flags & CONSOLE_HAS_FOCUS) {
 				video.buf_y++;
 			}
 
@@ -444,7 +444,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 			if((vc->x == vc->columns - 1) && vc->check_x) {
 				vc->x = 0;
 				vc->y++;
-				if(vc->has_focus) {
+				if(vc->flags & CONSOLE_HAS_FOCUS) {
 					video.buf_y++;
 				}
 			}
@@ -464,7 +464,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 			video.scroll_screen(vc, 0, SCROLL_UP);
 			vc->y--;
 		}
-		if(vc->has_focus) {
+		if(vc->flags & CONSOLE_HAS_FOCUS) {
 			if(video.buf_y >= VC_BUF_LINES) {
 				vcbuf_scroll_up();
 				video.buf_y--;
@@ -526,7 +526,7 @@ void vconsole_write(struct tty *tty)
 
 	vc = (struct vconsole *)tty->driver_data;
 
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		if(video.buf_top) {
 			video.restore_screen(vc);
 			video.buf_top = 0;
@@ -875,9 +875,9 @@ void vconsole_select_final(int new_cons)
 			video.update_curpos(&vc[current_cons]);
 		}
 		vc[current_cons].vidmem = NULL;
-		vc[current_cons].has_focus = 0;
+		vc[current_cons].flags &= ~CONSOLE_HAS_FOCUS;
 		vc[new_cons].vidmem = (unsigned char *)video.address;
-		vc[new_cons].has_focus = 1;
+		vc[new_cons].flags |= CONSOLE_HAS_FOCUS;
 		video.restore_screen(&vc[new_cons]);
 		current_cons = new_cons;
 		set_leds(vc[current_cons].led_status);
@@ -1034,7 +1034,7 @@ void console_init(void)
 	current_cons = 1;
 	video.show_cursor(&vc[current_cons], ON);
 	vc[current_cons].vidmem = (unsigned char *)video.address;
-	vc[current_cons].has_focus = 1;
+	vc[current_cons].flags |= CONSOLE_HAS_FOCUS;
 
 	if(video.flags & VPF_VGA) {
 		memcpy_w(vc[current_cons].screen, video.address, SCREEN_SIZE);

@@ -41,7 +41,7 @@ void vgacon_put_char(struct vconsole *vc, unsigned char ch)
 	ch = iso8859[ch];
 	screen = vc->screen;
 
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 		return;
 	}
@@ -64,7 +64,7 @@ void vgacon_insert_char(struct vconsole *vc)
 	last_char = BLANK_MEM;
 
 	while(n++ < vc->columns) {
-		if(vc->has_focus) {
+		if(vc->flags & CONSOLE_HAS_FOCUS) {
 			memcpy_w(&tmp, vidmem + offset, 1);
 			memset_w(vidmem + offset, last_char, 1);
 		}
@@ -85,7 +85,7 @@ void vgacon_delete_char(struct vconsole *vc)
 	offset = (vc->y * vc->columns) + vc->x;
 	count = vc->columns - vc->x;
 
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		memcpy_w(vidmem + offset, vidmem + offset + 1, count);
 		memset_w(vidmem + offset + count, BLANK_MEM, 1);
 	}
@@ -97,7 +97,7 @@ void vgacon_update_curpos(struct vconsole *vc)
 {
 	unsigned short int curpos;
 
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		curpos = (vc->y * vc->columns) + vc->x;
 		outport_b(video.port + CRT_INDEX, CRT_CURSOR_POS_HI);
 		outport_b(video.port + CRT_DATA, (curpos >> 8) & 0xFF);
@@ -149,7 +149,7 @@ void vgacon_write_screen(struct vconsole *vc, int from, int count, short int col
 	short int *vidmem, *screen;
 
 	screen = vc->screen;
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		memset_w(screen + from, color, count);
 		return;
 	}
@@ -167,7 +167,7 @@ void vgacon_blank_screen(struct vconsole *vc)
 		return;
 	}
 
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		vidmem = (short int *)vc->vidmem;
 		memset_w(vidmem, BLANK_MEM, SCREEN_SIZE);
 	}
@@ -191,7 +191,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			count = vc->columns * (vc->lines - top - 1);
 			offset = top * vc->columns;
 			top = (top + 1) * vc->columns;
-			if(vc->has_focus) {
+			if(vc->flags & CONSOLE_HAS_FOCUS) {
 				memcpy_w(vidmem + offset, screen + top, count);
 				memset_w(vidmem + offset + count, BLANK_MEM, top);
 			}
@@ -202,12 +202,12 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			count = vc->columns;
 			for(n = vc->lines - 1; n >= top; n--) {
 				memcpy_w(screen + (vc->columns * (n + 1)), screen + (vc->columns * n), count);
-				if(vc->has_focus) {
+				if(vc->flags & CONSOLE_HAS_FOCUS) {
 					memcpy_w(vidmem + (vc->columns * (n + 1)), screen + (vc->columns * n), count);
 				}
 			}
 			memset_w(screen + (top * vc->columns), BLANK_MEM, count);
-			if(vc->has_focus) {
+			if(vc->flags & CONSOLE_HAS_FOCUS) {
 				memset_w(vidmem + (top * vc->columns), BLANK_MEM, count);
 			}
 			break;
@@ -219,7 +219,7 @@ void vgacon_restore_screen(struct vconsole *vc)
 {
 	short int *vidmem;
 
-	if(vc->has_focus) {
+	if(vc->flags & CONSOLE_HAS_FOCUS) {
 		vidmem = (short int *)vc->vidmem;
 		memcpy_w(vidmem, vc->screen, SCREEN_SIZE);
 	}

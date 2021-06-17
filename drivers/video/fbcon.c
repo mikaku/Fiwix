@@ -187,7 +187,7 @@ void fbcon_put_char(struct vconsole *vc, unsigned char ch)
 
 	screen = vc->screen;
 
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		screen[(vc->y * vc->columns) + vc->x] = vc->color_attr | ch;
 		return;
 	}
@@ -214,7 +214,7 @@ void fbcon_insert_char(struct vconsole *vc)
 
 	while(n < vc->columns) {
 		tmp = screen[soffset];
-		if(vc->has_focus) {
+		if(vc->flags & CONSOLE_HAS_FOCUS) {
 			draw_glyph(vidmem, n, vc->y, last_ch, vc->color_attr >> 8);
 			last_ch = &font_data[(tmp & 0xFF) * video.fb_char_height];
 		}
@@ -239,7 +239,7 @@ void fbcon_delete_char(struct vconsole *vc)
 
 	while(n < vc->columns) {
 		sch = screen[soffset + 1];
-		if(vc->has_focus) {
+		if(vc->flags & CONSOLE_HAS_FOCUS) {
 			if(sch & 0xFF) {
 				ch = &font_data[(sch & 0xFF) * video.fb_char_height];
 			} else {
@@ -256,7 +256,7 @@ void fbcon_delete_char(struct vconsole *vc)
 
 void fbcon_update_curpos(struct vconsole *vc)
 {
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		return;
 	}
 
@@ -303,7 +303,7 @@ void fbcon_write_screen(struct vconsole *vc, int from, int count, short int colo
 	short int *screen;
 
 	screen = vc->screen;
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		memset_w(screen + from, color, count);
 		return;
 	}
@@ -362,7 +362,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 	}
 	switch(mode) {
 		case SCROLL_UP:
-			if(vc->has_focus) {
+			if(vc->flags & CONSOLE_HAS_FOCUS) {
 				for(y = top + 1; y < vc->lines; y++) {
 					for(x = 0; x < vc->columns; x++) {
 						soffset = (y * vc->columns) + x;
@@ -397,7 +397,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 		case SCROLL_DOWN:
 			for(y = vc->lines - 2; y >= top; y--) {
 				for(x = 0; x < vc->columns; x++) {
-					if(vc->has_focus) {
+					if(vc->flags & CONSOLE_HAS_FOCUS) {
 						soffset = (y * vc->columns) + x;
 						poffset = ((y + 1) * vc->columns) + x;
 						sch = screen[soffset];
@@ -415,7 +415,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 				}
 				memcpy_w(screen + (vc->columns * (y + 1)), screen + (vc->columns * y), vc->columns);
 			}
-			if(vc->has_focus && !screen_is_off) {
+			if((vc->flags & CONSOLE_HAS_FOCUS) && !screen_is_off) {
 				count = video.fb_pitch * video.fb_char_height;
 				memset_l(vidmem + (top * count), 0, count / sizeof(unsigned int));
 			}
@@ -561,7 +561,7 @@ void fbcon_cursor_blink(unsigned int arg)
 	static int blink_on = 0;
 
 	vc = (struct vconsole *)arg;
-	if(!vc->has_focus) {
+	if(!(vc->flags & CONSOLE_HAS_FOCUS)) {
 		return;
 	}
 

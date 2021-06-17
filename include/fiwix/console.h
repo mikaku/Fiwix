@@ -89,6 +89,10 @@
 #define OFF			0
 #define COND			2
 
+/* console flags */
+#define CONSOLE_HAS_FOCUS       0x0001
+
+
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 
 short int *vc_screen[NR_VCONSOLES + 1];
@@ -109,13 +113,13 @@ struct vconsole {
 	unsigned char led_status;
 	unsigned char scrlock, numlock, capslock;
 	unsigned char esc, sbracket, semicolon, question;
+	unsigned int flags;
 	int parmv1, parmv2;
 	int nparms, parms[NPARMS];
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
 	int insert_mode;
 	unsigned char *vidmem;	/* write here only when console has focus */
-	short int has_focus;
 	short int *screen;	/* the back-buffer of the screen */
 	int saved_x, cursor_x;
 	int saved_y, cursor_y;
