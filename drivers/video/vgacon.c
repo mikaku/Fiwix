@@ -163,7 +163,7 @@ void vgacon_blank_screen(struct vconsole *vc)
 {
 	short int *vidmem;
 
-	if(vc->blanked) {
+	if(vc->flags & CONSOLE_BLANKED) {
 		return;
 	}
 
@@ -171,7 +171,7 @@ void vgacon_blank_screen(struct vconsole *vc)
 		vidmem = (short int *)vc->vidmem;
 		memset_w(vidmem, BLANK_MEM, SCREEN_SIZE);
 	}
-	vc->blanked = 1;
+	vc->flags |= CONSOLE_BLANKED;
 	vgacon_show_cursor(vc, OFF);
 }
 

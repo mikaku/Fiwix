@@ -91,6 +91,7 @@
 
 /* console flags */
 #define CONSOLE_HAS_FOCUS       0x0001
+#define CONSOLE_BLANKED         0x0002
 
 
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
@@ -125,7 +126,6 @@ struct vconsole {
 	int saved_y, cursor_y;
 	struct vt_mode vt_mode;
 	unsigned char vc_mode;
-	unsigned char blanked;
 	int switchto_tty;
 	struct tty *tty;
 };

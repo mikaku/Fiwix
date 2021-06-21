@@ -513,7 +513,7 @@ void vconsole_reset(struct tty *tty)
 	vc->tty->lnext = 0;
 
 	init_vt(vc);
-	vc->blanked = 0;
+	vc->flags &= ~CONSOLE_BLANKED;
 	video.update_curpos(vc);
 }
 
@@ -893,11 +893,11 @@ void vconsole_select_final(int new_cons)
 
 void unblank_screen(struct vconsole *vc)
 {
-	if(!vc->blanked) {
+	if(!(vc->flags & CONSOLE_BLANKED)) {
 		return;
 	}
 	video.restore_screen(vc);
-	vc->blanked = 0;
+	vc->flags &= ~CONSOLE_BLANKED;
 	video.show_cursor(vc, ON);
 }
 

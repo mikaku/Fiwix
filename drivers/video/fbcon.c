@@ -334,7 +334,7 @@ void fbcon_blank_screen(struct vconsole *vc)
 {
 	unsigned char *vidmem;
 
-	if(vc->blanked) {
+	if(vc->flags & CONSOLE_BLANKED) {
 		return;
 	}
 
@@ -344,7 +344,7 @@ void fbcon_blank_screen(struct vconsole *vc)
 	}
 
 	memset_b(vidmem, 0, video.fb_size);
-	vc->blanked = 1;
+	vc->flags |= CONSOLE_BLANKED;
 }
 
 void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
@@ -448,7 +448,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 			draw_glyph(vidmem, x, y, ch, sch >> 8);
 		}
 	}
-	vc->blanked = 0;
+	vc->flags &= ~CONSOLE_BLANKED;
 }
 
 void fbcon_screen_on(struct vconsole *vc)
@@ -462,7 +462,7 @@ void fbcon_screen_on(struct vconsole *vc)
 		fbcon_restore_screen(vc);
 		fbcon_update_curpos(vc);
 		RESTORE_FLAGS(flags);
-		vc->blanked = 0;
+		vc->flags &= ~CONSOLE_BLANKED;
 	}
 	creq.fn = fbcon_screen_off;
 	creq.arg = (unsigned int)vc;
