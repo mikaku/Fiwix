@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/inode.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -68,6 +68,10 @@ static void remove_from_hash(struct inode *i)
 	struct inode **h;
 	int n;
 
+	if(!i->inode) {
+		return;
+	}
+
 	n = INODE_HASH(i->dev, i->inode);
 	h = &inode_hash_table[n];
 
@@ -90,44 +94,59 @@ static void remove_from_hash(struct inode *i)
 
 static void remove_from_free_list(struct inode *i)
 {
+	if(!inodes_on_free_list) {
+		return;
+	}
+
 	i->prev_free->next_free = i->next_free;
 	i->next_free->prev_free = i->prev_free;
 	inodes_on_free_list--;
 	if(i == inode_head) {
 		inode_head = i->next_free;
 	}
-}
 
-static void inode_wait(struct inode *i)
-{
-	unsigned long int flags;
-
-	for(;;) {
-		SAVE_FLAGS(flags); CLI();
-		if(i->locked) {
-			RESTORE_FLAGS(flags);
-			sleep(i, PROC_UNINTERRUPTIBLE);
-		} else {
-			break;
-		}
+	if(!inodes_on_free_list) {
+		inode_head = NULL;
 	}
-	RESTORE_FLAGS(flags);
 }
 
 static struct inode * get_free_inode(void)
 {
+	unsigned long int flags;
 	struct inode *i;
 
 	/* no more inodes on free list */
-	if(inode_head == inode_head->next_free) {
+	if(!inodes_on_free_list) {
 		return NULL;
 	}
 
-	i = inode_head;
-	inode_head->next_free->prev_free = inode_head->prev_free;
-	inode_head->prev_free->next_free = inode_head->next_free;
-	inode_head = inode_head->next_free;
+	SAVE_FLAGS(flags); CLI();
 
+	i = inode_head;
+	remove_from_free_list(i);
+	remove_from_hash(i);
+	i->i_mode = 0;
+	i->i_uid = 0;
+	i->i_size = 0;
+	i->i_atime = 0;
+	i->i_ctime = 0;
+	i->i_mtime = 0;
+	i->i_gid = 0;
+	i->i_nlink = 0;
+	i->i_blocks = 0;
+	i->i_flags = 0;
+	i->locked = 0;
+	i->dirty = 0;
+	i->mount_point = NULL;
+	i->dev = 0;
+	i->inode = 0;
+	i->count = 0;
+	i->rdev = 0;
+	i->fsop = NULL;
+	i->sb = NULL;
+	memset_b(&i->u, NULL, sizeof(i->u));
+
+	RESTORE_FLAGS(flags);
 	return i;
 }
 
@@ -155,7 +174,7 @@ static int write_inode(struct inode *i)
 	if(i->sb && i->sb->fsop && i->sb->fsop->write_inode) {
 		errno = i->sb->fsop->write_inode(i);
 	} else {
-		/* i.e. PIPE_DEV inodes can't be flushed on disk */
+		/* PIPE_DEV inodes can't be flushed on disk */
 		i->dirty = 0;
 		errno = 0;
 	}
@@ -180,41 +199,6 @@ static struct inode * search_inode_hash(__dev_t dev, __ino_t inode)
 	}
 
 	return NULL;
-}
-
-static struct inode * get_blank_inode(void)
-{
-	unsigned long int flags;
-	struct inode *i;
-
-	SAVE_FLAGS(flags); CLI();
-
-	if((i = get_free_inode())) {
-		remove_from_free_list(i);
-		remove_from_hash(i);
-		i->i_mode = 0;
-		i->i_uid = 0;
-		i->i_size = 0;
-		i->i_atime = 0;
-		i->i_ctime = 0;
-		i->i_mtime = 0;
-		i->i_gid = 0;
-		i->i_nlink = 0;
-		i->i_blocks = 0;
-		i->i_flags = 0;
-		i->locked = 0;
-		i->dirty = 0;
-		i->mount_point = NULL;
-		i->dev = 0;
-		i->inode = 0;
-		i->count = 0;
-		i->rdev = 0;
-		i->fsop = NULL;
-		i->sb = NULL;
-		memset_b(&i->u, NULL, sizeof(i->u));
-	}
-	RESTORE_FLAGS(flags);
-	return i;
 }
 
 void inode_lock(struct inode *i)
@@ -249,7 +233,7 @@ struct inode * ialloc(struct superblock *sb, int mode)
 	int errno;
 	struct inode *i;
 
-	if((i = get_blank_inode())) {
+	if((i = get_free_inode())) {
 		i->sb = sb;
 		i->rdev = sb->dev;
 		if(i->sb && i->sb->fsop && i->sb->fsop->ialloc) {
@@ -286,24 +270,26 @@ struct inode * iget(struct superblock *sb, __ino_t inode)
 
 	for(;;) {
 		if((i = search_inode_hash(sb->dev, inode))) {
-			inode_wait(i);
-			SAVE_FLAGS(flags); CLI();
+			inode_lock(i);
 
 			/* update superblock pointer from mount_table */
-			i->sb = sb;
+			//i->sb = sb;	//FIXME: necessary?
 
 			if(i->mount_point) {
+				inode_unlock(i);
 				i = i->mount_point;
+				inode_lock(i);
 			}
 			/* FIXME: i->locked = 1; ? */
-			if(++i->count == 1) {
+			if(!i->count) {
 				remove_from_free_list(i);
 			}
-			RESTORE_FLAGS(flags);
+			i->count++;
+			inode_unlock(i);
 			return i;
 		}
 
-		if(!(i = get_blank_inode())) {
+		if(!(i = get_free_inode())) {
 			printk("WARNING: %s(): no more inodes on free list! (%d).\n", __FUNCTION__, inodes_on_free_list);
 			return NULL;
 		}
@@ -366,35 +352,37 @@ void iput(struct inode *i)
 		return;
 	}
 
+	if(--i->count > 0) {
+		return;
+	}
+
+	if(!i->i_nlink) {
+		if(i->sb && i->sb->fsop && i->sb->fsop->ifree) {
+			inode_lock(i);
+			i->sb->fsop->ifree(i);
+			inode_unlock(i);
+		}
+		remove_from_hash(i);
+	}
+	if(i->dirty) {
+		if(write_inode(i)) {
+			printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
+			return;
+		}
+	}
+
 	SAVE_FLAGS(flags); CLI();
 
-	if(--i->count == 0) {
-		if(!i->i_nlink) {
-			if(i->sb && i->sb->fsop && i->sb->fsop->ifree) {
-				inode_lock(i);
-				i->sb->fsop->ifree(i);
-				remove_from_hash(i);
-				inode_unlock(i);
-			}
-		}
-		if(i->dirty) {
-			if(write_inode(i)) {
-				printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
-				RESTORE_FLAGS(flags);
-				return;
-			}
-		}
-		if(!inode_head) {
-			i->prev_free = i->next_free = i;
-			inode_head = i;
-		} else {
-			i->next_free = inode_head;
-			i->prev_free = inode_head->prev_free;
-			inode_head->prev_free->next_free = i;
-			inode_head->prev_free = i;
-		}
-		inodes_on_free_list++;
+	if(!inode_head) {
+		i->prev_free = i->next_free = i;
+		inode_head = i;
+	} else {
+		i->next_free = inode_head;
+		i->prev_free = inode_head->prev_free;
+		inode_head->prev_free->next_free = i;
+		inode_head->prev_free = i;
 	}
+	inodes_on_free_list++;
 
 	RESTORE_FLAGS(flags);
 }
@@ -410,7 +398,6 @@ void sync_inodes(__dev_t dev)
 	for(n = 0; n < NR_INODES; n++) {
 		if(i->dirty) {
 			if(!dev || i->dev == dev) {
-				inode_wait(i);
 				if(write_inode(i)) {
 					printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
 				}
@@ -419,7 +406,6 @@ void sync_inodes(__dev_t dev)
 		i++;
 	}
 	unlock_resource(&sync_resource);
-	return;
 }
 
 void invalidate_inodes(__dev_t dev)
@@ -433,10 +419,9 @@ void invalidate_inodes(__dev_t dev)
 
 	for(n = 0; n < NR_INODES; n++) {
 		if(i->dev == dev) {
-			inode_wait(i);
+			inode_lock(i);
 			remove_from_hash(i);
-			i->locked = 0;
-			wakeup(&inode_wait);
+			inode_unlock(i);
 		}
 		i++;
 	}
