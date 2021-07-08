@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/namei.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -29,7 +29,6 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 	if((dir->inode & 0xF0000000) == PROC_PID_INO) {
 		pid = (dir->inode >> 12) & 0xFFFF;
 	}
-	dir->count++;
 
 	lev = bmap(dir, 0, FOR_READING);
 	pdirent = procfs_array[lev];

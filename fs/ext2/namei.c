@@ -161,12 +161,13 @@ static int is_dir_empty(struct inode *dir)
 	return 1;
 }
 
-static int is_prefix(struct inode *dir_new, struct inode *i_old)
+static int is_subdir(struct inode *dir_new, struct inode *i_old)
 {
 	__ino_t inode;
 	int errno;
 
 	errno = 0;
+	dir_new->count++;
 	for(;;) {
 		if(dir_new == i_old) {
 			errno = 1;
@@ -176,11 +177,11 @@ static int is_prefix(struct inode *dir_new, struct inode *i_old)
 		if(ext2_lookup("..", dir_new, &dir_new)) {
 			break;
 		}
-		iput(dir_new);	/* lookup eats 1 dir_new */
 		if(dir_new->inode == inode) {
 			break;
 		}
 	}
+	iput(dir_new);
 	return errno;
 }
 
@@ -195,7 +196,6 @@ int ext2_lookup(const char *name, struct inode *dir, struct inode **i_res)
 
 	blksize = dir->sb->s_blocksize;
 	inode = offset = 0;
-	dir->count++;
 
 	while(offset < dir->i_size && !inode) {
 		if((block = bmap(dir, offset, FOR_READING)) < 0) {
@@ -693,7 +693,7 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 
 	errno = 0;
 
-	if(is_prefix(dir_new, i_old)) {
+	if(is_subdir(dir_new, i_old)) {
 		return -EINVAL;
 	}
 

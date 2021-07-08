@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/namei.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -31,7 +31,6 @@ int iso9660_lookup(const char *name, struct inode *dir, struct inode **i_res)
 	blksize = dir->sb->s_blocksize;
 	inode = offset = 0;
 	len = strlen(name);
-	dir->count++;
 
 	while(offset < dir->i_size && !inode) {
 		if((dblock = bmap(dir, offset, FOR_READING)) < 0) {

@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/namei.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -72,6 +72,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 			break;
 		}
 
+		dir->count++;
 		if((errno = namei_lookup(name, dir, &i))) {
 			break;
 		}
