@@ -44,6 +44,15 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 	printk("\t(inode = %d)\n", i ? i->inode : -1);
 #endif /*__DEBUG__ */
 
+	if(!errno) {
+		if(S_ISLNK(i->i_mode) && (flags & O_NOFOLLOW)) {
+			iput(i);
+			iput(dir);
+			free_name(tmp_name);
+			return -ELOOP;
+		}
+	}
+
 	if(flags & O_CREAT) {
 		if(!errno && (flags & O_EXCL)) {
 			iput(i);
