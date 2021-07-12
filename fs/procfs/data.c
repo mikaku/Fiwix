@@ -411,7 +411,7 @@ int data_proc_inodemax(char *buffer, __pid_t pid)
 
 int data_proc_inodenr(char *buffer, __pid_t pid)
 {
-	return sprintk(buffer, "%d\n", (inode_table_size / sizeof(struct inode)) - inodes_on_free_list);
+	return sprintk(buffer, "%d\n", (inode_table_size / sizeof(struct inode)) - kstat.free_inodes);
 }
 
 int data_proc_osrelease(char *buffer, __pid_t pid)

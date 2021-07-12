@@ -72,7 +72,8 @@ struct kernel_stat {
 	unsigned int kernel_reserved;	/* kernel memory reserved in KB */
 	unsigned int physical_reserved;	/* physical memory reserved in KB */
 	unsigned int total_mem_pages;	/* total memory in pages */
-	unsigned int free_pages;	/* pages on free list (available) */
+	unsigned int free_pages;	/* pages on free list */
+	int free_inodes;		/* inodes on free list */
 	unsigned int buffers;		/* memory used by buffers in KB */
 	unsigned int cached;		/* memory used to cache file pages */
 	unsigned int shared;		/* pages with count > 1 */

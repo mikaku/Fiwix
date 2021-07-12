@@ -23,6 +23,7 @@
  */
 
 #include <fiwix/asm.h>
+#include <fiwix/kernel.h>
 #include <fiwix/sleep.h>
 #include <fiwix/sched.h>
 #include <fiwix/fs.h>
@@ -41,7 +42,6 @@ struct inode *inode_table;		/* inode pool */
 struct inode *inode_head;		/* inode pool head */
 struct inode **inode_hash_table;
 
-int inodes_on_free_list = 0;
 static struct resource sync_resource = { NULL, NULL };
 
 static void insert_to_hash(struct inode *i)
@@ -94,18 +94,18 @@ static void remove_from_hash(struct inode *i)
 
 static void remove_from_free_list(struct inode *i)
 {
-	if(!inodes_on_free_list) {
+	if(!kstat.free_inodes) {
 		return;
 	}
 
 	i->prev_free->next_free = i->next_free;
 	i->next_free->prev_free = i->prev_free;
-	inodes_on_free_list--;
+	kstat.free_inodes--;
 	if(i == inode_head) {
 		inode_head = i->next_free;
 	}
 
-	if(!inodes_on_free_list) {
+	if(!kstat.free_inodes) {
 		inode_head = NULL;
 	}
 }
@@ -116,7 +116,7 @@ static struct inode * get_free_inode(void)
 	struct inode *i;
 
 	/* no more inodes on free list */
-	if(!inodes_on_free_list) {
+	if(!kstat.free_inodes) {
 		return NULL;
 	}
 
@@ -290,7 +290,7 @@ struct inode * iget(struct superblock *sb, __ino_t inode)
 		}
 
 		if(!(i = get_free_inode())) {
-			printk("WARNING: %s(): no more inodes on free list! (%d).\n", __FUNCTION__, inodes_on_free_list);
+			printk("WARNING: %s(): no more inodes on free list! (%d).\n", __FUNCTION__, kstat.free_inodes);
 			return NULL;
 		}
 
@@ -382,7 +382,7 @@ void iput(struct inode *i)
 		inode_head->prev_free->next_free = i;
 		inode_head->prev_free = i;
 	}
-	inodes_on_free_list++;
+	kstat.free_inodes++;
 
 	RESTORE_FLAGS(flags);
 }

@@ -105,7 +105,6 @@ struct inode {
 };
 extern struct inode *inode_table;
 extern struct inode **inode_hash_table;
-extern int inodes_on_free_list;
 
 /* values to be determined during system startup */
 extern unsigned int inode_table_size;		/* size in bytes */
