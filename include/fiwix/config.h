@@ -31,17 +31,15 @@
 /* percentage of hash buckets relative to the size of the buffer table */
 #define BUFFER_HASH_PERCENTAGE	10
 
-/* buffers reclaimed in a single call */
+/* buffers reclaimed in a single shot */
 #define NR_BUF_RECLAIM		150
 
 
 /* percentage of memory assigned to the inode table and hash table */
 #define INODE_PERCENTAGE	1
+
+/* percentage of hash buckets relative to the size of the inode table */
 #define INODE_HASH_PERCENTAGE	10
-
-
-/* percentage of memory assigned to the page hash table */
-#define PAGE_HASH_PERCENTAGE	10
 
 
 /* maximum value for PID */
