@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/page.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -36,7 +36,7 @@
 #include <fiwix/string.h>
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % NR_PAGE_HASH)
-#define NR_PAGES	page_table_size / sizeof(struct page)
+#define NR_PAGES	(page_table_size / sizeof(struct page))
 #define NR_PAGE_HASH	(page_hash_table_size / sizeof(unsigned int))
 
 struct page *page_table;		/* page pool */
@@ -95,11 +95,19 @@ static void remove_from_hash(struct page *pg)
 
 static void remove_from_free_list(struct page *pg)
 {
+	if(!kstat.free_pages) {
+		return;
+	}
+
 	pg->prev_free->next_free = pg->next_free;
 	pg->next_free->prev_free = pg->prev_free;
 	kstat.free_pages--;
 	if(pg == page_head) {
 		page_head = pg->next_free;
+	}
+
+	if(!kstat.free_pages) {
+		page_head = NULL;
 	}
 }
 
@@ -136,12 +144,12 @@ struct page * get_free_page(void)
 	struct page *pg;
 
 	/* if no more pages on free list */
-	while(page_head == page_head->next_free) {
+	if(!kstat.free_pages) {
 		/* reclaim some memory from buffer cache */
 		wakeup(&kswapd);
 		sleep(&get_free_page, PROC_UNINTERRUPTIBLE);
 
-		if(page_head == page_head->next_free) {
+		if(!kstat.free_pages) {
 			/* definitely out of memory! (no more pages) */
 			printk("%s(): pid %d ran out of memory. OOM killer needed!\n", __FUNCTION__, current->pid);
 			return NULL;
@@ -194,6 +202,12 @@ void release_page(unsigned int page)
 	}
 
 	pg = &page_table[page];
+
+	if(!pg->count) {
+		printk("WARNING: %s(): trying to free an already freed page (%d)!\n", __FUNCTION__, pg->page);
+		return;
+	}
+
 	if(--pg->count > 0) {
 		return;
 	}
