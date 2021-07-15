@@ -92,10 +92,18 @@ static void remove_from_hash(struct buffer *buf)
 
 static void remove_from_free_list(struct buffer *buf)
 {
+	if(!buffer_head) {
+		return;
+	}
+
 	buf->prev_free->next_free = buf->next_free;
 	buf->next_free->prev_free = buf->prev_free;
 	if(buf == buffer_head) {
 		buffer_head = buf->next_free;
+	}
+
+	if(buffer_head == buffer_head->next_free) {
+		buffer_head = NULL;
 	}
 }
 
@@ -122,7 +130,7 @@ static struct buffer * get_free_buffer(void)
 	struct buffer *buf;
 
 	/* no more buffers on free list */
-	if(buffer_head == buffer_head->next_free) {
+	if(!buffer_head) {
 		return NULL;
 	}
 
@@ -434,7 +442,7 @@ int reclaim_buffers(void)
 	 * NR_BUF_RECLAIM, then wakeup any process waiting for a new page
 	 * because release_page() won't do it.
 	 */
-	if(reclaimed <= NR_BUF_RECLAIM) {
+	if(reclaimed && reclaimed <= NR_BUF_RECLAIM) {
 		wakeup(&get_free_page);
 	}
 
