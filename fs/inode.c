@@ -272,15 +272,11 @@ struct inode * iget(struct superblock *sb, __ino_t inode)
 		if((i = search_inode_hash(sb->dev, inode))) {
 			inode_lock(i);
 
-			/* update superblock pointer from mount_table */
-			//i->sb = sb;	//FIXME: necessary?
-
 			if(i->mount_point) {
 				inode_unlock(i);
 				i = i->mount_point;
 				inode_lock(i);
 			}
-			/* FIXME: i->locked = 1; ? */
 			if(!i->count) {
 				remove_from_free_list(i);
 			}
@@ -305,7 +301,6 @@ struct inode * iget(struct superblock *sb, __ino_t inode)
 			return NULL;
 		}
 		insert_to_hash(i);
-		/* FIXME: i->locked = 1; ? */
 		return i;
 	}
 }
