@@ -1,6 +1,6 @@
 1.3.0 - DD-MMM-2021
 ===================
-- Added framebuffer driver support for VESA VBE 2.0+ compliant graphics cards.
+- Added framebuffer device support for VESA VBE 2.0+ compliant graphics cards.
 - Added support for the framebuffer console (fbcon).
 - Completely rewrite the console to support VGA text and framebuffer screens.
 - Improved the speed of VGA text consoles using double-buffering.
@@ -24,6 +24,10 @@
 - Reduced the size of the buffer area used in floppy I/O operations.
 - Increased to 50 the maximum of BIOS memory map entries.
 - Removed CLI() functions in ide_hd and ide_cd.
+- Improved the handling of the inode free list and the locking mechanism.
+- Improved the handling of buffer and memory page free lists.
+- Honour POSIX.1-2008 by returning ELOOP if flag O_NOFOLLOW is set and the
+  trailing component (basename) of the pathname in open() is a symbolic link.
 - Fixed the RAMdisk driver to not access blocks beyond its size.
 - Fixed a race condition in floppy drive when the interrupt occurred right
   before going to sleep.
@@ -34,7 +38,7 @@
   instability in user programs that read the procfs.
 - Fixed to use a simple assignment in elf_create_stack() instead of using a
   function to copy a numeric value.
-- Fixed a longstanding memory corruption bug when returning the contents of the
+- Fixed a long standing memory corruption bug when returning the contents of the
   '/proc/<PID>/cmdline' file.
 - Fixed a possible memory corruption bug when returning the contents of the
   '/proc/<PID>/environ' file.
@@ -42,7 +46,7 @@
 - Fixed to remove the calls to reset termios and tty on tty_close().
 - Fixed an extra buffer_head assignment in get_free_buffer() which reduced to
   50% the buffer space, and could also potentially use an already locked buffer.
-- Fixed a very longstanding buffer corruption bug, in rename functions of ext2
+- Fixed a very long standing buffer corruption bug, in rename functions of ext2
   and minix filesystems, that led to crashes with the message 'getblk(): no more
   buffers on free list!' after a heavy filesystem use.
 - Fixed the tty_queue_room() function and aligned to 8 the number of cblocks per
@@ -64,6 +68,13 @@
 - Fixed a buffer overrun in iso9660_dir_readdir().
 - Fixed a bug in iso9660_dir_readdir() that prevented from including some files
   in the user dirent structure under certain conditions.
+- Fixed a very long standing bug in the memory page hashing mechanism that led
+  to kernel freezes after a long use.
+- Fixed a very long standing bug in all inode lookup functions that ate an extra
+  inode on every call, leading to the premature message "WARNING: no more inodes
+  on free list!".
+- Fixed certain values to be signed instead of unsigned in kstat structure.
+- Small fixes and cosmetic changes.
 
 
 1.2.0 - 12-Dec-2020
