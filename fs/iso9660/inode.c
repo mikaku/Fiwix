@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/inode.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -133,11 +133,6 @@ int iso9660_read_inode(struct inode *i)
 	i->i_mtime = isodate(d->date);
 	i->i_gid = 0;
 	i->i_nlink = 1;
-	i->i_blocks = 0;	/* FIXME */
-	i->i_flags = 0;		/* FIXME */
-	i->locked = 1;
-	i->dirty = 0;
-	i->mount_point = NULL;
 	i->count = 1;
 
 	i->u.iso9660.i_extent = isonum_733(d->extent);
