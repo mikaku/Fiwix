@@ -107,8 +107,8 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 				to_low,
 				bios_mem_type[(int)bmmap->type]
 			);
-			/* only memory addresses below 4GB are accepted */
-			if(!from_high) {
+			/* only memory addresses below 4GB are counted */
+			if(!from_high && !to_high) {
 				if(n < NR_BIOS_MM_ENT && bmmap->len) {
 					bios_mem_map[n].from = from_low;
 					bios_mem_map[n].to = to_low;
@@ -116,13 +116,18 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 					if(bios_mem_map[n].type == MULTIBOOT_MEMORY_AVAILABLE) {
 						from_low = bios_mem_map[n].from & PAGE_MASK;
 						to_low = bios_mem_map[n].to & PAGE_MASK;
-						kstat.physical_pages += (to_low - from_low) / PAGE_SIZE;
+
+						/* the first MB is not counted here */
+						if(from_low >= 0x100000) {
+							kstat.physical_pages += (to_low - from_low) / PAGE_SIZE;
+						}
 					}
 					n++;
 				}
 			}
 			bmmap = (struct multiboot_mmap_entry *)((unsigned int)bmmap + bmmap->size + sizeof(bmmap->size));
 		}
+		kstat.physical_pages += (1024 >> 2);	/* add the first MB as a whole */
 		if(kstat.physical_pages > (0x40000000 >> PAGE_SHIFT)) {
 			printk("WARNING: detected a total of %dMB of available memory below 4GB.\n", (kstat.physical_pages << 2) / 1024);
 		}
