@@ -295,70 +295,36 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	__blk_t block;
 	__off_t size_read;
 	int blksize;
-	struct device *d;
 	struct buffer *buf;
 
 	blksize = i->sb->s_blocksize;
 	size_read = 0;
 
-	if(!(d = get_device(BLK_DEV, i->dev))) {
-		printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
-		return 1;
-	}
-	if(!d->fsop || !d->fsop->read_block) {
-		printk("WARNING: %s(): device %d,%d does not have the read_block() method!\n", __FUNCTION__, MAJOR(i->dev), MINOR(i->dev));
-		return 1;
-	}
-
-	if(!(prot & PROT_WRITE) || flags & MAP_SHARED) {
-		while(size_read < PAGE_SIZE) {
-			if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
+	while(size_read < PAGE_SIZE) {
+		if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
+			return 1;
+		}
+		if(block) {
+			if(!(buf = bread(i->dev, block, blksize))) {
 				return 1;
 			}
-			if(block) {
-				/* does exist a buffer with recent data? */
-				if(!(buf = get_dirty_buffer(i->dev, block, blksize))) {
-					if(d->fsop->read_block(i->dev, block, pg->data + size_read, blksize) < 0) {
-						return 1;
-					}
-				} else {
-					memcpy_b(pg->data + size_read, buf->data, blksize);
-					brelse(buf);
-				}
-			} else {
-				/* fill the hole with zeros */
-				memset_b(pg->data + size_read, 0, blksize);
-			}
-			size_read += blksize;
+			memcpy_b(pg->data + size_read, buf->data, blksize);
+			brelse(buf);
+		} else {
+			/* fill the hole with zeros */
+			memset_b(pg->data + size_read, 0, blksize);
 		}
-		/* cache all read-only and public (shared) pages */
+		size_read += blksize;
+	}
+
+	/* cache any read-only or public (shared) pages */
+	if(!(prot & PROT_WRITE) || flags & MAP_SHARED) {
 		pg->inode = i->inode;
 		pg->offset = offset;
 		pg->dev = i->dev;
 		insert_to_hash(pg);
-	} else {
-		while(size_read < PAGE_SIZE) {
-			if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
-				return 1;
-			}
-			if(block) {
-				/*
-				 * This feeds the buffer cache by reading only
-				 * the writable pages which aren't included in
-				 * the page cache. This will speed up things by
-				 * keeping in buffer cache the writable pages
-				 * with its original (disk) content (i.e. pages
-				 * from the data section of an ELF).
-				 */
-				if(!(buf = bread(i->dev, block, blksize))) {
-					return 1;
-				}
-				memcpy_b(pg->data + size_read, buf->data, blksize);
-				brelse(buf);
-			}
-			size_read += blksize;
-		}
 	}
+
 	return 0;
 }
 
