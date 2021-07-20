@@ -192,7 +192,7 @@ struct page * search_page_hash(struct inode *inode, __off_t offset)
 	return NULL;
 }
 
-void release_page(unsigned int page)
+void release_page(int page)
 {
 	unsigned long int flags;
 	struct page *pg;
@@ -244,7 +244,7 @@ void release_page(unsigned int page)
 	}
 }
 
-int is_valid_page(unsigned int page)
+int is_valid_page(int page)
 {
 	return (page >= 0 && page < NR_PAGES);
 }
@@ -331,7 +331,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	__off_t total_read;
-	unsigned int page, poffset, bytes;
+	unsigned int addr, poffset, bytes;
 	struct page *pg;
 
 	inode_lock(i);
@@ -350,20 +350,20 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 
 		poffset = fd_table->offset % PAGE_SIZE;
 		if(!(pg = search_page_hash(i, fd_table->offset & PAGE_MASK))) {
-			if(!(page = kmalloc())) {
+			if(!(addr = kmalloc())) {
 				inode_unlock(i);
 				printk("%s(): returning -ENOMEM\n", __FUNCTION__);
 				return -ENOMEM;
 			}
-			pg = &page_table[V2P(page) >> PAGE_SHIFT];
+			pg = &page_table[V2P(addr) >> PAGE_SHIFT];
 			if(bread_page(pg, i, fd_table->offset & PAGE_MASK, 0, MAP_SHARED)) {
-				kfree(page);
+				kfree(addr);
 				inode_unlock(i);
 				printk("%s(): returning -EIO\n", __FUNCTION__);
 				return -EIO;
 			}
 		} else {
-			page = (unsigned int)pg->data;
+			addr = (unsigned int)pg->data;
 		}
 
 		page_lock(pg);
@@ -376,14 +376,14 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 		poffset %= PAGE_SIZE;
 		fd_table->offset += bytes;
 		page_unlock(pg);
-		kfree(page);
+		kfree(addr);
 	}
 
 	inode_unlock(i);
 	return total_read;
 }
 
-void page_init(unsigned int pages)
+void page_init(int pages)
 {
 	struct page *pg;
 	unsigned int n, addr;

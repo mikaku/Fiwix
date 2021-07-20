@@ -83,13 +83,13 @@ void page_lock(struct page *);
 void page_unlock(struct page *);
 struct page * get_free_page(void);
 struct page * search_page_hash(struct inode *, __off_t);
-void release_page(unsigned int);
-int is_valid_page(unsigned int);
+void release_page(int);
+int is_valid_page(int);
 void update_page_cache(struct inode *, __off_t, const char *, int);
 int write_page(struct page *, struct inode *, __off_t, unsigned int);
 int bread_page(struct page *, struct inode *, __off_t, char, char);
 int file_read(struct inode *, struct fd *, char *, __size_t);
-void page_init(unsigned int);
+void page_init(int);
 
 /* memory.c */
 void bss_init(void);
