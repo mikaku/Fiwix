@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/mmap.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -211,8 +211,9 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 {
 	unsigned int n, addr;
 	unsigned int *pgdir, *pgtbl;
-	unsigned int pde, pte, page;
+	unsigned int pde, pte;
 	struct page *pg;
+	int page;
 
 	pgdir = (unsigned int *)P2V(current->tss.cr3);
 	pgtbl = NULL;

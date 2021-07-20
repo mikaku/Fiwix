@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/mm.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -49,8 +49,8 @@
 #define P_MMAP	6	/* mmap() section */
 
 struct page {
-	unsigned int page;	/* page number */
-	unsigned int count;	/* usage counter */
+	int page;		/* page number */
+	int count;		/* usage counter */
 	unsigned int flags;
 	unsigned char locked;	/* 1 = locked */
 	unsigned char valid;	/* 1 = valid */

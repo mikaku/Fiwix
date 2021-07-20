@@ -129,8 +129,8 @@ int clone_pages(struct proc *child)
 	unsigned int *src_pgdir, *dst_pgdir;
 	unsigned int *src_pgtbl, *dst_pgtbl;
 	unsigned int pde, pte;
-	unsigned int p_page, c_page;
-	unsigned int n, n2, pages;
+	unsigned int p_addr, c_addr;
+	int n, n2, pages;
 	struct page *pg;
 	struct vma *vma;
 
@@ -148,19 +148,19 @@ int clone_pages(struct proc *child)
 			if(src_pgdir[pde] & PAGE_PRESENT) {
 				src_pgtbl = (unsigned int *)P2V((src_pgdir[pde] & PAGE_MASK));
 				if(!(dst_pgdir[pde] & PAGE_PRESENT)) {
-					if(!(c_page = kmalloc())) {
+					if(!(c_addr = kmalloc())) {
 						printk("%s(): returning 0!\n", __FUNCTION__);
 						return 0;
 					}
 					current->rss++;
 					pages++;
-					dst_pgdir[pde] = V2P(c_page) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-					memset_b((void *)c_page, NULL, PAGE_SIZE);
+					dst_pgdir[pde] = V2P(c_addr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+					memset_b((void *)c_addr, NULL, PAGE_SIZE);
 				}
 				dst_pgtbl = (unsigned int *)P2V((dst_pgdir[pde] & PAGE_MASK));
 				if(src_pgtbl[pte] & PAGE_PRESENT) {
-					p_page = src_pgtbl[pte] >> PAGE_SHIFT;
-					pg = &page_table[p_page];
+					p_addr = src_pgtbl[pte] >> PAGE_SHIFT;
+					pg = &page_table[p_addr];
 					if(pg->flags & PAGE_RESERVED) {
 						continue;
 					}
@@ -185,7 +185,7 @@ int clone_pages(struct proc *child)
 int free_page_tables(struct proc *p)
 {
 	unsigned int *pgdir;
-	unsigned int n, count;
+	int n, count;
 
 	pgdir = (unsigned int *)P2V(p->tss.cr3);
 	for(n = 0, count = 0; n < PD_ENTRIES; n++) {
@@ -201,7 +201,7 @@ int free_page_tables(struct proc *p)
 unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot)
 {
 	unsigned int *pgdir, *pgtbl;
-	unsigned int vpage;
+	unsigned int newaddr;
 	int pde, pte;
 
 	pgdir = (unsigned int *)P2V(p->tss.cr3);
@@ -209,12 +209,12 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 	pte = GET_PGTBL(vaddr);
 
 	if(!(pgdir[pde] & PAGE_PRESENT)) {	/* allocating page table */
-		if(!(vpage = kmalloc())) {
+		if(!(newaddr = kmalloc())) {
 			return 0;
 		}
 		p->rss++;
-		pgdir[pde] = V2P(vpage) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-		memset_b((void *)vpage, NULL, PAGE_SIZE);
+		pgdir[pde] = V2P(newaddr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+		memset_b((void *)newaddr, NULL, PAGE_SIZE);
 	}
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
 	if(!(pgtbl[pte] & PAGE_PRESENT)) {	/* allocating page */
@@ -262,10 +262,10 @@ int unmap_page(unsigned int vaddr)
 
 void mem_init(void)
 {
-	unsigned int pages, sizek;
-	unsigned int n;
+	unsigned int sizek;
 	unsigned int physical_page_tables;
 	unsigned int physical_memory;
+	int n, pages;
 
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);	/* in bytes */
@@ -363,7 +363,7 @@ void mem_init(void)
 
 	/* reserve memory space for inode_hash_table */
    	n = ((inode_table_size / sizeof(struct inode)) * INODE_HASH_PERCENTAGE) / 100;
-	n = MAX(n, 10);	/* 10 inodes hashes as minimum */
+	n = MAX(n, 10);	/* 10 inode hash buckets as minimum */
 	/* inode_hash_table is an array of pointers */
    	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
 	inode_hash_table_size = pages << PAGE_SHIFT;

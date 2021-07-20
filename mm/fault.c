@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/fault.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -31,9 +31,9 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 {
 	unsigned int *pgdir;
 	unsigned int *pgtbl;
-	unsigned int page, newpage;
-	unsigned int pde, pte;
+	unsigned int pde, pte, addr;
 	struct page *pg;
+	int page;
 
 	pde = GET_PGDIR(cr2);
 	pte = GET_PGTBL(cr2);
@@ -51,13 +51,13 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 			send_sigsegv(sc);
 			return 0;
 		}
-		if(!(newpage = kmalloc())) {
+		if(!(addr = kmalloc())) {
 			printk("%s(): not enough memory!\n", __FUNCTION__);
 			return 1;
 		}
 		current->rss++;
-		memcpy_b((void *)newpage, (void *)P2V((page << PAGE_SHIFT)), PAGE_SIZE);
-		pgtbl[pte] = V2P(newpage) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+		memcpy_b((void *)addr, (void *)P2V((page << PAGE_SHIFT)), PAGE_SIZE);
+		pgtbl[pte] = V2P(addr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
 		kfree(P2V((page << PAGE_SHIFT)));
 		current->rss--;
 		invalidate_tlb();
@@ -82,7 +82,7 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 
 static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext *sc)
 {
-	unsigned int page, file_offset;
+	unsigned int addr, file_offset;
 	struct page *pg;
 
 	if(!vma) {
@@ -118,15 +118,15 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 					printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 					return 1;
 				}
-				page = (unsigned int)pg->data;
+				addr = (unsigned int)pg->data;
 			}
 		}
 		if(!pg) {
-			if(!(page = map_page(current, cr2, 0, vma->prot))) {
+			if(!(addr = map_page(current, cr2, 0, vma->prot))) {
 				printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 				return 1;
 			}
-			pg = &page_table[V2P(page) >> PAGE_SHIFT];
+			pg = &page_table[V2P(addr) >> PAGE_SHIFT];
 			if(bread_page(pg, vma->inode, file_offset, vma->prot, vma->flags)) {
 				unmap_page(cr2);
 				return 1;
@@ -135,17 +135,17 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 		}
 	} else {
 		current->usage.ru_minflt++;
-		page = 0;
+		addr = 0;
 	}
 
 	if(vma->flags & ZERO_PAGE) {
-		if(!page) {
-			if(!(page = map_page(current, cr2, 0, vma->prot))) {
+		if(!addr) {
+			if(!(addr = map_page(current, cr2, 0, vma->prot))) {
 				printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 				return 1;
 			}
 		}
-		memset_b((void *)(page & PAGE_MASK), NULL, PAGE_SIZE);
+		memset_b((void *)(addr & PAGE_MASK), NULL, PAGE_SIZE);
 	}
 
 	return 0;
