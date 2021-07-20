@@ -203,6 +203,7 @@ int ext2_lookup(const char *name, struct inode *dir, struct inode **i_res)
 		}
 		if(block) {
 			if(!(buf = bread(dir->dev, block, blksize))) {
+				iput(dir);
 				return -EIO;
 			}
 			doffset = 0;
@@ -232,6 +233,7 @@ int ext2_lookup(const char *name, struct inode *dir, struct inode **i_res)
 				}
 
 				if(!(*i_res = iget(dir->sb, inode))) {
+					iput(dir);
 					return -EACCES;
 				}
 				iput(dir);
