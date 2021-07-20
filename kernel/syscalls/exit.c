@@ -26,7 +26,6 @@ void do_exit(int exit_code)
 	printk("------------------------------\n");
 #endif /*__DEBUG__ */
 
-	CLI();
 	current->state = PROC_ZOMBIE;
 
 	release_binary();
