@@ -23,11 +23,13 @@ static void context_switch(struct proc *next)
 {
 	struct proc *prev;
 
+	CLI();
 	kstat.ctxt++;
 	prev = current;
 	set_tss(next);
 	current = next;
 	do_switch(&prev->tss.esp, &prev->tss.eip, next->tss.esp, next->tss.eip, next->tss.cr3, TSS);
+	STI();
 }
 
 void set_tss(struct proc *p)
