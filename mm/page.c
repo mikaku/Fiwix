@@ -372,8 +372,6 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 		memcpy_b(buffer + total_read, pg->data + poffset, bytes);
 		total_read += bytes;
 		count -= bytes;
-		poffset += bytes;
-		poffset %= PAGE_SIZE;
 		fd_table->offset += bytes;
 		page_unlock(pg);
 		kfree(addr);
