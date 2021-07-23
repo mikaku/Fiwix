@@ -301,8 +301,7 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 				bwrite(buf);
 				return newblock;
 			}
-			buf->dirty = 1;
-			buf->valid = 1;
+			buf->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 		} else {
 			brelse(buf);
 			return 0;
@@ -339,8 +338,7 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 				memset_b(buf4->data, 0, blksize);
 				bwrite(buf4);
 				tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)] = newblock;
-				buf3->dirty = 1;
-				buf3->valid = 1;
+				buf3->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 				block = newblock;
 			} else {
 				brelse(buf);
@@ -389,8 +387,7 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 		memset_b(buf4->data, 0, blksize);
 		bwrite(buf4);
 		dindblock[dblock - (iblock * BLOCKS_PER_IND_BLOCK(i->sb))] = newblock;
-		buf2->dirty = 1;
-		buf2->valid = 1;
+		buf2->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 		block = newblock;
 	}
 	brelse(buf);

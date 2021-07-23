@@ -280,8 +280,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 				bwrite(buf);
 				return newblock;
 			}
-			buf->dirty = 1;
-			buf->valid = 1;
+			buf->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 		} else {
 			brelse(buf);
 			return 0;
@@ -319,8 +318,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 				bwrite(buf4);
 				tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)] = newblock;
 				i->i_blocks += blksize / 512;
-				buf3->dirty = 1;
-				buf3->valid = 1;
+				buf3->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 				block = newblock;
 			} else {
 				brelse(buf);
@@ -370,8 +368,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 		bwrite(buf4);
 		dindblock[dblock - (iblock * BLOCKS_PER_IND_BLOCK(i->sb))] = newblock;
 		i->i_blocks += blksize / 512;
-		buf2->dirty = 1;
-		buf2->valid = 1;
+		buf2->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 		block = newblock;
 	}
 	brelse(buf);

@@ -113,14 +113,14 @@ static void buffer_wait(struct buffer *buf)
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		if(buf->locked) {
+		if(buf->flags & BUFFER_LOCKED) {
 			RESTORE_FLAGS(flags);
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
 	}
-	buf->locked = 1;
+	buf->flags |= BUFFER_LOCKED;
 	RESTORE_FLAGS(flags);
 }
 
@@ -137,7 +137,7 @@ static struct buffer * get_free_buffer(void)
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
 		buf = buffer_head;
-		if(buf->locked) {
+		if(buf->flags & BUFFER_LOCKED) {
 			RESTORE_FLAGS(flags);
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
@@ -146,7 +146,7 @@ static struct buffer * get_free_buffer(void)
 	}
 
 	remove_from_free_list(buf);
-	buf->locked = 1;
+	buf->flags |= BUFFER_LOCKED;
 
 	RESTORE_FLAGS(flags);
 	return buf;
@@ -172,7 +172,7 @@ static void sync_one_buffer(struct buffer *buf)
 			}
 			return;
 		}
-		buf->dirty = 0;
+		buf->flags &= ~BUFFER_DIRTY;
 	} else {
 		printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
 	}
@@ -204,12 +204,12 @@ static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
 	for(;;) {
 		if((buf = search_buffer_hash(dev, block, size))) {
 			SAVE_FLAGS(flags); CLI();
-			if(buf->locked) {
+			if(buf->flags & BUFFER_LOCKED) {
 				RESTORE_FLAGS(flags);
 				sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 				continue;
 			}
-			buf->locked = 1;
+			buf->flags |= BUFFER_LOCKED;
 			remove_from_free_list(buf);
 			RESTORE_FLAGS(flags);
 			return buf;
@@ -221,7 +221,7 @@ static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
 			continue;
 		}
 
-		if(buf->dirty) {
+		if(buf->flags & BUFFER_DIRTY) {
 			sync_one_buffer(buf);
 		} else {
 			if(!buf->data) {
@@ -240,7 +240,7 @@ static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
 		buf->block = block;
 		buf->size = size;
 		insert_to_hash(buf);
-		buf->valid = 0;
+		buf->flags &= ~BUFFER_VALID;
 		RESTORE_FLAGS(flags);
 		return buf;
 	}
@@ -253,14 +253,14 @@ struct buffer * get_dirty_buffer(__dev_t dev, __blk_t block, int size)
 
 	for(;;) {
 		if((buf = search_buffer_hash(dev, block, size))) {
-			if(buf->dirty) {
+			if(buf->flags & BUFFER_DIRTY) {
 				SAVE_FLAGS(flags); CLI();
-				if(buf->locked) {
+				if(buf->flags & BUFFER_LOCKED) {
 					RESTORE_FLAGS(flags);
 					sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 					continue;
 				}
-				buf->locked = 1;
+				buf->flags |= BUFFER_LOCKED;
 				remove_from_free_list(buf);
 				RESTORE_FLAGS(flags);
 				break;
@@ -284,14 +284,14 @@ struct buffer * bread(__dev_t dev, __blk_t block, int size)
 	}
 
 	if((buf = getblk(dev, block, size))) {
-		if(!buf->valid) {
+		if(!(buf->flags & BUFFER_VALID)) {
 			if(d->fsop && d->fsop->read_block) {
 				if(d->fsop->read_block(dev, block, buf->data, size) >= 0) {
-					buf->valid = 1;
+					buf->flags |= BUFFER_VALID;
 				}
 			}
 		}
-		if(buf->valid) {
+		if(buf->flags & BUFFER_VALID) {
 			return buf;
 		}
 		brelse(buf);
@@ -303,8 +303,7 @@ struct buffer * bread(__dev_t dev, __blk_t block, int size)
 
 void bwrite(struct buffer *buf)
 {
-	buf->dirty = 1;
-	buf->valid = 1;
+	buf->flags |= (BUFFER_DIRTY | BUFFER_VALID);
 	brelse(buf);
 }
 
@@ -327,11 +326,11 @@ void brelse(struct buffer *buf)
 		 * If the buffer is marked as not valid then it places
 		 * the buffer at the beginning of the free list.
 		 */
-		if(!buf->valid) {
+		if(!(buf->flags & BUFFER_VALID)) {
 			buffer_head = buf;
 		}
 	}
-	buf->locked = 0;
+	buf->flags &= ~BUFFER_LOCKED;
 
 	RESTORE_FLAGS(flags);
 
@@ -348,11 +347,11 @@ void sync_buffers(__dev_t dev)
 
 	lock_resource(&sync_resource);
 	for(n = 0; n < NR_BUFFERS; n++) {
-		if(buf->dirty) {
+		if(buf->flags & BUFFER_DIRTY) {
 			if(!dev || buf->dev == dev) {
 				buffer_wait(buf);
 				sync_one_buffer(buf);
-				buf->locked = 0;
+				buf->flags &= ~BUFFER_LOCKED;
 				wakeup(&buffer_wait);
 			}
 		}
@@ -371,11 +370,10 @@ void invalidate_buffers(__dev_t dev)
 	SAVE_FLAGS(flags); CLI();
 
 	for(n = 0; n < NR_BUFFERS; n++) {
-		if(!buf->locked && buf->dev == dev) {
+		if(!(buf->flags & BUFFER_LOCKED) && buf->dev == dev) {
 			buffer_wait(buf);
 			remove_from_hash(buf);
-			buf->valid = 0;
-			buf->locked = 0;
+			buf->flags &= ~(BUFFER_VALID | BUFFER_LOCKED);
 			wakeup(&buffer_wait);
 		}
 		buf++;
@@ -405,12 +403,12 @@ int reclaim_buffers(void)
 			continue;
 		}
 
-		if(buf->dirty) {
+		if(buf->flags & BUFFER_DIRTY) {
 			sync_one_buffer(buf);
 		}
 
 		/* this ensures the buffer will go to the tail */
-		buf->valid = 1;
+		buf->flags |= BUFFER_VALID;
 
 		if(first) {
 			if(first == buf) {

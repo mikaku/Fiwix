@@ -11,13 +11,16 @@
 #include <fiwix/types.h>
 #include <fiwix/fs.h>
 
+/* buffer flags */
+#define BUFFER_VALID	0x0001
+#define BUFFER_LOCKED	0x0002
+#define BUFFER_DIRTY	0x0004
+
 struct buffer {
 	__dev_t dev;			/* device number */
 	__blk_t block;			/* block number */
 	int size;			/* block size (in bytes) */
-	char valid;			/* 1 = valid */
-	unsigned char locked;		/* 1 = locked */
-	unsigned char dirty;		/* 1 = delayed write */
+	int flags;
 	char *data;			/* block contents */
 	struct buffer *prev_hash;
 	struct buffer *next_hash;
