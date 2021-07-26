@@ -1,10 +1,11 @@
 /*
  * fiwix/mm/swapper.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/limits.h>
 #include <fiwix/process.h>
@@ -27,6 +28,7 @@
 /* kswapd continues the kernel initialization */
 int kswapd(void)
 {
+	STI();
 	sprintk(current->argv0, "%s", "kswapd");
 
 	/* char devices */
