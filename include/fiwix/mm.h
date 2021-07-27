@@ -31,6 +31,7 @@
 #define PAGE_RW			0x002	/* Read/Write */
 #define PAGE_USER		0x004	/* User */
 
+#define PAGE_LOCKED		0x001
 #define PAGE_RESERVED		0x100	/* kernel, BIOS address, ... */
 #define PAGE_COW		0x200	/* marked for Copy-On-Write */
 
@@ -51,9 +52,7 @@
 struct page {
 	int page;		/* page number */
 	int count;		/* usage counter */
-	unsigned int flags;
-	unsigned char locked;	/* 1 = locked */
-	unsigned char valid;	/* 1 = valid */
+	int flags;
 	__ino_t inode;		/* inode of the file */
 	__off_t offset;		/* file offset */
 	__dev_t dev;		/* device where file resides */

@@ -117,14 +117,14 @@ void page_lock(struct page *pg)
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		if(pg->locked) {
+		if(pg->flags & PAGE_LOCKED) {
 			RESTORE_FLAGS(flags);
 			sleep(&pg, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
 	}
-	pg->locked = 1;
+	pg->flags |= PAGE_LOCKED;
 	RESTORE_FLAGS(flags);
 }
 
@@ -133,7 +133,7 @@ void page_unlock(struct page *pg)
 	unsigned long int flags;
 
 	SAVE_FLAGS(flags); CLI();
-	pg->locked = 0;
+	pg->flags &= ~PAGE_LOCKED;
 	wakeup(pg);
 	RESTORE_FLAGS(flags);
 }
