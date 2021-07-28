@@ -34,7 +34,6 @@ extern struct buffer **buffer_hash_table;
 extern unsigned int buffer_table_size;		/* size in bytes */
 extern unsigned int buffer_hash_table_size;	/* size in bytes */
 
-struct buffer * get_dirty_buffer(__dev_t, __blk_t, int);
 struct buffer * bread(__dev_t, __blk_t, int);
 void bwrite(struct buffer *);
 void brelse(struct buffer *);

@@ -246,33 +246,6 @@ static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
 	}
 }
 
-struct buffer * get_dirty_buffer(__dev_t dev, __blk_t block, int size)
-{
-	unsigned long int flags;
-	struct buffer *buf;
-
-	for(;;) {
-		if((buf = search_buffer_hash(dev, block, size))) {
-			if(buf->flags & BUFFER_DIRTY) {
-				SAVE_FLAGS(flags); CLI();
-				if(buf->flags & BUFFER_LOCKED) {
-					RESTORE_FLAGS(flags);
-					sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
-					continue;
-				}
-				buf->flags |= BUFFER_LOCKED;
-				remove_from_free_list(buf);
-				RESTORE_FLAGS(flags);
-				break;
-			}
-		}
-		buf = NULL;
-		break;
-	}
-
-	return buf;
-}
-
 struct buffer * bread(__dev_t dev, __blk_t block, int size)
 {
 	struct buffer *buf;
