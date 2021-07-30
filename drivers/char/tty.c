@@ -605,6 +605,9 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						if(n < count) {
 							ch = tty_queue_getchar(&tty->cooked_q);
 							buffer[n++] = ch;
+							if(--tty->canon_data < 0) {
+								tty->canon_data = 0;
+							}
 						}
 						min++;
 					}
