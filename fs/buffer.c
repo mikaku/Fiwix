@@ -37,8 +37,8 @@
 #include <fiwix/stat.h>
 
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
-#define NR_BUFFERS	buffer_table_size / sizeof(struct buffer)
-#define NR_BUF_HASH	buffer_hash_table_size / sizeof(unsigned int)
+#define NR_BUFFERS	(buffer_table_size / sizeof(struct buffer))
+#define NR_BUF_HASH	(buffer_hash_table_size / sizeof(unsigned int))
 
 struct buffer *buffer_table;		/* buffer pool */
 struct buffer *buffer_head;		/* buffer pool head */
@@ -296,8 +296,8 @@ void brelse(struct buffer *buf)
 		buffer_head->prev_free = buf;
 
 		/*
-		 * If the buffer is marked as not valid then it places
-		 * the buffer at the beginning of the free list.
+		 * If is marked as not valid then the buffer is
+		 * placed at the beginning of the free list.
 		 */
 		if(!(buf->flags & BUFFER_VALID)) {
 			buffer_head = buf;
