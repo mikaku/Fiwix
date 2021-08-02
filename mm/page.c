@@ -35,7 +35,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % NR_PAGE_HASH)
+#define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % (NR_PAGE_HASH))
 #define NR_PAGES	(page_table_size / sizeof(struct page))
 #define NR_PAGE_HASH	(page_hash_table_size / sizeof(unsigned int))
 
