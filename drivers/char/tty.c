@@ -385,7 +385,7 @@ void do_cook(struct tty *tty)
 			}
 		}
 
-		/* using ISSPACE here makes LNEXT working incorrectly, FIXME */
+		/* FIXME: using ISSPACE here makes LNEXT working incorrectly */
 		if(tty->termios.c_lflag & ICANON) {
 			if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
 				out_char(tty, ch);
@@ -473,6 +473,7 @@ int tty_close(struct inode *i, struct fd *fd_table)
 	}
 	tty->count--;
 	if(!tty->count) {
+		termios_reset(tty);
 		tty->pgid = tty->sid = 0;
 
 		/* this tty is no longer the controlling tty of any process */
