@@ -91,6 +91,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	load_tr(TSS);
 	current->tss.cr3 = (unsigned int)kpage_dir;
 	current->flags |= PF_KPROC;
+	sprintk(current->argv0, "%s", "idle");
 	current->state = PROC_RUNNING;
 
 	/* PID 1 is for the INIT process */
