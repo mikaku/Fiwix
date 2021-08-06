@@ -322,7 +322,7 @@ void release_user_fd(int ufd)
 	current->fd[ufd] = 0;
 }
 
-struct proc * kernel_process(int (*fn)(void))
+struct proc * kernel_process(const char *name, int (*fn)(void))
 {
 	struct proc *p;
 
@@ -342,6 +342,7 @@ struct proc * kernel_process(int (*fn)(void))
 	p->tss.eip = (unsigned int)fn;
 	p->tss.esp = p->tss.esp0;
 	sprintk(p->pidstr, "%d", p->pid);
+	sprintk(p->argv0, "%s", name);
 	p->state = PROC_RUNNING;
 	return p;
 }

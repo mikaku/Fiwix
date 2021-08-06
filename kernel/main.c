@@ -100,10 +100,9 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	init->pid = get_unused_pid();
 
 	/* PID 2 is for the kswapd process */
-	p_kswapd = kernel_process(kswapd);
+	p_kswapd = kernel_process("kswapd", kswapd);
 
 	/* kswapd will take over the rest of the kernel initialization */
-	p_kswapd->state = PROC_RUNNING;
 	need_resched = 1;
 
 	STI();		/* let's rock! */

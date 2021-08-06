@@ -29,7 +29,6 @@
 int kswapd(void)
 {
 	STI();
-	sprintk(current->argv0, "%s", "kswapd");
 
 	/* char devices */
 	memdev_init();
