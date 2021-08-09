@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/pipefs/pipe.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -25,19 +25,23 @@ int pipefs_close(struct inode *i, struct fd *fd_table)
 	if((fd_table->flags & O_ACCMODE) == O_RDONLY) {
 		if(!--i->u.pipefs.i_readers) {
 			wakeup(&pipefs_write);
+			wakeup(&do_select);
 		}
 	}
 	if((fd_table->flags & O_ACCMODE) == O_WRONLY) {
 		if(!--i->u.pipefs.i_writers) {
 			wakeup(&pipefs_read);
+			wakeup(&do_select);
 		}
 	}
 	if((fd_table->flags & O_ACCMODE) == O_RDWR) {
 		if(!--i->u.pipefs.i_readers) {
 			wakeup(&pipefs_write);
+			wakeup(&do_select);
 		}
 		if(!--i->u.pipefs.i_writers) {
 			wakeup(&pipefs_read);
+			wakeup(&do_select);
 		}
 	}
 	return 0;
@@ -74,6 +78,7 @@ int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t cou
 			}
 			unlock_resource(&pipe_resource);
 			wakeup(&pipefs_write);
+			wakeup(&do_select);
 			break;
 		} else {
 			if(i->u.pipefs.i_writers) {
@@ -147,10 +152,12 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 			}
 			unlock_resource(&pipe_resource);
 			wakeup(&pipefs_read);
+			wakeup(&do_select);
 			continue;
 		}
 
 		wakeup(&pipefs_read);
+		wakeup(&do_select);
 		if(!(fd_table->flags & O_NONBLOCK)) {
 			if(sleep(&pipefs_write, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
@@ -188,11 +195,19 @@ int pipefs_select(struct inode *i, int flag)
 {
 	switch(flag) {
 		case SEL_R:
+			/*
+			 * if !i->i_size && !i->u.pipefs.i_writers
+			 * should also return 1?
+			 */
 			if(i->i_size || !i->u.pipefs.i_writers) {
 				return 1;
 			}
 			break;
 		case SEL_W:
+			/*
+			 * if i->i_size == PIPE_BUF && !i->u.pipefs.i_readers
+			 * should also return 1?
+			 */
 			if(i->i_size < PIPE_BUF || !i->u.pipefs.i_readers) {
 				return 1;
 			}
