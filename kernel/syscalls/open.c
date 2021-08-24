@@ -29,7 +29,7 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 	}
 
 	basename = get_basename(tmp_name);
-	follow_links = flags & O_NOFOLLOW ? !FOLLOW_LINKS : FOLLOW_LINKS;
+	follow_links = (flags & O_NOFOLLOW) ? !FOLLOW_LINKS : FOLLOW_LINKS;
 	if((errno = namei(tmp_name, &i, &dir, follow_links))) {
 		if(!dir) {
 			free_name(tmp_name);
