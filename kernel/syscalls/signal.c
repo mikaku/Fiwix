@@ -31,7 +31,7 @@ unsigned int sys_signal(__sigset_t signum, void(* sighandler)(int))
 		return -EINVAL;
 	}
 	if(sighandler != SIG_DFL && sighandler != SIG_IGN) {
-		if((errno = check_user_area(VERIFY_READ, sighandler, sizeof(void)))) {
+		if((errno = check_user_area(VERIFY_READ, sighandler, sizeof(unsigned int)))) {
 			return errno;
 		}
 	}
