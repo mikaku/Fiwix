@@ -85,11 +85,17 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 				return -ENOTDIR;
 			}
 			if(S_ISLNK(i->i_mode)) {
-				if(i->fsop && i->fsop->followlink) {
-					if((errno = i->fsop->followlink(dir, i, &i))) {
-						iput(dir);
-						return errno;
+				if(follow_links) {
+					if(i->fsop && i->fsop->followlink) {
+						if((errno = i->fsop->followlink(dir, i, &i))) {
+							iput(dir);
+							return errno;
+						}
 					}
+				} else {
+					iput(dir);
+					iput(i);
+					return -ENOTDIR;
 				}
 			}
 		} else {

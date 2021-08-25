@@ -30,7 +30,7 @@ int sys_chown(const char *filename, __uid_t owner, __gid_t group)
 	if((errno = malloc_name(filename, &tmp_name)) < 0) {
 		return errno;
 	}
-	if((errno = namei(tmp_name, &i, NULL, FOLLOW_LINKS))) {
+	if((errno = namei(tmp_name, &i, NULL, !FOLLOW_LINKS))) {
 		free_name(tmp_name);
 		return errno;
 	}
