@@ -111,8 +111,6 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 		update_page_cache(i, fd_table->offset, buffer + total_written, bytes);
 		bwrite(buf);
 		total_written += bytes;
-		boffset += bytes;
-		boffset %= blksize;
 		fd_table->offset += bytes;
 	}
 
