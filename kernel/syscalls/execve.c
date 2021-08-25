@@ -68,7 +68,6 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 	 * 'filename' supplied in execve(), otherwise the interpreter won't be
 	 * able to find the script file.
 	 */
-	offset = barg->offset;
 	p = ARG_MAX - 1;
 	ae_str_len = barg->argv_len + barg->envp_len + 4;
 	p -= ae_str_len / PAGE_SIZE;
