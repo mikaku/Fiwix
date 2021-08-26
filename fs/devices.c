@@ -279,8 +279,6 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 		memcpy_b(buffer + total_read, buf->data + boffset, bytes);
 		total_read += bytes;
 		count -= bytes;
-		boffset += bytes;
-		boffset %= blksize;
 		fd_table->offset += bytes;
 		brelse(buf);
 	}
@@ -326,8 +324,6 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 		memcpy_b(buf->data + boffset, buffer + total_written, bytes);
 		total_written += bytes;
 		count -= bytes;
-		boffset += bytes;
-		boffset %= blksize;
 		fd_table->offset += bytes;
 		bwrite(buf);
 	}
