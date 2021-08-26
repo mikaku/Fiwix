@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/locks.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -83,7 +83,7 @@ int posix_lock(int ufd, int cmd, struct flock *fl)
 	unlock_resource(&flock_resource);
 	if(cmd == F_GETLK) {
 		if(ff->inode == i) {
-			fl->l_type = ff->type & LOCK_SH ? F_RDLCK : F_WRLCK;
+			fl->l_type = (ff->type & LOCK_SH) ? F_RDLCK : F_WRLCK;
 			fl->l_whence = SEEK_SET;
 			fl->l_start = 0;
 			fl->l_len = 0;
