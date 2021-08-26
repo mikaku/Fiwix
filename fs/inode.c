@@ -168,8 +168,6 @@ static int write_inode(struct inode *i)
 {
 	int errno;
 
-	errno = 1;
-
 	inode_lock(i);
 	if(i->sb && i->sb->fsop && i->sb->fsop->write_inode) {
 		errno = i->sb->fsop->write_inode(i);
