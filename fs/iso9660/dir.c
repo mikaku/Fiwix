@@ -95,7 +95,7 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
-	doffset = offset = size = 0;
+	doffset = size = 0;
 
 	while(doffset < count) {
 		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
