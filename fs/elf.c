@@ -482,7 +482,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 		iput(ii);
 	}
 
-	elf32_ph = last_ptload = NULL;
+	last_ptload = NULL;
 	for(n = 0; n < elf32_h->e_phnum; n++) {
 		elf32_ph = (struct elf32_phdr *)(data + elf32_h->e_phoff + (sizeof(struct elf32_phdr) * n));
 		if(elf32_ph->p_type == PT_PHDR) {
