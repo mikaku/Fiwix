@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/symlink.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -81,7 +81,6 @@ int iso9660_readlink(struct inode *i, char *buffer, __size_t count)
 int iso9660_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 {
 	char *name;
-	__off_t size_read;
 	__ino_t errno;
 
 	if(!i) {
@@ -97,7 +96,7 @@ int iso9660_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	}
 
 	name[0] = NULL;
-	if((size_read = get_rrip_symlink(i, name))) {
+	if(get_rrip_symlink(i, name)) {
 		iput(i);
 		if((errno = parse_namei(name, dir, i_res, NULL, FOLLOW_LINKS))) {
 			kfree((unsigned int)name);
