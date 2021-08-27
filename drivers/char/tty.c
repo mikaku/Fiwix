@@ -409,10 +409,10 @@ void do_cook(struct tty *tty)
 		tty->lnext = 0;
 	}
 	tty->output(tty);
-	wakeup(&tty_read);
 	if(!(tty->termios.c_lflag & ICANON) || ((tty->termios.c_lflag & ICANON) && tty->canon_data)) {
 		wakeup(&do_select);
 	}
+	wakeup(&tty_read);
 }
 
 int tty_open(struct inode *i, struct fd *fd_table)

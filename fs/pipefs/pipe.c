@@ -24,24 +24,24 @@ int pipefs_close(struct inode *i, struct fd *fd_table)
 {
 	if((fd_table->flags & O_ACCMODE) == O_RDONLY) {
 		if(!--i->u.pipefs.i_readers) {
-			wakeup(&pipefs_write);
 			wakeup(&do_select);
+			wakeup(&pipefs_write);
 		}
 	}
 	if((fd_table->flags & O_ACCMODE) == O_WRONLY) {
 		if(!--i->u.pipefs.i_writers) {
-			wakeup(&pipefs_read);
 			wakeup(&do_select);
+			wakeup(&pipefs_read);
 		}
 	}
 	if((fd_table->flags & O_ACCMODE) == O_RDWR) {
 		if(!--i->u.pipefs.i_readers) {
-			wakeup(&pipefs_write);
 			wakeup(&do_select);
+			wakeup(&pipefs_write);
 		}
 		if(!--i->u.pipefs.i_writers) {
-			wakeup(&pipefs_read);
 			wakeup(&do_select);
+			wakeup(&pipefs_read);
 		}
 	}
 	return 0;
@@ -77,8 +77,8 @@ int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t cou
 				i->u.pipefs.i_writeoff = 0;
 			}
 			unlock_resource(&pipe_resource);
-			wakeup(&pipefs_write);
 			wakeup(&do_select);
+			wakeup(&pipefs_write);
 			break;
 		} else {
 			if(i->u.pipefs.i_writers) {
@@ -151,13 +151,13 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 				i->u.pipefs.i_readoff = 0;
 			}
 			unlock_resource(&pipe_resource);
-			wakeup(&pipefs_read);
 			wakeup(&do_select);
+			wakeup(&pipefs_read);
 			continue;
 		}
 
-		wakeup(&pipefs_read);
 		wakeup(&do_select);
+		wakeup(&pipefs_read);
 		if(!(fd_table->flags & O_NONBLOCK)) {
 			if(sleep(&pipefs_write, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
