@@ -78,6 +78,7 @@ multiboot_header:			/* multiboot header */
  * respectively.
  */
 .globl start; start:
+	cli
 	lgdt	tmp_gdtr		/* load GDTR with the temporary GDT */
 	movw	$KERNEL_DS, %cx
 	movw	%cx, %ds
