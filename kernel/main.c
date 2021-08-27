@@ -52,7 +52,7 @@ struct kernel_stat kstat;
 
 void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 {
-	struct proc *init, *p_kswapd;
+	struct proc *init;
 
 	_last_data_addr = stack - KERNEL_BASE_ADDR;
 	memset_b(&kstat, NULL, sizeof(kstat));
@@ -100,7 +100,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	init->pid = get_unused_pid();
 
 	/* PID 2 is for the kswapd process */
-	p_kswapd = kernel_process("kswapd", kswapd);
+	kernel_process("kswapd", kswapd);
 
 	/* kswapd will take over the rest of the kernel initialization */
 	need_resched = 1;
