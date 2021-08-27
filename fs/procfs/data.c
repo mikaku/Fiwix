@@ -649,8 +649,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 	struct vma *vma;
 	int text, data, stack, mmap;
 
-	size = vma_start = vma_end = 0;
-	text = data = stack = mmap = 0;
+	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
 		if(!p->vma) {
 			return 0;
