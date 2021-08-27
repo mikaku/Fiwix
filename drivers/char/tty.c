@@ -685,7 +685,9 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 				break;
 			}
 		}
-		do_sched();
+		if(need_resched) {
+			do_sched();
+		}
 	}
 
 	if(n) {
