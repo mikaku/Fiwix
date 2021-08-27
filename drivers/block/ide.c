@@ -629,13 +629,12 @@ int ide_open(struct inode *i, struct fd *fd_table)
 {
 	int drive;
 	struct ide *ide;
-	struct device *d;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, i->rdev))) {
+	if(!get_device(BLK_DEV, i->rdev)) {
 		return -ENXIO;
 	}
 
@@ -650,13 +649,12 @@ int ide_close(struct inode *i, struct fd *fd_table)
 {
 	int drive;
 	struct ide *ide;
-	struct device *d;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, i->rdev))) {
+	if(!get_device(BLK_DEV, i->rdev)) {
 		return -ENXIO;
 	}
 
@@ -671,14 +669,13 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int drive;
 	struct ide *ide;
-	struct device *d;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, dev))) {
+	if(!get_device(BLK_DEV, dev)) {
 		return -ENXIO;
 	}
 
@@ -694,14 +691,13 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int drive;
 	struct ide *ide;
-	struct device *d;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, dev))) {
+	if(!get_device(BLK_DEV, dev)) {
 		return -ENXIO;
 	}
 
@@ -717,13 +713,12 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	int drive;
 	struct ide *ide;
-	struct device *d;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
 	}
 
-	if(!(d = get_device(BLK_DEV, i->rdev))) {
+	if(!get_device(BLK_DEV, i->rdev)) {
 		return -ENXIO;
 	}
 
