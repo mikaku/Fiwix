@@ -155,6 +155,8 @@ static int atapi_read_data(__dev_t dev, char *data, struct ide *ide, int blksize
 	int retries, bytes;
 	struct callout_req creq;
 
+	status = 0;
+
 	for(retries = 0; retries < MAX_IDE_ERR; retries++) {
 		if(ide->channel == IDE_PRIMARY) {
 			ide0_wait_interrupt = ide->base;
