@@ -421,6 +421,11 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 		return -ENOEXEC;
 	}
 
+	if(elf32_h->e_phnum < 1) {
+		printk("%s(): no program headers.");
+		return -ENOEXEC;
+	}
+
 	/* check if an interpreter is required */
 	interpreter = NULL;
 	ii = NULL;
