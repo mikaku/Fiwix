@@ -389,6 +389,25 @@ static void ide_results(struct ide *ide, int drive)
 	*/
 }
 
+static int ide_get_status(struct ide *ide)
+{
+	int n, retries, status;
+
+	status = 0;
+	SET_IDE_RDY_RETR(retries);
+
+	for(n = 0; n < retries; n++) {
+		status = inport_b(ide->ctrl + IDE_ALT_STATUS);
+		if(!(status & IDE_STAT_BSY)) {
+			return 0;
+		}
+		ide_delay();
+	}
+
+	inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+	return status;
+}
+
 void irq_ide0(int num, struct sigcontext *sc)
 {
 	if(!ide0_wait_interrupt) {
@@ -488,30 +507,14 @@ void ide_wait400ns(struct ide *ide)
 	}
 }
 
-int ide_ready(struct ide *ide)
-{
-	int n, retries, status;
-
-	SET_IDE_RDY_RETR(retries);
-	for(n = 0; n < retries; n++) {
-		status = inport_b(ide->ctrl + IDE_ALT_STATUS);
-		if(!(status & IDE_STAT_BSY)) {
-			return 0;
-		}
-		ide_delay();
-	}
-
-	inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
-	return status;
-}
-
 int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 {
-	int n;
-	int status;
+	int n, status;
+
+	status = 0;
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ide_ready(ide))) {
+		if((status = ide_get_status(ide))) {
 			continue;
 		}
 		break;
@@ -524,7 +527,7 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 	ide_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ide_ready(ide))) {
+		if((status = ide_get_status(ide))) {
 			continue;
 		}
 		break;
@@ -548,7 +551,7 @@ int ide_softreset(struct ide *ide)
 
 	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
 	ide_delay();
-	if(ide_ready(ide)) {
+	if(ide_get_status(ide)) {
 		printk("WARNING: %s(): reset error on IDE(%d:0).\n", __FUNCTION__, ide->channel);
 		error = 1;
 	} else {
@@ -566,11 +569,11 @@ int ide_softreset(struct ide *ide)
 
 	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE + (1 << 4));
 	ide_delay();
-	if(ide_ready(ide)) {
+	if(ide_get_status(ide)) {
 		printk("WARNING: %s(): reset error on IDE(%d:1).\n", __FUNCTION__, ide->channel);
 		outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
 		ide_delay();
-		ide_ready(ide);
+		ide_get_status(ide);
 		error |= (1 << 4);
 	}
 
