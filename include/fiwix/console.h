@@ -114,7 +114,7 @@ struct vconsole {
 	unsigned char led_status;
 	unsigned char scrlock, numlock, capslock;
 	unsigned char esc, sbracket, semicolon, question;
-	unsigned int flags;
+	int flags;
 	int parmv1, parmv2;
 	int nparms, parms[NPARMS];
 	unsigned short int color_attr;
