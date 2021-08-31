@@ -54,4 +54,8 @@
 /* maximum number of virtual memory mappings (regions) */
 #define VMA_REGIONS		150
 
+
+
+/* #define CONFIG_VERBOSE_SEGFAULTS */
+
 #endif /* _FIWIX_CONFIG_H */

@@ -21,9 +21,11 @@
 /* send the SIGSEGV signal to the ofending process */
 static void send_sigsegv(struct sigcontext *sc)
 {
+#if defined(CONFIG_VERBOSE_SEGFAULTS)
 	dump_registers(14, sc);
 	printk("Memory map:\n");
 	show_vma_regions(current);
+#endif
 	send_sig(current, SIGSEGV);
 }
 
