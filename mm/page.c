@@ -373,8 +373,8 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 		total_read += bytes;
 		count -= bytes;
 		fd_table->offset += bytes;
-		page_unlock(pg);
 		kfree(addr);
+		page_unlock(pg);
 	}
 
 	inode_unlock(i);
