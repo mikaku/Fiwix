@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/sleep.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -15,8 +15,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define NR_BUCKETS		(NR_PROCS * 10) / 100	/* 10% of NR_PROCS */
-#define SLEEP_HASH(addr)	((addr) % NR_BUCKETS)
+#define NR_BUCKETS		((NR_PROCS * 10) / 100)	/* 10% of NR_PROCS */
+#define SLEEP_HASH(addr)	((addr) % (NR_BUCKETS))
 
 struct proc *sleep_hash_table[NR_BUCKETS];
 static unsigned int area = 0;
@@ -123,6 +123,7 @@ void wakeup_proc(struct proc *p)
 
 		i = SLEEP_HASH((unsigned int)p->sleep_address);
 		h = &sleep_hash_table[i];
+
 		if(*h == p) {	/* if it's the head */
 			*h = (*h)->sleep_next;
 		}
@@ -132,7 +133,6 @@ void wakeup_proc(struct proc *p)
 	need_resched = 1;
 
 	RESTORE_FLAGS(flags);
-	return;
 }
 
 void lock_resource(struct resource *resource)
