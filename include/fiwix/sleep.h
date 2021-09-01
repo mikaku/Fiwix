@@ -15,12 +15,6 @@
 #define AREA_TTY_READ		0x00000004
 #define AREA_SERIAL_READ	0x00000008
 
-struct sleep {
-	unsigned short int next;
-	void *address;
-	struct proc *proc;
-};
-
 struct resource {
 	char locked;
 	char wanted;
