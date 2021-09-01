@@ -261,7 +261,6 @@ void ide1_timer(unsigned int);
 void ide_error(struct ide *, int);
 void ide_delay(void);
 void ide_wait400ns(struct ide *);
-int ide_ready(struct ide *);
 int ide_drvsel(struct ide *, int, int, unsigned char);
 int ide_softreset(struct ide *);
 
