@@ -151,8 +151,8 @@ struct proc {
 	unsigned char loopcnt;		/* nested symlinks counter */
 	struct proc *prev;
 	struct proc *next;
-	struct proc *sleep_prev;
-	struct proc *sleep_next;
+	struct proc *prev_sleep;
+	struct proc *next_sleep;
 	struct proc *prev_run;
 	struct proc *next_run;
 };

@@ -363,7 +363,7 @@ void proc_slot_init(struct proc *p)
 		proc_table_tail->next = p;
 		proc_table_tail = p;
 	}
-	p->sleep_prev = p->sleep_next = NULL;
+	p->prev_sleep = p->next_sleep = NULL;
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 

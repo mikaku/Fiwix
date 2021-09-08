@@ -77,11 +77,11 @@ int sleep(void *address, int state)
 	/* insert process in the head */
 	if(!*h) {
 		*h = current;
-		(*h)->sleep_prev = (*h)->sleep_next = NULL;
+		(*h)->prev_sleep = (*h)->next_sleep = NULL;
 	} else {
-		current->sleep_prev = NULL;
-		current->sleep_next = *h;
-		(*h)->sleep_prev = current;
+		current->prev_sleep = NULL;
+		current->next_sleep = *h;
+		(*h)->prev_sleep = current;
 		*h = current;
 	}
 	current->sleep_address = address;
@@ -114,19 +114,19 @@ void wakeup(void *address)
 			(*h)->cpu_count = (*h)->priority;
 			runnable(*h);
 			need_resched = 1;
-			if((*h)->sleep_next) {
-				(*h)->sleep_next->sleep_prev = (*h)->sleep_prev;
+			if((*h)->next_sleep) {
+				(*h)->next_sleep->prev_sleep = (*h)->prev_sleep;
 			}
-			if((*h)->sleep_prev) {
-				(*h)->sleep_prev->sleep_next = (*h)->sleep_next;
+			if((*h)->prev_sleep) {
+				(*h)->prev_sleep->next_sleep = (*h)->next_sleep;
 			}
 			if(h == &sleep_hash_table[i]) {	/* if it's the head */
-				*h = (*h)->sleep_next;
+				*h = (*h)->next_sleep;
 				continue;
 			}
 		}
 		if(*h) {
-			h = &(*h)->sleep_next;
+			h = &(*h)->next_sleep;
 		}
 	}
 	RESTORE_FLAGS(flags);
@@ -146,18 +146,18 @@ void wakeup_proc(struct proc *p)
 
 	/* stopped processes don't have sleep address */
 	if(p->sleep_address) {
-		if(p->sleep_next) {
-			p->sleep_next->sleep_prev = p->sleep_prev;
+		if(p->next_sleep) {
+			p->next_sleep->prev_sleep = p->prev_sleep;
 		}
-		if(p->sleep_prev) {
-			p->sleep_prev->sleep_next = p->sleep_next;
+		if(p->prev_sleep) {
+			p->prev_sleep->next_sleep = p->next_sleep;
 		}
 
 		i = SLEEP_HASH((unsigned int)p->sleep_address);
 		h = &sleep_hash_table[i];
 
 		if(*h == p) {	/* if it's the head */
-			*h = (*h)->sleep_next;
+			*h = (*h)->next_sleep;
 		}
 	}
 	p->sleep_address = NULL;
