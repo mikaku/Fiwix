@@ -3,7 +3,7 @@
 - Added framebuffer device support for VESA VBE 2.0+ compliant graphics cards.
 - Added support for the framebuffer console (fbcon).
 - Completely rewrite the console to support VGA text and framebuffer screens.
-- Improved the speed of VGA text consoles using double-buffering.
+- Improved the speed of VGA text consoles by using double-buffering.
 - Updated the header file to support the latest GRUB Multiboot Specification v1.
 - Moved 'cpu_idle()' to a C function to include more easily some tasks to do.
 - Isolated the multiboot code in order to prepare the kernel to support multiple
@@ -26,8 +26,18 @@
 - Removed CLI() functions in ide_hd and ide_cd.
 - Improved the handling of the inode free list and the locking mechanism.
 - Improved the handling of buffer and memory page free lists.
+- Improved the way how is counted the first megabyte of memory.
+- Changed bread_page() to reuse buffers and reduce disk I/O activity.
 - Honour POSIX.1-2008 by returning ELOOP if flag O_NOFOLLOW is set and the
   trailing component (basename) of the pathname in open() is a symbolic link.
+- Disabled interrupts during the context switch.
+- Moved the values buffer->valid, buffer->locked and buffer->dirty to flags.
+- Moved the value pg->locked to a flag.
+- Changed kernel_process() to accept also the name of the process.
+- Removed a sizeof(void) in sys_signal() as it is not covered by the C standard.
+- Disabled interrupts during early boot up.
+- Added the configure option CONFIG_VERBOSE_SEGFAULTS (disabled by default).
+- Added a separate queue for all running processes.
 - Fixed the RAMdisk driver to not access blocks beyond its size.
 - Fixed a race condition in floppy drive when the interrupt occurred right
   before going to sleep.
@@ -74,7 +84,18 @@
   inode on every call, leading to the premature message "WARNING: no more inodes
   on free list!".
 - Fixed certain values to be signed instead of unsigned in kstat structure.
+- Fixed a bug in tty->canon_data that corrects a bad behavior in select().
+- Fixed to decrease rss memory from the zombie process instead from its parent
+  in remove_zombie().
+- Fixed to name correctly the IDLE process by assigning 'idle' to argv0.
+- Fixed to honour the select() function when handling pipes.
+- Fixed sys_chown() to not dereference symlinks and to honor trailing slash.
+- Fixed to reduce over-scheduling in tty_write() by calling do_sched() only if
+  needed.
+- Fixed a long standing bug in do_exit() that made some processes returning from
+  the death.
 - Small fixes and cosmetic changes.
+- Cleaned up a lot of code.
 
 
 1.2.0 - 12-Dec-2020
