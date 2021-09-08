@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/init.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -11,6 +11,7 @@
 #include <fiwix/mm.h>
 #include <fiwix/timer.h>
 #include <fiwix/sched.h>
+#include <fiwix/sleep.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/stat.h>
 #include <fiwix/process.h>
@@ -112,7 +113,7 @@ void init_init(void)
 	init->tss.eip = (unsigned int)switch_to_user_mode;
 	init->tss.esp = page + PAGE_SIZE - 4;
 
-  	init->state = PROC_RUNNING;
+	runnable(init);
 	nr_processes++;
 	return;
 

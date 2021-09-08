@@ -153,6 +153,8 @@ struct proc {
 	struct proc *next;
 	struct proc *sleep_prev;
 	struct proc *sleep_next;
+	struct proc *prev_run;
+	struct proc *next_run;
 };
 
 extern struct proc *current;

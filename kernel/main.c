@@ -21,6 +21,7 @@
 #include <fiwix/devices.h>
 #include <fiwix/cpu.h>
 #include <fiwix/timer.h>
+#include <fiwix/sleep.h>
 #include <fiwix/keyboard.h>
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
@@ -84,7 +85,10 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	keyboard_init();
 	proc_init();
 
-	/* IDLE is now the current process (created manually as PID 0) */
+	/*
+	 * IDLE is now the current process (created manually as PID 0),
+	 * it won't be placed in the running queue.
+	 */
 	current = get_proc_free();
 	proc_slot_init(current);
 	set_tss(current);
@@ -92,7 +96,6 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	current->tss.cr3 = (unsigned int)kpage_dir;
 	current->flags |= PF_KPROC;
 	sprintk(current->argv0, "%s", "idle");
-	current->state = PROC_RUNNING;
 
 	/* PID 1 is for the INIT process */
 	init = get_proc_free();
@@ -127,9 +130,11 @@ void stop_kernel(void)
 	any_key_to_reboot = 1;
 
 	/* put all processes to sleep and reset all pending signals */
-	FOR_EACH_PROCESS(p) {
-		p->state = PROC_SLEEPING;
+	p = run_head;
+	while(p) {
+		not_runnable(p, PROC_SLEEPING);
 		p->sigpending = 0;
+		p = p->next_run;
 	}
 
 	/* enable keyboard only */

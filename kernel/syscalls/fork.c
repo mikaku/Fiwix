@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/fork.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -12,6 +12,7 @@
 #include <fiwix/sigcontext.h>
 #include <fiwix/process.h>
 #include <fiwix/sched.h>
+#include <fiwix/sleep.h>
 #include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
@@ -126,8 +127,6 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->tss.esp = (unsigned int)stack;
 	stack->eax = 0;		/* child returns 0 */
 
-	child->state = PROC_RUNNING;
-
 	/* increase file descriptors usage */
 	for(n = 0; n < OPEN_MAX; n++) {
 		if(current->fd[n]) {
@@ -144,6 +143,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	kstat.processes++;
 	nr_processes++;
 	current->children++;
+	runnable(child);
 
 	return child->pid;	/* parent returns child's PID */
 }

@@ -19,7 +19,38 @@
 #define SLEEP_HASH(addr)	((addr) % (NR_BUCKETS))
 
 struct proc *sleep_hash_table[NR_BUCKETS];
+struct proc *run_head;
 static unsigned int area = 0;
+
+void runnable(struct proc *p)
+{
+	if(p->state == PROC_RUNNING) {
+		printk("WARNING: %s(): process with pid '%d' is already running!\n", __FUNCTION__, p->pid);
+		return;
+	}
+
+	if(run_head) {
+		p->next_run = run_head;
+		run_head->prev_run = p;
+	}
+	run_head = p;
+	p->state = PROC_RUNNING;
+}
+
+void not_runnable(struct proc *p, int state)
+{
+	if(p->next_run) {
+		p->next_run->prev_run = p->prev_run;
+	}
+	if(p->prev_run) {
+		p->prev_run->next_run = p->next_run;
+	}
+	if(p == run_head) {
+		run_head = p->next_run;
+	}
+	p->prev_run = p->next_run = NULL;
+	p->state = state;
+}
 
 int sleep(void *address, int state)
 {
@@ -54,7 +85,8 @@ int sleep(void *address, int state)
 		*h = current;
 	}
 	current->sleep_address = address;
-	current->state = PROC_SLEEPING;
+	not_runnable(current, PROC_SLEEPING);
+	RESTORE_FLAGS(flags);
 
 	do_sched();
 
@@ -63,7 +95,6 @@ int sleep(void *address, int state)
 		signum = issig();
 	}
 
-	RESTORE_FLAGS(flags);
 	return signum;
 }
 
@@ -80,7 +111,8 @@ void wakeup(void *address)
 	while(*h) {
 		if((*h)->sleep_address == address) {
 			(*h)->sleep_address = NULL;
-			(*h)->state = PROC_RUNNING;
+			(*h)->cpu_count = (*h)->priority;
+			runnable(*h);
 			need_resched = 1;
 			if((*h)->sleep_next) {
 				(*h)->sleep_next->sleep_prev = (*h)->sleep_prev;
@@ -129,7 +161,7 @@ void wakeup_proc(struct proc *p)
 		}
 	}
 	p->sleep_address = NULL;
-	p->state = PROC_RUNNING;
+	runnable(p);
 	need_resched = 1;
 
 	RESTORE_FLAGS(flags);
@@ -194,5 +226,6 @@ int unlock_area(unsigned int type)
 
 void sleep_init(void)
 {
+	run_head = NULL;
 	memset_b(sleep_hash_table, NULL, sizeof(sleep_hash_table));
 }

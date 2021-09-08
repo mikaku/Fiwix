@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/sleep.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -15,11 +15,15 @@
 #define AREA_TTY_READ		0x00000004
 #define AREA_SERIAL_READ	0x00000008
 
+extern struct proc *run_head;
+
 struct resource {
 	char locked;
 	char wanted;
 };
 
+void runnable(struct proc *);
+void not_runnable(struct proc *, int);
 int sleep(void *, int);
 void wakeup(void *);
 void wakeup_proc(struct proc *);

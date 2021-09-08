@@ -41,7 +41,7 @@ int send_sig(struct proc *p, __sigset_t signum)
 		case SIGKILL:
 		case SIGCONT:
 			if(p->state == PROC_STOPPED) {
-				p->state = PROC_RUNNING;
+				runnable(p);
 			}
 			/* discard all pending stop signals */
 			p->sigpending &= SIG_MASK(SIGSTOP);
@@ -186,7 +186,7 @@ void psig(unsigned int stack)
 			if(current->sigaction[signum - 1].sa_handler == SIG_DFL) {
 				switch(signum) {
 					case SIGCONT:
-						current->state = PROC_RUNNING;
+						runnable(current);
 						need_resched = 1;
 						break;
 					case SIGSTOP:
@@ -194,7 +194,7 @@ void psig(unsigned int stack)
 					case SIGTTIN:
 					case SIGTTOU:
 						current->exit_code = signum;
-						current->state = PROC_STOPPED;
+						not_runnable(current, PROC_STOPPED);
 						if(!(current->sigaction[signum - 1].sa_flags & SA_NOCLDSTOP)) {
 							if((p = get_proc_by_pid(current->ppid))) {
 								send_sig(p, SIGCHLD);

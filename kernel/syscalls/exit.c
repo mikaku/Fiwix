@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/exit.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -90,7 +90,7 @@ void do_exit(int exit_code)
 		current->sigaction[n].sa_handler = SIG_IGN;
 	}
 
-	current->state = PROC_ZOMBIE;
+	not_runnable(current, PROC_ZOMBIE);
 	need_resched = 1;
 	do_sched();
 }

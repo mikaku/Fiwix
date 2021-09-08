@@ -343,7 +343,7 @@ struct proc * kernel_process(const char *name, int (*fn)(void))
 	p->tss.esp = p->tss.esp0;
 	sprintk(p->pidstr, "%d", p->pid);
 	sprintk(p->argv0, "%s", name);
-	p->state = PROC_RUNNING;
+	runnable(p);
 	return p;
 }
 
@@ -364,15 +364,16 @@ void proc_slot_init(struct proc *p)
 		proc_table_tail = p;
 	}
 	p->sleep_prev = p->sleep_next = NULL;
+	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
 	memset_b(&p->tss, NULL, sizeof(struct i386tss));
 	p->tss.io_bitmap_addr = (unsigned int)&p->io_bitmap;
 
 	/*
-	 * At the moment, all io_bitmap bits are setup to 0, which means full
-	 * access. This must be changed to 1 once we have fixed the ioperm()
-	 * system call.
+	 * Currently all io_bitmap bits are set to 0, which means full access.
+	 * This must be changed to 1 once we have fixed the ioperm() system
+	 * call.
 	 */
 	for(n = 0; n < IO_BITMAP_SIZE + 1; n++) {
 		p->io_bitmap[n] = 0;	/* FIXME: change it to 1 */

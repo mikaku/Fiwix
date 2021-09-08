@@ -10,6 +10,7 @@
 #include <fiwix/const.h>
 #include <fiwix/sched.h>
 #include <fiwix/process.h>
+#include <fiwix/sleep.h>
 #include <fiwix/segments.h>
 #include <fiwix/timer.h>
 #include <fiwix/pic.h>
@@ -59,21 +60,23 @@ void do_sched(void)
 		count = -1;
 		selected = &proc_table[IDLE];
 
-		FOR_EACH_PROCESS(p) {
-			if(p->state == PROC_RUNNING && p->cpu_count > count) {
+		p = run_head;
+		while(p) {
+			if(p->cpu_count > count) {
 				count = p->cpu_count;
 				selected = p;
 			}
+			p = p->next_run;
 		}
 		if(count) {
 			break;
 		}
 
 		/* reassigns new quantum to all processes */
-		FOR_EACH_PROCESS(p) {
-			if(p->state) {
-				p->cpu_count = p->priority;
-			}
+		p = run_head;
+		while(p) {
+			p->cpu_count = p->priority;
+			p = p->next_run;
 		}
 	}
 	if(current != selected) {

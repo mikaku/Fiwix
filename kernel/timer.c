@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/timer.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -51,10 +51,10 @@ static unsigned int count_active_procs(void)
 	struct proc *p;
 
 	counter = 0;
-	FOR_EACH_PROCESS(p) {
-		if(p->state == PROC_RUNNING) {
-			counter += FIXED_1;
-		}
+	p = run_head;
+	while(p) {
+		counter += FIXED_1;
+		p = p->next_run;
 	}
 	return counter;
 }
@@ -114,7 +114,6 @@ static void do_del_callout(struct callout *c)
 			tmp = &(*tmp)->next;
 		}
 	}
-	return;
 }
 
 void add_callout(struct callout_req *creq, unsigned int ticks)
@@ -153,7 +152,6 @@ void add_callout(struct callout_req *creq, unsigned int ticks)
 		*tmp = c;
 	}
 	RESTORE_FLAGS(flags);
-	return;
 }
 
 void del_callout(struct callout_req *creq)
@@ -171,7 +169,6 @@ void del_callout(struct callout_req *creq)
 		c = c->next;
 	}
 	RESTORE_FLAGS(flags);
-	return;
 }
 
 void irq_timer(int num, struct sigcontext *sc)
@@ -183,7 +180,6 @@ void irq_timer(int num, struct sigcontext *sc)
 
 	timer_bh.flags |= BH_ACTIVE;
 
-	/* FIXME: put this in 'timer_bh' */
 	if(sc->cs == KERNEL_CS) {
 		current->usage.ru_stime.tv_usec += TICK;
 		if(current->usage.ru_stime.tv_usec >= 1000000) {
@@ -221,7 +217,6 @@ void ticks2tv(long int ticks, struct timeval *tv)
 {
 	tv->tv_sec = ticks / HZ;
 	tv->tv_usec = (ticks % HZ) * 1000000 / HZ;
-	return;
 }
 
 int setitimer(int which, const struct itimerval *new_value, struct itimerval *old_value)
