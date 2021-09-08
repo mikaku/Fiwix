@@ -26,19 +26,9 @@ void do_exit(int exit_code)
 	printk("------------------------------\n");
 #endif /*__DEBUG__ */
 
-	current->state = PROC_ZOMBIE;
-
 	release_binary();
 	current->argv = NULL;
 	current->envp = NULL;
-	current->sigpending = 0;
-	current->sigblocked = 0;
-	current->sigexecuting = 0;
-	for(n = 0; n < NSIG; n++) {
-		current->sigaction[n].sa_mask = 0;
-		current->sigaction[n].sa_flags = 0;
-		current->sigaction[n].sa_handler = SIG_IGN;
-	}
 
 	init = get_proc_by_pid(INIT);
 	FOR_EACH_PROCESS(p) {
@@ -91,13 +81,18 @@ void do_exit(int exit_code)
 		}
 	}
 
-	need_resched = 1;
-
-	/* make sure to recover if the process returns from the death (!?) */
-	for(;;) {
-		current->state = PROC_ZOMBIE;
-		do_sched();
+	current->sigpending = 0;
+	current->sigblocked = 0;
+	current->sigexecuting = 0;
+	for(n = 0; n < NSIG; n++) {
+		current->sigaction[n].sa_mask = 0;
+		current->sigaction[n].sa_flags = 0;
+		current->sigaction[n].sa_handler = SIG_IGN;
 	}
+
+	current->state = PROC_ZOMBIE;
+	need_resched = 1;
+	do_sched();
 }
 
 int sys_exit(int exit_code)
