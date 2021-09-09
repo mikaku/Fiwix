@@ -440,7 +440,7 @@ int tty_open(struct inode *i, struct fd *fd_table)
 	}
 
 	if(tty->open) {
-		if((errno = tty->open(tty) < 0)) {
+		if((errno = tty->open(tty)) < 0) {
 			return errno;
 		}
 	}
@@ -467,7 +467,7 @@ int tty_close(struct inode *i, struct fd *fd_table)
 	}
 
 	if(tty->close) {
-		if((errno = tty->close(tty) < 0)) {
+		if((errno = tty->close(tty)) < 0) {
 			return errno;
 		}
 	}
