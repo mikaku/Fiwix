@@ -61,7 +61,6 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->pid = pid;
 	memset_b(&child->tss, NULL, sizeof(struct i386tss));
 	sprintk(child->pidstr, "%d", child->pid);
-	child->state = PROC_IDLE;
 
 	if(!(child_pgdir = (void *)kmalloc())) {
 		release_proc(child);
