@@ -133,7 +133,7 @@ int ramdisk_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -EIO;
 	}
 	blksize = MIN(blksize, size - offset);
-	memcpy_b((void *)ramdisk->addr + offset, buffer, blksize);
+	memcpy_b(ramdisk->addr + offset, buffer, blksize);
 	return blksize;
 }
 
