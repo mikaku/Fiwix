@@ -60,8 +60,7 @@ void do_sched(void)
 		count = -1;
 		selected = &proc_table[IDLE];
 
-		p = run_head;
-		while(p) {
+		FOR_EACH_PROCESS_RUNNING(p) {
 			if(p->cpu_count > count) {
 				count = p->cpu_count;
 				selected = p;
@@ -72,9 +71,8 @@ void do_sched(void)
 			break;
 		}
 
-		/* reassigns new quantum to all processes */
-		p = run_head;
-		while(p) {
+		/* reassigns new quantum to all running processes */
+		FOR_EACH_PROCESS_RUNNING(p) {
 			p->cpu_count = p->priority;
 			p = p->next_run;
 		}

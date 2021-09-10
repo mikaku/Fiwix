@@ -130,8 +130,7 @@ void stop_kernel(void)
 	any_key_to_reboot = 1;
 
 	/* put all processes to sleep and reset all pending signals */
-	p = run_head;
-	while(p) {
+	FOR_EACH_PROCESS_RUNNING(p) {
 		not_runnable(p, PROC_SLEEPING);
 		p->sigpending = 0;
 		p = p->next_run;

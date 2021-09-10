@@ -51,8 +51,7 @@ static unsigned int count_active_procs(void)
 	struct proc *p;
 
 	counter = 0;
-	p = run_head;
-	while(p) {
+	FOR_EACH_PROCESS_RUNNING(p) {
 		counter += FIXED_1;
 		p = p->next_run;
 	}
