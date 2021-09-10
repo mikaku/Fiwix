@@ -286,7 +286,6 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #ifdef __DEBUG__
 	printk("\t\tAT_NULL = %d\n", *sp);
 #endif /*__DEBUG__ */
-	sp++;
 
 #ifdef __DEBUG__
 	for(n = 0; n < barg->argc; n++) {
