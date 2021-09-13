@@ -464,9 +464,12 @@ void fbcon_screen_on(struct vconsole *vc)
 		RESTORE_FLAGS(flags);
 		vc->flags &= ~CONSOLE_BLANKED;
 	}
-	creq.fn = fbcon_screen_off;
-	creq.arg = (unsigned int)vc;
-	add_callout(&creq, BLANK_INTERVAL);
+
+	if(BLANK_INTERVAL) {
+		creq.fn = fbcon_screen_off;
+		creq.arg = (unsigned int)vc;
+		add_callout(&creq, BLANK_INTERVAL);
+	}
 }
 
 void fbcon_screen_off(unsigned int arg)

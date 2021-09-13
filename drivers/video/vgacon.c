@@ -237,9 +237,12 @@ void vgacon_screen_on(struct vconsole *vc)
 		outport_b(ATTR_CONTROLLER, ATTR_CONTROLLER_PAS);
 		RESTORE_FLAGS(flags);
 	}
-	creq.fn = vgacon_screen_off;
-	creq.arg = 0;
-	add_callout(&creq, BLANK_INTERVAL);
+
+	if(BLANK_INTERVAL) {
+		creq.fn = vgacon_screen_off;
+		creq.arg = 0;
+		add_callout(&creq, BLANK_INTERVAL);
+	}
 }
 
 void vgacon_screen_off(unsigned int arg)

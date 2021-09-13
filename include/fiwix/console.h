@@ -48,7 +48,7 @@
 #define SGR_DEFAULT_BG		49	/* set default background color */
 
 #define NPARMS			16
-#define BLANK_INTERVAL	(600 * HZ)	/* 600 seconds (10 minutes) */
+#define BLANK_INTERVAL	(0 * HZ)	/* 0 seconds (no screen blank) */
 
 #define COLOR_BLACK		0x0000
 #define COLOR_BLUE		0x0100
