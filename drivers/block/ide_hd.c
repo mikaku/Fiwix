@@ -94,11 +94,11 @@ static void assign_minors(__dev_t rdev, struct ide *ide, struct partition *part)
 	}
 }
 
-static __off_t block2sector(__off_t offset, int blksize, struct partition *part, int minor)
+static __off_t block2sector(__blk_t block, int blksize, struct partition *part, int minor)
 {
 	__off_t sector;
 
-	sector = offset * (blksize / IDE_HD_SECTSIZE);
+	sector = block * (blksize / IDE_HD_SECTSIZE);
 	if(minor) {
 		sector += part[minor - 1].startsect;
 	}
