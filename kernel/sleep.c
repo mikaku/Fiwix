@@ -19,7 +19,7 @@
 #define SLEEP_HASH(addr)	((addr) % (NR_BUCKETS))
 
 struct proc *sleep_hash_table[NR_BUCKETS];
-struct proc *run_head;
+struct proc *proc_run_head;
 static unsigned int area = 0;
 
 void runnable(struct proc *p)
@@ -29,11 +29,11 @@ void runnable(struct proc *p)
 		return;
 	}
 
-	if(run_head) {
-		p->next_run = run_head;
-		run_head->prev_run = p;
+	if(proc_run_head) {
+		p->next_run = proc_run_head;
+		proc_run_head->prev_run = p;
 	}
-	run_head = p;
+	proc_run_head = p;
 	p->state = PROC_RUNNING;
 }
 
@@ -45,8 +45,8 @@ void not_runnable(struct proc *p, int state)
 	if(p->prev_run) {
 		p->prev_run->next_run = p->next_run;
 	}
-	if(p == run_head) {
-		run_head = p->next_run;
+	if(p == proc_run_head) {
+		proc_run_head = p->next_run;
 	}
 	p->prev_run = p->next_run = NULL;
 	p->state = state;
@@ -226,6 +226,6 @@ int unlock_area(unsigned int type)
 
 void sleep_init(void)
 {
-	run_head = NULL;
+	proc_run_head = NULL;
 	memset_b(sleep_hash_table, NULL, sizeof(sleep_hash_table));
 }

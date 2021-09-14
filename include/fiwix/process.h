@@ -48,7 +48,7 @@ struct vma {
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
 
 #define FOR_EACH_PROCESS(p)		p = proc_table_head->next ; while(p)
-#define FOR_EACH_PROCESS_RUNNING(p)	p = run_head ; while(p)
+#define FOR_EACH_PROCESS_RUNNING(p)	p = proc_run_head ; while(p)
 
 /* value to be determined during system startup */
 extern unsigned int proc_table_size;	/* size in bytes */

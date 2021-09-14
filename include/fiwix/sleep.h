@@ -15,7 +15,7 @@
 #define AREA_TTY_READ		0x00000004
 #define AREA_SERIAL_READ	0x00000008
 
-extern struct proc *run_head;
+extern struct proc *proc_run_head;
 
 struct resource {
 	char locked;
