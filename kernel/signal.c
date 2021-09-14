@@ -42,6 +42,7 @@ int send_sig(struct proc *p, __sigset_t signum)
 		case SIGCONT:
 			if(p->state == PROC_STOPPED) {
 				runnable(p);
+				need_resched = 1;
 			}
 			/* discard all pending stop signals */
 			p->sigpending &= SIG_MASK(SIGSTOP);
