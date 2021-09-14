@@ -30,9 +30,10 @@ int sys_getsid(__pid_t pid)
 	}
 
 	FOR_EACH_PROCESS(p) {
-		if(p->state != PROC_UNUSED && p->pid == pid) {
+		if(p->pid == pid) {
 			return p->sid;
 		}
+		p = p->next;
 	}
 	return -ESRCH;
 }

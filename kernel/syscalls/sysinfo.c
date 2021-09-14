@@ -42,9 +42,8 @@ int sys_sysinfo(struct sysinfo *info)
 	tmp_info.totalswap = 0;
 	tmp_info.freeswap = 0;
 	FOR_EACH_PROCESS(p) {
-		if(p->state) {
-			tmp_info.procs++;
-		}
+		tmp_info.procs++;
+		p = p->next;
 	}
 
 	memcpy_b(info, &tmp_info, sizeof(struct sysinfo));

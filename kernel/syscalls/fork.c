@@ -35,9 +35,10 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	/* check the number of processes already allocated by this UID */
 	count = 0;
 	FOR_EACH_PROCESS(p) {
-		if(p->state && p->uid == current->uid) {
+		if(p->uid == current->uid) {
 			count++;
 		}
+		p = p->next;
 	}
 	if(count > current->rlim[RLIMIT_NPROC].rlim_cur) {
 		printk("WARNING: %s(): RLIMIT_NPROC exceeded.\n", __FUNCTION__);

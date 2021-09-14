@@ -34,9 +34,10 @@ int kill_pid(__pid_t pid, __sigset_t signum)
 	struct proc *p;
 
 	FOR_EACH_PROCESS(p) {
-		if(p->pid == pid && (p->state && p->state != PROC_ZOMBIE)) {
+		if(p->pid == pid && p->state != PROC_ZOMBIE) {
 			return send_sig(p, signum);
 		}
+		p = p->next;
 	}
 	return -ESRCH;
 }
@@ -48,10 +49,11 @@ int kill_pgrp(__pid_t pgid, __sigset_t signum)
 
 	found = 0;
 	FOR_EACH_PROCESS(p) {
-		if(p->pgid == pgid && (p->state && p->state != PROC_ZOMBIE)) {
+		if(p->pgid == pgid && p->state != PROC_ZOMBIE) {
 			send_sig(p, signum);
 			found = 1;
 		}
+		p = p->next;
 	}
 
 	if(!found) {
@@ -154,6 +156,7 @@ struct proc * get_next_zombie(struct proc *parent)
 		if(p->ppid == parent->pid && p->state == PROC_ZOMBIE) {
 			return p;
 		}
+		p = p->next;
 	}
 
 	return NULL;
@@ -187,16 +190,16 @@ int is_orphaned_pgrp(__pid_t pgid)
 	lock_resource(&slot_resource);
 
 	FOR_EACH_PROCESS(p) {
-		if(p->pgid != pgid) {
-			continue;
-		}
-		if(p->state && p->state != PROC_ZOMBIE) {
-			pp = get_proc_by_pid(p->ppid);
-			/* return if only one is found that breaks the rule */
-			if(pp->pgid != pgid || pp->sid == p->sid) {
-				break;
+		if(p->pgid == pgid) {
+			if(p->state != PROC_ZOMBIE) {
+				pp = get_proc_by_pid(p->ppid);
+				/* return if only one is found that breaks the rule */
+				if(pp->pgid != pgid || pp->sid == p->sid) {
+					break;
+				}
 			}
 		}
+		p = p->next;
 	}
 
 	unlock_resource(&slot_resource);
@@ -274,15 +277,14 @@ loop:
 		return 0;
 	}
 	FOR_EACH_PROCESS(p) {
-		if(p->state != PROC_UNUSED) {
-			/*
-			 * Make sure the kernel never reuses active pid, pgid
-			 * or sid values.
-			 */
-			if(lastpid == p->pid || lastpid == p->pgid || lastpid == p->sid) {
-				goto loop;
-			}
+		/*
+		 * Make sure the kernel never reuses active pid, pgid
+		 * or sid values.
+		 */
+		if(lastpid == p->pid || lastpid == p->pgid || lastpid == p->sid) {
+			goto loop;
 		}
+		p = p->next;
 	}
 
 	unlock_resource(&pid_resource);
@@ -294,9 +296,10 @@ struct proc * get_proc_by_pid(__pid_t pid)
 	struct proc *p;
 
 	FOR_EACH_PROCESS(p) {
-		if(p->state && p->pid == pid) {
+		if(p->pid == pid) {
 			return p;
 		}
+		p = p->next;
 	}
 
 	return NULL;

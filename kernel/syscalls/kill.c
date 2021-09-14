@@ -32,6 +32,7 @@ int sys_kill(__pid_t pid, __sigset_t signum)
 				count++;
 				send_sig(p, signum);
 			}
+			p = p->next;
 		}
 		return count ? 0 : -ESRCH;
 	}

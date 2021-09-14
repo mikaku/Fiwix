@@ -29,7 +29,7 @@ static void process_list(void)
 
 	printk("USER   PID   PPID  S  CMD\n");
 	FOR_EACH_PROCESS(p) {
-		if(p->state && p->state != PROC_ZOMBIE) {
+		if(p->state != PROC_ZOMBIE) {
 			printk("%d    %5d  %5d  %s  %s\n",
 				p->uid,
 				p->pid,
@@ -38,6 +38,7 @@ static void process_list(void)
 				p->argv0
 			);
 		}
+		p = p->next;
 	}
 }
 

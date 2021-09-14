@@ -245,9 +245,10 @@ void disassociate_ctty(struct tty *tty)
 
 	/* clear the controlling tty for all processes in the same SID */
 	FOR_EACH_PROCESS(p) {
-		if((p->state != PROC_UNUSED) && (p->sid == current->sid)) {
+		if(p->sid == current->sid) {
 			p->ctty = NULL;
 		}
+		p = p->next;
 	}
 	kill_pgrp(current->pgid, SIGHUP);
 	kill_pgrp(current->pgid, SIGCONT);
@@ -478,9 +479,10 @@ int tty_close(struct inode *i, struct fd *fd_table)
 
 		/* this tty is no longer the controlling tty of any process */
 		FOR_EACH_PROCESS(p) {
-			if((p->state != PROC_UNUSED) && (p->ctty == tty)) {
+			if(p->ctty == tty) {
 				p->ctty = NULL;
 			}
+			p = p->next;
 		}
 	}
 	return 0;
@@ -840,9 +842,10 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if(tty->sid) {
 				if((arg == 1) && IS_SUPERUSER) {
 					FOR_EACH_PROCESS(p) {
-						if((p->state != PROC_UNUSED) && (p->ctty == tty)) {
+						if(p->ctty == tty) {
 							p->ctty = NULL;
 						}
+						p = p->next;
 					}
 				} else {
 					return -EPERM;

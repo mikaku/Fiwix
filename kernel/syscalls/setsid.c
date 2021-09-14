@@ -28,6 +28,7 @@ int sys_setsid(void)
 		if(p != current && p->pgid == current->pid) {
 			return -EPERM;
 		}
+		p = p->next;
 	}
 
 	current->sid = current->pgid = current->pid;

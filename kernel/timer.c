@@ -295,9 +295,6 @@ void irq_timer_bh(void)
 
 	calc_load();
 	FOR_EACH_PROCESS(p) {
-		if(!p->state) {
-			continue;
-		}
 		if(p->timeout > 0 && p->timeout < INFINITE_WAIT) {
 			p->timeout--;
 			if(!p->timeout) {
@@ -311,6 +308,7 @@ void irq_timer_bh(void)
 				send_sig(p, SIGALRM);
 			}
 		}
+		p = p->next;
 	}
 
 	/* callouts */

@@ -68,20 +68,19 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 	}
 
 	FOR_EACH_PROCESS(p) {
-		if(p->state) {
-			if(len == strlen(p->pidstr)) {
-				if(!(strcmp(p->pidstr, name))) {
-					inode = PROC_PID_INO + (p->pid << 12);
-				}
-			}
-			if(inode) {
-				if(!(*i_res = iget(dir->sb, inode))) {
-					return -EACCES;
-				}
-				iput(dir);
-				return 0;
+		if(len == strlen(p->pidstr)) {
+			if(!(strcmp(p->pidstr, name))) {
+				inode = PROC_PID_INO + (p->pid << 12);
 			}
 		}
+		if(inode) {
+			if(!(*i_res = iget(dir->sb, inode))) {
+				return -EACCES;
+			}
+			iput(dir);
+			return 0;
+		}
+		p = p->next;
 	}
 	iput(dir);
 	return -ENOENT;

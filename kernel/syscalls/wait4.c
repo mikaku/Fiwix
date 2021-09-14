@@ -36,6 +36,7 @@ int sys_wait4(__pid_t pid, int *status, int options, struct rusage *ru)
 		flag = 0;
 		FOR_EACH_PROCESS(p) {
 			if(p->ppid != current->pid) {
+				p = p->next;
 				continue;
 			}
 			if(pid > 0) {
@@ -58,13 +59,12 @@ int sys_wait4(__pid_t pid, int *status, int options, struct rusage *ru)
 			}
 			if(flag) {
 				if(p->state == PROC_STOPPED) {
-					if(!p->exit_code) {
-						continue;
+					if(p->exit_code) {
+						if(status) {
+							*status = (p->exit_code << 8) | 0x7F;
+						}
+						p->exit_code = 0;
 					}
-					if(status) {
-						*status = (p->exit_code << 8) | 0x7F;
-					}
-					p->exit_code = 0;
 					if(ru) {
 						get_rusage(p, ru);
 					}
@@ -81,6 +81,7 @@ int sys_wait4(__pid_t pid, int *status, int options, struct rusage *ru)
 					return remove_zombie(p);
 				}
 			}
+			p = p->next;
 			flag = 0;
 		}
 		if(options & WNOHANG) {

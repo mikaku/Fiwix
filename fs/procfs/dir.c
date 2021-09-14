@@ -70,29 +70,28 @@ static int proc_listdir(char *buffer, int count)
 	pd = (struct procfs_dir_entry *)buffer;
 
 	FOR_EACH_PROCESS(p) {
-		if(p->state) {
-			d.inode = PROC_PID_INO + (p->pid << 12);
-			d.mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-			d.nlink = 1;
-			d.lev = -1;
-			d.name_len = 1;
-			n = p->pid;
-			while(n / 10) {
-				n /= 10;
-				d.name_len++;
-			}
-			d.name = p->pidstr;
-			d.data_fn = NULL;
-
-			if(size + sizeof(struct procfs_dir_entry) > (count - 1)) {
-				printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
-				break;
-			}
-
-			size += sizeof(struct procfs_dir_entry);
-			memcpy_b((void *)pd, (void *)&d, sizeof(struct procfs_dir_entry));
-			pd++;
+		d.inode = PROC_PID_INO + (p->pid << 12);
+		d.mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+		d.nlink = 1;
+		d.lev = -1;
+		d.name_len = 1;
+		n = p->pid;
+		while(n / 10) {
+			n /= 10;
+			d.name_len++;
 		}
+		d.name = p->pidstr;
+		d.data_fn = NULL;
+
+		if(size + sizeof(struct procfs_dir_entry) > (count - 1)) {
+			printk("WARNING: kmalloc() is limited to 4096 bytes.\n");
+			break;
+		}
+
+		size += sizeof(struct procfs_dir_entry);
+		memcpy_b((void *)pd, (void *)&d, sizeof(struct procfs_dir_entry));
+		pd++;
+		p = p->next;
 	}
 	return size;
 }

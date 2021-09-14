@@ -36,7 +36,7 @@ int sys_setpgid(__pid_t pid, __pid_t pgid)
 		pgid = p->pid;
 	}
 
-	if(p != current && (p->state == PROC_UNUSED || p->ppid != current->pid)) {
+	if(p != current && p->ppid != current->pid) {
 		return -ESRCH;
 	}
 	if(p->sid == p->pid || p->sid != current->sid) {
@@ -47,11 +47,10 @@ int sys_setpgid(__pid_t pid, __pid_t pgid)
 		struct proc *p;
 
 		FOR_EACH_PROCESS(p) {
-			if(p->state != PROC_UNUSED) {
-				if(p->pgid == pgid && p->sid != current->sid) {
-					return -EPERM;
-				}
+			if(p->pgid == pgid && p->sid != current->sid) {
+				return -EPERM;
 			}
+			p = p->next;
 		}
 	}
 

@@ -14,7 +14,6 @@
 #define PRIO_PGRP	1
 #define PRIO_USER	2
 
-#define PROC_UNUSED	0
 #define PROC_RUNNING	1
 #define PROC_SLEEPING	2
 #define PROC_ZOMBIE	3

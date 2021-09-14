@@ -43,13 +43,14 @@ void do_exit(int exit_code)
 		}
 
 		/* make INIT inherit the children of this exiting process */
-		if(p->state && p->ppid == current->pid) {
+		if(p->ppid == current->pid) {
 			p->ppid = INIT;
 			init->children++;
 			if(p->state == PROC_ZOMBIE) {
 				send_sig(init, SIGCHLD);
 			}
 		}
+		p = p->next;
 	}
 
 	if(SESS_LEADER(current)) {

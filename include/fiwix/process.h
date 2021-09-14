@@ -47,7 +47,7 @@ struct vma {
 #define PG_LEADER(p)	((p)->pid == (p)->pgid)
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
 
-#define FOR_EACH_PROCESS(p)	for(p = &proc_table[INIT]; p; p = p->next)
+#define FOR_EACH_PROCESS(p)		p = proc_table_head->next ; while(p)
 #define FOR_EACH_PROCESS_RUNNING(p)	p = run_head ; while(p)
 
 /* value to be determined during system startup */
@@ -56,6 +56,7 @@ extern unsigned int proc_table_size;	/* size in bytes */
 extern char any_key_to_reboot;
 extern int nr_processes;
 extern __pid_t lastpid;
+extern struct proc *proc_table_head;
 
 struct binargs {
 	unsigned int page[ARG_MAX];

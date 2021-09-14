@@ -184,12 +184,11 @@ int data_proc_loadavg(char *buffer, __pid_t pid)
 	c = avenrun[2] << (SI_LOAD_SHIFT - FSHIFT);
 
 	FOR_EACH_PROCESS(p) {
-		if(p->state) {
-			nprocs++;
-			if(p->state == PROC_RUNNING) {
-				nrun++;
-			}
+		nprocs++;
+		if(p->state == PROC_RUNNING) {
+			nrun++;
 		}
+		p = p->next;
 	}
 
 	size = sprintk(buffer, "%d.%02d %d.%02d %d.%02d %d/%d %d\n", LOAD_INT(a), LOAD_FRAC(a), LOAD_INT(b), LOAD_FRAC(b), LOAD_INT(c), LOAD_FRAC(c), nrun, nprocs, lastpid);
