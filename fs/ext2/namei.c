@@ -740,6 +740,10 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 			errno = -ENOSPC;
 			goto end;
 		}
+		if(S_ISDIR(i_old->i_mode)) {
+			dir_old->i_nlink--;
+			dir_new->i_nlink++;
+		}
 	}
 	if(i_new) {
 		i_new->i_nlink--;
