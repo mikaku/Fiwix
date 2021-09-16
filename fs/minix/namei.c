@@ -707,6 +707,15 @@ int minix_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new
 	d_old->inode = 0;
 	bwrite(buf_old);
 
+	/* update the parent directory */
+	if(S_ISDIR(i_old->i_mode)) {
+		buf_new = find_dir_entry(i_old, dir_old, &d_new, "..");
+		if(buf_new) {
+			d_new->inode = dir_new->inode;
+			bwrite(buf_new);
+		}
+	}
+
 end:
 	inode_unlock(i_old);
 	inode_unlock(dir_old);
