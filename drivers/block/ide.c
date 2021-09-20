@@ -538,6 +538,7 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 int ide_softreset(struct ide *ide)
 {
 	int error;
+	unsigned short int dev_type;
 
 	error = 0;
 
@@ -555,14 +556,16 @@ int ide_softreset(struct ide *ide)
 		printk("WARNING: %s(): reset error on IDE(%d:0).\n", __FUNCTION__, ide->channel);
 		error = 1;
 	} else {
-		/* device is disk by default */
-		ide->drive[IDE_MASTER].flags |= DEVICE_IS_DISK;
-
-		/* check if it's an ATAPI device */
+		/* find out the device type */
 		if(inport_b(ide->base + IDE_SECCNT) == 1 && inport_b(ide->base + IDE_SECNUM) == 1) {
-			if(inport_b(ide->base + IDE_LCYL) == 0x14 && inport_b(ide->base + IDE_HCYL) == 0xEB) {
-				ide->drive[IDE_MASTER].flags &= ~DEVICE_IS_DISK;
-				ide->drive[IDE_MASTER].flags |= DEVICE_IS_ATAPI;
+			dev_type = (inport_b(ide->base + IDE_HCYL) << 8) | inport_b(ide->base + IDE_LCYL);
+			switch(dev_type) {
+				case 0xEB14:
+					ide->drive[IDE_MASTER].flags |= DEVICE_IS_ATAPI;
+					break;
+				case 0x0:
+				default:
+					ide->drive[IDE_MASTER].flags |= DEVICE_IS_DISK;
 			}
 		}
 	}
@@ -583,14 +586,16 @@ int ide_softreset(struct ide *ide)
 		return error;
 	}
 
-	/* device is disk by default */
-	ide->drive[IDE_SLAVE].flags |= DEVICE_IS_DISK;
-
-	/* check if it's an ATAPI device */
+	/* find out the device type */
 	if(inport_b(ide->base + IDE_SECCNT) == 1 && inport_b(ide->base + IDE_SECNUM) == 1) {
-		if(inport_b(ide->base + IDE_LCYL) == 0x14 && inport_b(ide->base + IDE_HCYL) == 0xEB) {
-			ide->drive[IDE_SLAVE].flags &= ~DEVICE_IS_DISK;
-			ide->drive[IDE_SLAVE].flags |= DEVICE_IS_ATAPI;
+		dev_type = (inport_b(ide->base + IDE_HCYL) << 8) | inport_b(ide->base + IDE_LCYL);
+		switch(dev_type) {
+			case 0xEB14:
+				ide->drive[IDE_SLAVE].flags |= DEVICE_IS_ATAPI;
+				break;
+			case 0x0:
+			default:
+				ide->drive[IDE_SLAVE].flags |= DEVICE_IS_DISK;
 		}
 	}
 
