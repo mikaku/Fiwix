@@ -49,6 +49,8 @@ static char *ide_drv_name[] = { "master", "slave" };
 static unsigned int ide0_sizes[256];
 static unsigned int ide1_sizes[256];
 
+static int current_setup = -1;
+
 static struct fs_operations ide_driver_fsop = {
 	0,
 	0,
@@ -510,6 +512,14 @@ void ide_wait400ns(struct ide *ide)
 int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 {
 	int n, status;
+	int selected;
+
+	selected = (mode + (drive << 4)) | lba24_head;
+
+	/* just return if the drive is already setup with the same parameters */
+	if(selected == current_setup) {
+		return 0;
+	}
 
 	status = 0;
 
@@ -523,7 +533,8 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 		return status;
 	}
 
-	outport_b(ide->base + IDE_DRVHD, (mode + (drive << 4)) | lba24_head);
+	current_setup = selected;
+	outport_b(ide->base + IDE_DRVHD, selected);
 	ide_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
