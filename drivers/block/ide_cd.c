@@ -323,7 +323,6 @@ void ide_cd_timer(unsigned int arg)
 
 int ide_cd_open(struct inode *i, struct fd *fd_table)
 {
-	int minor;
 	int drive;
 	char *buffer;
 	int errcode;
@@ -335,11 +334,7 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 		return -EINVAL;
 	}
 
-	minor = MINOR(i->rdev);
 	drive = get_ide_drive(i->rdev);
-	if(drive) {
-		minor &= ~(1 << IDE_SLAVE_MSF);
-	}
 
 	lock_resource(&ide->resource);
 
