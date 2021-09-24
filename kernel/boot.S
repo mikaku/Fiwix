@@ -12,11 +12,12 @@
 
 #define MULTIBOOT_HEADER_FLAGS	MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO
 
-#define CR0_MP	0x00000002	/* CR0 bit-01 MP (Monitor Coprocessor) */
-#define CR0_NE	0x00000020	/* CR0 bit-05 NE (Numeric Error) */
-#define CR0_WP	0x00010000	/* CR0 bit-16 WP (Write Protect) */
-#define CR0_AM	0x00040000	/* CR0 bit-18 AM (Alignment Mask) */
-#define CR0_PG	0x80000000	/* CR0 bit-31 PG (Paging) */
+/* flags for CR0 (control register) */
+#define CR0_MP	0x00000002	/* bit 01 -> enable monitor coprocessor */
+#define CR0_NE	0x00000020	/* bit 05 -> enable native x87 FPU mode */
+#define CR0_WP	0x00010000	/* bit 16 -> enable write protect (for CoW) */
+#define CR0_AM	0x00040000	/* bit 18 -> enable alignment checking */
+#define CR0_PG	0x80000000	/* bit 31 -> enable paging */
 
 .section .setup, "a"		/* "a" attribute means Allocatable section */
 
@@ -94,21 +95,23 @@ multiboot_header:			/* multiboot header */
  * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING !!!
  * ---------------------------------------------------------------------------
  * The minimal page directory of 4MB only works if the in-memory size of the
- * kernel is lesser than 3MB. If you need more space go to the setup_minmem()
- * function and set the 'mb4' variable accordingly.
+ * kernel is smaller than 3MB (which I presume will be its size for a very long
+ * time). If you need more space go to the setup_minmem() function and set the
+ * 'mb4' variable accordingly.
  *
  * In order to know the current size of the Fiwix kernel, just follow this:
  *
- * # readelf -l fiwix
+ * $ readelf -l fiwix
  *   Elf file type is EXEC (Executable file)
- *   Entry point 0xc0100020
+ *   Entry point 0xc0100050
  *   There are 2 program headers, starting at offset 52
  *
  *   Program Headers:
  *     Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
  *     LOAD           0x000074 0x00100000 0x00100000 0x00020 0x00020 R   0x4
- *     LOAD           0x0000a0 0xc0100020 0x00100020 0x33f8c 0x859a0 RWE 0x20
+ *     LOAD           0x0000a0 0xc0100020 0x00100020 0x3996c 0x41cc0 RWE 0x20
  *                                      check this value --> ^^^^^^^
+ *   ...
  */
 	movl	$0xC0010000, %esp	/* default stack address */
 	pushl	$0			/* reset EFLAGS */
@@ -120,11 +123,11 @@ multiboot_header:			/* multiboot header */
 
 	movl	%cr0, %eax
 	andl	$0x00000011, %eax	/* disable all, preserve ET & PE (GRUB) */
-	orl	$CR0_PG, %eax		/* enable PG (Paging) */
-	orl	$CR0_AM, %eax		/* enable AM (Alignment Mask) */
-	orl	$CR0_WP, %eax		/* enable WP (Write Protect) */
-	orl	$CR0_NE, %eax		/* enable NE (Numeric Error) */
-	orl	$CR0_MP, %eax		/* enable MP (Monitor Coprocessor) */
+	orl	$CR0_PG, %eax		/* enable PG */
+	orl	$CR0_AM, %eax		/* enable AM */
+	orl	$CR0_WP, %eax		/* enable WP */
+	orl	$CR0_NE, %eax		/* enable NE */
+	orl	$CR0_MP, %eax		/* enable MP */
 	movl	%eax, %cr0
 
 	call	bss_init		/* initialize BSS segment */
