@@ -86,7 +86,6 @@ int sleep(void *address, int state)
 	}
 	current->sleep_address = address;
 	not_runnable(current, PROC_SLEEPING);
-	RESTORE_FLAGS(flags);
 
 	do_sched();
 
@@ -95,6 +94,7 @@ int sleep(void *address, int state)
 		signum = issig();
 	}
 
+	RESTORE_FLAGS(flags);
 	return signum;
 }
 
