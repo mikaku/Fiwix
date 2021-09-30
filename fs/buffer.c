@@ -403,7 +403,6 @@ int reclaim_buffers(void)
 			}
 		}
 		brelse(buf);
-		do_sched();
 	}
 
 	wakeup(&buffer_wait);
