@@ -7,7 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/config.h>
-#include <fiwix/const.h>
+#include <fiwix/segments.h>
 #include <fiwix/vgacon.h>
 #include <fiwix/console.h>
 #include <fiwix/timer.h>

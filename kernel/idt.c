@@ -6,7 +6,6 @@
  */
 
 #include <fiwix/asm.h>
-#include <fiwix/const.h>
 #include <fiwix/types.h>
 #include <fiwix/segments.h>
 #include <fiwix/string.h>

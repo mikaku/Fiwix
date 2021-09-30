@@ -5,9 +5,9 @@
  * Distributed under the terms of the Fiwix License.
  */
 
-#include <fiwix/const.h>
+#define ASM_FILE	1
 
-#define ASM_FILE	1	/* GRUB stuff */
+#include <fiwix/segments.h>
 #include <fiwix/multiboot1.h>
 
 #define MULTIBOOT_HEADER_FLAGS	MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO

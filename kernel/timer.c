@@ -7,7 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
-#include <fiwix/const.h>
+#include <fiwix/segments.h>
 #include <fiwix/cmos.h>
 #include <fiwix/pit.h>
 #include <fiwix/timer.h>

@@ -7,7 +7,6 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
-#include <fiwix/const.h>
 #include <fiwix/sched.h>
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>

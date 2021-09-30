@@ -8,7 +8,7 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/types.h>
-#include <fiwix/const.h>
+#include <fiwix/segments.h>
 #include <fiwix/sigcontext.h>
 #include <fiwix/process.h>
 #include <fiwix/sched.h>

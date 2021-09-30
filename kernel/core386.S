@@ -5,7 +5,9 @@
  * Distributed under the terms of the Fiwix License.
  */
 
-#include <fiwix/const.h>
+#define ASM_FILE	1
+
+#include <fiwix/segments.h>
 #include <fiwix/unistd.h>
 
 #define CR0_MP	~(0x00000002)	/* CR0 bit-01 MP (Monitor Coprocessor) */
@@ -508,8 +510,7 @@ end_brand_str:
 	mov	0x8(%ebp), %edx		# port addr
 	mov	0xC(%ebp), %edi		# dest
 	mov	0x10(%ebp), %ecx	# count
-	rep
-	insw
+	rep	insw
 
 	popl	%ecx
 	popl	%edi
@@ -557,8 +558,7 @@ end_brand_str:
 	mov	0x8(%ebp), %edx		# port addr
 	mov	0xC(%ebp), %esi		# src
 	mov	0x10(%ebp), %ecx	# count
-	rep
-	outsw
+	rep	outsw
 
 	popl	%ecx
 	popl	%esi

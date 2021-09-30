@@ -9,7 +9,7 @@
 #define _FIWIX_MEMORY_H
 
 #include <fiwix/types.h>
-#include <fiwix/const.h>
+#include <fiwix/segments.h>
 #include <fiwix/process.h>
 
 /*

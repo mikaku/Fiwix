@@ -1,12 +1,24 @@
 /*
  * fiwix/include/fiwix/segments.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_SEGMENTS_H
 #define _FIWIX_SEGMENTS_H
+
+#define KERNEL_BASE_ADDR	0xC0000000
+#define KERNEL_ENTRY_ADDR	0x100000
+
+#define KERNEL_CS	0x08	/* kernel code segment */
+#define KERNEL_DS	0x10	/* kernel data segment */
+#define USER_CS		0x18	/* user code segment */
+#define USER_DS		0x20	/* user data segment */
+#define TSS		0x28	/* TSS segment */
+
+
+#ifndef ASM_FILE
 
 #include <fiwix/types.h>
 
@@ -17,16 +29,11 @@
 #define SD_DATA		0x02	/* DATA Read/Write */
 #define SD_CODE		0x0A	/* CODE Exec/Read */
 
-#define SD_32TSSA	0x09	/* 32-bit TSS (Available) */
-#define SD_32TSSB	0x0B	/* 32-bit TSS (Busy) */
-#define SD_32CALLGATE	0x0C	/* 32-bit Call Gate */
 #define SD_32INTRGATE	0x0E	/* 32-bit Interrupt Gate (0D110) */
 #define SD_32TRAPGATE	0x0F	/* 32-bit Trap Gate (0D111) */
 
 #define SD_CD 		0x10	/* 0 = system / 1 = code/data */
-#define SD_DPL0		0x00	/* priority level 0 */
-#define SD_DPL1		0x20	/* priority level 1 (unused) */
-#define SD_DPL2		0x40	/* priority level 2 (unused) */
+#define SD_DPL0		0x00	/* priority level 0 (kernel) */
 #define SD_DPL3		0x60	/* priority level 3 (user) */
 #define SD_PRESENT	0x80	/* segment present or valid */
 
@@ -65,5 +72,7 @@ struct gate_desc {
 
 void gdt_init(void);
 void idt_init(void);
+
+#endif /* ! ASM_FILE */
 
 #endif /* _FIWIX_SEGMENTS_H */
