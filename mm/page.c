@@ -93,6 +93,21 @@ static void remove_from_hash(struct page *pg)
 	}
 }
 
+static void insert_on_free_list(struct page *pg)
+{
+	if(!page_head) {
+		pg->prev_free = pg->next_free = pg;
+		page_head = pg;
+	} else {
+		pg->next_free = page_head;
+		pg->prev_free = page_head->prev_free;
+		page_head->prev_free->next_free = pg;
+		page_head->prev_free = pg;
+	}
+
+	kstat.free_pages++;
+}
+
 static void remove_from_free_list(struct page *pg)
 {
 	if(!kstat.free_pages) {
@@ -214,22 +229,12 @@ void release_page(int page)
 
 	SAVE_FLAGS(flags); CLI();
 
-	if(!page_head) {
-		pg->prev_free = pg->next_free = pg;
-		page_head = pg;
-	} else {
-		pg->next_free = page_head;
-		pg->prev_free = page_head->prev_free;
-		page_head->prev_free->next_free = pg;
-		page_head->prev_free = pg;
-	}
+	insert_on_free_list(pg);
 
 	/* if page is not cached then place it at the head of the free list */
 	if(!pg->inode) {
 		page_head = pg;
 	}
-
-	kstat.free_pages++;
 
 	RESTORE_FLAGS(flags);
 
@@ -412,16 +417,7 @@ void page_init(int pages)
 		}
 
 		pg->data = (char *)P2V(addr);
-		if(!page_head) {
-			pg->prev_free = pg->next_free = pg;
-			page_head = pg;
-		} else {
-			pg->next_free = page_head;
-			pg->prev_free = page_head->prev_free;
-			page_head->prev_free->next_free = pg;
-			page_head->prev_free = pg;
-		}
-		kstat.free_pages++;
+		insert_on_free_list(pg);
 	}
 	kstat.total_mem_pages = kstat.free_pages;
 	kstat.kernel_reserved <<= 2;

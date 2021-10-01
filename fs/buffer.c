@@ -90,6 +90,27 @@ static void remove_from_hash(struct buffer *buf)
 	}
 }
 
+static void insert_on_free_list(struct buffer *buf)
+{
+	if(!buffer_head) {
+		buf->prev_free = buf->next_free = buf;
+		buffer_head = buf;
+	} else {
+		buf->next_free = buffer_head;
+		buf->prev_free = buffer_head->prev_free;
+		buffer_head->prev_free->next_free = buf;
+		buffer_head->prev_free = buf;
+
+		/*
+		 * If is marked as not valid then the buffer is
+		 * placed at the beginning of the free list.
+		 */
+		if(!(buf->flags & BUFFER_VALID)) {
+			buffer_head = buf;
+		}
+	}
+}
+
 static void remove_from_free_list(struct buffer *buf)
 {
 	if(!buffer_head) {
@@ -286,23 +307,7 @@ void brelse(struct buffer *buf)
 
 	SAVE_FLAGS(flags); CLI();
 
-	if(!buffer_head) {
-		buf->prev_free = buf->next_free = buf;
-		buffer_head = buf;
-	} else {
-		buf->next_free = buffer_head;
-		buf->prev_free = buffer_head->prev_free;
-		buffer_head->prev_free->next_free = buf;
-		buffer_head->prev_free = buf;
-
-		/*
-		 * If is marked as not valid then the buffer is
-		 * placed at the beginning of the free list.
-		 */
-		if(!(buf->flags & BUFFER_VALID)) {
-			buffer_head = buf;
-		}
-	}
+	insert_on_free_list(buf);
 	buf->flags &= ~BUFFER_LOCKED;
 
 	RESTORE_FLAGS(flags);
@@ -428,6 +433,6 @@ void buffer_init(void)
 	memset_b(buffer_hash_table, NULL, buffer_hash_table_size);
 	for(n = 0; n < NR_BUFFERS; n++) {
 		buf = &buffer_table[n];
-		brelse(buf);
+		insert_on_free_list(buf);
 	}
 }

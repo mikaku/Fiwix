@@ -92,6 +92,21 @@ static void remove_from_hash(struct inode *i)
 	}
 }
 
+static void insert_on_free_list(struct inode *i)
+{
+	if(!inode_head) {
+		i->prev_free = i->next_free = i;
+		inode_head = i;
+	} else {
+		i->next_free = inode_head;
+		i->prev_free = inode_head->prev_free;
+		inode_head->prev_free->next_free = i;
+		inode_head->prev_free = i;
+	}
+
+	kstat.free_inodes++;
+}
+
 static void remove_from_free_list(struct inode *i)
 {
 	if(!kstat.free_inodes) {
@@ -365,18 +380,7 @@ void iput(struct inode *i)
 	}
 
 	SAVE_FLAGS(flags); CLI();
-
-	if(!inode_head) {
-		i->prev_free = i->next_free = i;
-		inode_head = i;
-	} else {
-		i->next_free = inode_head;
-		i->prev_free = inode_head->prev_free;
-		inode_head->prev_free->next_free = i;
-		inode_head->prev_free = i;
-	}
-	kstat.free_inodes++;
-
+	insert_on_free_list(i);
 	RESTORE_FLAGS(flags);
 }
 
@@ -432,6 +436,6 @@ void inode_init(void)
 	for(n = 0; n < NR_INODES; n++) {
 		i = &inode_table[n];
 		i->count = 1;
-		iput(i);
+		insert_on_free_list(i);
 	}
 }
