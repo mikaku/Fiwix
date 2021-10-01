@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/pic.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -127,7 +127,7 @@ void disable_irq(int irq)
 	outport_b(addr, inport_b(addr) | (1 << irq));
 }
 
-/* each ISR points to this function */
+/* each ISR points to this function (interrupts are disabled) */
 void irq_handler(int num, struct sigcontext sc)
 {
 	struct interrupt *irq;
@@ -167,9 +167,6 @@ void irq_handler(int num, struct sigcontext sc)
 		return;
 	}
 
-	/* all handlers execute with interrupts disabled */
-	disable_irq(num);
-
 	if(num > 7) {
 		outport_b(PIC_SLAVE, EOI);
 	}
@@ -181,18 +178,15 @@ void irq_handler(int num, struct sigcontext sc)
 		irq->handler(num, &sc);
 		irq = irq->next;
 	} while(irq);
-
-	enable_irq(num);
 }
 
-/* do bottom halves (interrupts are (FIXME: not yet) enabled) */
+/* do bottom halves (interrupts are enabled) */
 void do_bh(void)
 {
 	struct bh *b;
 	void (*fn)(void);
 
 	if(!lock_area(AREA_BH)) {
-		//FIXME: STI();
 		if((b = bh_table)) {
 			do {
 				if(b->flags & BH_ACTIVE) {
@@ -203,7 +197,6 @@ void do_bh(void)
 				b = b->next;
 			} while(b);
 		}
-		//FIXME: CLI();
 		unlock_area(AREA_BH);
 	}
 }
