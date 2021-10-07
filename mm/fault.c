@@ -47,9 +47,9 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 
 	/* Copy On Write feature */
 	if(pg->count > 1) {
-		/* a page not marked as COW means it's read-only */
+		/* a page not marked as copy-on-write means it's read-only */
 		if(!(pg->flags & PAGE_COW)) {
-			printk("Oops!, page %d NOT marked for COW.\n", pg->page);
+			printk("Oops!, page %d NOT marked for CoW.\n", pg->page);
 			send_sigsegv(sc);
 			return 0;
 		}
@@ -67,9 +67,9 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 	} else {
 		/* last page of Copy On Write procedure */
 		if(pg->count == 1) {
-			/* a page not marked as COW means it's read-only */
+			/* a page not marked as copy-on-write means it's read-only */
 			if(!(pg->flags & PAGE_COW)) {
-				printk("Oops!, last page %d NOT marked for COW.\n", pg->page);
+				printk("Oops!, last page %d NOT marked for CoW.\n", pg->page);
 				send_sigsegv(sc);
 				return 0;
 			}
