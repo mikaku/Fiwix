@@ -18,27 +18,9 @@
 #define SPACE_CHAR	32
 
 unsigned char *font_data;
+unsigned char *cursor_shape;
 struct video_parms video;
 static unsigned char screen_is_off = 0;
-
-static unsigned char cursor_shape[] = {
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0x00,   /* -------- */
-        0xFF,   /* ######## */
-        0xFF,   /* ######## */
-};
 
 /* RGB colors */
 static int color_table[] = {
@@ -127,7 +109,7 @@ static void draw_glyph(unsigned char *addr, int x, int y, unsigned char *ch, int
 
 	for(n = 0; n < video.fb_char_height; n++) {
 		if(*(ch + n) == 0) {
-			if(ch == &cursor_shape[0]) {
+			if(ch == cursor_shape) {
 				addr += video.fb_pitch;
 				continue;
 			}
@@ -177,7 +159,7 @@ static void draw_cursor(struct vconsole *vc)
 	unsigned char *vidmem;
 
 	vidmem = vc->vidmem;
-	draw_glyph(vidmem, vc->x, vc->y, &cursor_shape[0], DEF_MODE >> 8);
+	draw_glyph(vidmem, vc->x, vc->y, cursor_shape, DEF_MODE >> 8);
 }
 
 void fbcon_put_char(struct vconsole *vc, unsigned char ch)
@@ -603,4 +585,5 @@ void fbcon_init(void)
 		font_desc = fbcon_find_font(16);
 	}
 	font_data = font_desc->data;
+	cursor_shape = font_desc->cursorshape;
 }

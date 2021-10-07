@@ -3075,9 +3075,23 @@ static unsigned char fontdata_8x10[] = {
 
 };
 
+static unsigned char cursorshape_8x10[] = {
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0x00,   /* -------- */
+        0xFF,   /* ######## */
+        0xFF,   /* ######## */
+};
+
 struct fbcon_font_desc font_lat9_8x10 = {
         "VGA8x10",
         8,
         10,
-        fontdata_8x10
+        fontdata_8x10,
+	cursorshape_8x10
 };

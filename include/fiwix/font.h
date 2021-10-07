@@ -13,6 +13,7 @@ struct fbcon_font_desc {
 	int width;
 	int height;
 	void *data;
+	void *cursorshape;
 };
 
 extern struct fbcon_font_desc font_vga_8x8;
