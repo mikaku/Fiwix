@@ -68,15 +68,16 @@ struct kernel_stat {
 	int tz_dsttime;			/* type of DST correction */
 	unsigned int uptime;		/* seconds since boot */
 	unsigned int processes;		/* number of forks since boot */
-	int physical_pages;		/* physical memory in pages */
-	int kernel_reserved;		/* kernel memory reserved in KB */
-	int physical_reserved;		/* physical memory reserved in KB */
-	int total_mem_pages;		/* total memory in pages */
+	int physical_pages;		/* physical memory (in pages) */
+	int kernel_reserved;		/* kernel memory reserved (in KB) */
+	int physical_reserved;		/* physical memory reserved (in KB) */
+	int total_mem_pages;		/* total memory (in pages) */
 	int free_pages;			/* pages on free list */
 	int free_inodes;		/* inodes on free list */
-	int buffers;			/* memory used by buffers in KB */
+	int buffers;			/* memory used by buffers (in KB) */
 	int cached;			/* memory used to cache file pages */
 	int shared;			/* pages with count > 1 */
+	int dirty;			/* dirty buffers (in KB) */
 	unsigned long int random_seed;	/* next random seed */
 };
 extern struct kernel_stat kstat;

@@ -102,6 +102,7 @@ static void insert_on_dirty_list(struct buffer *buf)
 		buffer_dirty_head->prev_dirty = buf;
 	}
 	buffer_dirty_head = buf;
+	kstat.dirty += (PAGE_SIZE / 1024);
 }
 
 static void remove_from_dirty_list(struct buffer *buf)
@@ -117,6 +118,7 @@ static void remove_from_dirty_list(struct buffer *buf)
 	}
 	buf->prev_dirty = buf->next_dirty = NULL;
 	buf->flags &= ~BUFFER_DIRTY;
+	kstat.dirty -= (PAGE_SIZE / 1024);
 }
 
 static void insert_on_free_list(struct buffer *buf)
