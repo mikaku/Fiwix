@@ -26,6 +26,8 @@ struct buffer {
 	struct buffer *next_hash;
 	struct buffer *prev_free;
 	struct buffer *next_free;
+	struct buffer *prev_dirty;
+	struct buffer *next_dirty;
 };
 extern struct buffer *buffer_table;
 extern struct buffer **buffer_hash_table;

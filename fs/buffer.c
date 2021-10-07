@@ -42,6 +42,7 @@
 
 struct buffer *buffer_table;		/* buffer pool */
 struct buffer *buffer_head;		/* buffer pool head */
+struct buffer *buffer_dirty_head;
 struct buffer **buffer_hash_table;
 
 static struct resource sync_resource = { NULL, NULL };
@@ -88,6 +89,34 @@ static void remove_from_hash(struct buffer *buf)
 		}
 		h = &(*h)->next_hash;
 	}
+}
+
+static void insert_on_dirty_list(struct buffer *buf)
+{
+	if(buf->prev_dirty || buf->next_dirty) {
+		return;
+	}
+
+	if(buffer_dirty_head) {
+		buf->next_dirty = buffer_dirty_head;
+		buffer_dirty_head->prev_dirty = buf;
+	}
+	buffer_dirty_head = buf;
+}
+
+static void remove_from_dirty_list(struct buffer *buf)
+{
+	if(buf->next_dirty) {
+		buf->next_dirty->prev_dirty = buf->prev_dirty;
+	}
+	if(buf->prev_dirty) {
+		buf->prev_dirty->next_dirty = buf->next_dirty;
+	}
+	if(buf == buffer_dirty_head) {
+		buffer_dirty_head = buf->next_dirty;
+	}
+	buf->prev_dirty = buf->next_dirty = NULL;
+	buf->flags &= ~BUFFER_DIRTY;
 }
 
 static void insert_on_free_list(struct buffer *buf)
@@ -193,7 +222,7 @@ static void sync_one_buffer(struct buffer *buf)
 			}
 			return;
 		}
-		buf->flags &= ~BUFFER_DIRTY;
+		remove_from_dirty_list(buf);
 	} else {
 		printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
 	}
@@ -307,6 +336,10 @@ void brelse(struct buffer *buf)
 
 	SAVE_FLAGS(flags); CLI();
 
+	if(buf->flags & BUFFER_DIRTY) {
+		insert_on_dirty_list(buf);
+	}
+
 	insert_on_free_list(buf);
 	buf->flags &= ~BUFFER_LOCKED;
 
@@ -318,22 +351,20 @@ void brelse(struct buffer *buf)
 
 void sync_buffers(__dev_t dev)
 {
-	struct buffer *buf;
-	int n;
+	struct buffer *buf, *next;
 
-	buf = &buffer_table[0];
+	buf = buffer_dirty_head;
 
 	lock_resource(&sync_resource);
-	for(n = 0; n < NR_BUFFERS; n++) {
-		if(buf->flags & BUFFER_DIRTY) {
-			if(!dev || buf->dev == dev) {
-				buffer_wait(buf);
-				sync_one_buffer(buf);
-				buf->flags &= ~BUFFER_LOCKED;
-				wakeup(&buffer_wait);
-			}
+	while(buf) {
+		next = buf->next_dirty;
+		if(!dev || buf->dev == dev) {
+			buffer_wait(buf);
+			sync_one_buffer(buf);
+			buf->flags &= ~BUFFER_LOCKED;
+			wakeup(&buffer_wait);
 		}
-		buf++;
+		buf = next;
 	}
 	unlock_resource(&sync_resource);
 }
@@ -363,8 +394,7 @@ void invalidate_buffers(__dev_t dev)
 
 /*
  * When kernel runs out of pages, kswapd is awaken and it calls this function
- * which goes throught the buffer free list, freeing up to NR_BUF_RECLAIM
- * buffers.
+ * which goes throught the buffer cache, freeing up to NR_BUF_RECLAIM buffers.
  */
 int reclaim_buffers(void)
 {
@@ -431,6 +461,7 @@ void buffer_init(void)
 
 	memset_b(buffer_table, NULL, buffer_table_size);
 	memset_b(buffer_hash_table, NULL, buffer_hash_table_size);
+
 	for(n = 0; n < NR_BUFFERS; n++) {
 		buf = &buffer_table[n];
 		insert_on_free_list(buf);
