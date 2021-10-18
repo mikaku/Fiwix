@@ -205,6 +205,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.columns = 80;
 		video.lines = 25;
 		video.flags = VPF_VGA;
+		video.memsize = 384 * 1024;
 		return;
 	}
 
@@ -304,5 +305,6 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.columns = 80;
 		video.lines = 25;
 		video.flags = VPF_VGA;
+		video.memsize = 384 * 1024;
 	}
 }

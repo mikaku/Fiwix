@@ -329,10 +329,9 @@ void vgacon_init(void)
 		video.port = COLOR_6845_ADDR;
 		strcpy((char *)video.signature, "VGA color 80x25");
 	}
-	video.memsize = 384 * 1024;
-	video.flags = VPF_VGA;
-	video.columns = 80;
-	video.lines = 25;
+
+	/* some parameters already set in multiboot.c */
+
 	video.put_char = vgacon_put_char;
 	video.insert_char = vgacon_insert_char;
 	video.delete_char = vgacon_delete_char;
