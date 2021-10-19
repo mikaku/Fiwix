@@ -165,11 +165,7 @@ static void lf(struct vconsole *vc)
 
 static void ri(struct vconsole *vc)
 {
-	if(vc->y == 0) {
-		video.scroll_screen(vc, 0, SCROLL_DOWN);
-	} else {
-		vc->y--;
-	}
+	video.scroll_screen(vc, 0, SCROLL_DOWN);
 }
 
 static void csi_J(struct vconsole *vc, int mode)
