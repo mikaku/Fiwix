@@ -874,10 +874,10 @@ void vconsole_select_final(int new_cons)
 		vc[current_cons].flags &= ~CONSOLE_HAS_FOCUS;
 		vc[new_cons].vidmem = (unsigned char *)video.address;
 		vc[new_cons].flags |= CONSOLE_HAS_FOCUS;
-		video.restore_screen(&vc[new_cons]);
 		current_cons = new_cons;
-		set_leds(vc[current_cons].led_status);
 		video.update_curpos(&vc[current_cons]);
+		video.restore_screen(&vc[current_cons]);
+		set_leds(vc[current_cons].led_status);
 
 		video.buf_y = vc[current_cons].y;
 		video.buf_top = 0;
