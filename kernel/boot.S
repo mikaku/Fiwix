@@ -146,5 +146,7 @@ multiboot_header:			/* multiboot header */
 	pushl	%ebx			/* save Multiboot info structure */
 	pushl	%ecx			/* save Multiboot magic value */
 	call	start_kernel
+
+	/* not reached */
 	jmp	cpu_idle
 
