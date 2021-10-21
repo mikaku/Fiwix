@@ -309,11 +309,12 @@ struct buffer * bread(__dev_t dev, __blk_t block, int size)
 	}
 
 	if((buf = getblk(dev, block, size))) {
-		if(!(buf->flags & BUFFER_VALID)) {
-			if(d->fsop && d->fsop->read_block) {
-				if(d->fsop->read_block(dev, block, buf->data, size) >= 0) {
-					buf->flags |= BUFFER_VALID;
-				}
+		if(buf->flags & BUFFER_VALID) {
+			return buf;
+		}
+		if(d->fsop && d->fsop->read_block) {
+			if(d->fsop->read_block(dev, block, buf->data, size) >= 0) {
+				buf->flags |= BUFFER_VALID;
 			}
 		}
 		if(buf->flags & BUFFER_VALID) {
