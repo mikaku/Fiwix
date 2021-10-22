@@ -463,7 +463,7 @@ void mem_init(void)
 void mem_stats(void)
 {
 	printk("\n");
-	printk("memory: total/available=%dKB/%dKB, kernel=%dKB, reserved=%dKB\n", kstat.physical_pages << 2, kstat.total_mem_pages << 2, kstat.kernel_reserved, kstat.physical_reserved);
+	printk("memory: total=%dKB, user=%dKB, kernel=%dKB, reserved=%dKB\n", kstat.physical_pages << 2, kstat.total_mem_pages << 2, kstat.kernel_reserved, kstat.physical_reserved);
 	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d (%dKB)\n", KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024, buffer_table_size / sizeof(struct buffer), (buffer_table_size + buffer_hash_table_size) / 1024);
 	printk("\tinodes=%d (%dKB)\n\n", inode_table_size / sizeof(struct inode), (inode_table_size + inode_hash_table_size) / 1024);
 }
