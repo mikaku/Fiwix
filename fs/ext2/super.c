@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/ext2/super.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -167,6 +167,7 @@ int ext2_remount_fs(struct superblock *sb, int flags)
 	} else {
 		/* switching from RO to RW */
 		check_superblock(ext2sb);
+		memcpy_b(&sb->u.ext2.sb, ext2sb, sizeof(struct ext2_super_block));
 		sb->u.ext2.sb.s_state &= ~EXT2_VALID_FS;
 		sb->u.ext2.sb.s_mnt_count++;
 		sb->u.ext2.sb.s_mtime = CURRENT_TIME;

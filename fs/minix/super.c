@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/super.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -220,6 +220,7 @@ int minix_remount_fs(struct superblock *sb, int flags)
 	} else {
 		/* switching from RO to RW */
 		check_superblock(ms);
+		memcpy_b(&sb->u.minix.sb, ms, sizeof(struct minix_super_block));
 		sb->u.minix.sb.s_state &= ~MINIX_VALID_FS;
 		ms->s_state &= ~MINIX_VALID_FS;
 	}
