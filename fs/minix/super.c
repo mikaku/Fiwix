@@ -200,7 +200,7 @@ int minix_read_superblock(__dev_t dev, struct superblock *sb)
 int minix_remount_fs(struct superblock *sb, int flags)
 {
 	struct buffer *buf;
-	struct minix_super_block *ms;
+	struct minix_super_block *minixsb;
 
 	if((flags & MS_RDONLY) == (sb->flags & MS_RDONLY)) {
 		return 0;
@@ -211,18 +211,18 @@ int minix_remount_fs(struct superblock *sb, int flags)
 		superblock_unlock(sb);
 		return -EIO;
 	}
-	ms = (struct minix_super_block *)buf->data;
+	minixsb = (struct minix_super_block *)buf->data;
 
 	if(flags & MS_RDONLY) {
 		/* switching from RW to RO */
 		sb->u.minix.sb.s_state |= MINIX_VALID_FS;
-		ms->s_state |= MINIX_VALID_FS;
+		minixsb->s_state |= MINIX_VALID_FS;
 	} else {
 		/* switching from RO to RW */
-		check_superblock(ms);
-		memcpy_b(&sb->u.minix.sb, ms, sizeof(struct minix_super_block));
+		check_superblock(minixsb);
+		memcpy_b(&sb->u.minix.sb, minixsb, sizeof(struct minix_super_block));
 		sb->u.minix.sb.s_state &= ~MINIX_VALID_FS;
-		ms->s_state &= ~MINIX_VALID_FS;
+		minixsb->s_state &= ~MINIX_VALID_FS;
 	}
 
 	sb->dirty = 1;
