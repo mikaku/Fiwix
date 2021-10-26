@@ -187,16 +187,18 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				return -EIO;
 			}
 		}
+		outport_b(ide->base + IDE_COMMAND, cmd);
 		if(ide->channel == IDE_PRIMARY) {
 			ide0_wait_interrupt = ide->base;
 			creq.fn = ide0_timer;
 			creq.arg = 0;
 			add_callout(&creq, WAIT_FOR_IDE);
-			outport_b(ide->base + IDE_COMMAND, cmd);
 			if(ide0_wait_interrupt) {
 				sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
 			}
-			if(!ide0_timeout) {
+			if(ide0_timeout) {
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			} else {
 				del_callout(&creq);
 			}
 		}
@@ -205,11 +207,12 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			creq.fn = ide1_timer;
 			creq.arg = 0;
 			add_callout(&creq, WAIT_FOR_IDE);
-			outport_b(ide->base + IDE_COMMAND, cmd);
 			if(ide1_wait_interrupt) {
 				sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
 			}
-			if(!ide1_timeout) {
+			if(ide1_timeout) {
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			} else {
 				del_callout(&creq);
 			}
 		}
@@ -342,7 +345,9 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			if(ide0_wait_interrupt) {
 				sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
 			}
-			if(!ide0_timeout) {
+			if(ide0_timeout) {
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			} else {
 				del_callout(&creq);
 			}
 		}
@@ -354,7 +359,9 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			if(ide1_wait_interrupt) {
 				sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
 			}
-			if(!ide1_timeout) {
+			if(ide1_timeout) {
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			} else {
 				del_callout(&creq);
 			}
 		}
