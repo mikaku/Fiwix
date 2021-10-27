@@ -40,6 +40,13 @@ static void process_list(void)
 		}
 		p = p->next;
 	}
+
+	printk("PIDs in running queue: ");
+	FOR_EACH_PROCESS_RUNNING(p) {
+		printk("%d ", p->pid);
+		p = p->next_run;
+	}
+	printk("\n");
 }
 
 void do_sysrq(int op)
