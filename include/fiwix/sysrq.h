@@ -8,8 +8,9 @@
 #ifndef _FIWIX_SYSRQ_H
 #define _FIWIX_SYSRQ_H
 
-#define SYSRQ_STACK	0x00000002	/* Stack backtrace */
-#define SYSRQ_TASKS	0x00000004	/* Task list */
+/* the key combination consists of Alt+SysRq and another key, defined below */
+#define SYSRQ_STACK	0x00000002	/* 'l' -> stack backtrace */
+#define SYSRQ_TASKS	0x00000004	/* 't' -> task list */
 #define SYSRQ_UNDEF	0x80000000	/* Undefined operation */
 
 void do_sysrq(int);
