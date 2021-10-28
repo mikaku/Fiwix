@@ -27,7 +27,7 @@
 #define EDX		0x24	/* |				*/
 #define ECX		0x28	/* |				*/
 #define EAX		0x2C	/* /				*/
-#define ERR		0x30	/*   error code or padding	*/
+#define ERR		0x30	/*   error code (or padding)	*/
 #define EIP		0x34	/* \				*/
 #define CS		0x38	/* | saved by processor		*/
 #define FLAGS		0x3C	/* /				*/
@@ -52,25 +52,27 @@
 	addl	$4, %esp
 
 #define BOTTOM_HALVES							\
-	cmpl	$0, intr_count						;\
-	jne	2f							;\
-	incl	intr_count						;\
-	call	do_bh							;\
-	decl	intr_count
+	sti								;\
+	call	do_bh
 
-#define CHECK_SIGNALS							\
+#define CHECK_IF_NESTED_INTERRUPT					\
+	testl	$SS_RPL3, CS(%esp)					;\
+	jz	2f
+
+#define CHECK_IF_SIGNALS						\
 	call	issig							;\
-	cmpl	$0, %eax						;\
-	je	1f							;\
+	testl	$0xFFFFFFFF, %eax					;\
+	jz	1f							;\
 	movl	%esp, %eax						;\
 	pushl	%eax							;\
 	call	psig							;\
 	addl	$4, %esp						;\
 1:
 
-#define SCHEDULE							\
-	cmpl	$0, need_resched					;\
-	je	2f							;\
+#define CHECK_IF_NEED_SCHEDULE						\
+	movl	need_resched, %eax					;\
+	testl	$0xFFFFFFFF, %eax					;\
+	jz	2f							;\
 	call	do_sched						;\
 2:
 
@@ -92,8 +94,9 @@
 	SAVE_ALL							;\
 	EXCEPTION(num)							;\
 	BOTTOM_HALVES							;\
-	CHECK_SIGNALS							;\
-	SCHEDULE							;\
+	CHECK_IF_NESTED_INTERRUPT					;\
+	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -103,8 +106,9 @@
 	SAVE_ALL							;\
 	EXCEPTION(num)							;\
 	BOTTOM_HALVES							;\
-	CHECK_SIGNALS							;\
-	SCHEDULE							;\
+	CHECK_IF_NESTED_INTERRUPT					;\
+	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -123,8 +127,9 @@ BUILD_EXCEPTION_SIMUL_ERR(6, except6)	/* INVALID OPCODE */
 	EXCEPTION(0x7)
 	clts			# floating-opcode cached!
 	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
+	CHECK_IF_NESTED_INTERRUPT
+	CHECK_IF_SIGNALS
+	CHECK_IF_NEED_SCHEDULE
 	RESTORE_ALL
 	iret
 
@@ -161,8 +166,9 @@ BUILD_EXCEPTION_SIMUL_ERR(31, except31)	/* INTEL RESERVED */
 	SAVE_ALL							;\
 	IRQ(num)							;\
 	BOTTOM_HALVES							;\
-	CHECK_SIGNALS							;\
-	SCHEDULE							;\
+	CHECK_IF_NESTED_INTERRUPT					;\
+	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -257,8 +263,8 @@ BUILD_IRQ(15, irq15)
 	movl	%eax, EAX(%esp)		# save the return value
 
 	BOTTOM_HALVES
-	CHECK_SIGNALS
-	SCHEDULE
+	CHECK_IF_SIGNALS
+	CHECK_IF_NEED_SCHEDULE
 .align 4
 .globl return_from_syscall; return_from_syscall:
 	RESTORE_ALL

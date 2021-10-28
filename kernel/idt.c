@@ -44,8 +44,7 @@ void idt_init(void)
 	memset_b(idt, NULL, sizeof(idt));
 	for(n = 0; n < NR_IDT_ENTRIES; n++) {
 		if(n < 0x20) {
-			/* FIXME: must be SD_32TRAPGATE for true multitasking */
-			set_idt_entry(n, (__off_t)except_handlers[n], SD_32INTRGATE | SD_PRESENT);
+			set_idt_entry(n, (__off_t)except_handlers[n], SD_32TRAPGATE | SD_PRESENT);
 			continue;
 		}
 		if(n < 0x30) {
@@ -55,8 +54,7 @@ void idt_init(void)
 		set_idt_entry(n, (__off_t)&unknown_irq, SD_32INTRGATE | SD_PRESENT);
 	}
 
-	/* FIXME: must be SD_32TRAPGATE for true multitasking */
-	set_idt_entry(0x80, (__off_t)&syscall, SD_32INTRGATE | SD_DPL3 | SD_PRESENT);
+	set_idt_entry(0x80, (__off_t)&syscall, SD_32TRAPGATE | SD_DPL3 | SD_PRESENT);
 
 	load_idt((unsigned int)&idtr);
 }
