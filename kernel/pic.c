@@ -44,14 +44,13 @@ int register_irq(int num, struct interrupt *new_irq)
 	}
 
 	irq = &irq_table[num];
-	if(*irq) {
-		do {
-			if(*irq == new_irq) {
-				printk("WARNING: %s(): interrupt %d already registered!\n", __FUNCTION__, num);
-				return -EINVAL;
-			}
-			irq = &(*irq)->next;
-		} while(*irq);
+
+	while(*irq) {
+		if(*irq == new_irq) {
+			printk("WARNING: %s(): interrupt %d already registered!\n", __FUNCTION__, num);
+			return -EINVAL;
+		}
+		irq = &(*irq)->next;
 	}
 	*irq = new_irq;
 	new_irq->ticks = 0;
@@ -69,22 +68,20 @@ int unregister_irq(int num, struct interrupt *old_irq)
 	irq = &irq_table[num];
 	prev_irq = NULL;
 
-	if(*irq) {
-		do {
-			if(*irq == old_irq) {
-				if((*irq)->next) {
-					printk("WARNING: %s(): cannot unregister interrupt %d.\n", __FUNCTION__, num);
-					return -EINVAL;
-				}
-				*irq = NULL;
-				if(prev_irq) {
-					prev_irq->next = NULL;
-				}
-				break;
+	while(*irq) {
+		if(*irq == old_irq) {
+			if((*irq)->next) {
+				printk("WARNING: %s(): cannot unregister interrupt %d.\n", __FUNCTION__, num);
+				return -EINVAL;
 			}
-			prev_irq = *irq;
-			irq = &(*irq)->next;
-		} while(*irq);
+			*irq = NULL;
+			if(prev_irq) {
+				prev_irq->next = NULL;
+			}
+			break;
+		}
+		prev_irq = *irq;
+		irq = &(*irq)->next;
 	}
 	return 0;
 }
@@ -97,10 +94,8 @@ void add_bh(struct bh *new)
 	SAVE_FLAGS(flags); CLI();
 
 	b = &bh_table;
-	if(*b) {
-		do {
-			b = &(*b)->next;
-		} while(*b);
+	while(*b) {
+		b = &(*b)->next;
 	}
 	*b = new;
 
@@ -187,15 +182,14 @@ void do_bh(void)
 	void (*fn)(void);
 
 	if(!lock_area(AREA_BH)) {
-		if((b = bh_table)) {
-			do {
-				if(b->flags & BH_ACTIVE) {
-					b->flags &= ~BH_ACTIVE;
-					fn = b->fn;
-					(*fn)();
-				}
-				b = b->next;
-			} while(b);
+		b = bh_table;
+		while(b) {
+			if(b->flags & BH_ACTIVE) {
+				b->flags &= ~BH_ACTIVE;
+				fn = b->fn;
+				(*fn)();
+			}
+			b = b->next;
 		}
 		unlock_area(AREA_BH);
 	}
