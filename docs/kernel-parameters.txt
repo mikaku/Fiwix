@@ -7,17 +7,17 @@ console=	Set the output console device
 		Options: /dev/tty[1..12], /dev/ttyS[0..3]
 		Serial consoles have fixed settings: 9600,N,8,1
 
-initrd=		The initial ramdisk image file which will be loaded by GRUB
+initrd=		Optional ramdisk image file which will be loaded by GRUB
 
 noramdisk	Disable RAM disk driver
 
-ramdisksize=	Size of the RAM disk device in kilobytes (KB)
+ramdisksize=	Size of the RAM disk (in KiB)
 
 root=		Root device name
 		Options: /dev/fd0, /dev/hda1, ...
 
 rootfstype=	Set the root filesystem type
-		Options: minix, ext2, iso9660
+		Options: ext2, minix, iso9660
 
 
 Use -- to separate kernel parameters from arguments to init.
