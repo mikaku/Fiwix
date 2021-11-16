@@ -289,7 +289,6 @@ void mem_init(void)
 		}
 	}
 
-	map_kaddr(0xA0000, KERNEL_ENTRY_ADDR, PAGE_PRESENT | PAGE_RW);	// FIXME: PROVISIONAL (DEBUG IN TIMER)!!
 	map_kaddr(KERNEL_ENTRY_ADDR, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 
 	/*
