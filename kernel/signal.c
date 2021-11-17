@@ -20,8 +20,6 @@
 
 int send_sig(struct proc *p, __sigset_t signum)
 {
-	struct proc *z;
-
 	if(signum > NSIG || !p) {
 		return -EINVAL;
 	}
@@ -74,11 +72,6 @@ int send_sig(struct proc *p, __sigset_t signum)
 			break;
 	}
 
-	if(p->sigaction[signum - 1].sa_handler == SIG_IGN && signum != SIGCHLD) {
-		return 0;
-	}
-
-	/* SIGCHLD is ignored by default */
 	if(p->sigaction[signum - 1].sa_handler == SIG_DFL) {
 		/*
 		 * INIT process is special, it only gets signals that have the
@@ -88,25 +81,27 @@ int send_sig(struct proc *p, __sigset_t signum)
 		if(p->pid == INIT) {
 			return 0;
 		}
+
+		/* SIGCHLD is ignored by default */
 		if(signum == SIGCHLD) {
 			return 0;
 		}
 	}
 
-	/* if SIGCHLD is ignored reap its children (prevent zombies) */
 	if(p->sigaction[signum - 1].sa_handler == SIG_IGN) {
+		/* if SIGCHLD is ignored reap its children (prevent zombies) */
 		if(signum == SIGCHLD) {
-			while((z = get_next_zombie(p))) {
-				remove_zombie(z);
+			while(sys_waitpid(-1, NULL, WNOHANG) > 0) {
+				continue;
 			}
-			return 0;
 		}
+		return 0;
 	}
 
 	p->sigpending |= 1 << (signum - 1);
 	p->usage.ru_nsignals++;
 
-	/* wake up the process only if that signal is not blocked */
+	/* wake up the process only if the signal is not blocked */
 	if(!(p->sigblocked & (1 << (signum - 1)))) {
 		wakeup_proc(p);
 	}
