@@ -164,6 +164,7 @@ struct proc * get_next_zombie(struct proc *parent)
 
 __pid_t remove_zombie(struct proc *p)
 {
+	struct proc *pp;
 	__pid_t pid;
 
 	pid = p->pid;
@@ -171,8 +172,11 @@ __pid_t remove_zombie(struct proc *p)
 	p->rss--;
 	kfree(P2V(p->tss.cr3));
 	p->rss--;
+	pp = get_proc_by_pid(p->ppid);
 	release_proc(p);
-	current->children--;
+	if(pp) {
+		pp->children--;
+	}
 	return pid;
 }
 
