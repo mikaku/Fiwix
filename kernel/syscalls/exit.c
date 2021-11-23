@@ -46,6 +46,7 @@ void do_exit(int exit_code)
 		if(p->ppid == current->pid) {
 			p->ppid = INIT;
 			init->children++;
+			current->children--;
 			if(p->state == PROC_ZOMBIE) {
 				send_sig(init, SIGCHLD);
 			}
