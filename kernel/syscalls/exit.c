@@ -49,6 +49,9 @@ void do_exit(int exit_code)
 			current->children--;
 			if(p->state == PROC_ZOMBIE) {
 				send_sig(init, SIGCHLD);
+				if(init->sleep_address == &sys_wait4) {
+					wakeup_proc(init);
+				}
 			}
 		}
 		p = p->next;
