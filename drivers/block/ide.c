@@ -29,13 +29,13 @@ int ide1_wait_interrupt = 0;
 int ide1_timeout = 0;
 
 struct ide ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { NULL, NULL },
+	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, -1, { NULL, NULL },
 		{
 			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
 			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
 		}
 	},
-	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, {NULL, NULL },
+	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, -1, {NULL, NULL },
 		{
 			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} },
 			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, NULL, NULL, NULL, NULL, NULL, { NULL }, {{ NULL }} }
@@ -48,8 +48,6 @@ static char *ide_drv_name[] = { "master", "slave" };
 
 static unsigned int ide0_sizes[256];
 static unsigned int ide1_sizes[256];
-
-static int current_setup = -1;
 
 static struct fs_operations ide_driver_fsop = {
 	0,
@@ -517,7 +515,7 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 	selected = (mode + (drive << 4)) | lba24_head;
 
 	/* just return if the drive is already setup with the same parameters */
-	if(selected == current_setup) {
+	if(selected == ide->current) {
 		return 0;
 	}
 
@@ -533,7 +531,7 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 		return status;
 	}
 
-	current_setup = selected;
+	ide->current = selected;
 	outport_b(ide->base + IDE_DRVHD, selected);
 	ide_wait400ns(ide);
 
