@@ -51,6 +51,11 @@
 	call	irq_handler						;\
 	addl	$4, %esp
 
+#define UNKNOWN_IRQ(irq)						\
+	pushl	$irq							;\
+	call	unknown_irq_handler					;\
+	addl	$4, %esp
+
 #define BOTTOM_HALVES							\
 	sti								;\
 	call	do_bh
@@ -193,7 +198,7 @@ BUILD_IRQ(15, irq15)
 .globl unknown_irq; unknown_irq:
 	pushl	$0		# save simulated error code to stack
 	SAVE_ALL
-	IRQ(-1)
+	UNKNOWN_IRQ(-1)
 	RESTORE_ALL
 	iret
 

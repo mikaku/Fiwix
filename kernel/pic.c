@@ -128,11 +128,6 @@ void irq_handler(int num, struct sigcontext sc)
 	struct interrupt *irq;
 	int real;
 
-	if(num == -1) {
-		printk("Unknown IRQ received!\n");
-		return;
-	}
-
 	irq = irq_table[num];
 
 	/* spurious interrupt treatment */
@@ -173,6 +168,12 @@ void irq_handler(int num, struct sigcontext sc)
 		irq->handler(num, &sc);
 		irq = irq->next;
 	} while(irq);
+}
+
+void unknown_irq_handler(int num, struct sigcontext sc)
+{
+	printk("Unknown IRQ %d received!\n", num);
+	return;
 }
 
 /* do bottom halves (interrupts are enabled) */

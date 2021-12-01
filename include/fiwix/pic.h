@@ -51,6 +51,7 @@ void disable_irq(int);
 int register_irq(int, struct interrupt *);
 int unregister_irq(int, struct interrupt *);
 void irq_handler(int, struct sigcontext);
+void unknown_irq_handler(int, struct sigcontext);
 void do_bh(void);
 void pic_init(void);
 
