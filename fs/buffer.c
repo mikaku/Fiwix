@@ -214,6 +214,12 @@ static void sync_one_buffer(struct buffer *buf)
 		return;
 	}
 
+	/* this shouldn't happen */
+	if(!buf->data) {
+		printk("WARNING: %s(): buffer (dev=%x, block=%d, size=%d) don't has data!\n", __FUNCTION__, buf->dev, buf->block, buf->size);
+		return;
+	}
+
 	if(d->fsop && d->fsop->write_block) {
 		errno = d->fsop->write_block(buf->dev, buf->block, buf->data, buf->size);
 		if(errno < 0) {
