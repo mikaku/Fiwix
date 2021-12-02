@@ -342,7 +342,7 @@ struct vbe_mode
   unsigned char linear_reserved_field_position;
   unsigned long max_pixel_clock;
 
-  unsigned char reserved3[189];
+  unsigned char reserved3[190];
 } __attribute__ ((packed));
 
 
