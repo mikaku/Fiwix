@@ -170,9 +170,9 @@ void irq_handler(int num, struct sigcontext sc)
 	} while(irq);
 }
 
-void unknown_irq_handler(int num, struct sigcontext sc)
+void unknown_irq_handler(void)
 {
-	printk("Unknown IRQ %d received!\n", num);
+	printk("Unknown IRQ received!\n");
 	return;
 }
 
