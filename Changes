@@ -1,4 +1,4 @@
-1.3.0 - DD-MMM-2021
+1.3.0 - DD-Dec-2021
 ===================
 - Added support for interrupt nesting.
 - Added framebuffer device support for VESA VBE 2.0+ compliant graphics cards.
@@ -45,6 +45,9 @@
   buffers.
 - Added the 'Dirty' line in '/proc/meminfo' to keep track the amount of memory
   waiting to be written back to the disk.
+- Wakeup the INIT process (if it's sleeping on sys_wait4()) if one of the new
+  processes inherited during the sys_exit() call is a zombie.
+- Saved some CPU cycles in irq_handler() by isolating unused IRQs.
 - Fixed the RAMdisk driver to not access blocks beyond its size.
 - Fixed a race condition in floppy drive when the interrupt occurred right
   before going to sleep.
@@ -108,6 +111,11 @@
 - Fixed an incomplete copy of in-memory superblock data during a remount from RO
   to RW, in ext2 and minix filesystems, that led to not save all changes in
   superblock.
+- Fixed to decrease the number of children either when the process is exiting,
+  and from the correct parent after reaping a zombie process.
++ Fixed a long standing bug, in ext2_dir_readdir() and minix_dir_readdir(), that
+  prevented from listening directory entries if there were blank blocks in the
+  middle.
 - Small fixes and cosmetic changes.
 - Cleaned up a lot of code.
 
