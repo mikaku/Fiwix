@@ -101,7 +101,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 	doffset = offset = size = 0;
 
-	while(doffset < count) {
+	while(fd_table->offset < i->i_size && count > 0) {
 		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
 			return block;
 		}
@@ -112,7 +112,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 
 			doffset = fd_table->offset;
 			offset = fd_table->offset % blksize;
-			while(doffset < i->i_size && offset < blksize) {
+			while(offset < blksize) {
 				d = (struct ext2_dir_entry_2 *)(buf->data + offset);
 				if(d->inode) {
 					dirent_len = (base_dirent_len + (d->name_len + 1)) + 3;
@@ -125,7 +125,9 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 						dirent->d_name[d->name_len] = NULL;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
+						count -= size;
 					} else {
+						count = 0;
 						break;
 					}
 				}

@@ -101,7 +101,7 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 	doffset = offset = size = 0;
 
-	while(doffset < count) {
+	while(fd_table->offset < i->i_size && count > 0) {
 		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
 			return block;
 		}
@@ -112,7 +112,7 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 
 			doffset = fd_table->offset;
 			offset = fd_table->offset % blksize;
-			while(doffset < i->i_size && offset < blksize) {
+			while(offset < blksize) {
 				d = (struct minix_dir_entry *)(buf->data + offset);
 				if(d->inode) {
 					dirent_len = (base_dirent_len + (strlen(d->name) + 1)) + 3;
@@ -125,7 +125,9 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 						dirent->d_name[strlen(d->name)] = NULL;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
+						count -= size;
 					} else {
+						count = 0;
 						break;
 					}
 				}
