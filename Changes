@@ -1,4 +1,4 @@
-1.3.0 - DD-Dec-2021
+1.3.0 - 08-Dec-2021
 ===================
 - Added support for interrupt nesting.
 - Added framebuffer device support for VESA VBE 2.0+ compliant graphics cards.
@@ -113,7 +113,7 @@
   superblock.
 - Fixed to decrease the number of children either when the process is exiting,
   and from the correct parent after reaping a zombie process.
-+ Fixed a long standing bug, in ext2_dir_readdir() and minix_dir_readdir(), that
+- Fixed a long standing bug, in ext2_dir_readdir() and minix_dir_readdir(), that
   prevented from listening directory entries if there were blank blocks in the
   middle.
 - Small fixes and cosmetic changes.

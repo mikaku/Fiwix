@@ -1,6 +1,6 @@
 Fiwix
 =====
-Fiwix is an operating system kernel written from scratch, based on the UNIX architecture and fully focused on being POSIX compatible. It is designed and developed mainly as a hobby OS and, since it serves also for educational purposes, the kernel code is kept as simple as possible for the benefit of students and OS enthusiasts. It is small in size (less than 40,000 lines of code), runs on the i386 hardware platform and is compatible with a good base of existing GNU applications.
+Fiwix is an operating system kernel written from scratch, based on the UNIX architecture and fully focused on being POSIX compatible. It is designed and developed mainly as a hobby OS and, since it serves also for educational purposes, the kernel code is kept as simple as possible for the benefit of students and OS enthusiasts. It is small in size (less than 50K lines of code), runs on the i386 hardware platform and is compatible with a good base of existing GNU applications.
 
 Features
 --------
@@ -29,6 +29,7 @@ Features
  - Initial RAMdisk (initrd) image support.
  - SVGAlib based applications support.
  - Keyboard driver with Linux keymaps support.
+ - Frame buffer device support for VESA VBE 2.0+ compliant graphic cards.
  - Serial port (RS-232) driver support.
  - Remote serial console support.
  - Parallel port printer driver support.
@@ -49,7 +50,7 @@ Installing
 ----------
 You can proceed to install [FiwixOS](https://www.fiwix.org/downloads.html) on a hard disk either by booting from the CD-ROM or from a floppy. If you chosen the latter, you will also need the Installation CD-ROM inserted in order to install the packages that form all the system environment.
 
-Let the system boot either from the CD-ROM or floppy and, when you are ready, just type `install.sh`.
+Let the system boot and when you are ready, just type `install.sh`.
 
 The minimal hardware requirements are as follows:
 
@@ -73,12 +74,12 @@ References
 ----------
 - [Website](https://www.fiwix.org)
 - [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
-- [IRC](https://webchat.freenode.net/?channels=fiwix)
+- [IRC](https://web.libera.chat/)
 
 License
 -------
 Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.  
-Copyright (C) 2018-2020, Jordi Sanfeliu.
+Copyright (C) 2018-2021, Jordi Sanfeliu.
 
 Credits
 -------
