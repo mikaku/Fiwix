@@ -176,23 +176,20 @@ void unknown_irq_handler(void)
 	return;
 }
 
-/* do bottom halves (interrupts are enabled) */
+/* execute bottom halves (interrupts are enabled) */
 void do_bh(void)
 {
 	struct bh *b;
 	void (*fn)(void);
 
-	if(!lock_area(AREA_BH)) {
-		b = bh_table;
-		while(b) {
-			if(b->flags & BH_ACTIVE) {
-				b->flags &= ~BH_ACTIVE;
-				fn = b->fn;
-				(*fn)();
-			}
-			b = b->next;
+	b = bh_table;
+	while(b) {
+		if(b->flags & BH_ACTIVE) {
+			b->flags &= ~BH_ACTIVE;
+			fn = b->fn;
+			(*fn)();
 		}
-		unlock_area(AREA_BH);
+		b = b->next;
 	}
 }
 
