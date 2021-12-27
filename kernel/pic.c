@@ -128,6 +128,8 @@ void irq_handler(int num, struct sigcontext sc)
 	struct interrupt *irq;
 	int real;
 
+	disable_irq(num);
+
 	irq = irq_table[num];
 
 	/* spurious interrupt treatment */
@@ -148,13 +150,13 @@ void irq_handler(int num, struct sigcontext sc)
 				printk("WARNING: too many spurious interrupts; not logging any more.\n");
 			}
 			kstat.sirqs++;
-			return;
+			goto end;
 		}
 		if(num > 7) {
 			outport_b(PIC_SLAVE, EOI);
 		}
 		outport_b(PIC_MASTER, EOI);
-		return;
+		goto end;
 	}
 
 	if(num > 7) {
@@ -168,6 +170,9 @@ void irq_handler(int num, struct sigcontext sc)
 		irq->handler(num, &sc);
 		irq = irq->next;
 	} while(irq);
+
+end:
+	enable_irq(num);
 }
 
 void unknown_irq_handler(void)
