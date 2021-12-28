@@ -17,6 +17,7 @@
 #include <fiwix/sched.h>
 #include <fiwix/errno.h>
 #include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/cmos.h>
 #include <fiwix/dma.h>
 #include <fiwix/stdio.h>

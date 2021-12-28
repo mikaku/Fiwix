@@ -17,6 +17,7 @@
 #include <fiwix/video.h>
 #include <fiwix/console.h>
 #include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/segments.h>
 #include <fiwix/devices.h>
 #include <fiwix/cpu.h>
@@ -63,6 +64,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
 
 	pic_init();
+	irq_init();
 	idt_init();
 	dev_init();
 	tty_init();
@@ -70,7 +72,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	printk("                                Welcome to %s\n", UTS_SYSNAME);
 	printk("                     Copyright (c) 2018-2021, Jordi Sanfeliu\n");
 	printk("\n");
-	printk("                      kernel v%s for i386 architecture\n", UTS_RELEASE);
+	printk("                       kernel v%s for i386 architecture\n", UTS_RELEASE);
 	printk("               (GCC %s, built on %s)\n", __VERSION__, UTS_VERSION);
 	printk("\n");
 	printk("DEVICE    ADDRESS         IRQ   COMMENT\n");

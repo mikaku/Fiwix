@@ -10,7 +10,6 @@
 #include <fiwix/tty.h>
 #include <fiwix/ctype.h>
 #include <fiwix/console.h>
-#include <fiwix/pic.h>
 #include <fiwix/devices.h>
 #include <fiwix/fs.h>
 #include <fiwix/errno.h>

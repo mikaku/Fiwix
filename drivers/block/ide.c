@@ -15,6 +15,7 @@
 #include <fiwix/sched.h>
 #include <fiwix/cpu.h>
 #include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/fs.h>
 #include <fiwix/mm.h>
 #include <fiwix/errno.h>

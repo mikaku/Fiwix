@@ -12,6 +12,7 @@
 #include <fiwix/console.h>
 #include <fiwix/vgacon.h>
 #include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/signal.h>
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>

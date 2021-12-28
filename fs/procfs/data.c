@@ -20,7 +20,7 @@
 #include <fiwix/mman.h>
 #include <fiwix/fs_proc.h>
 #include <fiwix/cpu.h>
-#include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/sched.h>
 #include <fiwix/timer.h>
 #include <fiwix/utsname.h>

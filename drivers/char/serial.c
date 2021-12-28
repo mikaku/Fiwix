@@ -11,6 +11,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/errno.h>
 #include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/sleep.h>
 #include <fiwix/serial.h>
 #include <fiwix/tty.h>

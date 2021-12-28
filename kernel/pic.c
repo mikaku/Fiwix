@@ -8,20 +8,13 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/config.h>
-#include <fiwix/limits.h>
-#include <fiwix/errno.h>
 #include <fiwix/pic.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
-#include <fiwix/sigcontext.h>
-#include <fiwix/sleep.h>
 
 /* interrupt vector base addresses */
 #define IRQ0_ADDR	0x20
 #define IRQ8_ADDR	0x28
-
-struct interrupt *irq_table[NR_IRQS];
-static struct bh *bh_table = NULL;
 
 /*
  * This sends the command OCW3 to PIC (master or slave) to obtain the register
@@ -33,73 +26,6 @@ static unsigned short int pic_get_irq_reg(int ocw3)
 	outport_b(PIC_MASTER, ocw3);
 	outport_b(PIC_SLAVE, ocw3);
 	return (inport_b(PIC_SLAVE) << 8) | inport_b(PIC_MASTER);
-}
-
-int register_irq(int num, struct interrupt *new_irq)
-{
-	struct interrupt **irq;
-
-	if(num < 0  || num >= NR_IRQS) {
-		return -EINVAL;
-	}
-
-	irq = &irq_table[num];
-
-	while(*irq) {
-		if(*irq == new_irq) {
-			printk("WARNING: %s(): interrupt %d already registered!\n", __FUNCTION__, num);
-			return -EINVAL;
-		}
-		irq = &(*irq)->next;
-	}
-	*irq = new_irq;
-	new_irq->ticks = 0;
-	return 0;
-}
-
-int unregister_irq(int num, struct interrupt *old_irq)
-{
-	struct interrupt **irq, *prev_irq;
-
-	if(num < 0  || num >= NR_IRQS) {
-		return -EINVAL;
-	}
-
-	irq = &irq_table[num];
-	prev_irq = NULL;
-
-	while(*irq) {
-		if(*irq == old_irq) {
-			if((*irq)->next) {
-				printk("WARNING: %s(): cannot unregister interrupt %d.\n", __FUNCTION__, num);
-				return -EINVAL;
-			}
-			*irq = NULL;
-			if(prev_irq) {
-				prev_irq->next = NULL;
-			}
-			break;
-		}
-		prev_irq = *irq;
-		irq = &(*irq)->next;
-	}
-	return 0;
-}
-
-void add_bh(struct bh *new)
-{
-	unsigned long int flags;
-	struct bh **b;
-
-	SAVE_FLAGS(flags); CLI();
-
-	b = &bh_table;
-	while(*b) {
-		b = &(*b)->next;
-	}
-	*b = new;
-
-	RESTORE_FLAGS(flags);
 }
 
 void enable_irq(int irq)
@@ -122,86 +48,42 @@ void disable_irq(int irq)
 	outport_b(addr, inport_b(addr) | (1 << irq));
 }
 
-/* each ISR points to this function (interrupts are disabled) */
-void irq_handler(int num, struct sigcontext sc)
+void spurious_interrupt(int irq)
 {
-	struct interrupt *irq;
 	int real;
 
-	disable_irq(num);
-
-	irq = irq_table[num];
-
 	/* spurious interrupt treatment */
-	if(!irq) {
-		real = pic_get_irq_reg(PIC_READ_ISR);
-		if(!real) {
-			/*
-			 * If IRQ was not real and came from slave, then send
-			 * an EOI to master because it doesn't know if the IRQ
-			 * was a spurious interrupt from slave.
-			 */
-			if(num > 7) {
-				outport_b(PIC_MASTER, EOI);
-			}
-			if(kstat.sirqs < MAX_SPU_NOTICES) {
-				printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", num);
-			} else if(kstat.sirqs == MAX_SPU_NOTICES) {
-				printk("WARNING: too many spurious interrupts; not logging any more.\n");
-			}
-			kstat.sirqs++;
-			goto end;
+	real = pic_get_irq_reg(PIC_READ_ISR);
+	if(!real) {
+		/*
+		 * If IRQ was not real and came from slave, then send
+		 * an EOI to master because it doesn't know if the IRQ
+		 * was a spurious interrupt from slave.
+		 */
+		if(irq > 7) {
+			outport_b(PIC_MASTER, EOI);
 		}
-		if(num > 7) {
-			outport_b(PIC_SLAVE, EOI);
+		if(kstat.sirqs < MAX_SPU_NOTICES) {
+			printk("WARNING: spurious interrupt detected (unregistered IRQ %d).\n", irq);
+		} else if(kstat.sirqs == MAX_SPU_NOTICES) {
+			printk("WARNING: too many spurious interrupts; not logging any more.\n");
 		}
-		outport_b(PIC_MASTER, EOI);
-		goto end;
+		kstat.sirqs++;
+		return;
 	}
+	ack_pic_irq(irq);
+}
 
-	if(num > 7) {
+void ack_pic_irq(int irq)
+{
+	if(irq > 7) {
 		outport_b(PIC_SLAVE, EOI);
 	}
 	outport_b(PIC_MASTER, EOI);
-
-	kstat.irqs++;
-	irq->ticks++;
-	do {
-		irq->handler(num, &sc);
-		irq = irq->next;
-	} while(irq);
-
-end:
-	enable_irq(num);
-}
-
-void unknown_irq_handler(void)
-{
-	printk("Unknown IRQ received!\n");
-	return;
-}
-
-/* execute bottom halves (interrupts are enabled) */
-void do_bh(void)
-{
-	struct bh *b;
-	void (*fn)(void);
-
-	b = bh_table;
-	while(b) {
-		if(b->flags & BH_ACTIVE) {
-			b->flags &= ~BH_ACTIVE;
-			fn = b->fn;
-			(*fn)();
-		}
-		b = b->next;
-	}
 }
 
 void pic_init(void)
 {
-	memset_b(irq_table, NULL, sizeof(irq_table));
-
 	/* remap interrupts for PIC1 */
 	outport_b(PIC_MASTER, ICW1_RESET);
 	outport_b(PIC_MASTER + DATA, IRQ0_ADDR);	/* ICW2 */

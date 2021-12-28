@@ -12,7 +12,7 @@
 #include <fiwix/pit.h>
 #include <fiwix/timer.h>
 #include <fiwix/time.h>
-#include <fiwix/pic.h>
+#include <fiwix/irq.h>
 #include <fiwix/sched.h>
 #include <fiwix/pic.h>
 #include <fiwix/cmos.h>

@@ -8,9 +8,6 @@
 #ifndef _FIWIX_PIC_H
 #define _FIWIX_PIC_H
 
-#include <fiwix/sigcontext.h>
-
-#define NR_IRQS		16	/* hardware interrupts */
 #define PIC_MASTER	0x20	/* I/O base address for master PIC */
 #define PIC_SLAVE	0xA0	/* I/O base address for slave PIC */
 
@@ -28,31 +25,10 @@
 /* Operational Command Words */
 #define OCW1		0xFF	/* mask (disable) all IRQs */
 
-struct interrupt {
-	unsigned int ticks;
-	char *name;
-	void (*handler)(int, struct sigcontext *);
-	struct interrupt *next;
-};
-extern struct interrupt *irq_table[NR_IRQS];
-
-
-#define BH_ACTIVE	0x01
-
-struct bh {
-	int flags;
-	void (*fn)(void);
-	struct bh *next;
-};
-
-void add_bh(struct bh *);
 void enable_irq(int);
 void disable_irq(int);
-int register_irq(int, struct interrupt *);
-int unregister_irq(int, struct interrupt *);
-void irq_handler(int, struct sigcontext);
-void unknown_irq_handler(void);
-void do_bh(void);
+void spurious_interrupt(int);
+void ack_pic_irq(int);
 void pic_init(void);
 
 #endif /* _FIWIX_PIC_H */
