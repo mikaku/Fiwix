@@ -228,33 +228,28 @@ static void keyboard_delay(void)
 	}
 }
 
-/* wait controller input buffer to be clear (ready to write) */
-static int keyboard_wait_input(void)
+/* wait controller input buffer to be clear */
+static int is_ready_to_write(void)
 {
 	int n;
 
 	for(n = 0; n < 500000; n++) {
 		if(!(inport_b(KBC_STATUS) & KB_STR_INBUSY)) {
-			return 0;
+			return 1;
 		}
 	}
-	return 1;
+	return 0;
 }
 
-static int keyboard_write(const unsigned char port, const unsigned char byte)
+static void keyboard_write(const unsigned char port, const unsigned char byte)
 {
-	if(!keyboard_wait_input()) {
+	if(is_ready_to_write()) {
 		outport_b(port, byte);
-		if(!keyboard_wait_input()) {
-			return 0;
-		}
 	}
-
-	return 1;
 }
 
-/* wait controller output buffer to be full (ready to read) */
-static int keyboard_wait_output(void)
+/* wait controller output buffer to be full or for controller acknowledge */
+static int is_ready_to_read(void)
 {
 	int n, value;
 
@@ -263,22 +258,23 @@ static int keyboard_wait_output(void)
 			if(value & (KB_STR_COMMERR | KB_STR_PARERR)) {
 				continue;
 			}
-			return 0;
+			return 1;
 		}
 	}
-	return 1;
+	return 0;
 }
 
 static int keyboard_wait_ack(void)
 {
 	int n;
 
-	keyboard_wait_output();
-	for(n = 0; n < 1000; n++) {
-		if(inport_b(KB_DATA) == KB_ACK) {
-			return 0;
+	if(is_ready_to_read()) {
+		for(n = 0; n < 1000; n++) {
+			if(inport_b(KB_DATA) == KB_ACK) {
+				return 0;
+			}
+			keyboard_delay();
 		}
-		keyboard_delay();
 	}
 	return 1;
 }
@@ -296,10 +292,10 @@ static void keyboard_identify(void)
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on identify command!\n", __FUNCTION__);
 	}
-	if(!keyboard_wait_output()) {
+	if(is_ready_to_read()) {
 		kb_identify[0] = inport_b(KB_DATA);
 	}
-	if(!keyboard_wait_output()) {
+	if(is_ready_to_read()) {
 		kb_identify[1] = inport_b(KB_DATA);
 	}
 
@@ -308,13 +304,15 @@ static void keyboard_identify(void)
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on enable command!\n", __FUNCTION__);
 	}
-	keyboard_wait_output();
+
+	/* flush buffers */
 	inport_b(KB_DATA);
 
 	/* get the interface type */
 	keyboard_write(KBC_COMMAND, KBC_CMD_GET_IFACE);
-	keyboard_wait_output();
-	ps2_iface = inport_b(KB_DATA);
+	if(is_ready_to_read()) {
+		ps2_iface = inport_b(KB_DATA);
+	}
 }
 
 static void keyboard_reset(void)
@@ -327,14 +325,14 @@ static void keyboard_reset(void)
 	keyboard_write(KBC_COMMAND, KBC_CMD_DISABLE_PS2_2);
 
 	/* flush buffers */
-	while(!keyboard_wait_output()) {
-		inport_b(KB_DATA);
-	}
+	inport_b(KB_DATA);
 
 	/* get controller configuration */
+	config = 0;
 	keyboard_write(KBC_COMMAND, KBC_CMD_RECV_CONFIG);
-	keyboard_wait_output();
-	config = inport_b(KB_DATA);
+	if(is_ready_to_read()) {
+		config = inport_b(KB_DATA);
+	}
 	ps2_active_ports = config & 0x01 ? 1 : 0;
 	ps2_active_ports += config & 0x02 ? 1 : 0;
 	ps2_supp_ports = 1 + (config & 0x20 ? 1 : 0);
@@ -347,9 +345,10 @@ static void keyboard_reset(void)
 
 	/* PS/2 controller self-test */
 	keyboard_write(KBC_COMMAND, KBC_CMD_SELF_TEST);
-	keyboard_wait_output();
-	if((errno = inport_b(KB_DATA)) != 0x55) {
-		printk("WARNING: %s(): keyboard returned 0x%x in self-test.\n", __FUNCTION__, errno);
+	if(is_ready_to_read()) {
+		if((errno = inport_b(KB_DATA)) != 0x55) {
+			printk("WARNING: %s(): keyboard returned 0x%x in self-test.\n", __FUNCTION__, errno);
+		}
 	}
 
 	/*
@@ -361,17 +360,19 @@ static void keyboard_reset(void)
 
 	/* first PS/2 interface test */
 	keyboard_write(KBC_COMMAND, KBC_CMD_PS2_1_TEST);
-	keyboard_wait_output();
-	if((errno = inport_b(KB_DATA)) != 0) {
-		printk("WARNING: %s(): keyboard returned 0x%x in first PS/2 interface test.\n", __FUNCTION__, errno);
+	if(is_ready_to_read()) {
+		if((errno = inport_b(KB_DATA)) != 0) {
+			printk("WARNING: %s(): keyboard returned 0x%x in first PS/2 interface test.\n", __FUNCTION__, errno);
+		}
 	}
 
 	if(ps2_supp_ports > 1) {
 		/* second PS/2 interface test */
 		keyboard_write(KBC_COMMAND, KBC_CMD_PS2_2_TEST);
-		keyboard_wait_output();
-		if((errno = inport_b(KB_DATA)) != 0) {
-			printk("WARNING: %s(): keyboard returned 0x%x in second PS/2 interface test.\n", __FUNCTION__, errno);
+		if(is_ready_to_read()) {
+			if((errno = inport_b(KB_DATA)) != 0) {
+				printk("WARNING: %s(): keyboard returned 0x%x in second PS/2 interface test.\n", __FUNCTION__, errno);
+			}
 		}
 	}
 
@@ -384,7 +385,7 @@ static void keyboard_reset(void)
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on reset command!\n", __FUNCTION__);
 	}
-	if(!keyboard_wait_output()) {
+	if(is_ready_to_read()) {
 		if((errno = inport_b(KB_DATA)) != KB_RESET_OK) {
 			printk("WARNING: %s(): keyboard returned 0x%x in reset.\n", __FUNCTION__, errno);
 		}
@@ -765,12 +766,11 @@ void keyboard_init(void)
 	video.cursor_blink((unsigned int)vc);
 
 	add_bh(&keyboard_bh);
+
 	keyboard_reset();
 
 	/* flush buffers */
-	while(!keyboard_wait_output()) {
-		inport_b(KB_DATA);
-	}
+	inport_b(KB_DATA);
 
 	keyboard_identify();
 
