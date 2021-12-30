@@ -107,6 +107,7 @@ static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
 static unsigned char sysrq = 0;
 static int sysrq_op = 0;
+static volatile unsigned char ack = 0;
 
 static unsigned char do_buf_scroll = 0;
 static char do_switch_console = -1;
@@ -243,6 +244,8 @@ static int is_ready_to_write(void)
 
 static void keyboard_write(const unsigned char port, const unsigned char byte)
 {
+	ack = 0;
+
 	if(is_ready_to_write()) {
 		outport_b(port, byte);
 	}
@@ -254,6 +257,9 @@ static int is_ready_to_read(void)
 	int n, value;
 
 	for(n = 0; n < 500000; n++) {
+		if(ack) {
+			return 1;
+		}
 		if((value = inport_b(KBC_STATUS)) & KB_STR_OUTBUSY) {
 			if(value & (KB_STR_COMMERR | KB_STR_PARERR)) {
 				continue;
@@ -443,8 +449,9 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 	scode = inport_b(KB_DATA);
 
-	/* keyboard said all is OK, perfect */
+	/* keyboard controller said 'acknowledge!' */
 	if(scode == KB_ACK) {
+		ack = 1;
 		return;
 	}
 
@@ -767,6 +774,10 @@ void keyboard_init(void)
 
 	add_bh(&keyboard_bh);
 
+	if(!register_irq(KEYBOARD_IRQ, &irq_config_keyboard)) {
+		enable_irq(KEYBOARD_IRQ);
+	}
+
 	keyboard_reset();
 
 	/* flush buffers */
@@ -774,14 +785,10 @@ void keyboard_init(void)
 
 	keyboard_identify();
 
+	printk("keyboard  0x%04X-0x%04X    %d    type=%s %s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_iface & 0x1 ? "MCA" : "AT", ps2_active_ports, ps2_supp_ports);
+
 	keyboard_write(KB_DATA, KB_RATE);
 	keyboard_wait_ack();
 	keyboard_write(KB_DATA, DELAY_250 | RATE_30);
 	keyboard_wait_ack();
-
-	printk("keyboard  0x%04X-0x%04X    %d    type=%s %s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_iface & 0x1 ? "MCA" : "AT", ps2_active_ports, ps2_supp_ports);
-
-	if(!register_irq(KEYBOARD_IRQ, &irq_config_keyboard)) {
-		enable_irq(KEYBOARD_IRQ);
-	}
 }
