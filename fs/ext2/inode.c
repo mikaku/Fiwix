@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/ext2/inode.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -27,25 +27,26 @@
 
 #define EXT2_INODES_PER_BLOCK(sb)	(EXT2_BLOCK_SIZE(sb) / sizeof(struct ext2_inode))
 
-static void free_indblock(struct inode *i, int block, int offset)
+static int free_dblock(struct inode *i, int block, int offset)
 {
 	int n;
 	struct buffer *buf;
-	__blk_t *indblock;
+	__blk_t *dblock;
 
 	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
 		printk("WARNING: %s(): error reading block %d.\n", __FUNCTION__, block);
-		return;
+		return -EIO;
 	}
-	indblock = (__blk_t *)buf->data;
+	dblock = (__blk_t *)buf->data;
 	for(n = offset; n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
-		if(indblock[n]) {
-			ext2_bfree(i->sb, indblock[n]);
-			indblock[n] = 0;
+		if(dblock[n]) {
+			ext2_bfree(i->sb, dblock[n]);
+			dblock[n] = 0;
 			i->i_blocks -= i->sb->s_blocksize / 512;
 		}
 	}
 	bwrite(buf);
+	return 0;
 }
 
 static int get_group_desc(struct superblock *sb, __blk_t block_group, struct ext2_group_desc *gd)
@@ -383,7 +384,7 @@ int ext2_truncate(struct inode *i, __off_t length)
 {
 	__blk_t block, dblock, *indblock;
 	struct buffer *buf;
-	int blksize, n;
+	int n, retval, blksize;
 
 	blksize = i->sb->s_blocksize;
 	block = length / blksize;
@@ -408,7 +409,9 @@ int ext2_truncate(struct inode *i, __off_t length)
 			block -= EXT2_NDIR_BLOCKS;
 		}
 		if(i->u.ext2.i_data[EXT2_IND_BLOCK]) {
-			free_indblock(i, i->u.ext2.i_data[EXT2_IND_BLOCK], block);
+			if((retval = free_dblock(i, i->u.ext2.i_data[EXT2_IND_BLOCK], block)) < 0) {
+				return retval;
+			}
 			if(!block) {
 				ext2_bfree(i->sb, i->u.ext2.i_data[EXT2_IND_BLOCK]);
 				i->u.ext2.i_data[EXT2_IND_BLOCK] = 0;
@@ -427,11 +430,15 @@ int ext2_truncate(struct inode *i, __off_t length)
 			printk("%s(): error reading block %d.\n", __FUNCTION__, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
 			return -EIO;
 		}
+
 		indblock = (__blk_t *)buf->data;
 		dblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
 		for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
 			if(indblock[n]) {
-				free_indblock(i, indblock[n], dblock);
+				if((retval = free_dblock(i, indblock[n], dblock)) < 0) {
+					brelse(buf);
+					return retval;
+				}
 				if(!dblock) {
 					ext2_bfree(i->sb, indblock[n]);
 					i->i_blocks -= blksize / 512;
