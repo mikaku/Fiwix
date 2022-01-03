@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/v2_inode.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -28,7 +28,7 @@
 #define MINIX_DIND_BLOCK		(MINIX_NDIR_BLOCKS + 1)
 #define MINIX_TIND_BLOCK		(MINIX_NDIR_BLOCKS + 2)
 
-static void free_zone(struct inode *i, int block, int offset)
+static int free_zone(struct inode *i, int block, int offset)
 {
 	int n;
 	struct buffer *buf;
@@ -36,7 +36,7 @@ static void free_zone(struct inode *i, int block, int offset)
 
 	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
 		printk("WARNING: %s(): error reading block %d.\n", __FUNCTION__, block);
-		return;
+		return -EIO;
 	}
 	zone = (__u32 *)buf->data;
 	for(n = offset; n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
@@ -46,6 +46,7 @@ static void free_zone(struct inode *i, int block, int offset)
 		}
 	}
 	bwrite(buf);
+	return 0;
 }
 
 int v2_minix_read_inode(struct inode *i)
@@ -400,10 +401,10 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 
 int v2_minix_truncate(struct inode *i, __off_t length)
 {
-	int n;
 	__blk_t block, dblock;
 	__u32 *zone;
 	struct buffer *buf;
+	int n, retval;
 
 	block = length / i->sb->s_blocksize;
 
@@ -426,7 +427,9 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 			block -= MINIX_NDIR_BLOCKS;
 		}
 		if(i->u.minix.u.i2_zone[MINIX_IND_BLOCK]) {
-			free_zone(i, i->u.minix.u.i2_zone[MINIX_IND_BLOCK], block);
+			if((retval = free_zone(i, i->u.minix.u.i2_zone[MINIX_IND_BLOCK], block)) < 0) {
+				return retval;
+			}
 			if(!block) {
 				minix_bfree(i->sb, i->u.minix.u.i2_zone[MINIX_IND_BLOCK]);
 				i->u.minix.u.i2_zone[MINIX_IND_BLOCK] = 0;
@@ -447,7 +450,10 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 		dblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
 		for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
 			if(zone[n]) {
-				free_zone(i, zone[n], dblock);
+				if((retval = free_zone(i, zone[n], dblock)) < 0) {
+					brelse(buf);
+					return retval;
+				}
 				if(!dblock) {
 					minix_bfree(i->sb, zone[n]);
 				}
