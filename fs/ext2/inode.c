@@ -49,6 +49,36 @@ static int free_dblock(struct inode *i, int block, int offset)
 	return 0;
 }
 
+static int free_indblock(struct inode *i, int block, int offset)
+{
+	int n, retval;
+	struct buffer *buf;
+	__blk_t dblock, *indblock;
+
+	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
+		printk("%s(): error reading doubly indirect block %d.\n", __FUNCTION__, block);
+		return -EIO;
+	}
+	indblock = (__blk_t *)buf->data;
+	dblock = offset % BLOCKS_PER_IND_BLOCK(i->sb);
+	for(n = offset / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
+		if(indblock[n]) {
+			if((retval = free_dblock(i, indblock[n], dblock)) < 0) {
+				brelse(buf);
+				return retval;
+			}
+			if(!dblock) {
+				ext2_bfree(i->sb, indblock[n]);
+				indblock[n] = 0;
+				i->i_blocks -= i->sb->s_blocksize / 512;
+			}
+		}
+		dblock = 0;
+	}
+	bwrite(buf);
+	return 0;
+}
+
 static int get_group_desc(struct superblock *sb, __blk_t block_group, struct ext2_group_desc *gd)
 {
 	__blk_t group_desc_block;
@@ -382,7 +412,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 
 int ext2_truncate(struct inode *i, __off_t length)
 {
-	__blk_t block, dblock, *indblock;
+	__blk_t block, dblock, indblock, *dindblock;
 	struct buffer *buf;
 	int n, retval, blksize;
 
@@ -421,37 +451,22 @@ int ext2_truncate(struct inode *i, __off_t length)
 		block = 0;
 	}
 
-	if(block) {
-		block -= EXT2_NDIR_BLOCKS;
-		block -= BLOCKS_PER_IND_BLOCK(i->sb);
-	}
-	if(i->u.ext2.i_data[EXT2_DIND_BLOCK]) {
-		if(!(buf = bread(i->dev, i->u.ext2.i_data[EXT2_DIND_BLOCK], blksize))) {
-			printk("%s(): error reading block %d.\n", __FUNCTION__, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
-			return -EIO;
+	if(!block || block < (BLOCKS_PER_DIND_BLOCK(i->sb) + BLOCKS_PER_IND_BLOCK(i->sb) + EXT2_NDIR_BLOCKS)) {
+		if(block) {
+			block -= EXT2_NDIR_BLOCKS;
+			block -= BLOCKS_PER_IND_BLOCK(i->sb);
 		}
-
-		indblock = (__blk_t *)buf->data;
-		dblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
-		for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
-			if(indblock[n]) {
-				if((retval = free_dblock(i, indblock[n], dblock)) < 0) {
-					brelse(buf);
-					return retval;
-				}
-				if(!dblock) {
-					ext2_bfree(i->sb, indblock[n]);
-					i->i_blocks -= blksize / 512;
-				}
+		if(i->u.ext2.i_data[EXT2_DIND_BLOCK]) {
+			if((retval = free_indblock(i, i->u.ext2.i_data[EXT2_DIND_BLOCK], block)) < 0) {
+				return retval;
 			}
-			dblock = 0;
+			if(!block) {
+				ext2_bfree(i->sb, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
+				i->u.ext2.i_data[EXT2_DIND_BLOCK] = 0;
+				i->i_blocks -= blksize / 512;
+			}
 		}
-		bwrite(buf);
-		if(!block) {
-			ext2_bfree(i->sb, i->u.ext2.i_data[EXT2_DIND_BLOCK]);
-			i->u.ext2.i_data[EXT2_DIND_BLOCK] = 0;
-			i->i_blocks -= blksize / 512;
-		}
+		block = 0;
 	}
 
 	i->i_mtime = CURRENT_TIME;
