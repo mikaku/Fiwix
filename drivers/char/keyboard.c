@@ -109,8 +109,9 @@ static unsigned char sysrq = 0;
 static int sysrq_op = 0;
 static volatile unsigned char ack = 0;
 
-static unsigned char do_buf_scroll = 0;
 static char do_switch_console = -1;
+static unsigned char do_buf_scroll = 0;
+static unsigned char do_setleds = 0;
 struct video_parms video;
 
 unsigned char kb_identify[2] = {0, 0};
@@ -426,12 +427,12 @@ void reboot(void)
 	HLT();
 }
 
-void set_leds(unsigned char leds)
+void set_leds(unsigned char led_status)
 {
 	keyboard_write(KB_DATA, KB_SETLED);
 	keyboard_wait_ack();
 
-	keyboard_write(KB_DATA, leds);
+	keyboard_write(KB_DATA, led_status);
 	keyboard_wait_ack();
 }
 
@@ -521,7 +522,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			if(!leds) {
 				vc->led_status ^= CAPSBIT;
 				vc->capslock = !vc->capslock;
-				set_leds(vc->led_status);
+				do_setleds = 1;
 			}
 			leds = 1;
 			return;
@@ -529,7 +530,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			if(!leds) {
 				vc->led_status ^= NUMSBIT;
 				vc->numlock = !vc->numlock;
-				set_leds(vc->led_status);
+				do_setleds = 1;
 			}
 			leds = 1;
 			return;
@@ -737,6 +738,11 @@ void irq_keyboard_bh(void)
 	if(do_buf_scroll) {
 		video.buf_scroll(vc, do_buf_scroll);
 		do_buf_scroll = 0;
+	}
+
+	if(do_setleds) {
+		set_leds(vc->led_status);
+		do_setleds = 0;
 	}
 
 	tty = &tty_table[0];
