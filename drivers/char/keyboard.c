@@ -112,6 +112,8 @@ static volatile unsigned char ack = 0;
 static char do_switch_console = -1;
 static unsigned char do_buf_scroll = 0;
 static unsigned char do_setleds = 0;
+static unsigned char do_tty_stop = 0;
+static unsigned char do_tty_start = 0;
 struct video_parms video;
 
 unsigned char kb_identify[2] = {0, 0};
@@ -456,7 +458,6 @@ void irq_keyboard(int num, struct sigcontext *sc)
 		return;
 	}
 
-	video.screen_on(vc);
 	keyboard_bh.flags |= BH_ACTIVE;
 
 	/* if in pure raw mode just queue the scan code and return */
@@ -537,9 +538,9 @@ void irq_keyboard(int num, struct sigcontext *sc)
 		case SCRL:
 			if(!leds) {
 				if(vc->scrlock) {
-					tty->start(tty);
+					do_tty_start = 1;
 				} else {
-					tty->stop(tty);
+					do_tty_stop = 1;
 				}
 			}
 			leds = 1;
@@ -730,6 +731,8 @@ void irq_keyboard_bh(void)
 	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
 	vc = (struct vconsole *)tty->driver_data;
 
+	video.screen_on(vc);
+
 	if(do_switch_console >= 0) {
 		vconsole_select(do_switch_console);
 		do_switch_console = -1;
@@ -743,6 +746,16 @@ void irq_keyboard_bh(void)
 	if(do_setleds) {
 		set_leds(vc->led_status);
 		do_setleds = 0;
+	}
+
+	if(do_tty_start) {
+		tty->start(tty);
+		do_tty_start = do_tty_stop = 0;
+	}
+
+	if(do_tty_stop) {
+		tty->stop(tty);
+		do_tty_start = do_tty_stop = 0;
 	}
 
 	tty = &tty_table[0];
