@@ -54,7 +54,6 @@
 #define KBC_CMD_ENABLE_PS2_1	0xAE	/* enable first PS/2 port */
 #define KBC_CMD_DISABLE_PS2_2	0xA7	/* disable second PS/2 port (if any) */
 #define KBC_CMD_ENABLE_PS2_2	0xA8	/* enable second PS/2 port (if any) */
-#define KBC_CMD_GET_IFACE	0xCA	/* get interface type (AT or MCA) */
 #define KBC_CMD_HOTRESET	0xFE	/* Hot Reset */
 
 /* flags of the status register */
@@ -119,7 +118,6 @@ struct video_parms video;
 unsigned char kb_identify[2] = {0, 0};
 char ps2_active_ports = 0;
 char ps2_supp_ports = 0;
-char ps2_iface = 0;
 short int current_cons;
 char ctrl_alt_del = 1;
 char any_key_to_reboot = 0;
@@ -316,12 +314,6 @@ static void keyboard_identify(void)
 
 	/* flush buffers */
 	inport_b(KB_DATA);
-
-	/* get the interface type */
-	keyboard_write(KBC_COMMAND, KBC_CMD_GET_IFACE);
-	if(is_ready_to_read()) {
-		ps2_iface = inport_b(KB_DATA);
-	}
 }
 
 static void keyboard_reset(void)
@@ -804,7 +796,7 @@ void keyboard_init(void)
 
 	keyboard_identify();
 
-	printk("keyboard  0x%04X-0x%04X    %d    type=%s %s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_iface & 0x1 ? "MCA" : "AT", ps2_active_ports, ps2_supp_ports);
+	printk("keyboard  0x%04X-0x%04X    %d    type=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
 
 	keyboard_write(KB_DATA, KB_RATE);
 	keyboard_wait_ack();
