@@ -21,6 +21,8 @@
 #include <fiwix/string.h>
 
 #define BLOCKS_PER_IND_BLOCK(sb)	(sb->s_blocksize / sizeof(__u32))
+#define BLOCKS_PER_DIND_BLOCK(sb)	(BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb))
+
 #define MINIX2_INODES_PER_BLOCK(sb)	(sb->s_blocksize / sizeof(struct minix2_inode))
 
 #define MINIX_NDIR_BLOCKS		7
@@ -44,6 +46,36 @@ static int free_zone(struct inode *i, int block, int offset)
 			minix_bfree(i->sb, zone[n]);
 			zone[n] = 0;
 		}
+	}
+	bwrite(buf);
+	return 0;
+}
+
+static int free_indblock(struct inode *i, int block, int offset)
+{
+	int n, retval;
+	struct buffer *buf;
+	__u32 *zone;
+	__blk_t dblock;
+
+	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
+		printk("%s(): error reading doubly indirect block %d.\n", __FUNCTION__, block);
+		return -EIO;
+	}
+	zone = (__u32 *)buf->data;
+	dblock = offset % BLOCKS_PER_IND_BLOCK(i->sb);
+	for(n = offset / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
+		if(zone[n]) {
+			if((retval = free_zone(i, zone[n], dblock)) < 0) {
+				brelse(buf);
+				return retval;
+			}
+			if(!dblock) {
+				minix_bfree(i->sb, zone[n]);
+				zone[n] = 0;
+			}
+		}
+		dblock = 0;
 	}
 	bwrite(buf);
 	return 0;
@@ -438,33 +470,21 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 		block = 0;
 	}
 
-	if(block) {
-		block -= MINIX_NDIR_BLOCKS;
-		block -= BLOCKS_PER_IND_BLOCK(i->sb);
-	}
-	if(i->u.minix.u.i2_zone[MINIX_DIND_BLOCK]) {
-		if(!(buf = bread(i->dev, i->u.minix.u.i2_zone[MINIX_DIND_BLOCK], i->sb->s_blocksize))) {
-			printk("%s(): error reading block %d.\n", __FUNCTION__, i->u.minix.u.i2_zone[MINIX_DIND_BLOCK]);
+	if(!block || block < (BLOCKS_PER_DIND_BLOCK(i->sb) + BLOCKS_PER_IND_BLOCK(i->sb) + MINIX_NDIR_BLOCKS)) {
+		if(block) {
+			block -= MINIX_NDIR_BLOCKS;
+			block -= BLOCKS_PER_IND_BLOCK(i->sb);
 		}
-		zone = (__u32 *)buf->data;
-		dblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
-		for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
-			if(zone[n]) {
-				if((retval = free_zone(i, zone[n], dblock)) < 0) {
-					brelse(buf);
-					return retval;
-				}
-				if(!dblock) {
-					minix_bfree(i->sb, zone[n]);
-				}
+		if(i->u.minix.u.i2_zone[MINIX_DIND_BLOCK]) {
+			if((retval = free_indblock(i, i->u.minix.u.i2_zone[MINIX_DIND_BLOCK], block)) < 0) {
+				return retval;
 			}
-			dblock = 0;
+			if(!block) {
+				minix_bfree(i->sb, i->u.minix.u.i2_zone[MINIX_DIND_BLOCK]);
+				i->u.minix.u.i2_zone[MINIX_DIND_BLOCK] = 0;
+			}
 		}
-		bwrite(buf);
-		if(!block) {
-			minix_bfree(i->sb, i->u.minix.u.i2_zone[MINIX_DIND_BLOCK]);
-			i->u.minix.u.i2_zone[MINIX_DIND_BLOCK] = 0;
-		}
+		block = 0;
 	}
 
 	i->i_mtime = CURRENT_TIME;
