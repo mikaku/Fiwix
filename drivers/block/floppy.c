@@ -468,7 +468,7 @@ static void set_current_fdd_type(int minor)
 void irq_floppy(int num, struct sigcontext *sc)
 {
 	if(!fdc_wait_interrupt) {
-		printk("WARNING: %s(): fd%d: unexpected interrupt on %s.\n", __FUNCTION__, current_fdd, floppy_device.name);
+		printk("WARNING: %s(): fd%d: unexpected interrupt!\n", __FUNCTION__, current_fdd);
 		need_reset = 1;
 	} else {
 		fdc_timeout = fdc_wait_interrupt = 0;
