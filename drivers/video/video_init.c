@@ -1,7 +1,7 @@
 /*
- * fiwix/drivers/char/video_init.c
+ * fiwix/drivers/video/video_init.c
  *
- * Copyright 2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
