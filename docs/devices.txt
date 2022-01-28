@@ -9,6 +9,7 @@ Major | Minor | Device	      | Description
 	2	kmem		kernel virtual memory access
 	3	null		null device
 	5	zero		null byte source
+	7	full		returns ENOSPC on write
 	8	random		random number generator
 	9	urandom		random number generator (same as above)
 

@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/memdev.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -185,16 +185,16 @@ static struct fs_operations zero_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations memdev_driver_fsop = {
+static struct fs_operations full_driver_fsop = {
 	0,
 	0,
 
-	memdev_open,
-	NULL,			/* close */
-	NULL,			/* read */
-	NULL,			/* write */
+	full_open,
+	full_close,
+	full_read,
+	full_write,
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	full_lseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -237,6 +237,48 @@ static struct fs_operations urandom_driver_fsop = {
 	urandom_write,
 	NULL,			/* ioctl */
 	urandom_lseek,
+	NULL,			/* readdir */
+	NULL,			/* mmap */
+	NULL,			/* select */
+
+	NULL,			/* readlink */
+	NULL,			/* followlink */
+	NULL,			/* bmap */
+	NULL,			/* lockup */
+	NULL,			/* rmdir */
+	NULL,			/* link */
+	NULL,			/* unlink */
+	NULL,			/* symlink */
+	NULL,			/* mkdir */
+	NULL,			/* mknod */
+	NULL,			/* truncate */
+	NULL,			/* create */
+	NULL,			/* rename */
+
+	NULL,			/* read_block */
+	NULL,			/* write_block */
+
+	NULL,			/* read_inode */
+	NULL,			/* write_inode */
+	NULL,			/* ialloc */
+	NULL,			/* ifree */
+	NULL,			/* statfs */
+	NULL,			/* read_superblock */
+	NULL,			/* remount_fs */
+	NULL,			/* write_superblock */
+	NULL			/* release_superblock */
+};
+
+static struct fs_operations memdev_driver_fsop = {
+	0,
+	0,
+
+	memdev_open,
+	NULL,			/* close */
+	NULL,			/* read */
+	NULL,			/* write */
+	NULL,			/* ioctl */
+	NULL,			/* lseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -416,6 +458,32 @@ int zero_lseek(struct inode *i, __off_t offset)
 	return offset;
 }
 
+int full_open(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int full_close(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int full_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+{
+	memset_b(buffer, NULL, count);
+	return count;
+}
+
+int full_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+{
+	return -ENOSPC;
+}
+
+int full_lseek(struct inode *i, __off_t offset)
+{
+	return offset;
+}
+
 int urandom_open(struct inode *i, struct fd *fd_table)
 {
 	return 0;
@@ -466,6 +534,9 @@ int memdev_open(struct inode *i, struct fd *fd_table)
 		case MEMDEV_ZERO:
 			i->fsop = &zero_driver_fsop;
 			break;
+		case MEMDEV_FULL:
+			i->fsop = &full_driver_fsop;
+			break;
 		case MEMDEV_RANDOM:
 			i->fsop = &urandom_driver_fsop;
 			break;
@@ -514,6 +585,7 @@ void memdev_init(void)
 	SET_MINOR(memdev_device.minors, MEMDEV_KMEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_NULL);
 	SET_MINOR(memdev_device.minors, MEMDEV_ZERO);
+	SET_MINOR(memdev_device.minors, MEMDEV_FULL);
 	SET_MINOR(memdev_device.minors, MEMDEV_RANDOM);
 	SET_MINOR(memdev_device.minors, MEMDEV_URANDOM);
 

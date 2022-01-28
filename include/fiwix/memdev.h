@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/memdev.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -11,12 +11,12 @@
 #include <fiwix/fs.h>
 
 #define MEMDEV_MAJOR	1	/* major number */
-#define MEMDEV_MINORS	5	/* number of supported minors */
 
 #define MEMDEV_MEM	1	/* minor for /dev/mem */
 #define MEMDEV_KMEM	2	/* minor for /dev/kmem */
 #define MEMDEV_NULL	3	/* minor for /dev/null */
 #define MEMDEV_ZERO	5	/* minor for /dev/zero */
+#define MEMDEV_FULL	7	/* minor for /dev/full */
 #define MEMDEV_RANDOM	8	/* minor for /dev/random */
 #define MEMDEV_URANDOM	9	/* minor for /dev/urandom */
 
@@ -43,6 +43,12 @@ int zero_close(struct inode *, struct fd *);
 int zero_read(struct inode *, struct fd *, char *, __size_t);
 int zero_write(struct inode *, struct fd *, const char *, __size_t);
 int zero_lseek(struct inode *, __off_t);
+
+int full_open(struct inode *, struct fd *);
+int full_close(struct inode *, struct fd *);
+int full_read(struct inode *, struct fd *, char *, __size_t);
+int full_write(struct inode *, struct fd *, const char *, __size_t);
+int full_lseek(struct inode *, __off_t);
 
 int urandom_open(struct inode *, struct fd *);
 int urandom_close(struct inode *, struct fd *);
