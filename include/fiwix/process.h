@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/process.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -41,8 +41,7 @@ struct vma {
 #define MMAP_START	0x40000000	/* mmap()s start at 1GB */
 #define IS_SUPERUSER	(current->euid == 0)
 
-#define IO_BITMAP_SIZE	32		/* 32 * 32bit = 1024 = 0x3FF */
-					/* 2048 * 32bit = 65536 = 0xFFFF */
+#define IO_BITMAP_SIZE	8192		/* 8192*8bit = all I/O address space */
 
 #define PG_LEADER(p)	((p)->pid == (p)->pgid)
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
@@ -96,11 +95,11 @@ struct i386tss {
 	unsigned int ldt;
 	unsigned short int debug_trap;
 	unsigned short int io_bitmap_addr;
+	unsigned char io_bitmap[IO_BITMAP_SIZE + 1];
 };
 
 struct proc {
 	struct i386tss tss;
-	unsigned int io_bitmap[IO_BITMAP_SIZE + 1];
 	__pid_t pid;			/* process ID */
 	__pid_t ppid;			/* parent process ID */
 	__pid_t pgid;			/* process group ID */

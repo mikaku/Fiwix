@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/fork.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -60,7 +60,6 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 	proc_slot_init(child);
 	child->pid = pid;
-	memset_b(&child->tss, NULL, sizeof(struct i386tss));
 	sprintk(child->pidstr, "%d", child->pid);
 
 	if(!(child_pgdir = (void *)kmalloc())) {

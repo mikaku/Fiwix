@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/sched.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -38,9 +38,9 @@ void set_tss(struct proc *p)
 
 	g = &gdt[TSS / sizeof(struct seg_desc)];
 
-	g->sd_lobase = (unsigned int)p;
+	g->sd_lobase = (unsigned int)&p->tss;
 	g->sd_loflags = SD_TSSPRESENT;
-	g->sd_hibase = (char)(((unsigned int)p) >> 24);
+	g->sd_hibase = (char)(((unsigned int)&p->tss) >> 24);
 }
 
 /* Round Robin algorithm */

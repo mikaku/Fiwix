@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/gdt.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -47,7 +47,7 @@ void gdt_init(void)
 	gdt_set_entry(USER_DS, 0, 0xFFFFFFFF, loflags, SD_OPSIZE32 | SD_PAGE4KB);
 
 	loflags = SD_TSSPRESENT;
-	gdt_set_entry(TSS, 0, sizeof(struct proc) - 1, loflags, SD_OPSIZE32);
+	gdt_set_entry(TSS, 0, sizeof(struct i386tss), loflags, SD_OPSIZE32);
 
 	load_gdt((unsigned int)&gdtr);
 }

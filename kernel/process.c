@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/process.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -14,6 +14,7 @@
 #include <fiwix/sleep.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/stddef.h>
 
 struct proc *proc_table;
 struct proc *current;
@@ -356,8 +357,6 @@ struct proc * kernel_process(const char *name, int (*fn)(void))
 
 void proc_slot_init(struct proc *p)
 {
-	int n;
-
 	/* insert process at the end of proc_table */
 	lock_resource(&slot_resource);
 	if(proc_table_head == NULL) {
@@ -374,17 +373,13 @@ void proc_slot_init(struct proc *p)
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
-	memset_b(&p->tss, NULL, sizeof(struct i386tss));
-	p->tss.io_bitmap_addr = (unsigned int)&p->io_bitmap;
+	memset_b(&p->tss, NULL, sizeof(struct i386tss) - IO_BITMAP_SIZE);
+	p->tss.io_bitmap_addr = offsetof(struct i386tss, io_bitmap);
 
-	/*
-	 * Currently all io_bitmap bits are set to 0, which means full access.
-	 * This must be changed to 1 once we have fixed the ioperm() system
-	 * call.
-	 */
-	for(n = 0; n < IO_BITMAP_SIZE + 1; n++) {
-		p->io_bitmap[n] = 0;	/* FIXME: change it to 1 */
-	}
+	/* I/O permissions are not inherited by the child */
+	memset_l(&p->tss.io_bitmap, ~0, IO_BITMAP_SIZE / sizeof(unsigned int));
+
+	p->tss.io_bitmap[IO_BITMAP_SIZE + 1] = ~0;	/* extra byte must be all 1's */
 	p->state = PROC_IDLE;
 }
 
