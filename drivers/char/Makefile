@@ -1,6 +1,6 @@
 # fiwix/drivers/char/Makefile
 #
-# Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+# Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
@@ -12,8 +12,7 @@
 OBJS = console.o tty.o tty_queue.o vt.o defkeymap.o keyboard.o memdev.o \
        serial.o lp.o fb.o sysrq.o
 
-char:	$(OBJS)
-	$(LD) $(LDFLAGS) -r $(OBJS) -o char.o
+all:	$(OBJS)
 
 clean:
 	rm -f *.o

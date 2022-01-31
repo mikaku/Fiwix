@@ -1,6 +1,6 @@
 # fiwix/fs/Makefile
 #
-# Copyright 2018, Jordi Sanfeliu. All rights reserved.
+# Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
@@ -10,14 +10,12 @@
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 FSDIRS = minix ext2 pipefs iso9660 procfs
-FILESYSTEMS = minix/minix.o ext2/ext2.o pipefs/pipefs.o iso9660/iso9660.o \
-	procfs/procfs.o
+FILESYSTEMS = minix/*.o ext2/*.o pipefs/*.o iso9660/*.o procfs/*.o
 OBJS = filesystems.o devices.o buffer.o fd.o locks.o super.o inode.o \
 	namei.o elf.o script.o
 
-fs:	$(OBJS)
+all:	$(OBJS)
 	@for n in $(FSDIRS) ; do (cd $$n ; $(MAKE)) ; done
-	$(LD) $(LDFLAGS) -r $(FILESYSTEMS) $(OBJS) -o fs.o
 
 clean:
 	@for n in $(FSDIRS) ; do (cd $$n ; $(MAKE) clean) ; done

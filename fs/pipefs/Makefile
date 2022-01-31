@@ -1,6 +1,6 @@
 # fiwix/fs/pipefs/Makefile
 #
-# Copyright 2018, Jordi Sanfeliu. All rights reserved.
+# Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
@@ -11,8 +11,7 @@
 
 OBJS = super.o fifo.o pipe.o
 
-pipefs:	$(OBJS)
-	$(LD) $(LDFLAGS) -r $(OBJS) -o pipefs.o
+all:	$(OBJS)
 
 clean:
 	rm -f *.o

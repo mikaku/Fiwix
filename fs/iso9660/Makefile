@@ -1,6 +1,6 @@
 # fiwix/fs/iso9660/Makefile
 #
-# Copyright 2018, Jordi Sanfeliu. All rights reserved.
+# Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
@@ -11,8 +11,7 @@
 
 OBJS = inode.o super.o namei.o dir.o file.o rrip.o symlink.o
 
-iso9660:$(OBJS)
-	$(LD) $(LDFLAGS) -r $(OBJS) -o iso9660.o
+all:	$(OBJS)
 
 clean:
 	rm -f *.o

@@ -1,10 +1,10 @@
 # fiwix/Makefile
 #
-# Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+# Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
-TOPDIR  := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
+TOPDIR := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
 INCLUDE = $(TOPDIR)/include
 
 ARCH = -m32
@@ -16,11 +16,28 @@ LD = $(CROSS_COMPILE)ld
 CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 
-DIRS = kernel kernel/syscalls mm fs drivers/block drivers/char drivers/video \
-       lib
-OBJS = kernel/kernel.o kernel/syscalls/syscalls.o mm/mm.o fs/fs.o \
-       drivers/block/block.o drivers/char/char.o drivers/video/video.o \
-       lib/lib.o
+DIRS =	kernel \
+	kernel/syscalls \
+	mm \
+	fs \
+	drivers/char \
+	drivers/block \
+	drivers/video \
+	lib
+
+OBJS = 	kernel/*.o \
+	kernel/syscalls/*.o \
+	mm/*.o \
+	fs/*.o \
+	fs/ext2/*.o \
+	fs/iso9660/*.o \
+	fs/minix/*.o \
+	fs/pipefs/*.o \
+	fs/procfs/*.o \
+	drivers/char/*.o \
+	drivers/block/*.o \
+	drivers/video/*.o \
+	lib/*.o
 
 export CC LD CFLAGS LDFLAGS INCLUDE
 

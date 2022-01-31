@@ -1,6 +1,6 @@
 # fiwix/drivers/video/Makefile
 #
-# Copyright 2021, Jordi Sanfeliu. All rights reserved.
+# Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
 # Distributed under the terms of the Fiwix License.
 #
 
@@ -9,10 +9,9 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = video_init.o vgacon.o fbcon.o fonts.o
+OBJS = video.o vgacon.o fbcon.o fonts.o
 
-video:	$(OBJS)
-	$(LD) $(LDFLAGS) -r $(OBJS) -o video.o
+all:	$(OBJS)
 
 clean:
 	rm -f *.o
