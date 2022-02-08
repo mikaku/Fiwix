@@ -15,6 +15,7 @@
 #define MEMDEV_MEM	1	/* minor for /dev/mem */
 #define MEMDEV_KMEM	2	/* minor for /dev/kmem */
 #define MEMDEV_NULL	3	/* minor for /dev/null */
+#define MEMDEV_PORT	4	/* minor for /dev/port */
 #define MEMDEV_ZERO	5	/* minor for /dev/zero */
 #define MEMDEV_FULL	7	/* minor for /dev/full */
 #define MEMDEV_RANDOM	8	/* minor for /dev/random */
@@ -37,6 +38,12 @@ int null_close(struct inode *, struct fd *);
 int null_read(struct inode *, struct fd *, char *, __size_t);
 int null_write(struct inode *, struct fd *, const char *, __size_t);
 int null_lseek(struct inode *, __off_t);
+
+int port_open(struct inode *, struct fd *);
+int port_close(struct inode *, struct fd *);
+int port_read(struct inode *, struct fd *, char *, __size_t);
+int port_write(struct inode *, struct fd *, const char *, __size_t);
+int port_lseek(struct inode *, __off_t);
 
 int zero_open(struct inode *, struct fd *);
 int zero_close(struct inode *, struct fd *);

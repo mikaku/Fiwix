@@ -143,6 +143,48 @@ static struct fs_operations null_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
+static struct fs_operations port_driver_fsop = {
+	0,
+	0,
+
+	port_open,
+	port_close,
+	port_read,
+	port_write,
+	NULL,			/* ioctl */
+	port_lseek,
+	NULL,			/* readdir */
+	NULL,			/* mmap */
+	NULL,			/* select */
+
+	NULL,			/* readlink */
+	NULL,			/* followlink */
+	NULL,			/* bmap */
+	NULL,			/* lockup */
+	NULL,			/* rmdir */
+	NULL,			/* link */
+	NULL,			/* unlink */
+	NULL,			/* symlink */
+	NULL,			/* mkdir */
+	NULL,			/* mknod */
+	NULL,			/* truncate */
+	NULL,			/* create */
+	NULL,			/* rename */
+
+	NULL,			/* read_block */
+	NULL,			/* write_block */
+
+	NULL,			/* read_inode */
+	NULL,			/* write_inode */
+	NULL,			/* ialloc */
+	NULL,			/* ifree */
+	NULL,			/* statfs */
+	NULL,			/* read_superblock */
+	NULL,			/* remount_fs */
+	NULL,			/* write_superblock */
+	NULL			/* release_superblock */
+};
+
 static struct fs_operations zero_driver_fsop = {
 	0,
 	0,
@@ -432,6 +474,51 @@ int null_lseek(struct inode *i, __off_t offset)
 	return offset;
 }
 
+int port_open(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int port_close(struct inode *i, struct fd *fd_table)
+{
+	return 0;
+}
+
+int port_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+{
+	unsigned int n;
+
+	if(fd_table->offset >= 65535) {
+		return 0;
+	}
+	count = MIN(count, 65536 - fd_table->offset);
+	for(n = fd_table->offset; n < (fd_table->offset + count); n++, buffer++) {
+		*buffer = inport_b(n);
+	}
+	fd_table->offset += count;
+	return count;
+}
+
+int port_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+{
+	unsigned int n;
+
+	if(fd_table->offset >= 65535) {
+		return 0;
+	}
+	count = MIN(count, 65536 - fd_table->offset);
+	for(n = fd_table->offset; n < (fd_table->offset + count); n++, buffer++) {
+		outport_b(n, *buffer);
+	}
+	fd_table->offset += count;
+	return count;
+}
+
+int port_lseek(struct inode *i, __off_t offset)
+{
+	return offset;
+}
+
 int zero_open(struct inode *i, struct fd *fd_table)
 {
 	return 0;
@@ -454,6 +541,7 @@ int zero_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 }
 
 int zero_lseek(struct inode *i, __off_t offset)
+
 {
 	return offset;
 }
@@ -531,6 +619,9 @@ int memdev_open(struct inode *i, struct fd *fd_table)
 		case MEMDEV_NULL:
 			i->fsop = &null_driver_fsop;
 			break;
+		case MEMDEV_PORT:
+			i->fsop = &port_driver_fsop;
+			break;
 		case MEMDEV_ZERO:
 			i->fsop = &zero_driver_fsop;
 			break;
@@ -584,6 +675,7 @@ void memdev_init(void)
 	SET_MINOR(memdev_device.minors, MEMDEV_MEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_KMEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_NULL);
+	SET_MINOR(memdev_device.minors, MEMDEV_PORT);
 	SET_MINOR(memdev_device.minors, MEMDEV_ZERO);
 	SET_MINOR(memdev_device.minors, MEMDEV_FULL);
 	SET_MINOR(memdev_device.minors, MEMDEV_RANDOM);

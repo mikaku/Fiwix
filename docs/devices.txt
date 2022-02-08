@@ -8,6 +8,7 @@ Major | Minor | Device	      | Description
 	1	mem		physical memory access
 	2	kmem		kernel virtual memory access
 	3	null		null device
+	4	port		I/O port access
 	5	zero		null byte source
 	7	full		returns ENOSPC on write
 	8	random		random number generator
