@@ -128,12 +128,12 @@ static int serial_identify(struct serial *s)
 	int value;
 
 	/* set all features in FCR register to test the status of FIFO */
-	outport_b(s->addr + UART_FCR, (UART_FCR_FIFO |
+	outport_b(s->ioaddr + UART_FCR, (UART_FCR_FIFO |
 					UART_FCR_DMA |
 					UART_FCR_FIFO64 |
 					UART_FCR_FIFO14));
 
-	value = inport_b(s->addr + UART_IIR);
+	value = inport_b(s->ioaddr + UART_IIR);
 	if(value & UART_IIR_FIFOKO) {
 		if(value & UART_IIR_FIFO) {
 			if(value & UART_IIR_FIFO64) {
@@ -151,13 +151,13 @@ static int serial_identify(struct serial *s)
 		 * At this point we know this device don't has FIFO,
 		 * the Scratch Register will help us to know the final chip.
 		 */
-		value = inport_b(s->addr + UART_SR);	/* save its value */
-		outport_b(s->addr + UART_SR, 0xAA);	/* put a random value */
-		if(inport_b(s->addr + UART_SR) != 0xAA) {
+		value = inport_b(s->ioaddr + UART_SR);	/* save its value */
+		outport_b(s->ioaddr + UART_SR, 0xAA);	/* put a random value */
+		if(inport_b(s->ioaddr + UART_SR) != 0xAA) {
 			s->flags |= UART_IS_8250;
 			return 1;
 		} else {
-			outport_b(s->addr + UART_SR, value);	/* restore it */
+			outport_b(s->ioaddr + UART_SR, value);	/* restore it */
 			s->flags |= UART_IS_16450;
 			return 2;
 		}
@@ -169,13 +169,13 @@ static void serial_default(struct serial *s)
 {
 	int divisor;
 
-	outport_b(s->addr + UART_IER, 0);	/* disable all interrupts */
+	outport_b(s->ioaddr + UART_IER, 0);	/* disable all interrupts */
 
 	divisor = 115200 / s->baud;
-	outport_b(s->addr + UART_LCR, UART_LCR_DLAB);	/* enable DLAB */
-	outport_b(s->addr + UART_DLL, divisor & 0xFF);	/* LSB of divisor */
-	outport_b(s->addr + UART_DLH, divisor >> 8);	/* MSB of divisor */
-	outport_b(s->addr + UART_LCR, s->lctrl);	/* line control */
+	outport_b(s->ioaddr + UART_LCR, UART_LCR_DLAB);	/* enable DLAB */
+	outport_b(s->ioaddr + UART_DLL, divisor & 0xFF);	/* LSB of divisor */
+	outport_b(s->ioaddr + UART_DLH, divisor >> 8);	/* MSB of divisor */
+	outport_b(s->ioaddr + UART_LCR, s->lctrl);	/* line control */
 }
 
 /* disable transmitter interrupts */
@@ -186,7 +186,7 @@ static void serial_stop(struct tty *tty)
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
-	outport_b(s->addr + UART_IER, UART_IER_RDAI);
+	outport_b(s->ioaddr + UART_IER, UART_IER_RDAI);
 	RESTORE_FLAGS(flags);
 }
 
@@ -198,7 +198,7 @@ static void serial_start(struct tty *tty)
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
-	outport_b(s->addr + UART_IER, UART_IER_RDAI | UART_IER_THREI);
+	outport_b(s->ioaddr + UART_IER, UART_IER_RDAI | UART_IER_THREI);
 	RESTORE_FLAGS(flags);
 }
 
@@ -284,19 +284,19 @@ static void serial_send(struct tty *tty)
 	s = (struct serial *)tty->driver_data;
 
 	if(!tty->write_q.count) {
-		outport_b(s->addr + UART_IER, UART_IER_RDAI);
+		outport_b(s->ioaddr + UART_IER, UART_IER_RDAI);
 		return;
 	}
 
 	count = 0;
 	while(tty->write_q.count > 0 && count < UART_FIFO_SIZE) {
 		ch = tty_queue_getchar(&tty->write_q);
-		outport_b(s->addr + UART_TD, ch);
+		outport_b(s->ioaddr + UART_TD, ch);
 		count++;
 	}
 
 	if(!tty->write_q.count) {
-		outport_b(s->addr + UART_IER, UART_IER_RDAI);
+		outport_b(s->ioaddr + UART_IER, UART_IER_RDAI);
 	}
 	wakeup(&tty_write);
 }
@@ -315,9 +315,9 @@ static int serial_receive(struct serial *s)
 			errno = -EAGAIN;
 			break;
 		}
-		ch = inport_b(s->addr + UART_RD);
+		ch = inport_b(s->ioaddr + UART_RD);
 		tty_queue_putchar(tty, &tty->read_q, ch);
-		status = inport_b(s->addr + UART_LSR);
+		status = inport_b(s->ioaddr + UART_LSR);
 	} while(status & UART_LSR_RDA);
 
 	serial_bh.flags |= BH_ACTIVE;
@@ -334,8 +334,8 @@ void irq_serial(int num, struct sigcontext *sc)
 	if(s) {
 		do {
 			if(s->irq == num) {
-				while(!(inport_b(s->addr + UART_IIR) & UART_IIR_NOINT)) {
-					status = inport_b(s->addr + UART_LSR);
+				while(!(inport_b(s->ioaddr + UART_IIR) & UART_IIR_NOINT)) {
+					status = inport_b(s->ioaddr + UART_LSR);
 					if(status & UART_LSR_RDA) {
 						if(serial_receive(s)) {
 							break;
@@ -366,18 +366,18 @@ int serial_open(struct tty *tty)
 
 	/* enable FIFO */
 	if(s->flags & UART_HAS_FIFO) {
-		outport_b(s->addr + UART_FCR, UART_FCR_FIFO | UART_FCR_FIFO14);
+		outport_b(s->ioaddr + UART_FCR, UART_FCR_FIFO | UART_FCR_FIFO14);
 	}
-	outport_b(s->addr + UART_MCR, UART_MCR_OUT2 | UART_MCR_RTS | UART_MCR_DTR);
+	outport_b(s->ioaddr + UART_MCR, UART_MCR_OUT2 | UART_MCR_RTS | UART_MCR_DTR);
 
 	/* enable interrupts */
-	outport_b(s->addr + UART_IER, UART_IER_RDAI);
+	outport_b(s->ioaddr + UART_IER, UART_IER_RDAI);
 
 	/* clear all input registers */
-	inport_b(s->addr + UART_RD);
-	inport_b(s->addr + UART_IIR);
-	inport_b(s->addr + UART_LSR);
-	inport_b(s->addr + UART_MSR);
+	inport_b(s->ioaddr + UART_RD);
+	inport_b(s->ioaddr + UART_IIR);
+	inport_b(s->ioaddr + UART_LSR);
+	inport_b(s->ioaddr + UART_MSR);
 
 	return 0;
 }
@@ -399,13 +399,13 @@ int serial_close(struct tty *tty)
 	}
 
 	/* disable all interrupts */
-	outport_b(s->addr + UART_IER, 0);
+	outport_b(s->ioaddr + UART_IER, 0);
 
 	/* disable FIFO */
-	outport_b(s->addr + UART_FCR, UART_FCR_CRCVR | UART_FCR_CXMTR);
+	outport_b(s->ioaddr + UART_FCR, UART_FCR_CRCVR | UART_FCR_CXMTR);
 
 	/* clear all input register */
-	inport_b(s->addr + UART_RD);
+	inport_b(s->ioaddr + UART_RD);
 
 	return 0;
 }
@@ -425,9 +425,9 @@ void serial_set_termios(struct tty *tty)
 	}
 	divisor = 115200 / baud_table[baud];
 
-	outport_b(s->addr + UART_LCR, UART_LCR_DLAB);	/* enable DLAB */
-	outport_b(s->addr + UART_DLL, divisor & 0xFF);	/* LSB of divisor */
-	outport_b(s->addr + UART_DLH, divisor >> 8);	/* MSB of divisor */
+	outport_b(s->ioaddr + UART_LCR, UART_LCR_DLAB);	/* enable DLAB */
+	outport_b(s->ioaddr + UART_DLL, divisor & 0xFF);	/* LSB of divisor */
+	outport_b(s->ioaddr + UART_DLH, divisor >> 8);	/* MSB of divisor */
 
 	size = tty->termios.c_cflag & CSIZE;
 	switch(size) {
@@ -465,7 +465,7 @@ void serial_set_termios(struct tty *tty)
 
 	/* FIXME: flow control RTSCTS no supported */
 
-	outport_b(s->addr + UART_LCR, lctrl);	/* line control */
+	outport_b(s->ioaddr + UART_LCR, lctrl);	/* line control */
 }
 
 void serial_write(struct tty *tty)
@@ -475,7 +475,7 @@ void serial_write(struct tty *tty)
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
-	outport_b(s->addr + UART_IER, UART_IER_RDAI | UART_IER_THREI);
+	outport_b(s->ioaddr + UART_IER, UART_IER_RDAI | UART_IER_THREI);
 	RESTORE_FLAGS(flags);
 }
 
@@ -511,7 +511,7 @@ void serial_init(void)
 	for(n = 0, found = 0; n < SERIAL_MINORS; n++) {
 		s = &serial_table[n];
 		if((type = serial_identify(s))) {
-			printk("ttyS%d     0x%04X-0x%04X    %d    type=%s%s\n", n, s->addr, s->addr + 7, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
+			printk("ttyS%d     0x%04X-0x%04X    %d    type=%s%s\n", n, s->ioaddr, s->ioaddr + 7, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
 
 			SET_MINOR(serial_device.minors, (1 << SERIAL_MSF) + n);
 			serial_default(s);

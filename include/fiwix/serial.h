@@ -93,7 +93,7 @@
 #define UART_IS_16550A	0x20	/* is a 16550A chip */
 
 struct serial {
-	short int addr;		/* port I/O address */
+	unsigned short int ioaddr;	/* port I/O address */
 	char irq;
 	int baud;
 	char *name;
