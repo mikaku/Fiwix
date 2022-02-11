@@ -796,7 +796,7 @@ void keyboard_init(void)
 
 	keyboard_identify();
 
-	printk("keyboard  0x%04X-0x%04X     %d\ttype=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
+	printk("keyboard  0x%04x-0x%04x     %d\ttype=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
 
 	keyboard_write(KB_DATA, KB_RATE);
 	keyboard_wait_ack();

@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ramdisk.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -187,7 +187,7 @@ void ramdisk_init(void)
 			SET_MINOR(ramdisk_device.minors, n);
 			rd_sizes[n] = _ramdisksize;
 			ramdisk = get_ramdisk(n);
-			printk("ram%d      0x%08X-0x%08X %d RAMdisk(s) of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (_ramdisksize * 1024), RAMDISK_MINORS, _ramdisksize, BLKSIZE_1K / 1024);
+			printk("ram%d      0x%08x-0x%08x %d RAMdisk(s) of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (_ramdisksize * 1024), RAMDISK_MINORS, _ramdisksize, BLKSIZE_1K / 1024);
 		}
 		register_device(BLK_DEV, &ramdisk_device);
 	}

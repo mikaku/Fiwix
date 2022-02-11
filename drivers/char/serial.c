@@ -511,7 +511,7 @@ void serial_init(void)
 	for(n = 0, found = 0; n < SERIAL_MINORS; n++) {
 		s = &serial_table[n];
 		if((type = serial_identify(s))) {
-			printk("ttyS%d     0x%04X-0x%04X     %d\ttype=%s%s\n", n, s->ioaddr, s->ioaddr + 7, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
+			printk("ttyS%d     0x%04x-0x%04x     %d\ttype=%s%s\n", n, s->ioaddr, s->ioaddr + 7, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
 
 			SET_MINOR(serial_device.minors, (1 << SERIAL_MSF) + n);
 			serial_default(s);

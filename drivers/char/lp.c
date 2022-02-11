@@ -200,7 +200,7 @@ void lp_init(void)
 			ctrl &= ~LP_CTRL_BID;	/* disable bidirectional mode */
 			outport_b(lp_table[n].ctrl, ctrl);
 			lp_table[n].flags |= LP_CTRL_SEL;
-			printk("lp%d       0x%04X-0x%04X     -\n", n, lp_table[n].data, lp_table[n].data + 2);
+			printk("lp%d       0x%04x-0x%04x     -\n", n, lp_table[n].data, lp_table[n].data + 2);
 			SET_MINOR(lp_device.minors, n);
 		}
 	}

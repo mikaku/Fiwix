@@ -241,7 +241,7 @@ void multiboot(unsigned long magic, unsigned long info)
 	} else {
 		printk("WARNING: no cmdline detected!\n");
 	}
-	printk("kernel    0x%08X        -\tcmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
+	printk("kernel    0x%08x        -\tcmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {
@@ -251,7 +251,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;
 		for(n = 0; n < mbi.mods_count; n++, mod++) {
 			if(!strcmp((char *)mod->cmdline, _initrd)) {
-				printk("initrd    0x%08X-0x%08X file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
+				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
 				ramdisk_table[0].addr = (char *)mod->mod_start;
 			}
 		}

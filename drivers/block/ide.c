@@ -279,7 +279,7 @@ static void ide_results(struct ide *ide, int drive)
 	capacity = (__loff_t)ide->drive[drive].nr_sects * BPS;
 	capacity = capacity / 1024 / 1024;
 
-	printk("%s       0x%04X-0x%04X    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
+	printk("%s       0x%04x-0x%04x    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 	swap_asc_word(ide->drive[drive].ident.model_number, 40);
 	printk("%s %s ", ide_ctrl_name[ide->channel], ide_drv_name[ide->drive[drive].drive]);
 

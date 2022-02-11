@@ -127,7 +127,7 @@ void fb_init(void)
 	SET_MINOR(fb_device.minors, 0);
 	limit = (unsigned int)video.address + video.memsize;
 
-	printk("fb0       0x%08X-0x%08X\ttype=%s %X.%X resolution=%dx%dx%d size=%dMB\n",
+	printk("fb0       0x%08x-0x%08x\ttype=%s %x.%x resolution=%dx%dx%d size=%dMB\n",
 		video.address,
 		limit,
 		video.signature,

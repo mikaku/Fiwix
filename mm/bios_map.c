@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/bios_map.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -62,13 +62,13 @@ void bios_map_add(unsigned long int from, unsigned long int to, int from_type, i
 	}
 
 	if(from_type == to_type) {
-		printk("memory    0x%08X%08X-0x%08X%08X %s\n",
+		printk("memory    0x%08x%08x-0x%08x%08x %s\n",
 			0, from,
 			0, to,
 			bios_mem_type[to_type]
 		);
 	} else {
-		printk("memory    0x%08X%08X-0x%08X%08X %s -> %s\n",
+		printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
 			0, from,
 			0, to,
 			bios_mem_type[from_type],
@@ -99,7 +99,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 			to = bmmap->addr + bmmap->len;
 			to_high = (unsigned int)(to >> 32);
 			to_low = (unsigned int)(to & 0xFFFFFFFF);
-			printk("%s    0x%08X%08X-0x%08X%08X %s\n",
+			printk("%s    0x%08x%08x-0x%08x%08x %s\n",
 				n ? "      " : "memory",
 				from_high,
 				from_low,

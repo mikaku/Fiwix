@@ -998,7 +998,7 @@ void console_init(void)
 	struct tty *tty;
 
 	if(video.flags & VPF_VGA) {
-		printk("console   0x%04X-0x%04X     -\t%s (%d virtual consoles)\n", video.port, video.port + 1, video.signature, NR_VCONSOLES);
+		printk("console   0x%04x-0x%04x     -\t%s (%d virtual consoles)\n", video.port, video.port + 1, video.signature, NR_VCONSOLES);
 	}
 	if(video.flags & VPF_VESAFB) {
 		printk("console                     -\tcolor frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
