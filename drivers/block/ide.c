@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -279,7 +279,7 @@ static void ide_results(struct ide *ide, int drive)
 	capacity = (__loff_t)ide->drive[drive].nr_sects * BPS;
 	capacity = capacity / 1024 / 1024;
 
-	printk("%s       0x%04X-0x%04X   %2d    ", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
+	printk("%s       0x%04X-0x%04X    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 	swap_asc_word(ide->drive[drive].ident.model_number, 40);
 	printk("%s %s ", ide_ctrl_name[ide->channel], ide_drv_name[ide->drive[drive].drive]);
 
@@ -297,18 +297,18 @@ static void ide_results(struct ide *ide, int drive)
 		printk(" DISK drive %dMB\n", (unsigned int)capacity);
 		printk("                                model=%s\n", ide->drive[drive].ident.model_number);
 		if(ide->drive[drive].nr_sects < IDE_MIN_LBA) {
-			printk("                                CHS=%d/%d/%d", cyl, hds, sect);
+			printk("\t\t\t\tCHS=%d/%d/%d", cyl, hds, sect);
 		} else {
 			ide->drive[drive].flags |= DEVICE_REQUIRES_LBA;
-			printk("                                sectors=%d", ide->drive[drive].nr_sects);
+			printk("\t\t\t\tsectors=%d", ide->drive[drive].nr_sects);
 		}
 		printk(" cache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
 	}
 
 	if(ide->drive[drive].flags & DEVICE_IS_CDROM) {
 		printk(" CDROM drive\n");
-		printk("                                model=%s\n", ide->drive[drive].ident.model_number);
-		printk("                                cache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
+		printk("\t\t\t\tmodel=%s\n", ide->drive[drive].ident.model_number);
+		printk("\t\t\t\tcache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
 	}
 
 	if(udma >= 0) {

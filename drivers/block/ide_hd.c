@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide_hd.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -496,7 +496,7 @@ int ide_hd_init(struct ide *ide, int drive)
 
 	read_msdos_partition(rdev, part);
 	assign_minors(rdev, ide, part);
-	printk("                                partition summary: ");
+	printk("\t\t\t\tpartition summary: ");
 	for(n = 0; n < NR_PARTITIONS; n++) {
 		/* status values other than 0x00 and 0x80 are invalid */
 		if(part[n].status && part[n].status != 0x80) {

@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/keyboard.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -796,7 +796,7 @@ void keyboard_init(void)
 
 	keyboard_identify();
 
-	printk("keyboard  0x%04X-0x%04X    %d    type=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
+	printk("keyboard  0x%04X-0x%04X     %d\ttype=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
 
 	keyboard_write(KB_DATA, KB_RATE);
 	keyboard_wait_ack();

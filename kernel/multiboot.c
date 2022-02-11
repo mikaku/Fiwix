@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/multiboot.c
  *
- * Copyright 2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -212,7 +212,7 @@ void multiboot(unsigned long magic, unsigned long info)
 	memcpy_b(&mbi, (void *)info, sizeof(struct multiboot_info));
 
 	if(mbi.flags & MULTIBOOT_INFO_BOOT_LOADER_NAME) {
-		printk("bootloader                 -    %s\n", mbi.boot_loader_name);
+		printk("bootloader                  -\t%s\n", mbi.boot_loader_name);
 	}
 
 	if(!(mbi.flags & MULTIBOOT_INFO_MEMORY)) {
@@ -241,7 +241,7 @@ void multiboot(unsigned long magic, unsigned long info)
 	} else {
 		printk("WARNING: no cmdline detected!\n");
 	}
-	printk("kernel    0x%08X       -    cmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
+	printk("kernel    0x%08X        -\tcmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {

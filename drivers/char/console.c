@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/console.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -998,10 +998,10 @@ void console_init(void)
 	struct tty *tty;
 
 	if(video.flags & VPF_VGA) {
-		printk("console   0x%04X-0x%04X    -    %s (%d virtual consoles)\n", video.port, video.port + 1, video.signature, NR_VCONSOLES);
+		printk("console   0x%04X-0x%04X     -\t%s (%d virtual consoles)\n", video.port, video.port + 1, video.signature, NR_VCONSOLES);
 	}
 	if(video.flags & VPF_VESAFB) {
-		printk("console                    -    color frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
+		printk("console                     -\tcolor frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
 		printk("\t\t\t\t(%d virtual consoles)\n", NR_VCONSOLES);
 	}
 

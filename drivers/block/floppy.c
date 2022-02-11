@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/floppy.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -827,7 +827,7 @@ void floppy_init(void)
 		if(!register_irq(FLOPPY_IRQ, &irq_config_floppy)) {
 			enable_irq(FLOPPY_IRQ);
 		}
-		printk("fd0       0x%04X-0x%04X   %2d    ", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
+		printk("fd0       0x%04X-0x%04X     %d\t", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
 		printk("%s ", fdd_type[master].name);
 		fdd_status[0].type = fdd_status[1].type = master;
 		SET_MINOR(floppy_device.minors, 0);
@@ -852,7 +852,7 @@ void floppy_init(void)
 				enable_irq(FLOPPY_IRQ);
 			}
 		}
-		printk("fd1       0x%04X-0x%04X   %2d    ", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
+		printk("fd1       0x%04X-0x%04X     %d\t", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
 		printk("%s  ", fdd_type[slave].name);
 		fdd_status[1].type = slave;
 		SET_MINOR(floppy_device.minors, 1);

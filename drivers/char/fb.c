@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/fb.c
  *
- * Copyright 2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -127,7 +127,7 @@ void fb_init(void)
 	SET_MINOR(fb_device.minors, 0);
 	limit = (unsigned int)video.address + video.memsize;
 
-	printk("fb0       0x%08X-0x%08X type=%s %X.%X resolution=%dx%dx%d size=%dMB\n",
+	printk("fb0       0x%08X-0x%08X\ttype=%s %X.%X resolution=%dx%dx%d size=%dMB\n",
 		video.address,
 		limit,
 		video.signature,

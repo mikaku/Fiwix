@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/timer.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -444,7 +444,7 @@ void timer_init(void)
 	}
 	callout_head = NULL;
 
-	printk("clock     -                %d    type=PIT Hz=%d\n", TIMER_IRQ, HZ);
+	printk("clock     -                 %d\ttype=PIT Hz=%d\n", TIMER_IRQ, HZ);
 	if(!register_irq(TIMER_IRQ, &irq_config_timer)) {
 		enable_irq(TIMER_IRQ);
 	}

@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/cpu.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -205,7 +205,7 @@ void cpu_init(void)
 	cpu_table.model = -1;
 	cpu_table.stepping = -1;
 
-	printk("cpu       -                -\t");
+	printk("cpu       -                 -\t");
 	cpu_table.family = cpuid();
 	if(!cpu_table.family) {
 		cpu_table.has_cpuid = 1;

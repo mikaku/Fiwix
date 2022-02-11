@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/serial.h
  *
- * Copyright 2020-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2020-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
