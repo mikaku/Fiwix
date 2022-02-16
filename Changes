@@ -1,16 +1,28 @@
 1.4.0 - DD-MMM-2022
 ===================
+- Added the character device /dev/full.
+- Added the character device /dev/port.
 - Removed the extra lock when dispatching the bottom halves.
 - Mask the interrupt during the execution of the interrupt handler.
 - Reorganized the code to separate interrupt related functions from specific pic
   functions.
 - Moved set_leds() into the bottom half of the keyboard interrupt.
+- Moved the start and stop tty functions into the bottom half of the keyboard
+  interrupt.
+- Removed the command to detect the interface type of the keyboard.
+- Reversed the check order of schedule and signals before leaving the kernel
+  space.
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
   using interrupts during its own initialization.
 - Fixed ext2_truncate() to return the error code after calling free_dblock().
 - Fixed v1_minix_truncate() and v2_minix_truncate() to return the error code
   after calling free_zone().
 - Fixed ext2_truncate() to correctly free doubly-indirect blocks.
+- Fixed v1_minix_truncate() and v2_minix_truncate() to correctly free
+  doubly-indirect blocks.
+- Fixed ext2_truncate() to free triply-indirect blocks.
+- Fixed the way how the I/O permission bitmap in TSS is implemented.
+- Small fixes and cosmetic changes.
 
 
 1.3.0 - 08-Dec-2021
