@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/config.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -55,7 +55,10 @@
 #define VMA_REGIONS		150
 
 
+/* configuration options */
 
 /* #define CONFIG_VERBOSE_SEGFAULTS */
+#define CONFIG_PCI
+#define CONFIG_PCI_NAMES
 
 #endif /* _FIWIX_CONFIG_H */

@@ -22,6 +22,7 @@ DIRS =	kernel \
 	fs \
 	drivers/char \
 	drivers/block \
+	drivers/pci \
 	drivers/video \
 	lib
 
@@ -36,6 +37,7 @@ OBJS = 	kernel/*.o \
 	fs/procfs/*.o \
 	drivers/char/*.o \
 	drivers/block/*.o \
+	drivers/pci/*.o \
 	drivers/video/*.o \
 	lib/*.o
 

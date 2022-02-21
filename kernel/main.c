@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/main.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -16,6 +16,7 @@
 #include <fiwix/string.h>
 #include <fiwix/video.h>
 #include <fiwix/console.h>
+#include <fiwix/pci.h>
 #include <fiwix/pic.h>
 #include <fiwix/irq.h>
 #include <fiwix/segments.h>
@@ -83,6 +84,9 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	mem_init();
 	video_init();
 	console_init();
+#ifdef CONFIG_PCI
+	pci_init();
+#endif
 	timer_init();
 	keyboard_init();
 	proc_init();
