@@ -11,7 +11,7 @@
 #define SERIAL4_IRQ	4	/* IRQ for serial ports 1 and 3 */
 #define SERIAL3_IRQ	3	/* IRQ for serial ports 2 and 4 */
 
-#define NR_SERIAL	4	/* maximum number of serial ttys */
+#define NR_SERIAL	5	/* maximum number of serial ttys */
 #define SERIAL_MAJOR	4	/* major number for /dev/ttyS[n] */
 #define SERIAL_MINORS	NR_SERIAL
 #define SERIAL_MSF	6	/* serial minor shift factor */
@@ -92,8 +92,11 @@
 #define UART_IS_16550	0x10	/* is a 16550 chip */
 #define UART_IS_16550A	0x20	/* is a 16550A chip */
 
+#define UART_ACTIVE	0x80
+
 struct serial {
 	unsigned short int ioaddr;	/* port I/O address */
+	int iosize;
 	char irq;
 	int baud;
 	char *name;

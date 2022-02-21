@@ -14,6 +14,7 @@
 #include <fiwix/irq.h>
 #include <fiwix/sleep.h>
 #include <fiwix/serial.h>
+#include <fiwix/pci.h>
 #include <fiwix/tty.h>
 #include <fiwix/ctype.h>
 #include <fiwix/stdio.h>
@@ -61,6 +62,9 @@ static struct fs_operations serial_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
+// FIXME: this should me allocated dynamically
+struct serial serial_table[NR_SERIAL];
+
 static struct device serial_device = {
 	"ttyS",
 	SERIAL_MAJOR,
@@ -71,12 +75,12 @@ static struct device serial_device = {
 	NULL
 };
 
-/* 9600,N,8,1 by default */
-struct serial serial_table[NR_SERIAL] = {
-	{ 0x3F8, SERIAL4_IRQ, 9600, "ttyS0", UART_LCR_NP | UART_LCR_WL8 | UART_LCR_1STB, 0, NULL, NULL },
-	{ 0x2F8, SERIAL3_IRQ, 9600, "ttyS1", UART_LCR_NP | UART_LCR_WL8 | UART_LCR_1STB, 0, NULL, NULL },
-	{ 0x3E8, SERIAL4_IRQ, 9600, "ttyS2", UART_LCR_NP | UART_LCR_WL8 | UART_LCR_1STB, 0, NULL, NULL },
-	{ 0x2E8, SERIAL3_IRQ, 9600, "ttyS3", UART_LCR_NP | UART_LCR_WL8 | UART_LCR_1STB, 0, NULL, NULL }
+static int isa_ioports[] = {
+	0x3F8,
+	0x2F8,
+	0x3E8,
+	0x2E8,
+	0
 };
 
 char *serial_chip[] = {
@@ -109,10 +113,20 @@ static int baud_table[] = {
 	0
 };
 
-static struct serial *serial_ports = NULL;
+#ifdef CONFIG_PCI
+static struct pci_supported_devices supported[] = {
+        { 0x1b36, 0x0002 },	/* Red Hat, Inc., QEMU PCI 16550A Adapter */
+	{ 0, 0 }
+};
+#endif
+
+static struct serial *serial_active = NULL;
 static struct bh serial_bh = { 0, &irq_serial_bh, NULL };
-static struct interrupt irq_config_serial0 = { 0, "serial", &irq_serial, NULL };
-static struct interrupt irq_config_serial1 = { 0, "serial", &irq_serial, NULL };
+
+// FIXME: this should be allocated dynamically
+static struct interrupt irq_config_serial0 = { 0, "serial", &irq_serial, NULL };	/* ISA irq4 */
+static struct interrupt irq_config_serial1 = { 0, "serial", &irq_serial, NULL };	/* ISA irq3 */
+static struct interrupt irq_config_serial2 = { 0, "serial", &irq_serial, NULL };	/* first PCI device */
 
 static int is_serial(__dev_t dev)
 {
@@ -121,6 +135,21 @@ static int is_serial(__dev_t dev)
 	}
 
 	return 0;
+}
+
+// FIXME: this should be removed once these structures are allocated dynamically
+static struct serial * get_serial_slot(void)
+{
+	int n;
+
+	for(n = 0; n < NR_SERIAL; n++) {
+		if(!(serial_table[n].flags & UART_ACTIVE)) {
+			return &serial_table[n];
+		}
+	}
+
+	printk("WARNING: %s(): no more serial slots free!\n", __FUNCTION__);
+	return NULL;
 }
 
 static int serial_identify(struct serial *s)
@@ -166,6 +195,15 @@ static int serial_identify(struct serial *s)
 }
 
 static void serial_default(struct serial *s)
+{
+	s->name = "ttyS.";
+
+	/* 9600,N,8,1 by default */
+	s->baud = 9600;
+	s->lctrl = UART_LCR_NP | UART_LCR_WL8 | UART_LCR_1STB;
+}
+
+static void serial_setup(struct serial *s)
 {
 	int divisor;
 
@@ -329,26 +367,24 @@ void irq_serial(int num, struct sigcontext *sc)
 	struct serial *s;
 	int status;
 
-	s = serial_ports;
+	s = serial_active;
 
-	if(s) {
-		do {
-			if(s->irq == num) {
-				while(!(inport_b(s->ioaddr + UART_IIR) & UART_IIR_NOINT)) {
-					status = inport_b(s->ioaddr + UART_LSR);
-					if(status & UART_LSR_RDA) {
-						if(serial_receive(s)) {
-							break;
-						}
+	while(s) {
+		if(s->irq == num) {
+			while(!(inport_b(s->ioaddr + UART_IIR) & UART_IIR_NOINT)) {
+				status = inport_b(s->ioaddr + UART_LSR);
+				if(status & UART_LSR_RDA) {
+					if(serial_receive(s)) {
+						break;
 					}
-					if(status & UART_LSR_THRE) {
-						serial_send(s->tty);
-					}
-					serial_errors(s, status);
 				}
+				if(status & UART_LSR_THRE) {
+					serial_send(s->tty);
+				}
+				serial_errors(s, status);
 			}
-			s = s->next;
-		} while(s);
+		}
+		s = s->next;
 	}
 }
 
@@ -484,7 +520,7 @@ void irq_serial_bh(void)
 	struct tty *tty;
 	struct serial *s;
 
-	s = serial_ports;
+	s = serial_active;
 
 	if(s) {
 		do {
@@ -502,68 +538,148 @@ void irq_serial_bh(void)
 	}
 }
 
-void serial_init(void)
+static int register_serial(struct serial *s, int minor)
 {
-	int n, n2, type, found;
-	struct serial **sp, *s;
+	struct serial **sp;
 	struct tty *tty;
+	int n, type;
 
-	for(n = 0, found = 0; n < SERIAL_MINORS; n++) {
-		s = &serial_table[n];
-		if((type = serial_identify(s))) {
-			printk("ttyS%d     0x%04x-0x%04x     %d\ttype=%s%s\n", n, s->ioaddr, s->ioaddr + 7, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
-
-			SET_MINOR(serial_device.minors, (1 << SERIAL_MSF) + n);
-			serial_default(s);
-			sp = &serial_ports;
-			if(*sp) {
-				do {
-					sp = &(*sp)->next;
-				} while(*sp);
-			}
-			if(!register_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + n))) {
-				tty = get_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + n));
-				tty->driver_data = (void *)s;
-				tty->stop = serial_stop;
-				tty->start = serial_start;
-				tty->deltab = serial_deltab;
-				tty->reset = serial_reset;
-				tty->input = do_cook;
-				tty->output = serial_write;
-				tty->open = serial_open;
-				tty->close = serial_close;
-				tty->set_termios = serial_set_termios;
-				serial_reset(tty);
-				for(n2 = 0; n2 < MAX_TAB_COLS; n2++) {
-					if(!(n2 % TAB_SIZE)) {
-						tty->tab_stop[n2] = 1;
-					} else {
-						tty->tab_stop[n2] = 0;
-					}
+	serial_default(s);
+	if((type = serial_identify(s))) {
+		s->name[4] = '0' + minor;
+		printk("%s	  0x%04x-0x%04x	  %3d\ttype=%s%s\n", s->name, s->ioaddr, s->ioaddr + s->iosize, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
+		SET_MINOR(serial_device.minors, (1 << SERIAL_MSF) + minor);
+		serial_setup(s);
+		sp = &serial_active;
+		if(*sp) {
+			do {
+				sp = &(*sp)->next;
+			} while(*sp);
+		}
+		if(!register_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor))) {
+			tty = get_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor));
+			tty->driver_data = (void *)s;
+			tty->stop = serial_stop;
+			tty->start = serial_start;
+			tty->deltab = serial_deltab;
+			tty->reset = serial_reset;
+			tty->input = do_cook;
+			tty->output = serial_write;
+			tty->open = serial_open;
+			tty->close = serial_close;
+			tty->set_termios = serial_set_termios;
+			serial_reset(tty);
+			for(n = 0; n < MAX_TAB_COLS; n++) {
+				if(!(n % TAB_SIZE)) {
+					tty->tab_stop[n] = 1;
+				} else {
+					tty->tab_stop[n] = 0;
 				}
-				tty->count = 0;
-				s->tty = tty;
-				*sp = s;
-				found++;
-			} else {
-				printk("WARNING: %s(): unable to register ttyS%d.\n", __FUNCTION__, n);
 			}
+			tty->count = 0;
+			s->tty = tty;
+			s->flags |= UART_ACTIVE;
+			*sp = s;
+			minor++;
+			return 0;
+		} else {
+			printk("WARNING: %s(): unable to register %s.\n", __FUNCTION__, s->name);
 		}
 	}
-	if(found) {
+
+	return 1;
+}
+
+#ifdef CONFIG_PCI
+static int serial_pci(int minor)
+{
+	struct pci_device *pci_dev;
+	struct serial *s;
+	const char *name;
+	int n;
+
+	for(n = 0; (supported[n].vendor_id && supported[n].device_id) && minor < NR_SERIAL; n++) {
+		if(!(pci_dev = pci_get_device(supported[n].vendor_id, supported[n].device_id))) {
+			continue;
+		}
+
+		if(!(pci_dev->bar[0] & PCI_BASE_ADDR_SPACE_IO)) {
+			printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
+			continue;
+		}
+		if(!(s = get_serial_slot())) {
+			return minor;
+		}
+		s->ioaddr = (pci_dev->bar[0] &= ~1);
+		s->iosize = pci_dev->size[0];
+		s->irq = pci_dev->irq;
+		if(!register_serial(s, minor)) {
+			printk("\t\t\t\tpci=%02x:%02x.%d rev=%02d\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
+			printk("\t\t\t\t");
+			name = pci_get_strvendor_id(pci_device_table[n].vendor_id);
+			printk("desc=%s/", name);
+			name = pci_get_strdevice_id(pci_device_table[n].device_id);
+			printk("%s\n", name);
+			if(!register_irq(s->irq, &irq_config_serial2)) {
+				enable_irq(s->irq);
+			}
+			minor++;
+		}
+	}
+
+	return minor;
+}
+#endif
+
+static int serial_isa(void)
+{
+	struct serial *s;
+	int n, minor;
+
+	for(n = 0, minor = 0; isa_ioports[n] && minor < NR_SERIAL; n++) {
+		if(!(s = get_serial_slot())) {
+			return minor;
+		}
+		s->ioaddr = isa_ioports[n];
+		if(!(minor & 1)) {
+			s->irq = SERIAL4_IRQ;
+		} else {
+			s->irq = SERIAL3_IRQ;
+		}
+		if(!(register_serial(s, minor))) {
+			if(!minor) {
+				if(!register_irq(SERIAL4_IRQ, &irq_config_serial0)) {
+					enable_irq(SERIAL4_IRQ);
+				}
+			}
+			if(minor == 1) {
+				if(!register_irq(SERIAL3_IRQ, &irq_config_serial1)) {
+					enable_irq(SERIAL3_IRQ);
+				}
+			}
+			minor++;
+		}
+	}
+
+	return minor;
+}
+
+void serial_init(void)
+{
+	int minor;
+
+	memset_b(serial_table, 0, sizeof(serial_table));
+
+	minor = serial_isa();
+#ifdef CONFIG_PCI
+	minor = serial_pci(minor);
+#endif
+
+	if(minor) {
 		add_bh(&serial_bh);
 		if(register_device(CHR_DEV, &serial_device)) {
 			printk("WARNING: %s(): unable to register serial device.\n", __FUNCTION__);
 		}
-		if(!register_irq(SERIAL4_IRQ, &irq_config_serial0)) {
-			enable_irq(SERIAL4_IRQ);
-		}
-		if(found > 1) {
-			if(!register_irq(SERIAL3_IRQ, &irq_config_serial1)) {
-				enable_irq(SERIAL3_IRQ);
-			}
-		}
-
 		if(is_serial(_syscondev)) {
 			register_console(console_flush_log_buf);
 		}
