@@ -1,13 +1,14 @@
 /*
  * fiwix/kernel/syscalls.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #include <fiwix/types.h>
 #include <fiwix/syscalls.h>
 #include <fiwix/mm.h>
+#include <fiwix/stat.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
 
@@ -160,6 +161,11 @@ int check_permission(int mask, struct inode *i)
 		uid = current->euid;
 	}
 
+	if(mask & TO_EXEC) {
+		if(!(i->i_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
+			return -EACCES;
+		}
+	}
 	if(uid == 0) {
 		return 0;
 	}
