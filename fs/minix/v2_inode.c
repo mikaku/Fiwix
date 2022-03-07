@@ -22,6 +22,7 @@
 
 #define BLOCKS_PER_IND_BLOCK(sb)	(sb->s_blocksize / sizeof(__u32))
 #define BLOCKS_PER_DIND_BLOCK(sb)	(BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb))
+#define BLOCKS_PER_TIND_BLOCK(sb)	(BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb))
 
 #define MINIX2_INODES_PER_BLOCK(sb)	(sb->s_blocksize / sizeof(struct minix2_inode))
 
@@ -433,8 +434,7 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 
 int v2_minix_truncate(struct inode *i, __off_t length)
 {
-	__blk_t block, dblock;
-	__u32 *zone;
+	__blk_t block, indblock, *dindblock;
 	struct buffer *buf;
 	int n, retval;
 
@@ -485,6 +485,40 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 			}
 		}
 		block = 0;
+	}
+
+	if(!block || block < (BLOCKS_PER_TIND_BLOCK(i->sb) + BLOCKS_PER_DIND_BLOCK(i->sb) + BLOCKS_PER_IND_BLOCK(i->sb) + EXT2_NDIR_BLOCKS)) {
+		if(block) {
+			block -= MINIX_NDIR_BLOCKS;
+			block -= BLOCKS_PER_IND_BLOCK(i->sb);
+			block -= BLOCKS_PER_DIND_BLOCK(i->sb);
+		}
+		if(i->u.minix.u.i2_zone[MINIX_TIND_BLOCK]) {
+			if(!(buf = bread(i->dev, i->u.minix.u.i2_zone[MINIX_TIND_BLOCK], i->sb->s_blocksize))) {
+				printk("%s(): error reading the triply indirect block (%d).\n", __FUNCTION__, i->u.minix.u.i2_zone[MINIX_TIND_BLOCK]);
+				return -EIO;
+			}
+			dindblock = (__blk_t *)buf->data;
+			indblock = block % BLOCKS_PER_IND_BLOCK(i->sb);
+			for(n = block / BLOCKS_PER_IND_BLOCK(i->sb); n < BLOCKS_PER_IND_BLOCK(i->sb); n++) {
+				if(dindblock[n]) {
+					if((retval = free_indblock(i, dindblock[n], indblock)) < 0) {
+						brelse(buf);
+						return retval;
+					}
+					if(!indblock) {
+						minix_bfree(i->sb, dindblock[n]);
+						dindblock[n] = 0;
+					}
+				}
+				indblock = 0;
+			}
+			bwrite(buf);
+			if(!block) {
+				minix_bfree(i->sb, i->u.minix.u.i2_zone[MINIX_TIND_BLOCK]);
+				i->u.minix.u.i2_zone[MINIX_TIND_BLOCK] = 0;
+			}
+		}
 	}
 
 	i->i_mtime = CURRENT_TIME;
