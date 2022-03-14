@@ -370,8 +370,11 @@ static int elf_load_interpreter(struct inode *ii)
 	}
 
 	if(!last_ptload) {
-		printk("WARNING: 'last_ptload' is NULL!\n");
+		printk("%s(): no headers in interpreter.");
+		kfree((unsigned int)data);
+		return -ENOEXEC;
 	}
+
 	elf32_ph = last_ptload;
 
 	/* zero-fill the fractional page of the DATA section */
@@ -417,11 +420,6 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 		if(current->pid == INIT) {
 			PANIC("%s has an unrecognized binary format.\n", INIT_PROGRAM);
 		}
-		return -ENOEXEC;
-	}
-
-	if(elf32_h->e_phnum < 1) {
-		printk("%s(): no program headers.");
 		return -ENOEXEC;
 	}
 
@@ -515,6 +513,12 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 			}
 			last_ptload = elf32_ph;
 		}
+	}
+
+	if(!last_ptload) {
+		printk("%s(): no program headers.");
+		send_sig(current, SIGKILL);
+		return -ENOEXEC;
 	}
 
 	elf32_ph = last_ptload;
