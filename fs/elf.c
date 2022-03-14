@@ -460,6 +460,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	ae_str_len = barg->argv_len + barg->envp_len;
 	if(ae_ptr_len + ae_str_len > (ARG_MAX * PAGE_SIZE)) {
 		printk("WARNING: %s(): argument list (%d) exceeds ARG_MAX (%d)!\n", __FUNCTION__, ae_ptr_len + ae_str_len, ARG_MAX * PAGE_SIZE);
+		iput(ii);
 		return -E2BIG;
 	}
 
