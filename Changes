@@ -1,7 +1,9 @@
 1.4.0 - DD-MMM-2022
 ===================
+- Added support for the PCI local bus.
 - Added the character device /dev/full.
 - Added the character device /dev/port.
+- Improved the serial driver to support QEMU PCI serial devices.
 - Removed the extra lock when dispatching the bottom halves.
 - Mask the interrupt during the execution of the interrupt handler.
 - Reorganized the code to separate interrupt related functions from specific pic
@@ -12,6 +14,7 @@
 - Removed the command to detect the interface type of the keyboard.
 - Reversed the check order of schedule and signals before leaving the kernel
   space.
+- Added the sleeping address value in the SysRq process listing.
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
   using interrupts during its own initialization.
 - Fixed ext2_truncate() to return the error code after calling free_dblock().
@@ -21,7 +24,17 @@
 - Fixed v1_minix_truncate() and v2_minix_truncate() to correctly free
   doubly-indirect blocks.
 - Fixed ext2_truncate() to free triply-indirect blocks.
+- Fixed v2_minix_truncate() to free triply-indirect blocks.
 - Fixed the way how the I/O permission bitmap in TSS is implemented.
+- Fixed the execution permission logic that let root user execute any file.
+- Fixed to handle SysRq key inside keyboard interrupt instead of in its bottom
+  half.
+- Fixed a missing inode release in elf_load() when argument list exceeds ARG_MAX
+  on an ELF binary that requires an interpreter.
+- Fixed a possible NULL pointer dereference with elf32_ph in elf_load() and
+  elf_load_interpreter().
+- Fixed the type of the user file descriptor (to unsigned int) in a number of
+  system calls.
 - Small fixes and cosmetic changes.
 
 
