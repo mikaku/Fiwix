@@ -701,6 +701,11 @@ void irq_keyboard(int num, struct sigcontext *sc)
 							sysrq_op = SYSRQ_UNDEF;
 							break;
 					}
+					if(sysrq_op) {
+						do_sysrq(sysrq_op);
+						sysrq_op = 0;
+					}
+
 					return;
 				}
 				if(deadkey && c == ' ') {
@@ -765,11 +770,6 @@ void irq_keyboard_bh(void)
 		}
 		tty->input(tty);
 		unlock_area(AREA_TTY_READ);
-	}
-
-	if(sysrq_op) {
-		do_sysrq(sysrq_op);
-		sysrq_op = 0;
 	}
 }
 
