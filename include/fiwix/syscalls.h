@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/syscalls.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -75,13 +75,13 @@ int sys_geteuid(void);
 int sys_getegid(void);
 int sys_umount2(const char *, int);
 int sys_ioctl(unsigned int, int, unsigned long int);
-int sys_fcntl(int, int, unsigned long int);
+int sys_fcntl(unsigned int, int, unsigned long int);
 int sys_setpgid(__pid_t, __pid_t);
 int sys_olduname(struct oldold_utsname *);
 int sys_umask(__mode_t);
 int sys_chroot(const char *);
 int sys_ustat(__dev_t, struct ustat *);
-int sys_dup2(int, int);
+int sys_dup2(unsigned int, unsigned int);
 int sys_getppid(void);
 int sys_getpgrp(void);
 int sys_setsid(void);
@@ -108,9 +108,9 @@ int sys_reboot(int, int, int);
 int old_mmap(struct mmap *);
 int sys_munmap(unsigned int, __size_t);
 int sys_truncate(const char *, __off_t);
-int sys_ftruncate(int, __off_t);
-int sys_fchmod(int, __mode_t);
-int sys_fchown(int, __uid_t, __gid_t);
+int sys_ftruncate(unsigned int, __off_t);
+int sys_fchmod(unsigned int, __mode_t);
+int sys_fchown(unsigned int, __uid_t, __gid_t);
 int sys_statfs(const char *, struct statfs *);
 int sys_fstatfs(unsigned int, struct statfs *);
 int sys_ioperm(unsigned long int, unsigned long int, int);
@@ -124,7 +124,7 @@ int sys_uname(struct old_utsname *);
 int sys_iopl(int, int, int, int, int, struct sigcontext *);
 int sys_wait4(__pid_t, int *, int, struct rusage *);
 int sys_sysinfo(struct sysinfo *);
-int sys_fsync(int);
+int sys_fsync(unsigned int);
 int sys_sigreturn(unsigned int, int, int, int, int, struct sigcontext *);
 int sys_setdomainname(const char *, int);
 int sys_newuname(struct new_utsname *);
@@ -138,7 +138,7 @@ int sys_setfsgid(__gid_t);
 int sys_llseek(unsigned int, unsigned long int, unsigned long int, __loff_t *, unsigned int);
 int sys_getdents(unsigned int, struct dirent *, unsigned int);
 int sys_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
-int sys_flock(int, int);
+int sys_flock(unsigned int, int);
 int sys_getsid(__pid_t);
 int sys_fdatasync(int);
 int sys_nanosleep(const struct timespec *, struct timespec *);

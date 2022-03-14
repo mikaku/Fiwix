@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/dup2.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -13,14 +13,16 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_dup2(int old_ufd, int new_ufd)
+int sys_dup2(unsigned int old_ufd, unsigned int new_ufd)
 {
+	int errno;
+
 #ifdef __DEBUG__
 	printk("(pid %d) sys_dup2(%d, %d)", current->pid, old_ufd, new_ufd);
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(old_ufd);
-	if(new_ufd < 0 || new_ufd > OPEN_MAX) {
+	if(new_ufd > OPEN_MAX) {
 		return -EINVAL;
 	}
 	if(old_ufd == new_ufd) {
@@ -29,9 +31,10 @@ int sys_dup2(int old_ufd, int new_ufd)
 	if(current->fd[new_ufd]) {
 		sys_close(new_ufd);
 	}
-	if((new_ufd = get_new_user_fd(new_ufd)) < 0) {
-		return new_ufd;
+	if((errno = get_new_user_fd(new_ufd)) < 0) {
+		return errno;
 	}
+	new_ufd = errno;
 	current->fd[new_ufd] = current->fd[old_ufd];
 	fd_table[current->fd[new_ufd]].count++;
 #ifdef __DEBUG__

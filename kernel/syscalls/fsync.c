@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/fsync.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_fsync(int ufd)
+int sys_fsync(unsigned int ufd)
 {
 	struct inode *i;
 

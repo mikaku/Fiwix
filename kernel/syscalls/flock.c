@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/flock.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -14,7 +14,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_flock(int ufd, int op)
+int sys_flock(unsigned int ufd, int op)
 {
 	struct inode *i;
 

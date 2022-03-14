@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/fchown.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_fchown(int ufd, __uid_t owner, __gid_t group)
+int sys_fchown(unsigned int ufd, __uid_t owner, __gid_t group)
 {
 	struct inode *i;
 

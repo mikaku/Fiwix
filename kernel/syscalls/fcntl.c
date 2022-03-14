@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/fcntl.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -15,7 +15,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_fcntl(int ufd, int cmd, unsigned long int arg)
+int sys_fcntl(unsigned int ufd, int cmd, unsigned long int arg)
 {
 	int new_ufd, errno;
 
@@ -26,7 +26,6 @@ int sys_fcntl(int ufd, int cmd, unsigned long int arg)
 	CHECK_UFD(ufd);
 	switch(cmd) {
 		case F_DUPFD:
-			CHECK_UFD(ufd);
 			if(arg >= OPEN_MAX) {
 				return -EINVAL;
 			}
