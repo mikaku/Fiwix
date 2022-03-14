@@ -27,16 +27,21 @@ static void process_list(void)
 {
 	struct proc *p;
 
-	printk("USER   PID   PPID  S  CMD\n");
+	printk("USER   PID   PPID  S SLEEP_ADDR CMD\n");
 	FOR_EACH_PROCESS(p) {
 		if(p->state != PROC_ZOMBIE) {
-			printk("%d    %5d  %5d  %s  %s\n",
+			printk("%d    %5d  %5d  %s ",
 				p->uid,
 				p->pid,
 				p->ppid,
-				pstate[p->state],
-				p->argv0
+				pstate[p->state]
 			);
+			if(p->state == PROC_SLEEPING) {
+				printk("0x%08x ", p->sleep_address);
+			} else {
+				printk("           ", p->sleep_address);
+			}
+			printk("%s\n", p->argv0);
 		}
 		p = p->next;
 	}
