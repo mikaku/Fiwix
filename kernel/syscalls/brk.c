@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/brk.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -40,7 +40,10 @@ int sys_brk(unsigned int brk)
 	if(brk < current->brk) {
 		do_munmap(newbrk, current->brk - newbrk);
 		current->brk = brk;
-		return brk;
+#ifdef __DEBUG__
+		printk("0x%08x\n", current->brk);
+#endif /*__DEBUG__ */
+		return current->brk;
 	}
 	if(!expand_heap(newbrk)) {
 		current->brk = brk;
