@@ -379,7 +379,7 @@ void proc_slot_init(struct proc *p)
 	/* I/O permissions are not inherited by the child */
 	memset_l(&p->tss.io_bitmap, ~0, IO_BITMAP_SIZE / sizeof(unsigned int));
 
-	p->tss.io_bitmap[IO_BITMAP_SIZE + 1] = ~0;	/* extra byte must be all 1's */
+	p->tss.io_bitmap[IO_BITMAP_SIZE] = ~0;	/* extra byte must be all 1's */
 	p->state = PROC_IDLE;
 }
 
