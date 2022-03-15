@@ -580,7 +580,6 @@ static int register_serial(struct serial *s, int minor)
 			s->tty = tty;
 			s->flags |= UART_ACTIVE;
 			*sp = s;
-			minor++;
 			return 0;
 		} else {
 			printk("WARNING: %s(): unable to register %s.\n", __FUNCTION__, s->name);
