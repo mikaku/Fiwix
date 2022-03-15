@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/core386.S
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -505,6 +505,19 @@ end_brand_str:
 	ret
 
 .align 4
+.globl inport_l; inport_l:
+	pushl	%ebp
+	movl	%esp, %ebp
+
+	movl	0x08(%ebp), %edx	# port addr
+	inl	%dx, %eax
+
+	jmp	1f			# recovery time
+1:	jmp	1f			# recovery time
+1:	popl	%ebp
+	ret
+
+.align 4
 .globl inport_sw; inport_sw:
 	pushl	%ebp
 	movl	%esp, %ebp
@@ -546,6 +559,20 @@ end_brand_str:
 	movw	0x8(%ebp), %dx		# port addr
 	movw	0xC(%ebp), %ax		# data
 	outw	%ax, %dx
+
+	jmp	1f			# recovery time
+1:	jmp	1f			# recovery time
+1:	popl	%ebp
+	ret
+
+.align 4
+.globl outport_l; outport_l:
+	pushl	%ebp
+	movl	%esp, %ebp
+
+	movl	0x8(%ebp), %edx		# port addr
+	movl	0xC(%ebp), %eax		# data
+	outl	%eax, %dx
 
 	jmp	1f			# recovery time
 1:	jmp	1f			# recovery time
