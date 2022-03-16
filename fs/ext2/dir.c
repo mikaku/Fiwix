@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/ext2/dir.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -99,7 +99,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
-	doffset = offset = size = 0;
+	offset = size = 0;
 
 	while(fd_table->offset < i->i_size && count > 0) {
 		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
@@ -140,9 +140,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 			brelse(buf);
 		}
 		fd_table->offset &= ~(blksize - 1);
-		doffset = fd_table->offset;
 		fd_table->offset += offset;
-		doffset += blksize;
 	}
 
 	return size;
