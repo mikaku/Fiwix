@@ -217,6 +217,7 @@ static void sync_one_buffer(struct buffer *buf)
 	/* this shouldn't happen */
 	if(!buf->data) {
 		printk("WARNING: %s(): buffer (dev=%x, block=%d, size=%d) don't has data!\n", __FUNCTION__, buf->dev, buf->block, buf->size);
+		remove_from_dirty_list(buf);
 		return;
 	}
 
