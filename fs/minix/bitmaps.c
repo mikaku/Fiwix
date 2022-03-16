@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/bitmaps.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -21,7 +21,7 @@ static int count_bits(struct superblock *sb, __blk_t offset, int num, int blocks
 {
 	unsigned char c;
 	int blksize;
-	int n, n2, last, bits, count, mapb;
+	int n, n2, last, count, mapb;
 	struct buffer *buf;
 
 	count = mapb = 0;
@@ -34,8 +34,7 @@ static int count_bits(struct superblock *sb, __blk_t offset, int num, int blocks
 		last = (num / 8) > blksize ? blksize : (num / 8);
 		for(n = 0; n < last; n++) {
 			c = (unsigned char)buf->data[n];
-			bits = n < last ? 8 : num & 8;
-			for(n2 = 0; n2 < bits; n2++) {
+			for(n2 = 0; n2 < 8; n2++) {
 				if(c & (1 << n2)) {
 					if(mode == COUNT) {
 						count++;
