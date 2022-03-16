@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/mount.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -183,7 +183,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 	}
 
 	mt->sb.flags = flags;
-	if(fs->fsop && fs->fsop->read_superblock) {
+	if(fs->fsop->read_superblock) {
 		if((errno = fs->fsop->read_superblock(dev, &mt->sb))) {
 			i_source->fsop->close(i_source, NULL);
 			if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
