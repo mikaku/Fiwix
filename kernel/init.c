@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/init.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -95,7 +95,7 @@ void init_init(void)
 	init->rlim[RLIMIT_NOFILE].rlim_cur = OPEN_MAX;
 	init->rlim[RLIMIT_NOFILE].rlim_max = NR_OPENS;
 	init->rlim[RLIMIT_NPROC].rlim_cur = CHILD_MAX;
-	init->rlim[RLIMIT_NPROC].rlim_cur = NR_PROCS;
+	init->rlim[RLIMIT_NPROC].rlim_max = NR_PROCS;
 	init->umask = 0022;
 
 	/* setup the stack */
