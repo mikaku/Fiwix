@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/mprotect.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -24,16 +24,19 @@ int sys_mprotect(unsigned int addr, __size_t length, int prot)
 	printk("(pid %d) sys_mprotect(0x%08x, %d, %d)\n", current->pid, addr, length, prot);
 #endif /*__DEBUG__ */
 
-	if((addr & ~PAGE_MASK) || length < 0) {
+	if(addr & ~PAGE_MASK) {
 		return -EINVAL;
 	}
 	if(prot > (PROT_READ | PROT_WRITE | PROT_EXEC)) {
 		return -EINVAL;
 	}
+	length = PAGE_ALIGN(length);
+	if((addr + length) < addr) {
+		return -EINVAL;
+	}
 	if(!(vma = find_vma_region(addr))) {
 		return -ENOMEM;
 	}
-	length = PAGE_ALIGN(length);
 	if((addr + length) > vma->end) {
 		return -ENOMEM;
 	}
