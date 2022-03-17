@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/mmap.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -456,7 +456,7 @@ int do_munmap(unsigned int addr, __size_t length)
 	unsigned int size;
 	int errno;
 
-	if((addr & ~PAGE_MASK) || length < 0) {
+	if(addr & ~PAGE_MASK) {
 		return -EINVAL;
 	}
 
