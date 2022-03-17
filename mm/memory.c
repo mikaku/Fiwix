@@ -130,7 +130,7 @@ int clone_pages(struct proc *child)
 	unsigned int *src_pgtbl, *dst_pgtbl;
 	unsigned int pde, pte;
 	unsigned int p_addr, c_addr;
-	int n, n2, pages;
+	unsigned int n, n2, pages;
 	struct page *pg;
 	struct vma *vma;
 

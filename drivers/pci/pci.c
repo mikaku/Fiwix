@@ -57,7 +57,7 @@ static unsigned int get_addr(int bus, int dev, int func, int offset)
 
 static int is_mechanism_1_supported(void)
 {
-	int orig, value;
+	unsigned int orig, value;
 
 	orig = inport_l(PCI_ADDRESS);
 
