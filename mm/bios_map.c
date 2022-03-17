@@ -57,27 +57,31 @@ void bios_map_add(unsigned long int from, unsigned long int to, int from_type, i
 
 	for(n = 0; n < NR_BIOS_MM_ENT; n++) {
 		if(!bios_mem_map[n].type) {
+			if(from_type == to_type) {
+				printk("memory    0x%08x%08x-0x%08x%08x %s\n",
+					0, from,
+					0, to,
+					bios_mem_type[to_type]
+				);
+			} else {
+				printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
+					0, from,
+					0, to,
+					bios_mem_type[from_type],
+					bios_mem_type[to_type]
+				);
+			}
+			bios_mem_map[n].from = from;
+			bios_mem_map[n].to = to;
+			bios_mem_map[n].type = to_type;
 			break;
 		}
 	}
 
-	if(from_type == to_type) {
-		printk("memory    0x%08x%08x-0x%08x%08x %s\n",
-			0, from,
-			0, to,
-			bios_mem_type[to_type]
-		);
-	} else {
-		printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
-			0, from,
-			0, to,
-			bios_mem_type[from_type],
-			bios_mem_type[to_type]
-		);
+	if(n >= NR_BIOS_MM_ENT) {
+		printk("WARNING: %s(): no more entries in bios_mem_map[].\n", __FUNCTION__);
+		return;
 	}
-	bios_mem_map[n].from = from;
-	bios_mem_map[n].to = to;
-	bios_mem_map[n].type = to_type;
 }
 
 void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bmmap_length)
