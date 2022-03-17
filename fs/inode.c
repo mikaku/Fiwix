@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/inode.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -42,7 +42,7 @@ struct inode *inode_table;		/* inode pool */
 struct inode *inode_head;		/* inode pool head */
 struct inode **inode_hash_table;
 
-static struct resource sync_resource = { NULL, NULL };
+static struct resource sync_resource = { 0, 0 };
 
 static void insert_to_hash(struct inode *i)
 {
@@ -159,7 +159,7 @@ static struct inode * get_free_inode(void)
 	i->rdev = 0;
 	i->fsop = NULL;
 	i->sb = NULL;
-	memset_b(&i->u, NULL, sizeof(i->u));
+	memset_b(&i->u, 0, sizeof(i->u));
 
 	RESTORE_FLAGS(flags);
 	return i;
@@ -431,8 +431,8 @@ void inode_init(void)
 	struct inode *i;
 	unsigned int n;
 
-	memset_b(inode_table, NULL, inode_table_size);
-	memset_b(inode_hash_table, NULL, inode_hash_table_size);
+	memset_b(inode_table, 0, inode_table_size);
+	memset_b(inode_hash_table, 0, inode_hash_table_size);
 	for(n = 0; n < NR_INODES; n++) {
 		i = &inode_table[n];
 		i->count = 1;

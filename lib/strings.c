@@ -1,7 +1,7 @@
 /*
  * fiwix/lib/strings.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -30,8 +30,8 @@ void swap_asc_word(char *str, int len)
 		ptr++;
 	}
 	for(n = len - 1; n > 0; n--) {
-		if(buf[n] == NULL || buf[n] == ' ') {
-			buf[n] = NULL;
+		if(buf[n] == '\0' || buf[n] == ' ') {
+			buf[n] = 0;
 		} else {
 			break;
 		}
@@ -79,7 +79,7 @@ char *strcpy(char *dest, const char *src)
 		dest++;
 		src++;
 	}
-	*dest = NULL;		/* NULL-terminated */
+	*dest = 0;		/* NULL-terminated */
 	return dest;
 }
 
@@ -95,7 +95,7 @@ void strncpy(char *dest, const char *src, int len)
 		src++;
 		len--;
 	}
-	*dest = NULL;		/* NULL-terminated */
+	*dest = 0;		/* NULL-terminated */
 }
 
 char *strcat(char *dest, const char *src)
@@ -111,7 +111,7 @@ char *strcat(char *dest, const char *src)
 		dest++;
 		src++;
 	}
-	*dest = NULL;
+	*dest = 0;		/* NULL-terminated */
 	return orig;
 }
 
@@ -129,7 +129,7 @@ char *strncat(char *dest, const char *src, __ssize_t len)
 		src++;
 		len--;
 	}
-	*dest = NULL;
+	*dest = 0;		/* NULL-terminated */
 	return orig;
 }
 
@@ -156,7 +156,7 @@ char * get_basename(const char *path)
 		while(*path == '/') {
 			path++;
 		}
-		if(*path != NULL) {
+		if(*path != '\0') {
 			basename = (char *)path;
 		}
 		while((c = *(path++)) && (c != '/'));
@@ -173,7 +173,7 @@ char * remove_trailing_slash(char *path)
 
 	p = path + (strlen(path) - 1);
 	while(p > path && *p == '/') {
-		*p = NULL;
+		*p = 0;
 		p--;
 	}
 	return path;

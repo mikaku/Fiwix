@@ -35,7 +35,7 @@ static int need_reset = 0;
 static int fdc_wait_interrupt = 0;
 static int fdc_timeout = 0;
 static unsigned char fdc_results[MAX_FDC_RESULTS];
-static struct resource floppy_resource = { NULL, NULL };
+static struct resource floppy_resource = { 0, 0 };
 
 static struct fddt fdd_type[] = {
 /*

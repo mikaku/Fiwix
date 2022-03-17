@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/inode.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -149,7 +149,7 @@ int iso9660_read_inode(struct inode *i)
 		case S_IFIFO:
 			i->fsop = &pipefs_fsop;
 			/* it's a union so we need to clear pipefs_inode */
-			memset_b(&i->u.pipefs, NULL, sizeof(struct pipefs_inode));
+			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 		case S_IFDIR:
 			i->fsop = &iso9660_dir_fsop;

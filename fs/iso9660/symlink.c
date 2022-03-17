@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/symlink.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -68,7 +68,7 @@ int iso9660_readlink(struct inode *i, char *buffer, __size_t count)
 	}
 
 	inode_lock(i);
-	name[0] = NULL;
+	name[0] = 0;
 	if((size_read = get_rrip_symlink(i, name))) {
 		size_read = MIN(size_read, count);
 		memcpy_b(buffer, name, size_read);
@@ -95,7 +95,7 @@ int iso9660_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		return -ENOMEM;
 	}
 
-	name[0] = NULL;
+	name[0] = 0;
 	if(get_rrip_symlink(i, name)) {
 		iput(i);
 		if((errno = parse_namei(name, dir, i_res, NULL, FOLLOW_LINKS))) {

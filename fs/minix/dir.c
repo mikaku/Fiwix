@@ -122,7 +122,7 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 						dirent->d_off = doffset;
 						dirent->d_reclen = dirent_len;
 						memcpy_b(dirent->d_name, d->name, strlen(d->name));
-						dirent->d_name[strlen(d->name)] = NULL;
+						dirent->d_name[strlen(d->name)] = 0;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
 						count -= size;

@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/symlink.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -87,7 +87,7 @@ int minix_readlink(struct inode *i, char *buffer, __size_t count)
 	}
 	memcpy_b(buffer, buf->data, count);
 	brelse(buf);
-	buffer[count] = NULL;
+	buffer[count] = 0;
 	inode_unlock(i);
 	return count;
 }

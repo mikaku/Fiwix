@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/idt.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -41,7 +41,7 @@ void idt_init(void)
 {
 	int n;
 
-	memset_b(idt, NULL, sizeof(idt));
+	memset_b(idt, 0, sizeof(idt));
 	for(n = 0; n < NR_IDT_ENTRIES; n++) {
 		if(n < 0x20) {
 			set_idt_entry(n, (__off_t)except_handlers[n], SD_32TRAPGATE | SD_PRESENT);

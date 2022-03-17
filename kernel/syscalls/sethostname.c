@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/sethostname.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -36,7 +36,7 @@ int sys_sethostname(const char *name, int length)
 		return -EINVAL;
 	}
 	memcpy_b(&sys_utsname.nodename, tmp_name, length);
-	sys_utsname.nodename[length] = NULL;
+	sys_utsname.nodename[length] = 0;
 	free_name(tmp_name);
 	return 0;
 }

@@ -24,8 +24,8 @@ struct proc *proc_table_head;
 struct proc *proc_table_tail;
 unsigned int free_proc_slots = 0;
 
-static struct resource slot_resource = { NULL, NULL };
-static struct resource pid_resource = { NULL, NULL };
+static struct resource slot_resource = { 0, 0 };
+static struct resource pid_resource = { 0, 0 };
 
 int nr_processes = 0;
 __pid_t lastpid = 0;
@@ -255,7 +255,7 @@ void release_proc(struct proc *p)
 	}
 
 	/* initialize and put a process slot back in the free list */
-	memset_b(p, NULL, sizeof(struct proc));
+	memset_b(p, 0, sizeof(struct proc));
 	p->next = proc_pool_head;
 	proc_pool_head = p;
 	free_proc_slots++;
@@ -373,7 +373,7 @@ void proc_slot_init(struct proc *p)
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
-	memset_b(&p->tss, NULL, sizeof(struct i386tss) - IO_BITMAP_SIZE);
+	memset_b(&p->tss, 0, sizeof(struct i386tss) - IO_BITMAP_SIZE);
 	p->tss.io_bitmap_addr = offsetof(struct i386tss, io_bitmap);
 
 	/* I/O permissions are not inherited by the child */
@@ -388,7 +388,7 @@ void proc_init(void)
 	int n;
 	struct proc *p;
 
-	memset_b(proc_table, NULL, proc_table_size);
+	memset_b(proc_table, 0, proc_table_size);
 
 	/* free list initialization */
 	proc_pool_head = NULL;

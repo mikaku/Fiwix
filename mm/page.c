@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/page.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -391,8 +391,8 @@ void page_init(int pages)
 	struct page *pg;
 	unsigned int n, addr;
 
-	memset_b(page_table, NULL, page_table_size);
-	memset_b(page_hash_table, NULL, page_hash_table_size);
+	memset_b(page_table, 0, page_table_size);
+	memset_b(page_hash_table, 0, page_hash_table_size);
 
 	for(n = 0; n < pages; n++) {
 		pg = &page_table[n];

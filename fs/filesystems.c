@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/filesystems.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -61,7 +61,7 @@ struct filesystems * get_filesystem(const char *name)
 
 void fs_init(void)
 {
-	memset_b(filesystems_table, NULL, sizeof(filesystems_table));
+	memset_b(filesystems_table, 0, sizeof(filesystems_table));
 
 	if(minix_init()) {
 		printk("%s(): unable to register 'minix' filesystem.\n", __FUNCTION__);

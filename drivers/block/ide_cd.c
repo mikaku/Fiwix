@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/ide_cd.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -224,17 +224,17 @@ static int atapi_cmd_testunit(struct ide *ide, int drive)
 	unsigned char pkt[12];
 
 	pkt[0] = ATAPI_TEST_UNIT;
-	pkt[1] = NULL;
-	pkt[2] = NULL;
-	pkt[3] = NULL;
-	pkt[4] = NULL;
-	pkt[5] = NULL;
-	pkt[6] = NULL;
-	pkt[7] = NULL;
-	pkt[8] = NULL;
-	pkt[9] = NULL;
-	pkt[10] = NULL;
-	pkt[11] = NULL;
+	pkt[1] = 0;
+	pkt[2] = 0;
+	pkt[3] = 0;
+	pkt[4] = 0;
+	pkt[5] = 0;
+	pkt[6] = 0;
+	pkt[7] = 0;
+	pkt[8] = 0;
+	pkt[9] = 0;
+	pkt[10] = 0;
+	pkt[11] = 0;
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
@@ -243,17 +243,17 @@ static int atapi_cmd_reqsense(struct ide *ide, int drive)
 	unsigned char pkt[12];
 
 	pkt[0] = ATAPI_REQUEST_SENSE;
-	pkt[1] = NULL;
-	pkt[2] = NULL;
-	pkt[3] = NULL;
+	pkt[1] = 0;
+	pkt[2] = 0;
+	pkt[3] = 0;
 	pkt[4] = 252;	/* this command can send up to 252 bytes */
-	pkt[5] = NULL;
-	pkt[6] = NULL;
-	pkt[7] = NULL;
-	pkt[8] = NULL;
-	pkt[9] = NULL;
-	pkt[10] = NULL;
-	pkt[11] = NULL;
+	pkt[5] = 0;
+	pkt[6] = 0;
+	pkt[7] = 0;
+	pkt[8] = 0;
+	pkt[9] = 0;
+	pkt[10] = 0;
+	pkt[11] = 0;
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
@@ -262,17 +262,17 @@ static int atapi_cmd_startstop(int action, struct ide *ide, int drive)
 	unsigned char pkt[12];
 
 	pkt[0] = ATAPI_START_STOP;
-	pkt[1] = NULL;
-	pkt[2] = NULL;
-	pkt[3] = NULL;
+	pkt[1] = 0;
+	pkt[2] = 0;
+	pkt[3] = 0;
 	pkt[4] = action;
-	pkt[5] = NULL;
-	pkt[6] = NULL;
-	pkt[7] = NULL;
-	pkt[8] = NULL;
-	pkt[9] = NULL;
-	pkt[10] = NULL;
-	pkt[11] = NULL;
+	pkt[5] = 0;
+	pkt[6] = 0;
+	pkt[7] = 0;
+	pkt[8] = 0;
+	pkt[9] = 0;
+	pkt[10] = 0;
+	pkt[11] = 0;
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
@@ -281,17 +281,17 @@ static int atapi_cmd_mediumrm(int action, struct ide *ide, int drive)
 	unsigned char pkt[12];
 
 	pkt[0] = ATAPI_MEDIUM_REMOVAL;
-	pkt[1] = NULL;
-	pkt[2] = NULL;
-	pkt[3] = NULL;
+	pkt[1] = 0;
+	pkt[2] = 0;
+	pkt[3] = 0;
 	pkt[4] = action;
-	pkt[5] = NULL;
-	pkt[6] = NULL;
-	pkt[7] = NULL;
-	pkt[8] = NULL;
-	pkt[9] = NULL;
-	pkt[10] = NULL;
-	pkt[11] = NULL;
+	pkt[5] = 0;
+	pkt[6] = 0;
+	pkt[7] = 0;
+	pkt[8] = 0;
+	pkt[9] = 0;
+	pkt[10] = 0;
+	pkt[11] = 0;
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
@@ -439,17 +439,17 @@ int ide_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	sectors_to_read = blksize / IDE_CD_SECTSIZE;
 
 	pkt[0] = ATAPI_READ10;
-	pkt[1] = NULL;
+	pkt[1] = 0;
 	pkt[2] = (block >> 24) & 0xFF;
 	pkt[3] = (block >> 16) & 0xFF;
 	pkt[4] = (block >> 8) & 0xFF;
 	pkt[5] = block & 0xFF;
-	pkt[6] = NULL;
+	pkt[6] = 0;
 	pkt[7] = (sectors_to_read >> 8) & 0xFF;
 	pkt[8] = sectors_to_read & 0xFF;
-	pkt[9] = NULL;
-	pkt[10] = NULL;
-	pkt[11] = NULL;
+	pkt[9] = 0;
+	pkt[10] = 0;
+	pkt[11] = 0;
 
 	lock_resource(&ide->resource);
 	for(n = 0; n < sectors_to_read; n++, block++) {

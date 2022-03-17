@@ -116,8 +116,8 @@ static char * parse_cmdline(const char *str)
 		if(c == ' ' || !c) {
 			if(to - from < CMDL_ARG_LEN) {
 				memcpy_b(arg, from, to - from);
-				arg[to - from] = NULL;
-				if(arg[0] != NULL) {
+				arg[to - from] = 0;
+				if(arg[0] != 0) {
 					if(parse_arg(arg)) {
 						while(*(from++)) {
 							if(*from != '-' && *from != ' ') {
@@ -129,7 +129,7 @@ static char * parse_cmdline(const char *str)
 				}
 			} else {
 				memcpy_b(arg, from, CMDL_ARG_LEN);
-				arg[CMDL_ARG_LEN - 1] = NULL;
+				arg[CMDL_ARG_LEN - 1] = 0;
 				printk("WARNING: invalid length of the cmdline parameter '%s'.\n", arg);
 			}
 			from = ++to;
@@ -198,7 +198,7 @@ void multiboot(unsigned long magic, unsigned long info)
 
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", (unsigned long int)magic);
-		memset_b(&mbi, NULL, sizeof(struct multiboot_info));
+		memset_b(&mbi, 0, sizeof(struct multiboot_info));
 		_memsize = 640;
 		_extmemsize = 3072;
 		bios_map_init(NULL, 0);
@@ -245,7 +245,7 @@ void multiboot(unsigned long magic, unsigned long info)
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {
-		int n;
+		unsigned int n;
 		struct multiboot_mod_list *mod;
 
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;

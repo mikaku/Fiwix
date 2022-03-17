@@ -406,7 +406,7 @@ static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int coun
 
 	while(count--) {
 		ch = *buf++;
-		if(ch == NULL) {
+		if(ch == '\0') {
 			continue;
 
 		} else if(ch == '\b') {

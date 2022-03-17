@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/execve.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -126,7 +126,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 			page = (char *)barg->page[p];
 		}
 	}
-	*(page + offset++) = NULL;
+	*(page + offset++) = 0;
 	if(offset == PAGE_SIZE) {
 		p++;
 		offset = 0;
@@ -145,7 +145,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 				page = (char *)barg->page[p];
 			}
 		}
-		*(page + offset++) = NULL;
+		*(page + offset++) = 0;
 		if(offset == PAGE_SIZE) {
 			p++;
 			offset = 0;
@@ -164,7 +164,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 			page = (char *)barg->page[p];
 		}
 	}
-	*(page + offset) = NULL;
+	*(page + offset) = 0;
 
 	return 0;
 }
@@ -203,7 +203,7 @@ static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 				page = (char *)barg->page[p];
 			}
 		}
-		*(page + offset++) = NULL;
+		*(page + offset++) = 0;
 		if(offset == PAGE_SIZE) {
 			p++;
 			offset = 0;
@@ -222,7 +222,7 @@ static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 				page = (char *)barg->page[p];
 			}
 		}
-		*(page + offset++) = NULL;
+		*(page + offset++) = 0;
 		if(offset == PAGE_SIZE) {
 			p++;
 			offset = 0;

@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/fd.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -14,7 +14,7 @@
 
 struct fd *fd_table;
 
-static struct resource fd_resource = { NULL, NULL };
+static struct resource fd_resource = { 0, 0 };
 
 int get_new_fd(struct inode *i)
 {
@@ -24,7 +24,7 @@ int get_new_fd(struct inode *i)
 
 	for(n = 1; n < NR_OPENS; n++) {
 		if(fd_table[n].count == 0) {
-			memset_b(&fd_table[n], NULL, sizeof(struct fd));
+			memset_b(&fd_table[n], 0, sizeof(struct fd));
 			fd_table[n].inode = i;
 			fd_table[n].count = 1;
 			unlock_resource(&fd_resource);
@@ -46,5 +46,5 @@ void release_fd(unsigned int fd)
 
 void fd_init(void)
 {
-	memset_b(fd_table, NULL, fd_table_size);
+	memset_b(fd_table, 0, fd_table_size);
 }

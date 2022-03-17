@@ -1,7 +1,7 @@
 /*
  * fiwix/lib/printk.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -67,11 +67,9 @@ static void do_printk(char *buffer, const char *format, va_list args)
 	char sw_neg, in_identifier, n_pad, lf;
 	char ch_pad, basecase, c;
 	char str[] = {
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0
 	};
 	char nullstr[7] = { '<', 'N', 'U', 'L', 'L', '>', '\0' };
 	char *ptr_s, *p;
@@ -89,7 +87,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 	while((c = *(format++)) && count < MAX_BUF) {
 		if((c != '%') && !in_identifier) {
 			*(buffer++) = c;
-			memset_b(str, NULL, 32);
+			memset_b(str, 0, 32);
 		} else {
 			in_identifier = 1;
 			switch(c = *(format)) {
@@ -330,7 +328,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 		}
 		count++;
 	}
-	*buffer = NULL;
+	*buffer = 0;
 }
 
 void register_console(void (*fn)(char *, unsigned int))

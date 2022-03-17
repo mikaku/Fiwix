@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/ext2/symlink.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -85,7 +85,7 @@ int ext2_readlink(struct inode *i, char *buffer, __size_t count)
 	} else {	/* fast symlink */
 		memcpy_b(buffer, (char *)i->u.ext2.i_data, count);
 	}
-	buffer[count] = NULL;
+	buffer[count] = 0;
 	inode_unlock(i);
 	return count;
 }

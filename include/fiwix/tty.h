@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/tty.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -22,7 +22,7 @@
 #define TAB_SIZE	8
 #define MAX_TAB_COLS	132	/* maximum number of tab stops */
 
-#define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : NULL)
+#define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : '\0')
 
 struct clist {
 	unsigned short int count;

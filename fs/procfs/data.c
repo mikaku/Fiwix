@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/data.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -456,7 +456,7 @@ int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 			arg = (char *)(addr + offset);
 			if(size + strlen(arg) < (PAGE_SIZE - 1)) {
 				size += sprintk(buffer + size, "%s", arg);
-				buffer[size++] = NULL;
+				buffer[size++] = 0;
 			} else {
 				break;
 			}
@@ -507,7 +507,7 @@ int data_proc_pid_environ(char *buffer, __pid_t pid)
 			env = (char *)(addr + offset);
 			if(size + strlen(env) < (PAGE_SIZE - 1)) {
 				size += sprintk(buffer + size, "%s", env);
-				buffer[size++] = NULL;
+				buffer[size++] = 0;
 			} else {
 				break;
 			}

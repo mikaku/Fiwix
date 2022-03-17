@@ -108,7 +108,7 @@ static void sort_vma(void)
 				  (vma[n].s_type == vma[n2].s_type) &&
 				  (vma[n].inode == vma[n2].inode)) {
 					vma[n].end = vma[n2].end;
-					memset_b(&vma[n2], NULL, sizeof(struct vma));
+					memset_b(&vma[n2], 0, sizeof(struct vma));
 					needs_sort++;
 				}
 			}
@@ -164,10 +164,10 @@ static int optimize_vma(void)
 				prev->end = vma->start;
 				needs_sort++;
 				if(prev->start == prev->end) {
-					memset_b(prev, NULL, sizeof(struct vma));
+					memset_b(prev, 0, sizeof(struct vma));
 				}
 				if(new->start == new->end) {
-					memset_b(new, NULL, sizeof(struct vma));
+					memset_b(new, 0, sizeof(struct vma));
 				}
 				break;
 			}
@@ -238,7 +238,7 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 
 				kfree(P2V(pgtbl[pte]) & PAGE_MASK);
 				current->rss--;
-				pgtbl[pte] = NULL;
+				pgtbl[pte] = 0;
 
 				/* check if a page table can be freed */
 				for(pte = 0; pte < PT_ENTRIES; pte++) {
@@ -249,7 +249,7 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 				if(pte == PT_ENTRIES) {
 					kfree((unsigned int)pgtbl & PAGE_MASK);
 					current->rss--;
-					pgdir[pde] = NULL;
+					pgdir[pde] = 0;
 				}
 			}
 		}
@@ -280,10 +280,10 @@ static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length
 		if(vma->inode) {
 			iput(vma->inode);
 		}
-		memset_b(vma, NULL, sizeof(struct vma));
+		memset_b(vma, 0, sizeof(struct vma));
 	}
 	if(new->start == new->end) {
-		memset_b(new, NULL, sizeof(struct vma));
+		memset_b(new, 0, sizeof(struct vma));
 	}
 	return 0;
 }

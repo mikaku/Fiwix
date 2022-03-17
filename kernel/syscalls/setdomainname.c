@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/setdomainname.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -33,6 +33,6 @@ int sys_setdomainname(const char *name, int length)
 		return -EINVAL;
 	}
 	memcpy_b(&sys_utsname.domainname, name, length);
-	sys_utsname.domainname[length] = NULL;
+	sys_utsname.domainname[length] = 0;
 	return 0;
 }

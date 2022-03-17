@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/namei.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -38,7 +38,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		while(*path == '/') {
 			path++;
 		}
-		if(*path == NULL) {
+		if(*path == '\0') {
 			return 0;
 		}
 
@@ -47,19 +47,19 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 			return -ENOMEM;
 		}
 		ptr_name = name;
-		while(*path != NULL && *path != '/') {
+		while(*path != '\0' && *path != '/') {
 			if(ptr_name > name + NAME_MAX - 1) {
 				break;
 			}
 			*ptr_name++ = *path++;
 		}
-		*ptr_name = NULL;
+		*ptr_name = 0;
 
 		/*
 		 * If the inode is the root of a file system, then return the
 		 * inode on which the file system was mounted.
 		 */
-		if(name[0] == '.' && name[1] == '.' && name[2] == NULL) {
+		if(name[0] == '.' && name[1] == '.' && name[2] == '\0') {
 			if(dir == dir->sb->root) {
 				sb = dir->sb;
 				iput(dir);
@@ -122,7 +122,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		 * If that was the last component of the path,
 		 * then return the directory.
 		 */
-		if(*path == NULL) {
+		if(*path == '\0') {
 			*d_res = dir;
 			dir->count++;
 		} else {
@@ -147,7 +147,7 @@ int parse_namei(char *path, struct inode *base_dir, struct inode **i_res, struct
 	if(!path) {
 		return -EFAULT;
 	}
-	if(*path == NULL) {
+	if(*path == '\0') {
 		return -ENOENT;
 	}
 

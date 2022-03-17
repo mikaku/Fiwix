@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/ustat.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -35,7 +35,7 @@ int sys_ustat(__dev_t dev, struct ustat *ubuf)
 	}
 	if(sb->fsop && sb->fsop->statfs) {
 		sb->fsop->statfs(sb, &statfsbuf);
-		memset_b(ubuf, NULL, sizeof(struct ustat));
+		memset_b(ubuf, 0, sizeof(struct ustat));
 		ubuf->f_tfree = statfsbuf.f_bfree;
 		ubuf->f_tinode = statfsbuf.f_ffree;
 		return 0;

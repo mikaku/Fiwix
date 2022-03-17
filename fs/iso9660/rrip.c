@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/rrip.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -214,7 +214,7 @@ loop:
 				}
 				nm_len = rrip->len - 5;
 				memcpy_b(name, rrip->u.nm.name, nm_len);
-				name[nm_len] = NULL;
+				name[nm_len] = 0;
 				break;
 		}
 		len += rrip->len;
@@ -327,7 +327,7 @@ loop:
 					slc = (struct rrip_sl_component *)(((char *)slc) + slc->len + sizeof(struct rrip_sl_component));
 					sl_len += slc->len + sizeof(struct rrip_sl_component);
 				}
-				name[nm_len] = NULL;
+				name[nm_len] = 0;
 				break;
 		}
 		len += rrip->len;

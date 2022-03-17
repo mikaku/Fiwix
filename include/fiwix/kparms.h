@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/kparms.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -33,20 +33,20 @@ static struct kparms parm_table[] = {
 	   }
 	},
 	{ "noramdisk",
-	   { NULL },
-	   { NULL },
+	   { 0 },
+	   { 0 },
 	},
 	{ "ramdisksize=",
-	   { NULL },
-	   { NULL },
+	   { 0 },
+	   { 0 },
 	},
 	{ "initrd=",
-	   { NULL },
-	   { NULL },
+	   { 0 },
+	   { 0 },
 	},
 	{ "rootfstype=",
 	   { "minix", "ext2", "iso9660" },
-	   { 0, 0 }
+	   { 0 }
 	},
 	{ "console=",
 	   { "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4", "/dev/tty5",

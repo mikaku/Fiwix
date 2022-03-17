@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/script.c
  *
- * Copyright 2019, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2019-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -32,7 +32,7 @@ int script_load(char *interpreter, char *args, char *data)
 	p = interpreter;
 	noargs = 0;
 	while(n < NAME_MAX) {
-		if(data[n] == '\n' || data[n] == NULL) {
+		if(data[n] == '\n' || data[n] == '\0') {
 			noargs = 1;
 			break;
 		}
@@ -60,7 +60,7 @@ int script_load(char *interpreter, char *args, char *data)
 			n++;
 		}
 		while(n < NAME_MAX) {
-			if(data[n] == '\n' || data[n] == NULL) {
+			if(data[n] == '\n' || data[n] == '\0') {
 				break;
 			}
 			*p = data[n];

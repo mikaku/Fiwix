@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/super.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -19,7 +19,7 @@
 
 struct fs_operations iso9660_fsop = {
 	FSOP_REQUIRES_DEV,
-	NULL,
+	0,
 
 	NULL,			/* open */
 	NULL,			/* close */
@@ -123,9 +123,9 @@ int iso9660_cleanfilename(char *filename, int len)
 		for(n = 0; n < len; n++) {
 			if((len - n) == 2) {
 				if(p[n] == ';' && p[n + 1] == '1') {
-					filename[n] = NULL;
+					filename[n] = 0;
 					if(p[n - 1] == '.') {
-						filename[n - 1] = NULL;
+						filename[n - 1] = 0;
 					}
 					return 0;
 				}

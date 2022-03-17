@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/memory.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -67,7 +67,7 @@ static void map_kaddr(unsigned int from, unsigned int to, int flags)
 			addr = _last_data_addr;
 			_last_data_addr += PAGE_SIZE;
 			kpage_dir[pde] = addr | flags;
-			memset_b((void *)addr, NULL, PAGE_SIZE);
+			memset_b((void *)addr, 0, PAGE_SIZE);
 		}
 		pgtbl = (unsigned int *)(kpage_dir[pde] & PAGE_MASK);
 		pgtbl[pte] = (n << PAGE_SHIFT) | flags;
@@ -76,7 +76,7 @@ static void map_kaddr(unsigned int from, unsigned int to, int flags)
 
 void bss_init(void)
 {
-	memset_b((void *)((int)_edata), NULL, KERNEL_BSS_SIZE);
+	memset_b((void *)((int)_edata), 0, KERNEL_BSS_SIZE);
 }
 
 /*
@@ -94,11 +94,11 @@ unsigned int setup_minmem(void)
 	addr = KERNEL_BASE_ADDR + PGDIR_4MB_ADDR;
 
 	kpage_dir = (unsigned int *)addr;
-	memset_b(kpage_dir, NULL, PAGE_SIZE);
+	memset_b(kpage_dir, 0, PAGE_SIZE);
 
 	addr += PAGE_SIZE;
 	kpage_table = (unsigned int *)addr;
-	memset_b(kpage_table, NULL, PAGE_SIZE * mb4);
+	memset_b(kpage_table, 0, PAGE_SIZE * mb4);
 
 	for(n = 0; n < (1024 * mb4); n++) {
 		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
@@ -155,7 +155,7 @@ int clone_pages(struct proc *child)
 					current->rss++;
 					pages++;
 					dst_pgdir[pde] = V2P(c_addr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-					memset_b((void *)c_addr, NULL, PAGE_SIZE);
+					memset_b((void *)c_addr, 0, PAGE_SIZE);
 				}
 				dst_pgtbl = (unsigned int *)P2V((dst_pgdir[pde] & PAGE_MASK));
 				if(src_pgtbl[pte] & PAGE_PRESENT) {
@@ -191,7 +191,7 @@ int free_page_tables(struct proc *p)
 	for(n = 0, count = 0; n < PD_ENTRIES; n++) {
 		if((pgdir[n] & (PAGE_PRESENT | PAGE_RW | PAGE_USER)) == (PAGE_PRESENT | PAGE_RW | PAGE_USER)) {
 			kfree(P2V(pgdir[n]) & PAGE_MASK);
-			pgdir[n] = NULL;
+			pgdir[n] = 0;
 			count++;
 		}
 	}
@@ -214,7 +214,7 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 		}
 		p->rss++;
 		pgdir[pde] = V2P(newaddr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-		memset_b((void *)newaddr, NULL, PAGE_SIZE);
+		memset_b((void *)newaddr, 0, PAGE_SIZE);
 	}
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
 	if(!(pgtbl[pte] & PAGE_PRESENT)) {	/* allocating page */
@@ -254,7 +254,7 @@ int unmap_page(unsigned int vaddr)
 	}
 
 	addr = pgtbl[pte] & PAGE_MASK;
-	pgtbl[pte] = NULL;
+	pgtbl[pte] = 0;
 	kfree(P2V(addr));
 	current->rss--;
 	return 0;
@@ -273,12 +273,12 @@ void mem_init(void)
 	/* Page Directory will be aligned to the next page */
 	_last_data_addr = PAGE_ALIGN(_last_data_addr);
 	kpage_dir = (unsigned int *)_last_data_addr;
-	memset_b(kpage_dir, NULL, PAGE_SIZE);
+	memset_b(kpage_dir, 0, PAGE_SIZE);
 	_last_data_addr += PAGE_SIZE;
 
 	/* Page Tables */
 	kpage_table = (unsigned int *)_last_data_addr;
-	memset_b(kpage_table, NULL, physical_page_tables * PAGE_SIZE);
+	memset_b(kpage_table, 0, physical_page_tables * PAGE_SIZE);
 	_last_data_addr += physical_page_tables * PAGE_SIZE;
 
 	/* Page Directory and Page Tables initialization */

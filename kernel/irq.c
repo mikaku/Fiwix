@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/irq.c
  *
- * Copyright 2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -138,5 +138,5 @@ void do_bh(void)
 
 void irq_init(void)
 {
-	memset_b(irq_table, NULL, sizeof(irq_table));
+	memset_b(irq_table, 0, sizeof(irq_table));
 }

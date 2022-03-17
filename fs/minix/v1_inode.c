@@ -120,7 +120,7 @@ int v1_minix_read_inode(struct inode *i)
 		case S_IFIFO:
 			i->fsop = &pipefs_fsop;
 			/* it's a union so we need to clear pipefs_i */
-			memset_b(&i->u.pipefs, NULL, sizeof(struct pipefs_inode));
+			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 		case S_IFDIR:
 			i->fsop = &minix_dir_fsop;

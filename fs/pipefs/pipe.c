@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/pipefs/pipe.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -18,7 +18,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct resource pipe_resource = { NULL, NULL };
+static struct resource pipe_resource = { 0, 0 };
 
 int pipefs_close(struct inode *i, struct fd *fd_table)
 {

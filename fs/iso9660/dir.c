@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/dir.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -120,11 +120,11 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 						dirent->d_reclen = dirent_len;
 						if(isonum_711(d->name_len) == 1 && d->name[0] == 0) {
 							dirent->d_name[0] = '.';
-							dirent->d_name[1] = NULL;
+							dirent->d_name[1] = 0;
 						} else if(isonum_711(d->name_len) == 1 && d->name[0] == 1) {
 							dirent->d_name[0] = '.';
 							dirent->d_name[1] = '.';
-							dirent->d_name[2] = NULL;
+							dirent->d_name[2] = 0;
 							dirent_len = 16;
 							dirent->d_reclen = 16;
 							if(i->u.iso9660.i_parent) {
@@ -142,14 +142,14 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 								dirent->d_reclen &= ~3;	/* round up */
 								dirent_len = dirent->d_reclen;
 								if((size + dirent_len) < count) {
-									dirent->d_name[nm_len] = NULL;
+									dirent->d_name[nm_len] = 0;
 									memcpy_b(dirent->d_name, nm_name, nm_len);
 								} else {
 									break;
 								}
 							} else {
 								memcpy_b(dirent->d_name, d->name, isonum_711(d->name_len));
-								dirent->d_name[isonum_711(d->name_len)] = NULL;
+								dirent->d_name[isonum_711(d->name_len)] = 0;
 							}
 						}
 						if(!((char)d->flags[0] & ISO9660_FILE_ISDIR)) {

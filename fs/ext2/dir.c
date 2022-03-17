@@ -122,7 +122,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 						dirent->d_off = doffset;
 						dirent->d_reclen = dirent_len;
 						memcpy_b(dirent->d_name, d->name, d->name_len);
-						dirent->d_name[d->name_len] = NULL;
+						dirent->d_name[d->name_len] = 0;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
 						count -= size;

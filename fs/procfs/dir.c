@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/dir.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -234,7 +234,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 			dirent->d_off = offset;
 			dirent->d_reclen = dirent_len;
 			memcpy_b(dirent->d_name, d->name, d->name_len);
-			dirent->d_name[d->name_len] = NULL;
+			dirent->d_name[d->name_len] = 0;
 			dirent = (struct dirent *)((char *)dirent + dirent_len);
 			dirent_offset += dirent_len;
 		} else {

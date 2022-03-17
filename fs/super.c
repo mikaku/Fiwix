@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/super.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -18,7 +18,7 @@
 #include <fiwix/string.h>
 
 struct mount *mount_table;
-static struct resource sync_resource = { NULL, NULL };
+static struct resource sync_resource = { 0, 0 };
 
 void superblock_lock(struct superblock *sb)
 {
@@ -90,7 +90,7 @@ struct mount * get_free_mount_point(__dev_t dev)
 
 void release_mount_point(struct mount *mt)
 {
-	memset_b(mt, NULL, sizeof(struct mount));
+	memset_b(mt, 0, sizeof(struct mount));
 }
 
 struct mount * get_mount_point(struct inode *i_target)
@@ -223,5 +223,5 @@ int mount_root(void)
 
 void mount_init(void)
 {
-	memset_b(mount_table, NULL, mount_table_size);
+	memset_b(mount_table, 0, mount_table_size);
 }

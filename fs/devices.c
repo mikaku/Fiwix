@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/devices.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -360,6 +360,6 @@ int blk_dev_lseek(struct inode *i, __off_t offset)
 
 void dev_init(void)
 {
-	memset_b(chr_device_table, NULL, sizeof(chr_device_table));
-	memset_b(blk_device_table, NULL, sizeof(blk_device_table));
+	memset_b(chr_device_table, 0, sizeof(chr_device_table));
+	memset_b(blk_device_table, 0, sizeof(blk_device_table));
 }

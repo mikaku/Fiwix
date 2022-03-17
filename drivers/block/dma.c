@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/block/dma.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -89,5 +89,5 @@ int dma_unregister(int channel)
 
 void dma_init(void)
 {
-	memset_b(dma_resources, NULL, sizeof(dma_resources));
+	memset_b(dma_resources, 0, sizeof(dma_resources));
 }

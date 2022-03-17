@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/namei.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -551,7 +551,7 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 			i->fsop = &pipefs_fsop;
 			i->i_mode |= S_IFIFO;
 			/* it's a union so we need to clear pipefs_i */
-			memset_b(&i->u.pipefs, NULL, sizeof(struct pipefs_inode));
+			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 	}
 

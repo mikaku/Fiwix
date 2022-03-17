@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/tty_queue.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -249,7 +249,7 @@ void tty_queue_init(void)
 	int n;
 	struct cblock *cb;
 
-	memset_b(cblock_pool, NULL, sizeof(cblock_pool));
+	memset_b(cblock_pool, 0, sizeof(cblock_pool));
 
 	/* cblock free list initialization */
 	cblock_pool_head = NULL;

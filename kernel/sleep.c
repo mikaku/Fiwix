@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/sleep.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -227,5 +227,5 @@ int unlock_area(unsigned int type)
 void sleep_init(void)
 {
 	proc_run_head = NULL;
-	memset_b(sleep_hash_table, NULL, sizeof(sleep_hash_table));
+	memset_b(sleep_hash_table, 0, sizeof(sleep_hash_table));
 }

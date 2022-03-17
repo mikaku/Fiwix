@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/locks.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -14,7 +14,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct resource flock_resource = { NULL, NULL };
+static struct resource flock_resource = { 0, 0 };
 
 static struct flock_file * get_new_flock(struct inode *i)
 {
@@ -204,5 +204,5 @@ loop:
 
 void flock_init(void)
 {
-	memset_b(flock_file_table, NULL, sizeof(flock_file_table));
+	memset_b(flock_file_table, 0, sizeof(flock_file_table));
 }

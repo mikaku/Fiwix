@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/olduname.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -26,14 +26,14 @@ int sys_olduname(struct oldold_utsname *uname)
 		return errno;
 	}
 	memcpy_b(&uname->sysname, &sys_utsname.sysname, _OLD_UTSNAME_LENGTH);
-	memset_b(&uname->sysname + _OLD_UTSNAME_LENGTH, NULL, 1);
+	memset_b(&uname->sysname + _OLD_UTSNAME_LENGTH, 0, 1);
 	memcpy_b(&uname->nodename, &sys_utsname.nodename, _OLD_UTSNAME_LENGTH);
-	memset_b(&uname->nodename + _OLD_UTSNAME_LENGTH, NULL, 1);
+	memset_b(&uname->nodename + _OLD_UTSNAME_LENGTH, 0, 1);
 	memcpy_b(&uname->release, &sys_utsname.release, _OLD_UTSNAME_LENGTH);
-	memset_b(&uname->release + _OLD_UTSNAME_LENGTH, NULL, 1);
+	memset_b(&uname->release + _OLD_UTSNAME_LENGTH, 0, 1);
 	memcpy_b(&uname->version, &sys_utsname.version, _OLD_UTSNAME_LENGTH);
-	memset_b(&uname->version + _OLD_UTSNAME_LENGTH, NULL, 1);
+	memset_b(&uname->version + _OLD_UTSNAME_LENGTH, 0, 1);
 	memcpy_b(&uname->machine, &sys_utsname.machine, _OLD_UTSNAME_LENGTH);
-	memset_b(&uname->machine + _OLD_UTSNAME_LENGTH, NULL, 1);
+	memset_b(&uname->machine + _OLD_UTSNAME_LENGTH, 0, 1);
 	return 0;
 }

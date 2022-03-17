@@ -130,7 +130,7 @@ void add_callout(struct callout_req *creq, unsigned int ticks)
 	}
 
 	/* setup the new callout */
-	memset_b(c, NULL, sizeof(struct callout));
+	memset_b(c, 0, sizeof(struct callout));
 	c->expires = ticks;
 	c->fn = creq->fn;
 	c->arg = creq->arg;
@@ -433,7 +433,7 @@ void timer_init(void)
 
 	pit_init(HZ);
 
-	memset_b(callout_pool, NULL, sizeof(callout_pool));
+	memset_b(callout_pool, 0, sizeof(callout_pool));
 
 	/* callout free list initialization */
 	callout_pool_head = NULL;

@@ -531,7 +531,7 @@ int zero_close(struct inode *i, struct fd *fd_table)
 
 int zero_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	memset_b(buffer, NULL, count);
+	memset_b(buffer, 0, count);
 	return count;
 }
 
@@ -558,7 +558,7 @@ int full_close(struct inode *i, struct fd *fd_table)
 
 int full_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	memset_b(buffer, NULL, count);
+	memset_b(buffer, 0, count);
 	return count;
 }
 

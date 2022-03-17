@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/elf.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -113,7 +113,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	}
 
 	/* the last element of 'argv[]' must be a NULL-pointer */
-	*sp = NULL;
+	*sp = 0;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> -------------- = 0x%08x\n", sp, 0);
 #endif /*__DEBUG__ */
@@ -133,7 +133,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	}
 
 	/* the last element of 'envp[]' must be a NULL-pointer */
-	*sp = NULL;
+	*sp = 0;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> -------------- = 0x%08x\n", sp, 0);
 #endif /*__DEBUG__ */
@@ -209,7 +209,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, NULL, 1);
+		memset_l((void *)sp, 0, 1);
 #ifdef __DEBUG__
 		printk("\t\tAT_FLAGS = %d\n", *sp);
 #endif /*__DEBUG__ */
@@ -282,7 +282,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 #endif /*__DEBUG__ */
 	sp++;
 
-	*sp = NULL;
+	*sp = 0;
 #ifdef __DEBUG__
 	printk("\t\tAT_NULL = %d\n", *sp);
 #endif /*__DEBUG__ */
@@ -383,7 +383,7 @@ static int elf_load_interpreter(struct inode *ii)
 	length = end - start;
 
 	/* this will generate a page fault which will load the page in */
-	memset_b((void *)start, NULL, length);
+	memset_b((void *)start, 0, length);
 
 	/* setup the BSS section */
 	start = (elf32_ph->p_vaddr + elf32_ph->p_filesz) + MMAP_START;
@@ -529,7 +529,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	length = end - start;
 
 	/* this will generate a page fault which will load the page in */
-	memset_b((void *)start, NULL, length);
+	memset_b((void *)start, 0, length);
 
 	/* setup the BSS section */
 	start = elf32_ph->p_vaddr + elf32_ph->p_filesz;

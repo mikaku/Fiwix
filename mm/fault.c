@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/fault.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -147,7 +147,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 				return 1;
 			}
 		}
-		memset_b((void *)(addr & PAGE_MASK), NULL, PAGE_SIZE);
+		memset_b((void *)(addr & PAGE_MASK), 0, PAGE_SIZE);
 	}
 
 	return 0;

@@ -1,7 +1,7 @@
 /*
  * fiwix/drivers/char/tty.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -996,5 +996,5 @@ int tty_select(struct inode *i, int flag)
 void tty_init(void)
 {
 	tty_queue_init();
-	memset_b(tty_table, NULL, sizeof(tty_table));
+	memset_b(tty_table, 0, sizeof(tty_table));
 }

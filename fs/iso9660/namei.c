@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/iso9660/namei.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -47,14 +47,14 @@ int iso9660_lookup(const char *name, struct inode *dir, struct inode **i_res)
 					break;
 				}
 				if(len == 1) {
-					if(name[0] == '.' && name[1] == NULL) {
+					if(name[0] == '.' && name[1] == '\0') {
 						if(isonum_711(d->name_len) == 1 && d->name[0] == 0) {
 							inode = dir->inode;
 						}
 					}
 				}
 				if(len == 2) {
-					if(name[0] == '.' && name[1] == '.' && name[2] == NULL) {
+					if(name[0] == '.' && name[1] == '.' && name[2] == '\0') {
 						if(isonum_711(d->name_len) == 1 && d->name[0] == 1) {
 							inode = dir->u.iso9660.i_parent->inode;
 						}

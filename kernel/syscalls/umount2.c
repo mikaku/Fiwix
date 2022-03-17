@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/umount2.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct resource umount_resource = { NULL, NULL };
+static struct resource umount_resource = { 0, 0 };
 
 int sys_umount2(const char *target, int flags)
 {

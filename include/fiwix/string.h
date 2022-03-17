@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/string.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -11,7 +11,7 @@
 #include <fiwix/types.h>
 
 #ifndef NULL
-#define NULL	'\0'	/* ((void *)0) */
+#define NULL	((void *)0)
 #endif
 
 #define MIN(a,b)	((a) < (b) ? (a) : (b))

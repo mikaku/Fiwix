@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/sysinfo.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -30,7 +30,7 @@ int sys_sysinfo(struct sysinfo *info)
 	if((errno = check_user_area(VERIFY_WRITE, info, sizeof(struct sysinfo)))) {
 		return errno;
 	}
-	memset_b(&tmp_info, NULL, sizeof(struct sysinfo));
+	memset_b(&tmp_info, 0, sizeof(struct sysinfo));
 	tmp_info.loads[0] = avenrun[0] << (SI_LOAD_SHIFT - FSHIFT);
 	tmp_info.loads[1] = avenrun[1] << (SI_LOAD_SHIFT - FSHIFT);
 	tmp_info.loads[2] = avenrun[2] << (SI_LOAD_SHIFT - FSHIFT);

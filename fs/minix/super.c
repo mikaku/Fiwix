@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/minix/super.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -18,7 +18,7 @@
 
 struct fs_operations minix_fsop = {
 	FSOP_REQUIRES_DEV,
-	NULL,
+	0,
 
 	NULL,			/* open */
 	NULL,			/* close */

@@ -201,7 +201,7 @@ void cpu_init(void)
 	unsigned int n;
 	int maxcpuid;
 
-	memset_b(&cpu_table, NULL, sizeof(cpu_table));
+	memset_b(&cpu_table, 0, sizeof(cpu_table));
 	cpu_table.model = -1;
 	cpu_table.stepping = -1;
 

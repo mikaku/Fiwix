@@ -58,7 +58,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	struct proc *init;
 
 	_last_data_addr = stack - KERNEL_BASE_ADDR;
-	memset_b(&kstat, NULL, sizeof(kstat));
+	memset_b(&kstat, 0, sizeof(kstat));
 
 	/* default kernel values */
 	strcpy(_rootfstype, "ext2");		/* filesystem is ext2 */

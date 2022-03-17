@@ -63,7 +63,7 @@ void init_init(void)
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
 	init->tss.cr3 = V2P((unsigned int)pgdir);
 
-	memset_b(init->vma, NULL, sizeof(init->vma));
+	memset_b(init->vma, 0, sizeof(init->vma));
 	init->ppid = 0;
 	init->pgid = 0;
 	init->sid = 0;
@@ -75,8 +75,8 @@ void init_init(void)
 	init->uid = init->gid = 0;
 	init->euid = init->egid = 0;
 	init->suid = init->sgid = 0;
-	memset_b(init->fd, NULL, sizeof(init->fd));
-	memset_b(init->fd_flags, NULL, sizeof(init->fd_flags));
+	memset_b(init->fd, 0, sizeof(init->fd));
+	memset_b(init->fd_flags, 0, sizeof(init->fd_flags));
 	init->root = current->root;
 	init->pwd = current->pwd;
 	strcpy(init->argv0, init_argv[0]);
@@ -85,9 +85,9 @@ void init_init(void)
 	init->sigpending = 0;
 	init->sigblocked = 0;
 	init->sigexecuting = 0;
-	memset_b(init->sigaction, NULL, sizeof(init->sigaction));
-	memset_b(&init->usage, NULL, sizeof(struct rusage));
-	memset_b(&init->cusage, NULL, sizeof(struct rusage));
+	memset_b(init->sigaction, 0, sizeof(init->sigaction));
+	memset_b(&init->usage, 0, sizeof(struct rusage));
+	memset_b(&init->cusage, 0, sizeof(struct rusage));
 	init->timeout = 0;
 	for(n = 0; n < RLIM_NLIMITS; n++) {
 		init->rlim[n].rlim_cur = init->rlim[n].rlim_max = RLIM_INFINITY;

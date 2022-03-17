@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/buffer.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -45,7 +45,7 @@ struct buffer *buffer_head;		/* buffer pool head */
 struct buffer *buffer_dirty_head;
 struct buffer **buffer_hash_table;
 
-static struct resource sync_resource = { NULL, NULL };
+static struct resource sync_resource = { 0, 0 };
 
 static void insert_to_hash(struct buffer *buf)
 {
@@ -469,8 +469,8 @@ void buffer_init(void)
 	struct buffer *buf;
 	unsigned int n;
 
-	memset_b(buffer_table, NULL, buffer_table_size);
-	memset_b(buffer_hash_table, NULL, buffer_hash_table_size);
+	memset_b(buffer_table, 0, buffer_table_size);
+	memset_b(buffer_hash_table, 0, buffer_hash_table_size);
 
 	for(n = 0; n < NR_BUFFERS; n++) {
 		buf = &buffer_table[n];
