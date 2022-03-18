@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/rename.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -64,14 +64,14 @@ int sys_rename(const char *oldpath, const char *newpath)
 		goto end;
 	}
 	newbasename = get_basename(newbasename);
-	if((newbasename[0] == '.' && newbasename[1] == NULL) || (newbasename[0] == '.' && newbasename[1] == '.' && newbasename[2] == NULL)) {
+	if((newbasename[0] == '.' && newbasename[1] == '\0') || (newbasename[0] == '.' && newbasename[1] == '.' && newbasename[2] == '\0')) {
 		errno = -EINVAL;
 		goto end;
 	}
 
 	oldbasename = get_basename(tmp_oldpath);
 	oldbasename = remove_trailing_slash(oldbasename);
-	if((oldbasename[0] == '.' && oldbasename[1] == NULL) || (oldbasename[0] == '.' && oldbasename[1] == '.' && oldbasename[2] == NULL)) {
+	if((oldbasename[0] == '.' && oldbasename[1] == '\0') || (oldbasename[0] == '.' && oldbasename[1] == '.' && oldbasename[2] == '\0')) {
 		errno = -EINVAL;
 		goto end;
 	}
