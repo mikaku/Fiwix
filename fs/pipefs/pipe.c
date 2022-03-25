@@ -117,7 +117,7 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 	data = i->u.pipefs.i_data;
 
 	while(bytes_written < count) {
-		/* if the read end closes then send signal and return */
+		/* if there are no readers then send signal and return */
 		if(!i->u.pipefs.i_readers) {
 			send_sig(current, SIGPIPE);
 			return -EPIPE;
