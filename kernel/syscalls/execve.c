@@ -341,6 +341,7 @@ loop:
 
 int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int arg5, struct sigcontext *sc)
 {
+	char *tmp_name;
 	char argv0[NAME_MAX + 1];
 	int n, errno;
 
@@ -348,8 +349,12 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 	printk("(pid %d) sys_execve('%s', ...)\n", current->pid, filename);
 #endif /*__DEBUG__ */
 
+	if((errno = malloc_name(argv[0], &tmp_name)) < 0) {
+                return errno;
+        }
 	/* copy filename into kernel address space */
-	strncpy(argv0, argv[0], NAME_MAX);
+	strncpy(argv0, tmp_name, NAME_MAX);
+	free_name(tmp_name);
 	if((errno = do_execve(filename, &(*argv), &(*envp), sc))) {
 		return errno;
 	}
