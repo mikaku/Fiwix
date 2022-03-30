@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/exit.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -31,6 +31,13 @@ void do_exit(int exit_code)
 	current->envp = NULL;
 
 	init = get_proc_by_pid(INIT);
+
+	/*
+	 * This flag is needed to be able to send SIGCHLD to its parent
+	 * process.
+	 */
+	current->flags |= PF_EXITING;
+
 	FOR_EACH_PROCESS(p) {
 		if(SESS_LEADER(current)) {
 			if(p->sid == current->sid && p->state != PROC_ZOMBIE) {

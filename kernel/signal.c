@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/signal.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -24,7 +24,8 @@ int send_sig(struct proc *p, __sigset_t signum)
 		return -EINVAL;
 	}
 
-	if(!IS_SUPERUSER && current->euid != p->euid && current->sid != p->sid) {
+	if(!IS_SUPERUSER && !IS_EXITING &&
+	   current->euid != p->euid && current->sid != p->sid) {
 		return -EPERM;
 	}
 

@@ -37,9 +37,11 @@ struct vma {
 #define PF_KPROC	0x00000001	/* kernel internal process */
 #define PF_PEXEC	0x00000002	/* has performed a sys_execve() */
 #define PF_USEREAL	0x00000004	/* use real UID in permission checks */
+#define PF_EXITING	0x00000008	/* terminating process */
 
 #define MMAP_START	0x40000000	/* mmap()s start at 1GB */
 #define IS_SUPERUSER	(current->euid == 0)
+#define IS_EXITING	(current->flags & PF_EXITING)
 
 #define IO_BITMAP_SIZE	8192		/* 8192*8bit = all I/O address space */
 
