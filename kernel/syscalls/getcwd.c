@@ -54,8 +54,10 @@ int sys_getcwd(char *buf, __size_t size)
 	struct inode* cur = current->pwd;
 	struct inode* up = cur;
 	struct inode* root;
+	struct inode* tmp_ino = NULL;
 	int tmp_fd;
 	int bytes_read;
+	int done = 0;
 	__size_t marker = size-2;	/* Reserve '\0' at the end */
 	__size_t namelength;
 	buf[size-1] = 0;
@@ -76,7 +78,7 @@ int sys_getcwd(char *buf, __size_t size)
 		return -ENOMEM;
 	}
 
-	while(cur != root) {
+	do {
 		if((errno = parse_namei("..",cur,&up,0,FOLLOW_LINKS))) {
 			iput(root);
 			if (cur != current->pwd) {
@@ -95,6 +97,7 @@ int sys_getcwd(char *buf, __size_t size)
 			return tmp_fd;
 		}
 		do {
+			done=0;
 			bytes_read = up->fsop->readdir(up, &fd_table[tmp_fd],
 					dirent_buf, PAGE_SIZE);
 			if (bytes_read < 0) {
@@ -109,44 +112,83 @@ int sys_getcwd(char *buf, __size_t size)
 			}
 			d_ptr = dirent_buf;
 			while((void *) d_ptr < ((void *) dirent_buf + bytes_read)) {
-				if(d_ptr->d_ino == cur->inode) {
-					namelength = strlen(d_ptr->d_name);
-					if (marker < namelength+1) {
-						release_fd(tmp_fd);
-						iput(root);
-						iput(up);
-						if (cur != current->pwd) {
-							iput(cur);
+				if(up->dev==cur->dev) {
+					if(d_ptr->d_ino==cur->inode) {
+						if(d_ptr->d_ino == cur->inode) {
+							namelength = strlen(d_ptr->d_name);
+							if (marker < namelength+1) {
+								release_fd(tmp_fd);
+								iput(root);
+								iput(up);
+								if (cur != current->pwd) {
+									iput(cur);
+								}
+								kfree((unsigned int)dirent_buf);
+								return -ERANGE;
+							}
+							marker -= namelength+1;	/* +1 for the leading '/' */
+							save=buf[marker+namelength+1];
+							strncpy(buf+marker+1, d_ptr->d_name, namelength);
+							buf[marker] = '/';
+							buf[marker+namelength+1] = save; /* strncp overrides '/' or '\0' */
+							done=1;
+							break;
 						}
-						kfree((unsigned int)dirent_buf);
-						return -ERANGE;
 					}
-					marker -= namelength+1;	/* +1 for the leading '/' */
-					save=buf[marker+namelength+1];
-					strncpy(buf+marker+1, d_ptr->d_name, namelength);
-					buf[marker] = '/';
-					buf[marker+namelength+1] = save; /* strncp overrides '/' or '\0' */
-					break;
+				}
+				else if (strcmp(".",d_ptr->d_name) != 0 && strcmp("..",d_ptr->d_name) != 0)
+				{	/* Need to deal with mounts */
+					if((errno = parse_namei(d_ptr->d_name,up,&tmp_ino,0,FOLLOW_LINKS))) {
+						break;	/* Keep going if sibling dirents fail */
+					}
+					if(tmp_ino->inode==cur->inode) {
+						namelength = strlen(d_ptr->d_name);
+						if (marker < namelength+1) {
+							release_fd(tmp_fd);
+							iput(root);
+							iput(up);
+							iput(tmp_ino);
+							if (cur != current->pwd) {
+								iput(cur);
+							}
+							kfree((unsigned int)dirent_buf);
+							return -ERANGE;
+						}
+						marker -= namelength+1;	/* +1 for the leading '/' */
+						save=buf[marker+namelength+1];
+						strncpy(buf+marker+1, d_ptr->d_name, namelength);
+						buf[marker] = '/';
+						buf[marker+namelength+1] = save; /* strncp overrides '/' or '\0' */
+						done=1;
+						iput(tmp_ino);
+						break;
+					}
+					iput(tmp_ino);
 				}
 				d_ptr = (struct dirent *) ((void *)d_ptr+d_ptr->d_reclen);
 			}
-		} while(bytes_read!=0 && d_ptr->d_ino != cur->inode);
+		} while(bytes_read!=0 && !done);
+
 
 		release_fd(tmp_fd);
-		if (d_ptr->d_ino != cur->inode) {   /* parent dir was fully read, child still not found */
+		if (!done) {   /* parent dir was fully read, child still not found */
 			iput(root);
 			iput(up);
 			if (cur != current->pwd) {
 				iput(cur);
 			}
 			kfree((unsigned int)dirent_buf);
-			return -ENOENT;
+			if (errno) {
+				return errno;		/* parse_namei failed on the right dirent */
+			} else {
+				return -ENOENT;
+			}
 		}
 		if (cur != current->pwd) {
 			iput(cur);
 		}
 		cur = up;
-	}
+	} while(cur != root);
 	kfree((unsigned int)dirent_buf);
 	iput(root); /* cur == up == root */
 	/* Move the String to the start of the buffer */
