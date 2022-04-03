@@ -43,6 +43,7 @@ int sys_getcwd(char *buf, __size_t size)
 	struct inode *tmp_ino = NULL;
 	int tmp_fd, done;
 	int namelength, bytes_read;
+	int diff_dev;
 	__size_t marker = size-2;	/* Reserve '\0' at the end. */
 	buf[size-1] = 0;
 	__size_t x;
@@ -87,11 +88,16 @@ int sys_getcwd(char *buf, __size_t size)
 			}
 			d_ptr = dirent_buf;
 			while((void *) d_ptr < ((void *) dirent_buf + bytes_read)) {
-				if((errno = parse_namei(d_ptr->d_name, up, &tmp_ino, 0, FOLLOW_LINKS))) {
-					/* Keep going if sibling dirents fail. */
-					break;
+				/* If the child is on the same device as the parent the d_ptr->d_ino should be correct.
+				   In this case there is no need to call a namei again. */
+				diff_dev = up->dev != cur->dev;
+				if (diff_dev) {
+					if((errno = parse_namei(d_ptr->d_name, up, &tmp_ino, 0, FOLLOW_LINKS))) {
+						/* Keep going if sibling dirents fail. */
+						break;
+					}
 				}
-				if(tmp_ino->inode == cur->inode) {
+				if(d_ptr->d_ino == cur->inode && !diff_dev || tmp_ino->inode == cur->inode && diff_dev) {
 					if(strcmp("..", d_ptr->d_name)) {
 						namelength = strlen(d_ptr->d_name);
 						if (marker < namelength+1) {
@@ -100,6 +106,9 @@ int sys_getcwd(char *buf, __size_t size)
 							if (cur != current->pwd) {
 								iput(cur);
 							}
+							if (diff_dev) {
+								iput(tmp_ino);
+							}
 							kfree((unsigned int)dirent_buf);
 							return -ERANGE;
 						}
@@ -107,13 +116,17 @@ int sys_getcwd(char *buf, __size_t size)
 							buf[marker--] = d_ptr->d_name[namelength];
 						}
 						buf[marker--] = '/';
-						iput(tmp_ino);
+						if (diff_dev) {
+							iput(tmp_ino);
+						}
 						done = 1;
 						break;
 					}
 				}
+				if (diff_dev) {
+					iput(tmp_ino);
+				}
 				d_ptr = (struct dirent *) ((void *)d_ptr + d_ptr->d_reclen);
-				iput(tmp_ino);
 			}
 		} while(bytes_read!=0 && !done);
 
