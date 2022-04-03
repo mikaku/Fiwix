@@ -56,7 +56,7 @@ int sys_getcwd(char *buf, __size_t size)
 		/* this case needs special handling, otherwise the loop skips over root */
 		buf[0] = '/';
 		buf[1] = '\0';
-		return (unsigned int)buf;
+		return 2;
 	}
 	if(!(dirent_buf = (void *)kmalloc())) {
 		return -ENOMEM;
@@ -158,5 +158,6 @@ int sys_getcwd(char *buf, __size_t size)
 	for(x = ++marker; x < size; x++) {
 		buf[x - marker] = buf[x];
 	}
-	return (unsigned int)buf;
+	/* linux returns the length of the string, so do we */
+	return size - marker;
 }
