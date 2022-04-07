@@ -125,7 +125,7 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 						dirent->d_name[strlen(d->name)] = 0;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
-						count -= size;
+						count -= dirent_len;
 					} else {
 						count = 0;
 						break;

@@ -125,7 +125,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 						dirent->d_name[d->name_len] = 0;
 						dirent = (struct dirent *)((char *)dirent + dirent_len);
 						size += dirent_len;
-						count -= size;
+						count -= dirent_len;
 					} else {
 						count = 0;
 						break;
