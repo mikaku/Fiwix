@@ -3,6 +3,7 @@
 - Added support for the PCI local bus.
 - Added the character device /dev/full.
 - Added the character device /dev/port.
+- Added the system call sys_getcwd. [#4]
 - Improved the serial driver to support QEMU PCI serial devices.
 - Removed the extra lock when dispatching the bottom halves.
 - Mask the interrupt during the execution of the interrupt handler.
@@ -14,6 +15,7 @@
 - Removed the command to detect the interface type of the keyboard.
 - Reversed the check order of schedule and signals before leaving the kernel
   space.
+- Added the functions inport_l() and outport_l() in core386.S.
 - Added the sleeping address value in the SysRq process listing.
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
   using interrupts during its own initialization.
@@ -26,6 +28,9 @@
 - Fixed ext2_truncate() to free triply-indirect blocks.
 - Fixed v2_minix_truncate() to free triply-indirect blocks.
 - Fixed the way how the I/O permission bitmap in TSS is implemented.
+- Fixed the implementation of the sys_ioperm() system call.
+- Fixed the permissions check in send_signal() to let send the SIGCHLD signal to
+  a parent process owned by a different user, during the context of sys_exit().
 - Fixed the execution permission logic that let root user execute any file.
 - Fixed to handle SysRq key inside keyboard interrupt instead of in its bottom
   half.
@@ -35,6 +40,10 @@
   elf_load_interpreter().
 - Fixed the type of the user file descriptor (to unsigned int) in a number of
   system calls.
+- Fixed a possible index out of bounds in bios_map_add().
+- Fixed a missing validation in the arguments of sys_execve().
+- Fixed an inefficiency in the mechanism of ext2_dir_readdir() and
+  minix_dir_readdir()
 - Small fixes and cosmetic changes.
 
 
