@@ -23,14 +23,23 @@ conventions in its code:
 
 - Preprocessor macros are always UPPERCASE.
 
-- Pointer types have spaces: (uint16_t *) not (uint16_t*).
+- Pointer types have spaces: (uint16_t *), not (uint16_t*).
 
-- Comments in code are always as in C89 /* ... */.
+- Comments in code are always in C-Style (as in C89) /* ... */.
 
-- Multiline comments start always with a capital letter and the last sentence
-  ends with a period.
+- Only the comments that span multiple lines start always with a capital letter
+  and the last sentence ends with a period. Also the open and close tags must go
+  in separate lines. Just like this:
+  /*
+   * Comment line 1
+   * comment line 2
+   * comment line 3.
+   */
 
-- Functions that take no arguments are declared as f(void) not f().
+- Comments in a single line must not start with a capital letter and must not
+  end with a period.
+
+- Functions that take no arguments are declared as f(void), not f().
 
 - The open parenthesis is always on the same line as the function name.
 
