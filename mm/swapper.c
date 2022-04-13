@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/swapper.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -56,7 +56,7 @@ int kswapd(void)
 
 	for(;;) {
 		sleep(&kswapd, PROC_UNINTERRUPTIBLE);
-		if(reclaim_buffers()) {
+		if((kstat.pages_reclaimed = reclaim_buffers())) {
 			continue;
 		}
 		printk("WARNING: %s(): out of memory and swapping is not implemented yet, sorry.\n", __FUNCTION__);

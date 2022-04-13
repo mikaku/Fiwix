@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/kernel.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -79,6 +79,7 @@ struct kernel_stat {
 	int shared;			/* pages with count > 1 */
 	int dirty;			/* dirty buffers (in KB) */
 	unsigned long int random_seed;	/* next random seed */
+	int pages_reclaimed;		/* last pages reclaimed from buffer */
 };
 extern struct kernel_stat kstat;
 

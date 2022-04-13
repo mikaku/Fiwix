@@ -164,7 +164,7 @@ struct page * get_free_page(void)
 		wakeup(&kswapd);
 		sleep(&get_free_page, PROC_UNINTERRUPTIBLE);
 
-		if(!kstat.free_pages) {
+		if(!kstat.free_pages && !kstat.pages_reclaimed) {
 			/* definitely out of memory! (no more pages) */
 			printk("%s(): pid %d ran out of memory. OOM killer needed!\n", __FUNCTION__, current->pid);
 			return NULL;
@@ -173,7 +173,12 @@ struct page * get_free_page(void)
 
 	SAVE_FLAGS(flags); CLI();
 
-	pg = page_head;
+	if(!(pg = page_head)) {
+		printk("WARNING: page_head returned NULL! (free_pages = %d, reclaimed = %d)\n", kstat.free_pages, kstat.pages_reclaimed);
+		RESTORE_FLAGS(flags);
+		return NULL;
+	}
+
 	remove_from_free_list(pg);
 	remove_from_hash(pg);	/* remove it from its old hash */
 	pg->count = 1;
@@ -239,12 +244,12 @@ void release_page(int page)
 	RESTORE_FLAGS(flags);
 
 	/*
-	 * We need to wait for free pages to be greater than NR_BUF_RECLAIM,
+	 * We need to wait for free pages to be far greater than NR_BUF_RECLAIM,
 	 * otherwise get_free_pages() could run out of pages _again_, and it
 	 * would think that 'definitely there are no more free pages', killing
 	 * the current process prematurely.
 	 */
-	if(kstat.free_pages > NR_BUF_RECLAIM) {
+	if(kstat.free_pages > (NR_BUF_RECLAIM * 3)) {
 		wakeup(&get_free_page);
 	}
 }
