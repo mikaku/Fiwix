@@ -23,6 +23,7 @@ void free_name(const char *name)
 
 /*
  * This function has two objectives:
+ *
  * 1. to check the memory address validity of the char pointer supplied by the
  *    user, while at the same time limit its length to PAGE_SIZE (4096) bytes.
  * 2. to create a copy of 'filename' in the kernel data space before using it.
@@ -186,7 +187,8 @@ int check_permission(int mask, struct inode *i)
 	return -EACCES;
 }
 
-/* Linux 2.0.40 ABI system call (some from 2.2.26) */
+
+/* Linux 2.0 ABI system call (plus some from Linux 2.2) */
 void *syscall_table[] = {
 	NULL,				/* 0 */	/* sys_setup (-ENOSYS) */
 	sys_exit,
@@ -214,7 +216,7 @@ void *syscall_table[] = {
 	sys_setuid,
 	sys_getuid,
 	sys_stime, 			/* 25 */
-	NULL,	// sys_ptrace
+	NULL,	/* sys_ptrace */
 	sys_alarm,
 	sys_fstat,
 	sys_pause,
@@ -222,7 +224,7 @@ void *syscall_table[] = {
 	NULL,					/* sys_stty (-ENOSYS) */
 	NULL,					/* sys_gtty (-ENOSYS) */
 	sys_access,
-	NULL,	// sys_nice
+	NULL,	/* sys_nice */
 	sys_ftime,			/* 35 */
 	sys_sync,
 	sys_kill,
@@ -232,14 +234,14 @@ void *syscall_table[] = {
 	sys_dup,
 	sys_pipe,
 	sys_times,
-	NULL,	// sys_prof
+	NULL,	/* sys_prof */
 	sys_brk,			/* 45 */
 	sys_setgid,
 	sys_getgid,
 	sys_signal,
 	sys_geteuid,
 	sys_getegid,			/* 50 */
-	NULL,	// sys_acct
+	NULL,	/* sys_acct */
 	sys_umount2,
 	NULL,					/* sys_lock (-ENOSYS) */
 	sys_ioctl,
@@ -274,24 +276,24 @@ void *syscall_table[] = {
 	sys_symlink,
 	sys_lstat,
 	sys_readlink,			/* 85 */
-	NULL,	// sys_uselib
-	NULL,	// sys_swapon
+	NULL,	/* sys_uselib */
+	NULL,	/* sys_swapon */
 	sys_reboot,
-	NULL,	// old_readdir
+	NULL,	/* old_readdir */
 	old_mmap,			/* 90 */
 	sys_munmap,
 	sys_truncate,
 	sys_ftruncate,
 	sys_fchmod,
 	sys_fchown,			/* 95 */
-	NULL,	// sys_getpriority
-	NULL,	// sys_setpriority
+	NULL,	/* sys_getpriority */
+	NULL,	/* sys_setpriority */
 	NULL,					/* sys_profil (-ENOSYS) */
 	sys_statfs,
 	sys_fstatfs,			/* 100 */
 	sys_ioperm,
-	sys_socketcall,	// sys_socketcall XXX
-	NULL,	// sys_syslog
+	sys_socketcall,	/* sys_socketcall XXX */
+	NULL,	/* sys_syslog */
 	sys_setitimer,
 	sys_getitimer,			/* 105 */
 	sys_newstat,
@@ -299,31 +301,31 @@ void *syscall_table[] = {
 	sys_newfstat,
 	sys_uname,
 	sys_iopl,			/* 110 */
-	NULL,	// sys_vhangup
+	NULL,	/* sys_vhangup */
 	NULL,					/* sys_idle (-ENOSYS) */
-	NULL,	// sys_vm86old
+	NULL,	/* sys_vm86old */
 	sys_wait4,
-	NULL,	// sys_swapoff		/* 115 */
+	NULL,	/* sys_swapoff */	/* 115 */
 	sys_sysinfo,
-	NULL,	// sys_ipc
+	NULL,	/* sys_ipc */
 	sys_fsync,
 	sys_sigreturn,
-	NULL,	// sys_clone		/* 120 */
+	NULL,	/* sys_clone */		/* 120 */
 	sys_setdomainname,
 	sys_newuname,
-	NULL,	// sys_modify_ldt
-	NULL,	// sys_adjtimex
+	NULL,	/* sys_modify_ldt */
+	NULL,	/* sys_adjtimex */
 	sys_mprotect,			/* 125 */
 	sys_sigprocmask,
-	NULL,	// sys_create_module
-	NULL,	// sys_init_module
-	NULL,	// sys_delete_module
-	NULL,	// sys_get_kernel_syms	/* 130 */
-	NULL,	// sys_quotactl
+	NULL,	/* sys_create_module */
+	NULL,	/* sys_init_module */
+	NULL,	/* sys_delete_module */
+	NULL,	/* sys_get_kernel_syms */	/* 130 */
+	NULL,	/* sys_quotactl */
 	sys_getpgid,
 	sys_fchdir,
-	NULL,	// sys_bdflush
-	NULL,	// sys_sysfs		/* 135 */
+	NULL,	/* sys_bdflush */
+	NULL,	/* sys_sysfs */		/* 135 */
 	sys_personality,
 	NULL,					/* afs_syscall (-ENOSYS) */
 	sys_setfsuid,
@@ -332,49 +334,48 @@ void *syscall_table[] = {
 	sys_getdents,
 	sys_select,
 	sys_flock,
-	NULL,	// sys_msync
-	NULL,	// sys_readv		/* 145 */
-	NULL,	// sys_writev
+	NULL,	/* sys_msync */
+	NULL,	/* sys_readv */		/* 145 */
+	NULL,	/* sys_writev */
 	sys_getsid,
 	sys_fdatasync,
-	NULL,	// sys_sysctl
-	NULL,	// sys_mlock		/* 150 */
-	NULL,	// sys_munlock
-	NULL,	// sys_mlockall
-	NULL,	// sys_munlockall
-	NULL,	// sys_sched_setparam
-	NULL,	// sys_sched_getparam	/* 155 */
-	NULL,	// sys_sched_setscheduler
-	NULL,	// sys_sched_getscheduler
-	NULL,	// sys_sched_yield
-	NULL,	// sys_sched_get_priority_max
-	NULL,	// sys_sched_get_priority_min	/* 160 */
-	NULL,	// sys_sched_rr_get_interval
+	NULL,	/* sys_sysctl */
+	NULL,	/* sys_mlock */		/* 150 */
+	NULL,	/* sys_munlock */
+	NULL,	/* sys_mlockall */
+	NULL,	/* sys_munlockall */
+	NULL,	/* sys_sched_setparam */
+	NULL,	/* sys_sched_getparam */	/* 155 */
+	NULL,	/* sys_sched_setscheduler */
+	NULL,	/* sys_sched_getscheduler */
+	NULL,	/* sys_sched_yield */
+	NULL,	/* sys_sched_get_priority_max */
+	NULL,	/* sys_sched_get_priority_min */	/* 160 */
+	NULL,	/* sys_sched_rr_get_interval */
 	sys_nanosleep,
-	NULL,	// sys_mremap
-
+	NULL,	/* sys_mremap */
+	NULL,
+	NULL,				/* 165 */
 	NULL,
 	NULL,
 	NULL,
 	NULL,
+	NULL,				/* 170 */
 	NULL,
 	NULL,
 	NULL,
 	NULL,
+	NULL,				/* 175 */
 	NULL,
 	NULL,
 	NULL,
 	NULL,
+	NULL,				/* 180 */
 	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	sys_chown,			/* 182 */
+	sys_chown,
 	sys_getcwd,
 	NULL,
-	NULL,
+	NULL,				/* 185 */
 	NULL,
 	NULL,
 	NULL,

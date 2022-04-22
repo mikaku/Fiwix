@@ -1,14 +1,18 @@
 /*
  * fiwix/include/fiwix/unistd.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_UNISTD_H
 #define _FIWIX_UNISTD_H
 
-/* Linux 2.0.40 ABI (one syscall from Linux 2.2.26) */
+/*
+ * This is intended to be pure Linux 2.0 ABI, plus some system calls from
+ * Linux 2.2.
+ */
+
 /* #define SYS_setup */
 #define SYS_exit		1
 #define SYS_fork		2
@@ -61,7 +65,7 @@
 #define SYS_geteuid		49
 #define SYS_getegid		50
 /* #define SYS_acct */
-#define SYS_umount2		52	/* from 2.2.26, it was sys_phys() */
+#define SYS_umount2		52	/* (from Linux 2.2) it was sys_phys() */
 #define SYS_lock		53		/* -ENOSYS */
 #define SYS_ioctl		54
 #define SYS_fcntl		55
@@ -174,8 +178,7 @@
 #define SYS_nanosleep		162
 /* #define SYS_mremap */
 
-/* extra system calls from Linux 2.2.26 */
-/* #define SYS_mremap */
+/* extra system calls from Linux 2.2 */
 /* #define SYS_setresuid */
 /* #define SYS_getresuid */
 /* #define SYS_ni_syscall */
