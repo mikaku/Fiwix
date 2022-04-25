@@ -217,3 +217,36 @@ void psig(unsigned int stack)
 		}
 	}
 }
+
+int kill_pid(__pid_t pid, __sigset_t signum)
+{
+	struct proc *p;
+
+	FOR_EACH_PROCESS(p) {
+		if(p->pid == pid && p->state != PROC_ZOMBIE) {
+			return send_sig(p, signum);
+		}
+		p = p->next;
+	}
+	return -ESRCH;
+}
+
+int kill_pgrp(__pid_t pgid, __sigset_t signum)
+{
+	struct proc *p;
+	int found;
+
+	found = 0;
+	FOR_EACH_PROCESS(p) {
+		if(p->pgid == pgid && p->state != PROC_ZOMBIE) {
+			send_sig(p, signum);
+			found = 1;
+		}
+		p = p->next;
+	}
+
+	if(!found) {
+		return -ESRCH;
+	}
+	return 0;
+}

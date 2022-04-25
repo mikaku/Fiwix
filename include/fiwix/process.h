@@ -162,8 +162,7 @@ extern struct proc *current;
 extern struct proc *proc_table;
 
 int send_sig(struct proc *, __sigset_t);
-int kill_pid(__pid_t, __sigset_t);
-int kill_pgrp(__pid_t, __sigset_t);
+
 void add_crusage(struct proc *, struct rusage *);
 void get_rusage(struct proc *, struct rusage *);
 void add_rusage(struct proc *);

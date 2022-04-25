@@ -88,5 +88,7 @@ struct sigaction {
 
 int issig(void);
 void psig(unsigned int);
+int kill_pid(__pid_t, __sigset_t);
+int kill_pgrp(__pid_t, __sigset_t);
 
 #endif /* _FIWIX_SIGNAL_H */
