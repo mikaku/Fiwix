@@ -1,15 +1,14 @@
-			Fiwix Kernel Memory Address Space
-			=================================
+	Fiwix kernel memory address space on i386 architecture
+	======================================================
 
 0x00000000
-	.
-	.
+...
 0x00050000
 	+-------------------+
 	| 4KB kpage_dir     | this page will be reused once the definitive
 	| only used at boot | kpage_dir is installed
 	+-------------------+
-	.
+...
 0x00100000
 	+-------------------+
 	| .text section     | kernel binary (fiwix)
@@ -18,8 +17,8 @@
 	+-------------------+
 	| .bss section      |
 	+-------------------+
-0x........
-        +-------------------+
+...
+	+-------------------+
 	| initrd (optional) |
 	+-------------------+
 + PAGE_SIZE
