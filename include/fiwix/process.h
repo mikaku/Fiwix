@@ -161,6 +161,7 @@ struct proc {
 extern struct proc *current;
 extern struct proc *proc_table;
 
+int can_signal(struct proc *);
 int send_sig(struct proc *, __sigset_t);
 
 void add_crusage(struct proc *, struct rusage *);

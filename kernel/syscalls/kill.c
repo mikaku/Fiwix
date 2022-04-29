@@ -1,12 +1,13 @@
 /*
  * fiwix/kernel/syscalls/kill.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #include <fiwix/types.h>
 #include <fiwix/process.h>
+#include <fiwix/signal.h>
 #include <fiwix/errno.h>
 
 #ifdef __DEBUG__
@@ -28,20 +29,21 @@ int sys_kill(__pid_t pid, __sigset_t signum)
 	if(pid == -1) {
 		count = 0;
 		FOR_EACH_PROCESS(p) {
-			if(p->pid > 1 && p != current) {
-				count++;
-				send_sig(p, signum);
+			if(p->pid == INIT || p == current || !can_signal(p)) {
+				continue;
 			}
+			count++;
+			send_sig(p, signum);
 			p = p->next;
 		}
 		return count ? 0 : -ESRCH;
 	}
 	if(!pid) {
-		return kill_pgrp(current->pgid, signum);
+		return kill_pgrp(current->pgid, signum, FROM_USER);
 	}
 	if(pid < 1) {
-		return kill_pgrp(-pid, signum);
+		return kill_pgrp(-pid, signum, FROM_USER);
 	}
 
-	return kill_pid(pid, signum);
+	return kill_pid(pid, signum, FROM_USER);
 }

@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/signal.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -86,9 +86,12 @@ struct sigaction {
 
 #define SIG_MASK(sig)	(~(1 << ((sig) - 1)))
 
+#define	FROM_KERNEL	1	/* kernel is who sent the signal */
+#define	FROM_USER	2	/* user is who sent the signal */
+
 int issig(void);
 void psig(unsigned int);
-int kill_pid(__pid_t, __sigset_t);
-int kill_pgrp(__pid_t, __sigset_t);
+int kill_pid(__pid_t, __sigset_t, int);
+int kill_pgrp(__pid_t, __sigset_t, int);
 
 #endif /* _FIWIX_SIGNAL_H */

@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/signal.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -18,14 +18,20 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+/* can process 'current' send a signal to process 'p'? */
+int can_signal(struct proc *p)
+{
+	if(!IS_SUPERUSER && current->euid != p->euid && current->sid != p->sid) {
+		return 0;
+	}
+
+	return 1;
+}
+
 int send_sig(struct proc *p, __sigset_t signum)
 {
 	if(signum > NSIG || !p) {
 		return -EINVAL;
-	}
-
-	if(!IS_SUPERUSER && current->euid != p->euid && current->sid != p->sid) {
-		return -EPERM;
 	}
 
 	/* kernel processes can't receive signals */
@@ -218,12 +224,17 @@ void psig(unsigned int stack)
 	}
 }
 
-int kill_pid(__pid_t pid, __sigset_t signum)
+int kill_pid(__pid_t pid, __sigset_t signum, int sender)
 {
 	struct proc *p;
 
 	FOR_EACH_PROCESS(p) {
 		if(p->pid == pid && p->state != PROC_ZOMBIE) {
+			if(sender == FROM_USER) {
+				if(!can_signal(p)) {
+					return -EPERM;
+				}
+			}
 			return send_sig(p, signum);
 		}
 		p = p->next;
@@ -231,7 +242,7 @@ int kill_pid(__pid_t pid, __sigset_t signum)
 	return -ESRCH;
 }
 
-int kill_pgrp(__pid_t pgid, __sigset_t signum)
+int kill_pgrp(__pid_t pgid, __sigset_t signum, int sender)
 {
 	struct proc *p;
 	int found;
@@ -239,6 +250,11 @@ int kill_pgrp(__pid_t pgid, __sigset_t signum)
 	found = 0;
 	FOR_EACH_PROCESS(p) {
 		if(p->pgid == pgid && p->state != PROC_ZOMBIE) {
+			if(sender == FROM_USER) {
+				if(!can_signal(p)) {
+					continue;
+				}
+			}
 			send_sig(p, signum);
 			found = 1;
 		}
