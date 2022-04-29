@@ -148,7 +148,10 @@ static char * parse_cmdline(const char *str)
  * This function returns the last address used by kernel symbols or the value
  * of 'mod_end' (in the module structure) of the last module loaded by GRUB.
  *
- * This is intended to setup the kernel stack beyond all these addresses.
+ * In the case where there are no ELF header tables, then it returns the last
+ * .bss address plus one page.
+ *
+ * This is intended to place the kernel stack beyond all these addresses.
  */
 unsigned int get_last_boot_addr(unsigned int info)
 {
@@ -185,6 +188,11 @@ unsigned int get_last_boot_addr(unsigned int info)
 		for(n = 0; n < mbi->mods_count; n++, mod++) {
 			addr = mod->mod_end;
 		}
+	}
+
+	/* no ELF header tables */
+	if(!(mbi->flags & MULTIBOOT_INFO_ELF_SHDR)) {
+		addr = (unsigned int)_end + PAGE_SIZE;
 	}
 
 	return P2V(addr);
