@@ -30,6 +30,7 @@ int sys_kill(__pid_t pid, __sigset_t signum)
 		count = 0;
 		FOR_EACH_PROCESS(p) {
 			if(p->pid == INIT || p == current || !can_signal(p)) {
+				p = p->next;
 				continue;
 			}
 			count++;

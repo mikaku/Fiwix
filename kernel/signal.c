@@ -252,6 +252,7 @@ int kill_pgrp(__pid_t pgid, __sigset_t signum, int sender)
 		if(p->pgid == pgid && p->state != PROC_ZOMBIE) {
 			if(sender == FROM_USER) {
 				if(!can_signal(p)) {
+					p = p->next;
 					continue;
 				}
 			}
