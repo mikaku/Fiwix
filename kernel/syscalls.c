@@ -396,7 +396,11 @@ static void do_bad_syscall(unsigned int num)
  * certain registers (EFLAGS and ESP). The rest of system calls will ignore
  * such extra argument.
  */
+#ifdef CONFIG_SYSCALL_6TH_ARG
+int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext sc)
+#else
 int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext sc)
+#endif
 {
 	int (*sys_func)(int, ...);
 
@@ -410,5 +414,9 @@ int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg
 		return -ENOSYS;
 	}
 	current->sp = (unsigned int)&sc;
+#ifdef CONFIG_SYSCALL_6TH_ARG
+	return sys_func(arg1, arg2, arg3, arg4, arg5, arg6, &sc);
+#else
 	return sys_func(arg1, arg2, arg3, arg4, arg5, &sc);
+#endif
 }

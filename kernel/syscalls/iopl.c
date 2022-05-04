@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/iopl.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -13,14 +13,13 @@
  *
  * This system call sets the IOPL field in the EFLAGS register to the value of
  * 'level' (which is pressumably zero), so the current process will have
- * privileges to use any port, even if that port is beyond of the default size
- * of the I/O bitmap in TSS (which is IO_BITMAP_SIZE = 32). Otherwise the
- * processor checks the I/O permission bit map to determine if access to a
- * specific I/O port is allowed.
+ * privileges to use any port, even when the port if denied by the I/O bitmap
+ * in TSS.  Otherwise the processor would check the I/O permission bitmap to
+ * determine if access to a specific I/O port is allowed.
  *
- * So, we leave it here as in Linux 2.0. That means, leaving to I/O bit map to
- * control the ports up to 0x3FF, and the rest of ports will be controlled by
- * using this system call.
+ * This system call is dangerous and must not be used because it permits the
+ * process to execute the Assembly instruction 'cli', which would freeze the
+ * kernel.
  */
 
 #include <fiwix/process.h>
@@ -32,7 +31,11 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
+#ifdef CONFIG_SYSCALL_6TH_ARG
+int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext *sc)
+#else
 int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, struct sigcontext *sc)
+#endif
 {
 #ifdef __DEBUG__
 	printk("(pid %d) sys_iopl(%d) -> ", current->pid, level);

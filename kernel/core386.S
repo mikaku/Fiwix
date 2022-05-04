@@ -7,6 +7,7 @@
 
 #define ASM_FILE	1
 
+#include <fiwix/config.h>
 #include <fiwix/segments.h>
 #include <fiwix/unistd.h>
 
@@ -252,6 +253,9 @@ BUILD_IRQ(15, irq15)
 	pushl	%eax			# save the system call number
 	SAVE_ALL
 
+#ifdef CONFIG_SYSCALL_6TH_ARG
+	pushl	%ebp			# + 6th argument
+#endif
 	pushl	%edi			# \ 5th argument
 	pushl	%esi			# | 4th argument
 	pushl	%edx			# | 3rd argument
@@ -259,7 +263,11 @@ BUILD_IRQ(15, irq15)
 	pushl	%ebx			# / 1st argument
 	pushl	%eax			# system call number
 	call	do_syscall
+#ifdef CONFIG_SYSCALL_6TH_ARG
+	addl	$28, %esp		# suppress all 7 pushl from the stack
+#else
 	addl	$24, %esp		# suppress all 6 pushl from the stack
+#endif
 	movl	%eax, EAX(%esp)		# save the return value
 
 	BOTTOM_HALVES
