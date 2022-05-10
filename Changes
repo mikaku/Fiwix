@@ -15,8 +15,16 @@
 - Removed the command to detect the interface type of the keyboard.
 - Reversed the check order of schedule and signals before leaving the kernel
   space.
+- Improved the cooperation with reclaim_buffers() when kernel runs out of memory
+  pages.
 - Added the functions inport_l() and outport_l() in core386.S.
 - Added the sleeping address value in the SysRq process listing.
+- Added the configuration option CONFIG_SYSCALL_6TH_ARG (disabled by default),
+  to enable the 6th argument in the system calls.
+- Reorganized the signal functions to avoid that signals sent by the kernel have
+  to use the same checking mechanism as if they were sent by a user process.
+  This also fixes a permission problem when sending the SIGCHLD signal to a
+  parent process owned by a different user, during the context of sys_exit().
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
   using interrupts during its own initialization.
 - Fixed ext2_truncate() to return the error code after calling free_dblock().
@@ -29,8 +37,6 @@
 - Fixed v2_minix_truncate() to free triply-indirect blocks.
 - Fixed the way how the I/O permission bitmap in TSS is implemented.
 - Fixed the implementation of the sys_ioperm() system call.
-- Fixed the permissions check in send_signal() to let send the SIGCHLD signal to
-  a parent process owned by a different user, during the context of sys_exit().
 - Fixed the execution permission logic that let root user execute any file.
 - Fixed to handle SysRq key inside keyboard interrupt instead of in its bottom
   half.
@@ -43,7 +49,10 @@
 - Fixed a possible index out of bounds in bios_map_add().
 - Fixed a missing validation in the arguments of sys_execve().
 - Fixed an inefficiency in the mechanism of ext2_dir_readdir() and
-  minix_dir_readdir()
+  minix_dir_readdir().
+- Fixed the function get_last_boot_addr() to return a proper address even when
+  there are no ELF header tables. This mostly happens when the kernel is loaded
+  using the QEMU argument '-kernel'.
 - Small fixes and cosmetic changes.
 
 
