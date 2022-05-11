@@ -44,11 +44,11 @@ The command needed to build the Fiwix kernel is `make clean ; make`.  This will 
 
 Before compiling you might want to tweak the kernel configuration by changing the default values in `include/fiwix/config.h`.
 
-Keep in mind that the kernel doesn't do anything on its own, you need to create a user-space environment to make use of it. Upon booting, the kernel mounts the root filesystem and tries to run `/sbin/init` on it, so you would need to provide this program yourself.  Fortunately, FiwixOS provides a full user-space UNIX-like environment to test the Fiwix kernel.
+Keep in mind that the kernel doesn't do anything on its own, you need to create a user-space environment to make use of it. Upon booting, the kernel mounts the root filesystem and tries to run `/sbin/init` on it, so you would need to provide this program yourself.  Fortunately, [FiwixOS](https://www.fiwix.org/downloads.html) provides a full user-space UNIX-like environment to test the Fiwix kernel.
 
 Installing
 ----------
-You can proceed to install [FiwixOS](https://www.fiwix.org/downloads.html) on a hard disk either by booting from the CD-ROM or from a floppy. If you chosen the latter, you will also need the Installation CD-ROM inserted in order to install the packages that form all the system environment.
+You can proceed to install FiwixOS on a hard disk either by booting from the CD-ROM or from a floppy. If you chosen the latter, you will also need the Installation CD-ROM inserted in order to install the packages that form all the system environment.
 
 Let the system boot and when you are ready, just type `install.sh`.
 
