@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/fs.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -13,7 +13,7 @@
 
 #define CHECK_UFD(ufd)							\
 {									\
-	if((ufd) > OPEN_MAX || current->fd[(ufd)] == 0)	 {		\
+	if((ufd) > (OPEN_MAX - 1) || current->fd[(ufd)] == 0) {		\
 		return -EBADF;						\
 	}								\
 }									\
