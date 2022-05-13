@@ -9,8 +9,9 @@ INCLUDE = $(TOPDIR)/include
 
 ARCH = -m32
 CPU = -march=i386
+LANG = -std=c89
 
-CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) -D__KERNEL__ #-D__DEBUG__
+CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) $(LANG) -D__KERNEL__ #-D__DEBUG__
 LD = $(CROSS_COMPILE)ld
 
 CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra
