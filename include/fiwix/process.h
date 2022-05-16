@@ -130,7 +130,7 @@ struct proc {
 	char **argv;
 	int envc;
 	char **envp;
-	char pidstr[5];			/* pid number converted to string */
+	char pidstr[5];			/* PID number converted to string */
 	struct vma vma[VMA_REGIONS];	/* virtual memory-map addresses */
 	unsigned int brk_lower;		/* lower limit of the heap section */
 	unsigned int brk;		/* current limit of the heap */
