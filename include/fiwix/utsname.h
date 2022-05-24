@@ -17,59 +17,62 @@
    Boston, MA 02111-1307, USA.  */
 
 /*
- *	POSIX Standard: 4.4 System Identification	<fiwix/utsname.h>
+ * fiwix/include/fiwix/utsname.h
+ *
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_UTSNAME_H
 #define _FIWIX_UTSNAME_H
 
-#define _OLD_UTSNAME_LENGTH	9
-#define _UTSNAME_LENGTH		65
+#define _OLD_UTSNAME_LENGTH	8
+#define _UTSNAME_LENGTH		64
 
 #ifndef _UTSNAME_NODENAME_LENGTH
 #define _UTSNAME_NODENAME_LENGTH _UTSNAME_LENGTH
 #endif
 
-/* Very OLD structure describing the system and machine.  */
+/* very old structure describing the system and machine */
 struct oldold_utsname
 {
-    char sysname[_OLD_UTSNAME_LENGTH];
-    char nodename[_OLD_UTSNAME_LENGTH];
-    char release[_OLD_UTSNAME_LENGTH];
-    char version[_OLD_UTSNAME_LENGTH];
-    char machine[_OLD_UTSNAME_LENGTH];
+    char sysname[_OLD_UTSNAME_LENGTH + 1];
+    char nodename[_OLD_UTSNAME_LENGTH + 1];
+    char release[_OLD_UTSNAME_LENGTH + 1];
+    char version[_OLD_UTSNAME_LENGTH + 1];
+    char machine[_OLD_UTSNAME_LENGTH + 1];
 };
 
-/* OLD structure describing the system and machine.  */
+/* old structure describing the system and machine */
 struct old_utsname
 {
-    char sysname[_UTSNAME_LENGTH];
-    char nodename[_UTSNAME_NODENAME_LENGTH];
-    char release[_UTSNAME_LENGTH];
-    char version[_UTSNAME_LENGTH];
-    char machine[_UTSNAME_LENGTH];
+    char sysname[_UTSNAME_LENGTH + 1];
+    char nodename[_UTSNAME_NODENAME_LENGTH + 1];
+    char release[_UTSNAME_LENGTH + 1];
+    char version[_UTSNAME_LENGTH + 1];
+    char machine[_UTSNAME_LENGTH + 1];
 };
 
-/* NEW structure describing the system and machine.  */
+/* new structure describing the system and machine */
 struct new_utsname
 {
-    /* Name of the implementation of the operating system.  */
-    char sysname[_UTSNAME_LENGTH];
+    /* name of this implementation of the operating system */
+    char sysname[_UTSNAME_LENGTH + 1];
 
-    /* Name of this node on the network.  */
-    char nodename[_UTSNAME_NODENAME_LENGTH];
+    /* name of this node on the network */
+    char nodename[_UTSNAME_NODENAME_LENGTH + 1];
 
-    /* Current release level of this implementation.  */
-    char release[_UTSNAME_LENGTH];
-    /* Current version level of this release.  */
-    char version[_UTSNAME_LENGTH];
+    /* current release level of this implementation */
+    char release[_UTSNAME_LENGTH + 1];
+    /* current version level of this release */
+    char version[_UTSNAME_LENGTH + 1];
 
-    /* Name of the hardware type the system is running on.  */
-    char machine[_UTSNAME_LENGTH];
-    char domainname[_UTSNAME_LENGTH];
+    /* name of the hardware type on which the system is running */
+    char machine[_UTSNAME_LENGTH + 1];
+    char domainname[_UTSNAME_LENGTH + 1];
 };
 
 extern struct new_utsname sys_utsname;
-extern char UTS_MACHINE[_UTSNAME_LENGTH];
+extern char UTS_MACHINE[_UTSNAME_LENGTH + 1];
 
 #endif /* _FIWIX_UTSNAME_H */
