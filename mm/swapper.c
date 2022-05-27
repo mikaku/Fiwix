@@ -24,6 +24,7 @@
 #include <fiwix/locks.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/stdio.h>
+#include <fiwix/ipc.h>
 
 /* kswapd continues the kernel initialization */
 int kswapd(void)
@@ -49,6 +50,9 @@ int kswapd(void)
 	fd_init();
 	flock_init();
 
+#ifdef CONFIG_IPC
+	ipc_init();
+#endif
 	mem_stats();
 	fs_init();
 	mount_root();

@@ -130,7 +130,7 @@
 #define SYS_wait4		114
 /* #define SYS_swapoff */
 #define SYS_sysinfo		116
-/* #define SYS_ipc */
+#define SYS_ipc			117
 #define SYS_fsync		118
 #define SYS_sigreturn		119
 /* #define SYS_clone */

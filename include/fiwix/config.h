@@ -32,7 +32,7 @@
 					   scroll back */
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
-#define VMA_REGIONS		5000	/* max. number of virtual memory maps */
+#define VMA_REGIONS		150	/* max. number of virtual memory maps */
 
 
 /* configuration options */
@@ -40,6 +40,7 @@
 #undef CONFIG_VERBOSE_SEGFAULTS
 #define CONFIG_PCI
 #define CONFIG_PCI_NAMES
-#define CONFIG_SYSCALL_6TH_ARG
+#undef CONFIG_SYSCALL_6TH_ARG
+#define CONFIG_IPC
 
 #endif /* _FIWIX_CONFIG_H */

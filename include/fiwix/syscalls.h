@@ -23,6 +23,7 @@
 #include <fiwix/statfs.h>
 #include <fiwix/sigcontext.h>
 #include <fiwix/mman.h>
+#include <fiwix/ipc.h>
 
 #define NR_SYSCALLS	(sizeof(syscall_table) / sizeof(unsigned int))
 
@@ -140,6 +141,9 @@ int sys_iopl(int, int, int, int, int, struct sigcontext *);
 #endif
 int sys_wait4(__pid_t, int *, int, struct rusage *);
 int sys_sysinfo(struct sysinfo *);
+#ifdef CONFIG_IPC
+int sys_ipc(unsigned int, struct sysipc_args *);
+#endif
 int sys_fsync(unsigned int);
 #ifdef CONFIG_SYSCALL_6TH_ARG
 int sys_sigreturn(unsigned int, int, int, int, int, int, struct sigcontext *);
