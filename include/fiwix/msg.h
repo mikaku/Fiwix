@@ -1,8 +1,5 @@
 /*
  * fiwix/include/fiwix/msg.h
- *
- * Copyright 2022, Jordi Sanfeliu. All rights reserved.
- * Distributed under the terms of the Fiwix License.
  */
 
 #ifdef CONFIG_IPC
@@ -25,7 +22,7 @@
 #define MSG_INFO	12
 
 struct msqid_ds {
-	struct ipc_perm msg_perm;	/* access permissions on the queue */
+	struct ipc_perm msg_perm;	/* access permissions */
 	struct msg *msg_first;		/* ptr to the first message in queue */
 	struct msg *msg_last;		/* ptr to the last message in queue */
 	__time_t msg_stime;		/* time of the last msgsnd() */

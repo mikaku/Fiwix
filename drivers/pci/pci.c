@@ -217,7 +217,7 @@ struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short i
 void pci_init(void)
 {
 	if(!is_mechanism_1_supported()) {
-		printk("WARNING: PCI mechanism 2 is not supported.\n");
+		printk("WARNING: PCI mechanism 1 is not supported.\n");
 		printk("WARNING: no PCI bus detected.\n");
 		return;
 	}
