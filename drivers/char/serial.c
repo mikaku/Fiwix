@@ -62,7 +62,7 @@ static struct fs_operations serial_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-// FIXME: this should me allocated dynamically
+/* FIXME: this should be allocated dynamically */
 struct serial serial_table[NR_SERIAL];
 
 static struct device serial_device = {
@@ -123,7 +123,7 @@ static struct pci_supported_devices supported[] = {
 static struct serial *serial_active = NULL;
 static struct bh serial_bh = { 0, &irq_serial_bh, NULL };
 
-// FIXME: this should be allocated dynamically
+/* FIXME: this should be allocated dynamically */
 static struct interrupt irq_config_serial0 = { 0, "serial", &irq_serial, NULL };	/* ISA irq4 */
 static struct interrupt irq_config_serial1 = { 0, "serial", &irq_serial, NULL };	/* ISA irq3 */
 static struct interrupt irq_config_serial2 = { 0, "serial", &irq_serial, NULL };	/* first PCI device */
@@ -137,7 +137,7 @@ static int is_serial(__dev_t dev)
 	return 0;
 }
 
-// FIXME: this should be removed once these structures are allocated dynamically
+/* FIXME: this should be removed once these structures are allocated dynamically */
 static struct serial * get_serial_slot(void)
 {
 	int n;
@@ -594,7 +594,6 @@ static int serial_pci(int minor)
 {
 	struct pci_device *pci_dev;
 	struct serial *s;
-	const char *name;
 	int n;
 
 	for(n = 0; (supported[n].vendor_id && supported[n].device_id) && minor < NR_SERIAL; n++) {
@@ -613,12 +612,7 @@ static int serial_pci(int minor)
 		s->iosize = pci_dev->size[0];
 		s->irq = pci_dev->irq;
 		if(!register_serial(s, minor)) {
-			printk("\t\t\t\tpci=%02x:%02x.%d rev=%02d\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
-			printk("\t\t\t\t");
-			name = pci_get_strvendor_id(pci_device_table[n].vendor_id);
-			printk("desc=%s/", name);
-			name = pci_get_strdevice_id(pci_device_table[n].device_id);
-			printk("%s\n", name);
+			pci_show_desc(pci_dev);
 			if(!register_irq(s->irq, &irq_config_serial2)) {
 				enable_irq(s->irq);
 			}

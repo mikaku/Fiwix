@@ -22,7 +22,7 @@ static const char *pci_get_strclass(unsigned short int class)
 	return NULL;
 }
 
-const char *pci_get_strvendor_id(unsigned short int vendor_id)
+static const char *pci_get_strvendor_id(unsigned short int vendor_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(vendor_id) {
@@ -32,7 +32,7 @@ const char *pci_get_strvendor_id(unsigned short int vendor_id)
 	return NULL;
 }
 
-const char *pci_get_strdevice_id(unsigned short int device_id)
+static const char *pci_get_strdevice_id(unsigned short int device_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(device_id) {
@@ -198,6 +198,18 @@ static void scan_bus(void)
 			}
 		}
 	}
+}
+
+void pci_show_desc(struct pci_device *pci_dev)
+{
+	const char *name;
+
+	printk("\t\t\t\tpci=%02x:%02x.%d rev=%02d\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
+	printk("\t\t\t\t");
+	name = pci_get_strdevice_id(pci_dev->device_id);
+	printk("desc=%s ", name);
+	name = pci_get_strvendor_id(pci_dev->vendor_id);
+	printk("(%s)\n", name);
 }
 
 struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short int device_id)

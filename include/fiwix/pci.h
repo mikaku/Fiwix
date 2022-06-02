@@ -68,8 +68,7 @@ struct pci_device {
 };
 struct pci_device pci_device_table[NR_PCI_DEVICES];
 
-const char *pci_get_strvendor_id(unsigned short int);
-const char *pci_get_strdevice_id(unsigned short int);
+void pci_show_desc(struct pci_device *);
 struct pci_device *pci_get_device(unsigned short int, unsigned short int);
 void pci_init(void);
 
