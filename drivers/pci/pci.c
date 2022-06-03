@@ -229,13 +229,12 @@ struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short i
 void pci_init(void)
 {
 	if(!is_mechanism_1_supported()) {
-		printk("WARNING: PCI mechanism 1 is not supported.\n");
 		printk("WARNING: no PCI bus detected.\n");
 		return;
 	}
 
 	printk("pci       0x%04x-0x%04x", PCI_ADDRESS, PCI_DATA + sizeof(unsigned int) - 1);
-	printk("     -\tconfiguration type=1\n");
+	printk("     -\tscanning %d buses, configuration type=1\n", PCI_MAX_BUS);
 
 	memset_b(pci_device_table, 0, sizeof(pci_device_table));
 	scan_bus();
