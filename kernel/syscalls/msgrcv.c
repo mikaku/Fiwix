@@ -33,7 +33,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 	printk("(pid %d) sys_msgrcv(%d, 0x%08x, %d, %d, 0x%x)\n", current->pid, msqid, (int)msgp, msgsz, msgtyp, msgflg);
 #endif /*__DEBUG__ */
 
-	if(msqid < 0 || msqid > max_mqid) {
+	if(msqid < 0) {
 		return -EINVAL;
 	}
 	if((errno = check_user_area(VERIFY_WRITE, msgp, sizeof(void *)))) {

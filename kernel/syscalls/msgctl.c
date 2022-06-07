@@ -34,7 +34,7 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 	printk("(pid %d) sys_msgctl(%d, %d, 0x%x)\n", current->pid, msqid, cmd, (int)buf);
 #endif /*__DEBUG__ */
 
-	if(msqid < 0 || msqid > max_mqid) {
+	if(msqid < 0) {
 		return -EINVAL;
 	}
 

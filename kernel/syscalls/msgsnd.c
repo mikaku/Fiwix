@@ -33,7 +33,7 @@ int sys_msgsnd(int msqid, const void *msgp, __size_t msgsz, int msgflg)
 	printk("(pid %d) sys_msgsnd(%d, 0x%08x, %d, 0x%x)\n", current->pid, msqid, (int)msgp, msgsz, msgflg);
 #endif /*__DEBUG__ */
 
-	if(msqid < 0 || msqid > max_mqid || msgsz > MSGMAX) {
+	if(msqid < 0 || msgsz > MSGMAX) {
 		return -EINVAL;
 	}
 	if((errno = check_user_area(VERIFY_READ, msgp, sizeof(void *)))) {
