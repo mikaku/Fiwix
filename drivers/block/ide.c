@@ -322,7 +322,15 @@ static void ide_results(struct ide *ide, int drive)
 	printk("\n");
 
 	if(ide->drive[drive].ident.rw_multiple > 1) {
-		ide->drive[drive].flags |= DEVICE_HAS_RW_MULTIPLE;
+		/*
+		 * Some very old controllers report a value of 16 here but they
+		 * don't support read or write multiple in PIO mode. So far,
+		 * I can detect these old controlers because they report a zero
+		 * in the Advanced PIO Data Transfer Supported Field (word 64).
+		 */
+		if(ide->drive[drive].ident.adv_pio_modes > 0) {
+			ide->drive[drive].flags |= DEVICE_HAS_RW_MULTIPLE;
+		}
 	}
 
 	/*
