@@ -68,7 +68,7 @@ extern void do_switch(unsigned int *, unsigned int *, unsigned int, unsigned int
 
 int cpuid(void);
 int getfpu(void);
-int vendor_id(void);
+int get_cpu_vendor_id(void);
 int signature_flags(void);
 int brand_str(void);
 int tlbinfo(void);

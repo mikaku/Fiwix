@@ -209,7 +209,7 @@ void cpu_init(void)
 	cpu_table.family = cpuid();
 	if(!cpu_table.family) {
 		cpu_table.has_cpuid = 1;
-		maxcpuid = vendor_id();
+		maxcpuid = get_cpu_vendor_id();
 		cpu_table.vendor_id = _vendorid;
 		if(maxcpuid >= 1) {
 			signature_flags();

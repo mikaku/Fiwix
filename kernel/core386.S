@@ -385,7 +385,7 @@ end_getfpu:
 	ret
 
 .align 4
-.globl vendor_id; vendor_id:
+.globl get_cpu_vendor_id; get_cpu_vendor_id:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%ebx
