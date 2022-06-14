@@ -1,6 +1,7 @@
 1.4.0 - DD-MMM-2022
 ===================
 - Added support for the PCI local bus.
+- Added support for the System V IPC mechanism message queues.
 - Added the character device /dev/full.
 - Added the character device /dev/port.
 - Added the system call sys_getcwd. [#4]
@@ -53,6 +54,8 @@
 - Fixed the function get_last_boot_addr() to return a proper address even when
   there are no ELF header tables. This mostly happens when the kernel is loaded
   using the QEMU argument '-kernel'.
+- Fixed a possible out of bounds access in CHECK_UFD() macro.
+- Fixed a possible out of bounds in utsname structures.
 - Small fixes and cosmetic changes.
 
 
