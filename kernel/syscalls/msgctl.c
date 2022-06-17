@@ -56,6 +56,7 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 				return (mq->msg_perm.seq * MSGMNI) + msqid;
 			}
 			return 0;
+
 		case IPC_SET:
 			if((errno = check_user_area(VERIFY_READ, buf, sizeof(struct msqid_ds)))) {
 				return errno;
@@ -77,6 +78,7 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 			perm->mode = (perm->mode & ~0777) | (perm->mode & 0777);
 			mq->msg_ctime = CURRENT_TIME;
 			return 0;
+
 		case IPC_RMID:
 			mq = msgque[msqid % MSGMNI];
 			if(mq == IPC_UNUSED) {
@@ -102,6 +104,7 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 			msg_seq++;
 			wakeup(mq);
 			return 0;
+
 		case MSG_INFO:
 		case IPC_INFO:
 			if((errno = check_user_area(VERIFY_WRITE, buf, sizeof(struct msqid_ds)))) {
