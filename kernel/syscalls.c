@@ -311,7 +311,7 @@ void *syscall_table[] = {
 	sys_ipc,
 #else
 	NULL,	/* sys_ipc */
-#endif
+#endif /* CONFIG_IPC */
 	sys_fsync,
 	sys_sigreturn,
 	NULL,	/* sys_clone */		/* 120 */

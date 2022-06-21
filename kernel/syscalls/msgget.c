@@ -166,4 +166,4 @@ init:
 	num_queues++;
 	return (mq->msg_perm.seq * MSGMNI) + n;
 }
-#endif
+#endif /* CONFIG_IPC */

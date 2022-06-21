@@ -90,4 +90,4 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 	wakeup(mq);
 	return count;
 }
-#endif
+#endif /* CONFIG_IPC */

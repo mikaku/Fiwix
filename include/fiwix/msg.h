@@ -82,4 +82,4 @@ int sys_msgctl(int, int, struct msqid_ds *);
 
 #endif /* _FIWIX_MSG_H */
 
-#endif
+#endif /* CONFIG_IPC */

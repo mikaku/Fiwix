@@ -52,7 +52,7 @@ int kswapd(void)
 
 #ifdef CONFIG_IPC
 	ipc_init();
-#endif
+#endif /* CONFIG_IPC */
 	mem_stats();
 	fs_init();
 	mount_root();

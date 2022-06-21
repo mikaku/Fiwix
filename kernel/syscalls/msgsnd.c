@@ -97,4 +97,4 @@ int sys_msgsnd(int msqid, const void *msgp, __size_t msgsz, int msgflg)
 	wakeup(mq);
 	return 0;
 }
-#endif
+#endif /* CONFIG_IPC */
