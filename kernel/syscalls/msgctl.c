@@ -73,9 +73,9 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 				return -EPERM;
 			}
 			mq->msg_qbytes = buf->msg_qbytes;
-			perm->uid = perm->uid;
-			perm->gid = perm->gid;
-			perm->mode = (perm->mode & ~0777) | (perm->mode & 0777);
+			perm->uid = buf->msg_perm.uid;
+			perm->gid = buf->msg_perm.gid;
+			perm->mode = (perm->mode & ~0777) | (buf->msg_perm.mode & 0777);
 			mq->msg_ctime = CURRENT_TIME;
 			return 0;
 
@@ -132,4 +132,4 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 
 	return -EINVAL;
 }
-#endif
+#endif /* CONFIG_IPC */
