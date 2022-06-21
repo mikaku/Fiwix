@@ -118,7 +118,7 @@ static struct pci_supported_devices supported[] = {
         { 0x1b36, 0x0002 },	/* Red Hat, Inc., QEMU PCI 16550A Adapter */
 	{ 0, 0 }
 };
-#endif
+#endif /* CONFIG_PCI */
 
 static struct serial *serial_active = NULL;
 static struct bh serial_bh = { 0, &irq_serial_bh, NULL };
@@ -622,7 +622,7 @@ static int serial_pci(int minor)
 
 	return minor;
 }
-#endif
+#endif /* CONFIG_PCI */
 
 static int serial_isa(void)
 {
@@ -666,7 +666,7 @@ void serial_init(void)
 	minor = serial_isa();
 #ifdef CONFIG_PCI
 	minor = serial_pci(minor);
-#endif
+#endif /* CONFIG_PCI */
 
 	if(minor) {
 		add_bh(&serial_bh);

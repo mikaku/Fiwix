@@ -74,4 +74,4 @@ void pci_init(void);
 
 #endif /* _FIWIX_PCI_H */
 
-#endif
+#endif /* CONFIG_PCI */

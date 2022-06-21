@@ -28,7 +28,7 @@ static const char *pci_get_strvendor_id(unsigned short int vendor_id)
 	switch(vendor_id) {
 		case PCI_VENDOR_ID_REDHAT:		return "Red Hat, Inc.";
 	}
-#endif
+#endif /* CONFIG_PCI_NAMES */
 	return NULL;
 }
 
@@ -38,7 +38,7 @@ static const char *pci_get_strdevice_id(unsigned short int device_id)
 	switch(device_id) {
 		case PCI_DEVICE_QEMU_PCI_16550A:	return "QEMU PCI 16550A Adapter";
 	}
-#endif
+#endif /* CONFIG_PCI_NAMES */
 	return NULL;
 }
 
@@ -240,4 +240,4 @@ void pci_init(void)
 	scan_bus();
 }
 
-#endif
+#endif /* CONFIG_PCI */

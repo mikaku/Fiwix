@@ -86,7 +86,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	console_init();
 #ifdef CONFIG_PCI
 	pci_init();
-#endif
+#endif /* CONFIG_PCI */
 	timer_init();
 	keyboard_init();
 	proc_init();
