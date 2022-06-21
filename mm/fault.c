@@ -25,7 +25,7 @@ static void send_sigsegv(struct sigcontext *sc)
 	dump_registers(14, sc);
 	printk("Memory map:\n");
 	show_vma_regions(current);
-#endif
+#endif /* CONFIG_VERBOSE_SEGFAULTS */
 	send_sig(current, SIGSEGV);
 }
 
