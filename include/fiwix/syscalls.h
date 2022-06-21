@@ -31,7 +31,7 @@
 int do_syscall(unsigned int, int, int, int, int, int, int, struct sigcontext);
 #else
 int do_syscall(unsigned int, int, int, int, int, int, struct sigcontext);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 
 int sys_exit(int);
 void do_exit(int);
@@ -39,7 +39,7 @@ void do_exit(int);
 int sys_fork(int, int, int, int, int, int, struct sigcontext *);
 #else
 int sys_fork(int, int, int, int, int, struct sigcontext *);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 int sys_read(unsigned int, char *, int);
 int sys_write(unsigned int, const char *, int);
 int sys_open(const char *, int, __mode_t);
@@ -52,7 +52,7 @@ int sys_unlink(const char *);
 int sys_execve(const char *, char **, char **, int, int, int, struct sigcontext *);
 #else
 int sys_execve(const char *, char **, char **, int, int, struct sigcontext *);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 int sys_chdir(const char *);
 int sys_time(__time_t *);
 int sys_mknod(const char *, __mode_t, __dev_t);
@@ -138,7 +138,7 @@ int sys_uname(struct old_utsname *);
 int sys_iopl(int, int, int, int, int, int, struct sigcontext *);
 #else
 int sys_iopl(int, int, int, int, int, struct sigcontext *);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 int sys_wait4(__pid_t, int *, int, struct rusage *);
 int sys_sysinfo(struct sysinfo *);
 #ifdef CONFIG_IPC
@@ -149,7 +149,7 @@ int sys_fsync(unsigned int);
 int sys_sigreturn(unsigned int, int, int, int, int, int, struct sigcontext *);
 #else
 int sys_sigreturn(unsigned int, int, int, int, int, struct sigcontext *);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 int sys_setdomainname(const char *, int);
 int sys_newuname(struct new_utsname *);
 int sys_mprotect(unsigned int, __size_t, int);

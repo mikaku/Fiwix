@@ -255,7 +255,7 @@ BUILD_IRQ(15, irq15)
 
 #ifdef CONFIG_SYSCALL_6TH_ARG
 	pushl	%ebp			# + 6th argument
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 	pushl	%edi			# \ 5th argument
 	pushl	%esi			# | 4th argument
 	pushl	%edx			# | 3rd argument
@@ -267,7 +267,7 @@ BUILD_IRQ(15, irq15)
 	addl	$28, %esp		# suppress all 7 pushl from the stack
 #else
 	addl	$24, %esp		# suppress all 6 pushl from the stack
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 	movl	%eax, EAX(%esp)		# save the return value
 
 	BOTTOM_HALVES

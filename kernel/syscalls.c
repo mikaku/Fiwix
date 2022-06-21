@@ -404,7 +404,7 @@ static void do_bad_syscall(unsigned int num)
 int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext sc)
 #else
 int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext sc)
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 {
 	int (*sys_func)(int, ...);
 
@@ -422,5 +422,5 @@ int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg
 	return sys_func(arg1, arg2, arg3, arg4, arg5, arg6, &sc);
 #else
 	return sys_func(arg1, arg2, arg3, arg4, arg5, &sc);
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 }

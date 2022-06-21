@@ -17,7 +17,7 @@
 int sys_sigreturn(unsigned int signum, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext *sc)
 #else
 int sys_sigreturn(unsigned int signum, int arg2, int arg3, int arg4, int arg5, struct sigcontext *sc)
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 {
 #ifdef __DEBUG__
 	printk("(pid %d) sys_sigreturn(0x%08x)\n", current->pid, signum);

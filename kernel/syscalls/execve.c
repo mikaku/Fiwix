@@ -343,7 +343,7 @@ loop:
 int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int arg5, int arg6, struct sigcontext *sc)
 #else
 int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int arg5, struct sigcontext *sc)
-#endif
+#endif /* CONFIG_SYSCALL_6TH_ARG */
 {
 	char *tmp_name;
 	char argv0[NAME_MAX + 1];
