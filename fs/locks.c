@@ -42,7 +42,7 @@ static void release_flock(struct flock_file *ff)
 	memset_b(ff, 0, sizeof(struct flock_file));
 }
 
-static struct flock_file * get_flock_file(struct inode *i, int op, struct proc *p)
+static struct flock_file * get_flock_file(struct inode *i, struct proc *p)
 {
 	int n;
 	struct flock_file *ff;
@@ -141,7 +141,7 @@ int flock_inode(struct inode *i, int op)
 	struct flock_file *ff, *new;
 
 	if(op & LOCK_UN) {
-		if((ff = get_flock_file(i, op, current))) {
+		if((ff = get_flock_file(i, current))) {
 			wakeup(ff);
 			release_flock(ff);
 		}
