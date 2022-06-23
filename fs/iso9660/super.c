@@ -92,7 +92,7 @@ int isonum_733(char *p)
 }
 
 /* return a date and time format */
-unsigned long int isodate(char *p)
+unsigned long int isodate(const char *p)
 {
 	struct mt mt;
 

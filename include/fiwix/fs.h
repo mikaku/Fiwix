@@ -215,7 +215,7 @@ extern int isonum_711(char *);
 extern int isonum_723(char *);
 extern int isonum_731(char *);
 extern int isonum_733(char *);
-extern unsigned long int isodate(char *);
+extern unsigned long int isodate(const char *);
 extern int iso9660_cleanfilename(char *, int);
 extern struct fs_operations iso9660_fsop;
 extern struct fs_operations iso9660_file_fsop;
