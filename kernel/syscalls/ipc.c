@@ -12,6 +12,7 @@
 #include <fiwix/sleep.h>
 #include <fiwix/string.h>
 #include <fiwix/ipc.h>
+#include <fiwix/sem.h>
 #include <fiwix/msg.h>
 
 #ifdef __DEBUG__
@@ -20,10 +21,12 @@
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_IPC
+struct resource ipcsem_resource = { 0, 0 };
 struct resource ipcmsg_resource = { 0, 0 };
 
 void ipc_init(void)
 {
+	sem_init();
 	msg_init();
 }
 
@@ -41,12 +44,12 @@ int ipc_has_perms(struct ipc_perm *perm, int mode)
 	}
 
 	/*
-	 * The user may specify 0 for the second argument in msgget() to bypass
-	 * this check and be able to obtain an identifier for a message queue,
-	 * even when the user don't has read or write access to the message
-	 * queue. Later msgrcv() or msgsnd() will return error if the program
-	 * attempted an operation requiring read or write permission on the IPC
-	 * object.
+	 * The user may specify zero for the second argument in xxxget() to
+	 * bypass this check and be able to obtain an identifier for an IPC
+	 * object even when the user don't has read or write access to that
+	 * IPC object. Later specific IPC calls will return error if the
+	 * program attempted an operation requiring read or write permission
+	 * on the IPC object.
 	 */
 	if(!mode) {
 		return 1;
@@ -68,6 +71,7 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 		long msgtyp;
 	} tmp;
 	int version, errno;
+	union semun *arg;
 
 	orig_args.arg1 = first;
 	orig_args.arg2 = second;
@@ -75,26 +79,37 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 	orig_args.ptr = ptr;
 	orig_args.arg5 = fifth;
 
-	if(call == MSGRCV) {
-		version = call >> 16;
-		switch(version) {
-			case 0:
-				if(!ptr) {
-					return -EINVAL;
-				}
-				if((errno = check_user_area(VERIFY_READ, ptr, sizeof(tmp)))) {
-					return errno;
-				}
-				memcpy_b(&tmp, (struct ipc_kludge *)ptr, sizeof(tmp));
-				orig_args.arg3 = tmp.msgtyp;
-				orig_args.ptr = tmp.msgp;
-				orig_args.arg5 = third;
-				break;
-			default:
-				orig_args.arg3 = fifth;
-				orig_args.arg5 = third;
-				break;
-		}
+	switch(call) {
+		case SEMCTL:
+			if(!ptr) {
+				return -EINVAL;
+			}
+			if((errno = check_user_area(VERIFY_READ, ptr, sizeof(tmp)))) {
+				return errno;
+			}
+			arg = ptr;
+			orig_args.ptr = arg->array;
+			break;
+		case MSGRCV:
+			version = call >> 16;
+			switch(version) {
+				case 0:
+					if(!ptr) {
+						return -EINVAL;
+					}
+					if((errno = check_user_area(VERIFY_READ, ptr, sizeof(tmp)))) {
+						return errno;
+					}
+					memcpy_b(&tmp, (struct ipc_kludge *)ptr, sizeof(tmp));
+					orig_args.arg3 = tmp.msgtyp;
+					orig_args.ptr = tmp.msgp;
+					orig_args.arg5 = third;
+					break;
+				default:
+					orig_args.arg3 = fifth;
+					orig_args.arg5 = third;
+					break;
+			}
 	}
 	args = &orig_args;
 #else
@@ -110,6 +125,12 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 #endif /*__DEBUG__ */
 
 	switch(call) {
+		case SEMOP:
+			return sys_semop(args->arg1, args->ptr, args->arg2);
+		case SEMGET:
+			return sys_semget(args->arg1, args->arg2, args->arg3);
+		case SEMCTL:
+			return sys_semctl(args->arg1, args->arg2, args->arg3, args->ptr);
 		case MSGSND:
 			return sys_msgsnd(args->arg1, args->ptr, args->arg2, args->arg3);
 		case MSGRCV:
@@ -122,4 +143,4 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 
 	return -EINVAL;
 }
-#endif
+#endif /* CONFIG_IPC */

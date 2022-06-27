@@ -1,8 +1,5 @@
 /*
  * fiwix/include/fiwix/ipc.h
- *
- * Copyright 2022, Jordi Sanfeliu. All rights reserved.
- * Distributed under the terms of the Fiwix License.
  */
 
 #ifdef CONFIG_IPC
@@ -27,6 +24,9 @@
 #define IPC_R		0400		/* read or receive permission */
 #define IPC_W		0200		/* write or send permission */
 
+#define SEMOP		1
+#define SEMGET		2
+#define SEMCTL		3
 #define MSGSND		11
 #define MSGRCV		12
 #define MSGGET		13
@@ -57,9 +57,10 @@ struct ipc_perm {
 
 #endif /* _FIWIX_IPC_H */
 
+extern struct resource ipcsem_resource;
 extern struct resource ipcmsg_resource;
 
 void ipc_init(void);
 int ipc_has_perms(struct ipc_perm *, int);
 
-#endif
+#endif /* CONFIG_IPC */

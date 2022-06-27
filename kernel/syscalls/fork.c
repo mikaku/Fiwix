@@ -100,6 +100,10 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->it_virt_value = 0;
 	child->it_prof_interval = 0;
 	child->it_prof_value = 0;
+#ifdef CONFIG_IPC
+	current->semundo = NULL;
+#endif /* CONFIG_IPC */
+
 
 	if(!(child->tss.esp0 = kmalloc())) {
 		kfree((unsigned int)child_pgdir);

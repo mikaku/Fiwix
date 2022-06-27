@@ -150,6 +150,9 @@ struct proc {
 	unsigned long int rss;
 	__mode_t umask;
 	unsigned char loopcnt;		/* nested symlinks counter */
+#ifdef CONFIG_IPC
+	struct sem_undo *semundo;
+#endif /* CONFIG_IPC */
 	struct proc *prev;
 	struct proc *next;
 	struct proc *prev_sleep;

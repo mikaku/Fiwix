@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/exit.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -14,6 +14,9 @@
 #include <fiwix/sleep.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_IPC
+#include <fiwix/sem.h>
+#endif /* CONFIG_IPC */
 
 void do_exit(int exit_code)
 {
@@ -25,6 +28,12 @@ void do_exit(int exit_code)
 	printk("sys_exit(pid %d, ppid %d)\n", current->pid, current->ppid);
 	printk("------------------------------\n");
 #endif /*__DEBUG__ */
+
+#ifdef CONFIG_IPC
+	if(current->semundo) {
+		semexit();
+	}
+#endif /* CONFIG_IPC */
 
 	release_binary();
 	current->argv = NULL;
