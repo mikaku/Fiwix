@@ -282,17 +282,17 @@ void update_page_cache(struct inode *i, __off_t offset, const char *buf, int cou
 
 int write_page(struct page *pg, struct inode *i, __off_t offset, unsigned int length)
 {
-	struct fd fd_table;
+	struct fd fdt;
 	unsigned int size;
 	int errno;
 
 	size = MIN(i->i_size, length);
-	fd_table.inode = i;
-	fd_table.flags = 0;
-	fd_table.count = 0;
-	fd_table.offset = offset;
+	fdt.inode = i;
+	fdt.flags = 0;
+	fdt.count = 0;
+	fdt.offset = offset;
 	if(i->fsop && i->fsop->write) {
-		errno = i->fsop->write(i, &fd_table, pg->data, size);
+		errno = i->fsop->write(i, &fdt, pg->data, size);
 	} else {
 		errno = -EINVAL;
 	}
