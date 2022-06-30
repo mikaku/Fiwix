@@ -40,7 +40,7 @@ int register_irq(int num, struct interrupt *new_irq)
 	return 0;
 }
 
-int unregister_irq(int num, struct interrupt *old_irq)
+int unregister_irq(int num, const struct interrupt *old_irq)
 {
 	struct interrupt **irq, *prev_irq;
 
