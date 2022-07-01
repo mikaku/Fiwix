@@ -98,7 +98,7 @@ int sys_getcwd(char *buf, __size_t size)
 				 */
 				diff_dev = up->dev != cur->dev;
 				if(diff_dev) {
-					if((errno = parse_namei(d_ptr->d_name, up, &tmp_ino, 0, FOLLOW_LINKS))) {
+					if(parse_namei(d_ptr->d_name, up, &tmp_ino, 0, FOLLOW_LINKS)) {
 						/* keep going if sibling dirents fail */
 						break;
 					}
