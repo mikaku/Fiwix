@@ -258,11 +258,29 @@ static int get_udma(struct ide *ide, int drive)
 	return udma;
 }
 
+static int get_piomode(struct ide *ide, int drive)
+{
+	int piomode;
+
+	piomode = 0;
+
+	if(ide->drive[drive].ident.fields_validity & IDE_HAS_ADVANCED_PIO) {
+		if(ide->drive[drive].ident.adv_pio_modes & 1) {
+			piomode = 3;
+		}
+		if(ide->drive[drive].ident.adv_pio_modes & 2) {
+			piomode = 4;
+		}
+	}
+
+	return piomode;
+}
+
 static void ide_results(struct ide *ide, int drive)
 {
 	unsigned int cyl, hds, sect;
 	__loff_t capacity;
-	int udma;
+	int udma, piomode;
 	int udma_speed[] = { 16, 25, 33, 44, 66, 100 };
 
 	cyl = ide->drive[drive].ident.logic_cyls;
@@ -270,6 +288,8 @@ static void ide_results(struct ide *ide, int drive)
 	sect = ide->drive[drive].ident.logic_spt;
 
 	udma = get_udma(ide, drive);
+	piomode = get_piomode(ide, drive);
+
 	/*
 	 * After knowing if the device is UDMA capable we could choose between
 	 * the PIO transfer mode or the UDMA transfer mode.
@@ -311,9 +331,13 @@ static void ide_results(struct ide *ide, int drive)
 		printk("\t\t\t\tcache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
 	}
 
+	/*
 	if(udma >= 0) {
 		printk(" UDMA%d(%d)", udma, udma_speed[udma]);
 	}
+	*/
+	printk(" PIO mode=%d", piomode);
+
 	if(ide->drive[drive].ident.capabilities & IDE_HAS_LBA) {
 		ide->drive[drive].flags |= DEVICE_REQUIRES_LBA;
 		printk(" LBA");
@@ -328,7 +352,7 @@ static void ide_results(struct ide *ide, int drive)
 		 * I can detect these old controlers because they report a zero
 		 * in the Advanced PIO Data Transfer Supported Field (word 64).
 		 */
-		if(ide->drive[drive].ident.adv_pio_modes > 0) {
+		if(piomode > 0) {
 			ide->drive[drive].flags |= DEVICE_HAS_RW_MULTIPLE;
 		}
 	}
