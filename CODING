@@ -4,8 +4,10 @@ It's easier on everyone if all authors working on a shared code base are
 consistent in the way they write their programs. Fiwix has the following
 conventions in its code:
 
+- Keep lines length to a maximum of 80 characters (some exceptions accepted).
+
 - Use of snake_case (multi-word names are lower_case_with_underscores) for
-  everything except for macro and constant names.
+  everything except for macro in #define directives.
 
 - No space after the name of a function in a call.
   For example, printk("hello") not printk ("hello").
