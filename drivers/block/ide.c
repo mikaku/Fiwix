@@ -287,6 +287,12 @@ static void ide_results(struct ide *ide, int drive)
 	hds = ide->drive[drive].ident.logic_heads;
 	sect = ide->drive[drive].ident.logic_spt;
 
+	if(ide->drive[drive].ident.fields_validity & IDE_HAS_CURR_VALUES) {
+		cyl = ide->drive[drive].ident.cur_log_cyls;
+		hds = ide->drive[drive].ident.cur_log_heads;
+		sect = ide->drive[drive].ident.cur_log_spt;
+	}
+
 	udma = get_udma(ide, drive);
 	piomode = get_piomode(ide, drive);
 
