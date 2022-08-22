@@ -41,7 +41,7 @@ int register_filesystem(const char *name, struct fs_operations *fsop)
 	return 1;
 }
 
-struct filesystems * get_filesystem(const char *name)
+struct filesystems *get_filesystem(const char *name)
 {
 	int n;
 

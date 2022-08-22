@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/tree.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -89,7 +89,7 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
    }
 };
 
-struct procfs_dir_entry * get_procfs_by_inode(struct inode *i)
+struct procfs_dir_entry *get_procfs_by_inode(struct inode *i)
 {
 	__ino_t inode;
 	int n, lev;

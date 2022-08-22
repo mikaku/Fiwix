@@ -197,7 +197,7 @@ int register_tty(__dev_t dev)
 	return 1;
 }
 
-struct tty * get_tty(__dev_t dev)
+struct tty *get_tty(__dev_t dev)
 {
 	int n;
 

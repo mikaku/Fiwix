@@ -153,7 +153,7 @@ void page_unlock(struct page *pg)
 	RESTORE_FLAGS(flags);
 }
 
-struct page * get_free_page(void)
+struct page *get_free_page(void)
 {
 	unsigned long int flags;
 	struct page *pg;
@@ -190,7 +190,7 @@ struct page * get_free_page(void)
 	return pg;
 }
 
-struct page * search_page_hash(struct inode *inode, __off_t offset)
+struct page *search_page_hash(struct inode *inode, __off_t offset)
 {
 	struct page *pg;
 	int i;

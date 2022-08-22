@@ -71,7 +71,7 @@ void show_vma_regions(struct proc *p)
 	}
 }
 
-static struct vma * get_new_vma_region(void)
+static struct vma *get_new_vma_region(void)
 {
 	unsigned int n;
 	struct vma *vma;
@@ -304,7 +304,7 @@ void release_binary(void)
 	invalidate_tlb();
 }
 
-struct vma * find_vma_region(unsigned int addr)
+struct vma *find_vma_region(unsigned int addr)
 {
 	unsigned int n;
 	struct vma *vma;

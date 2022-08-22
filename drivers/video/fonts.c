@@ -23,7 +23,7 @@ static struct fbcon_font_desc *fbcon_fonts[] = {
 	&font_lat9_8x16
 };
 
-struct fbcon_font_desc * fbcon_find_font(int height)
+struct fbcon_font_desc *fbcon_find_font(int height)
 {
 	int n;
 

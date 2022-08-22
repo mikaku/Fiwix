@@ -73,7 +73,7 @@ struct tty {
 extern struct tty tty_table[];
 
 int register_tty(__dev_t);
-struct tty * get_tty(__dev_t);
+struct tty *get_tty(__dev_t);
 void disassociate_ctty(struct tty *);
 void termios_reset(struct tty *);
 void do_cook(struct tty *);

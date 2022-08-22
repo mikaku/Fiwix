@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/mm.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -80,8 +80,8 @@ void kfree(unsigned int);
 /* page.c */
 void page_lock(struct page *);
 void page_unlock(struct page *);
-struct page * get_free_page(void);
-struct page * search_page_hash(struct inode *, __off_t);
+struct page *get_free_page(void);
+struct page *search_page_hash(struct inode *, __off_t);
 void release_page(int);
 int is_valid_page(int);
 void update_page_cache(struct inode *, __off_t, const char *, int);

@@ -176,7 +176,7 @@ static void buffer_wait(struct buffer *buf)
 	RESTORE_FLAGS(flags);
 }
 
-static struct buffer * get_free_buffer(void)
+static struct buffer *get_free_buffer(void)
 {
 	unsigned long int flags;
 	struct buffer *buf;
@@ -237,7 +237,7 @@ static void sync_one_buffer(struct buffer *buf)
 	}
 }
 
-static struct buffer * search_buffer_hash(__dev_t dev, __blk_t block, int size)
+static struct buffer *search_buffer_hash(__dev_t dev, __blk_t block, int size)
 {
 	struct buffer *buf;
 	int i;
@@ -255,7 +255,7 @@ static struct buffer * search_buffer_hash(__dev_t dev, __blk_t block, int size)
 	return NULL;
 }
 
-static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
+static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 {
 	unsigned long int flags;
 	struct buffer *buf;
@@ -305,7 +305,7 @@ static struct buffer * getblk(__dev_t dev, __blk_t block, int size)
 	}
 }
 
-struct buffer * bread(__dev_t dev, __blk_t block, int size)
+struct buffer *bread(__dev_t dev, __blk_t block, int size)
 {
 	struct buffer *buf;
 	struct device *d;

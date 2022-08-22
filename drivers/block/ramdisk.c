@@ -71,7 +71,7 @@ static struct device ramdisk_device = {
 	NULL
 };
 
-static struct ramdisk * get_ramdisk(int minor)
+static struct ramdisk *get_ramdisk(int minor)
 {
 	if(TEST_MINOR(ramdisk_device.minors, minor)) {
 		return &ramdisk_table[minor];

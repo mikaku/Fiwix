@@ -104,7 +104,7 @@ static int parse_arg(const char *arg)
 	return 0;
 }
 
-static char * parse_cmdline(const char *str)
+static char *parse_cmdline(const char *str)
 {
 	char *from, *to;
 	char arg[CMDL_ARG_LEN];

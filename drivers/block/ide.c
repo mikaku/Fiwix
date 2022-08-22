@@ -650,7 +650,7 @@ int ide_softreset(struct ide *ide)
 	return error;
 }
 
-struct ide * get_ide_controller(__dev_t dev)
+struct ide *get_ide_controller(__dev_t dev)
 {
 	int controller;
 

@@ -112,7 +112,7 @@ void add_rusage(struct proc *p)
 	current->cusage.ru_nivcsw += cru.ru_nivcsw;
 }
 
-struct proc * get_next_zombie(struct proc *parent)
+struct proc *get_next_zombie(struct proc *parent)
 {
 	struct proc *p;
 
@@ -178,7 +178,7 @@ int is_orphaned_pgrp(__pid_t pgid)
 	return retval;
 }
 
-struct proc * get_proc_free(void)
+struct proc *get_proc_free(void)
 {
 	struct proc *p = NULL;
 
@@ -263,7 +263,7 @@ loop:
 	return lastpid;
 }
 
-struct proc * get_proc_by_pid(__pid_t pid)
+struct proc *get_proc_by_pid(__pid_t pid)
 {
 	struct proc *p;
 
@@ -297,7 +297,7 @@ void release_user_fd(int ufd)
 	current->fd[ufd] = 0;
 }
 
-struct proc * kernel_process(const char *name, int (*fn)(void))
+struct proc *kernel_process(const char *name, int (*fn)(void))
 {
 	struct proc *p;
 

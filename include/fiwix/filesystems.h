@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/filesystems.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -34,10 +34,10 @@ struct mount {
 extern struct mount *mount_table;
 
 int register_filesystem(const char *, struct fs_operations *);
-struct filesystems * get_filesystem(const char *);
+struct filesystems *get_filesystem(const char *);
 void fs_init(void);
 
-struct superblock * get_superblock(__dev_t);
+struct superblock *get_superblock(__dev_t);
 void sync_superblocks(__dev_t);
 int kern_mount(__dev_t, struct filesystems *);
 int mount_root(void);

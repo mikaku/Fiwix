@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/ide.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -265,7 +265,7 @@ void ide_wait400ns(struct ide *);
 int ide_drvsel(struct ide *, int, int, unsigned char);
 int ide_softreset(struct ide *);
 
-struct ide * get_ide_controller(__dev_t);
+struct ide *get_ide_controller(__dev_t);
 int get_ide_drive(__dev_t);
 
 int ide_open(struct inode *, struct fd *);

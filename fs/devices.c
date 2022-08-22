@@ -151,7 +151,7 @@ int register_device(int type, struct device *new_d)
 	return 0;
 }
 
-struct device * get_device(int type, __dev_t dev)
+struct device *get_device(int type, __dev_t dev)
 {
 	char *name;
 	unsigned char major;

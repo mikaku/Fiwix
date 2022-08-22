@@ -125,7 +125,7 @@ static void remove_from_free_list(struct inode *i)
 	}
 }
 
-static struct inode * get_free_inode(void)
+static struct inode *get_free_inode(void)
 {
 	unsigned long int flags;
 	struct inode *i;
@@ -196,7 +196,7 @@ static int write_inode(struct inode *i)
 	return errno;
 }
 
-static struct inode * search_inode_hash(__dev_t dev, __ino_t inode)
+static struct inode *search_inode_hash(__dev_t dev, __ino_t inode)
 {
 	struct inode *i;
 	int n;
@@ -241,7 +241,7 @@ void inode_unlock(struct inode *i)
 	RESTORE_FLAGS(flags);
 }
 
-struct inode * ialloc(struct superblock *sb, int mode)
+struct inode *ialloc(struct superblock *sb, int mode)
 {
 	int errno;
 	struct inode *i;
@@ -272,7 +272,7 @@ struct inode * ialloc(struct superblock *sb, int mode)
 	return NULL;
 }
 
-struct inode * iget(struct superblock *sb, __ino_t inode)
+struct inode *iget(struct superblock *sb, __ino_t inode)
 {
 	unsigned long int flags;
 	struct inode *i;

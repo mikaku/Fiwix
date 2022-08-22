@@ -138,7 +138,7 @@ static int is_serial(__dev_t dev)
 }
 
 /* FIXME: this should be removed once these structures are allocated dynamically */
-static struct serial * get_serial_slot(void)
+static struct serial *get_serial_slot(void)
 {
 	int n;
 

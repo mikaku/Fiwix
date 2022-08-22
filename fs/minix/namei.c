@@ -59,7 +59,7 @@ static int is_dir_empty(struct inode *dir)
 }
 
 /* finds the entry 'name' with inode 'i' in the directory 'dir' */
-static struct buffer * find_dir_entry(struct inode *dir, struct inode *i, struct minix_dir_entry **d_res, char *name)
+static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct minix_dir_entry **d_res, char *name)
 {
 	__blk_t block;
 	unsigned int blksize;
@@ -114,7 +114,7 @@ static struct buffer * find_dir_entry(struct inode *dir, struct inode *i, struct
 	return NULL;
 }
 
-static struct buffer * add_dir_entry(struct inode *dir, struct minix_dir_entry **d_res)
+static struct buffer *add_dir_entry(struct inode *dir, struct minix_dir_entry **d_res)
 {
 	__blk_t block;
 	struct buffer *buf;

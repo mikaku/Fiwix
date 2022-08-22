@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/devices.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -35,7 +35,7 @@ extern struct device *chr_device_table[NR_CHRDEV];
 extern struct device *blk_device_table[NR_BLKDEV];
 
 int register_device(int, struct device *);
-struct device * get_device(int, __dev_t);
+struct device *get_device(int, __dev_t);
 int chr_dev_open(struct inode *, struct fd *);
 int blk_dev_open(struct inode *, struct fd *);
 int blk_dev_close(struct inode *, struct fd *);

@@ -51,7 +51,7 @@ void superblock_unlock(struct superblock *sb)
 	RESTORE_FLAGS(flags);
 }
 
-struct mount * get_free_mount_point(__dev_t dev)
+struct mount *get_free_mount_point(__dev_t dev)
 {
 	unsigned long int flags;
 	int n;
@@ -93,7 +93,7 @@ void release_mount_point(struct mount *mt)
 	memset_b(mt, 0, sizeof(struct mount));
 }
 
-struct mount * get_mount_point(struct inode *i_target)
+struct mount *get_mount_point(struct inode *i_target)
 {
 	int n;
 
@@ -114,7 +114,7 @@ struct mount * get_mount_point(struct inode *i_target)
 	return NULL;
 }
 
-struct superblock * get_superblock(__dev_t dev)
+struct superblock *get_superblock(__dev_t dev)
 {
 	int n;
 

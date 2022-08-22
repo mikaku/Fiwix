@@ -208,7 +208,7 @@ extern struct fs_operations procfs_fsop;
 extern struct fs_operations procfs_file_fsop;
 extern struct fs_operations procfs_dir_fsop;
 extern struct fs_operations procfs_symlink_fsop;
-struct procfs_dir_entry * get_procfs_by_inode(struct inode *);
+struct procfs_dir_entry *get_procfs_by_inode(struct inode *);
 
 /* fs_iso9660.h prototypes */
 extern int isonum_711(char *);
@@ -229,8 +229,8 @@ int get_rrip_symlink(struct inode *, char *);
 /* generic VFS function prototypes */
 void inode_lock(struct inode *);
 void inode_unlock(struct inode *);
-struct inode * ialloc(struct superblock *, int);
-struct inode * iget(struct superblock *, __ino_t);
+struct inode *ialloc(struct superblock *, int);
+struct inode *iget(struct superblock *, __ino_t);
 int bmap(struct inode *, __off_t, int);
 int check_fs_busy(__dev_t, struct inode *);
 void iput(struct inode *);
@@ -243,9 +243,9 @@ int namei(char *, struct inode **, struct inode **, int);
 
 void superblock_lock(struct superblock *);
 void superblock_unlock(struct superblock *);
-struct mount * get_free_mount_point(__dev_t);
+struct mount *get_free_mount_point(__dev_t);
 void release_mount_point(struct mount *);
-struct mount * get_mount_point(struct inode *);
+struct mount *get_mount_point(struct inode *);
 
 int get_new_fd(struct inode *);
 void release_fd(unsigned int);

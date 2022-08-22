@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/traps.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -262,7 +262,7 @@ void trap_handler(unsigned int trap, struct sigcontext sc)
 	sc.err = -sc.err;
 }
 
-const char * elf_lookup_symbol(unsigned int addr)
+const char *elf_lookup_symbol(unsigned int addr)
 {
 	Elf32_Sym *sym;
 	unsigned int n;

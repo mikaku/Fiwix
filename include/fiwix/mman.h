@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/mman.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -50,7 +50,7 @@ struct mmap {
 
 void show_vma_regions(struct proc *);
 void release_binary(void);
-struct vma * find_vma_region(unsigned int);
+struct vma *find_vma_region(unsigned int);
 int expand_heap(unsigned int);
 int do_mmap(struct inode *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, char, char);
 int do_munmap(unsigned int, __size_t);

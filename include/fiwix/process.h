@@ -170,18 +170,18 @@ int send_sig(struct proc *, __sigset_t);
 void add_crusage(struct proc *, struct rusage *);
 void get_rusage(struct proc *, struct rusage *);
 void add_rusage(struct proc *);
-struct proc * get_next_zombie(struct proc *);
+struct proc *get_next_zombie(struct proc *);
 __pid_t remove_zombie(struct proc *);
 int is_orphaned_pgrp(__pid_t);
-struct proc * get_proc_free(void);
+struct proc *get_proc_free(void);
 void release_proc(struct proc *);
 int get_unused_pid(void);
-struct proc * get_proc_by_pid(__pid_t);
+struct proc *get_proc_by_pid(__pid_t);
 
 int get_new_user_fd(int);
 void release_user_fd(int);
 
-struct proc * kernel_process(const char *, int (*fn)(void));
+struct proc *kernel_process(const char *, int (*fn)(void));
 void proc_slot_init(struct proc *);
 void proc_init(void);
 

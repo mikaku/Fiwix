@@ -16,7 +16,7 @@
 
 static struct resource flock_resource = { 0, 0 };
 
-static struct flock_file * get_new_flock(struct inode *i)
+static struct flock_file *get_new_flock(struct inode *i)
 {
 	int n;
 	struct flock_file *ff;
@@ -42,7 +42,7 @@ static void release_flock(struct flock_file *ff)
 	memset_b(ff, 0, sizeof(struct flock_file));
 }
 
-static struct flock_file * get_flock_file(struct inode *i, struct proc *p)
+static struct flock_file *get_flock_file(struct inode *i, struct proc *p)
 {
 	int n;
 	struct flock_file *ff;

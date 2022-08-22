@@ -145,7 +145,7 @@ int strlen(const char *str)
 	return n;
 }
 
-char * get_basename(const char *path)
+char *get_basename(const char *path)
 {
 	char *basename;
 	char c;
@@ -167,7 +167,7 @@ char * get_basename(const char *path)
 	return basename;
 }
 
-char * remove_trailing_slash(char *path)
+char *remove_trailing_slash(char *path)
 {
 	char *p;
 
