@@ -131,6 +131,8 @@
 #define IDE_MIN_LBA		16514064/* sectors limit for using CHS */
 
 /* general configuration bits */
+#define IDE_HAS_CURR_VALUES	0x01	/* current logical values are valid */
+#define IDE_HAS_ADVANCED_PIO	0x02	/* device supports PIO 3 or 4 */
 #define IDE_HAS_UDMA		0x04	/* device supports UDMA */
 #define IDE_REMOVABLE		0x80	/* removable media device */
 
