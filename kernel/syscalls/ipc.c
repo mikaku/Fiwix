@@ -110,6 +110,7 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 					orig_args.arg5 = third;
 					break;
 			}
+			break;
 	}
 	args = &orig_args;
 #else
