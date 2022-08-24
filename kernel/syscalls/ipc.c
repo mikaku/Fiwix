@@ -115,8 +115,10 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 #else
 int sys_ipc(unsigned int call, struct sysipc_args *args)
 {
-	if(!args) {
-		return -EINVAL;
+	int errno;
+
+	if((errno = check_user_area(VERIFY_READ, args, sizeof(struct sysipc_args)))) {
+		return errno;
 	}
 
 #endif /* CONFIG_SYSCALL_6TH_ARG */
@@ -140,7 +142,6 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 		case MSGCTL:
 			return sys_msgctl(args->arg1, args->arg2, args->ptr);
 	}
-
 	return -EINVAL;
 }
 #endif /* CONFIG_IPC */
