@@ -73,6 +73,10 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 	int version, errno;
 	union semun *arg;
 
+#ifdef __DEBUG__
+	printk("(pid %d) sys_ipc(%d, %d, %d, %d, 0x%08x, %d)\n", current->pid, call, first, second, third, (int)ptr, fifth);
+#endif /*__DEBUG__ */
+
 	orig_args.arg1 = first;
 	orig_args.arg2 = second;
 	orig_args.arg3 = third;
@@ -118,15 +122,15 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 {
 	int errno;
 
+#ifdef __DEBUG__
+	printk("(pid %d) sys_ipc(%d, 0x%08x)\n", current->pid, call, (int)args);
+#endif /*__DEBUG__ */
+
 	if((errno = check_user_area(VERIFY_READ, args, sizeof(struct sysipc_args)))) {
 		return errno;
 	}
 
 #endif /* CONFIG_SYSCALL_6TH_ARG */
-#ifdef __DEBUG__
-	printk("(pid %d) sys_ipc(%d, 0x%08x)\n", current->pid, call, (int)args);
-#endif /*__DEBUG__ */
-
 	switch(call) {
 		case SEMOP:
 			return sys_semop(args->arg1, args->ptr, args->arg2);
