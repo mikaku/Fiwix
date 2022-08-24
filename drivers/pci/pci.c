@@ -152,7 +152,7 @@ static void scan_bus(void)
 {
 	int b, d, f;
 	unsigned short int vendor_id, device_id, class;
-	unsigned char header, irq;
+	unsigned char header, irq, prog_if;
 	struct pci_device pci_dev;
 	const char *name;
 
@@ -165,6 +165,7 @@ static void scan_bus(void)
 				}
 
 				device_id = pci_read_short(b, d, f, PCI_DEVICE_ID);
+				prog_if = pci_read_char(b, d, f, PCI_PROG_IF);
 				class = pci_read_short(b, d, f, PCI_CLASS_DEVICE);
 				header = pci_read_char(b, d, f, PCI_HEADER_TYPE);
 				irq = pci_read_char(b, d, f, PCI_INTERRUPT_LINE);
@@ -175,7 +176,7 @@ static void scan_bus(void)
 				} else {
 					printk("     -");
 				}
-				printk("\t%04x:%04x %04x", vendor_id, device_id, class);
+				printk("\t%04x:%04x %04x%02x", vendor_id, device_id, class, (int)prog_if);
 
 				name = pci_get_strclass(class);
 				if(!name) {
@@ -229,7 +230,6 @@ struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short i
 void pci_init(void)
 {
 	if(!is_mechanism_1_supported()) {
-		printk("WARNING: no PCI bus detected.\n");
 		return;
 	}
 
