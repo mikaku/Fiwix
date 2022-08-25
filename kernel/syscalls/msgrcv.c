@@ -53,7 +53,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 			}
 		}
 		if(msgflg & IPC_NOWAIT) {
-			return -EAGAIN;
+			return -ENOMSG;
 		}
 		if(sleep(mq, PROC_INTERRUPTIBLE)) {
 			return -EINTR;
