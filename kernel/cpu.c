@@ -215,8 +215,6 @@ void cpu_init(void)
 			signature_flags();
 			cpu_table.family = _cputype;
 			cpu_table.flags = _cpuflags;
-			sprintk(UTS_MACHINE, "i%c86", _cputype <= 6 ? ('0' + _cputype) : '6');
-			strncpy(sys_utsname.machine, UTS_MACHINE, _UTSNAME_LENGTH);
 			if(!strcmp((char *)_vendorid, "GenuineIntel")) {
 				printk("Intel ");
 				for(n = 0; n < sizeof(intel) / sizeof(struct cpu_type); n++) {
@@ -259,5 +257,7 @@ void cpu_init(void)
 		printk("80%d86\n", cpu_table.family);
 		cpu_table.has_cpuid = 0;
 	}
+	strcpy(UTS_MACHINE, "i386");
+	strncpy(sys_utsname.machine, UTS_MACHINE, _UTSNAME_LENGTH);
 	cpu_table.has_fpu = getfpu();
 }
