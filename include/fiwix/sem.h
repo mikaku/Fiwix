@@ -34,7 +34,7 @@
 struct semid_ds {
 	struct ipc_perm sem_perm;	/* access permissions */
 	__time_t sem_otime;		/* time of the last semop() */
-	__time_t sem_ctime;		/* time of the last change time */
+	__time_t sem_ctime;		/* time of the last change */
 	struct sem *sem_base;		/* ptr to the first semaphore in set */
 	unsigned int unused1;
 	unsigned int unused2;

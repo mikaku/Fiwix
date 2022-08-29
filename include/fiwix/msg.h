@@ -27,7 +27,7 @@ struct msqid_ds {
 	struct msg *msg_last;		/* ptr to the last message in queue */
 	__time_t msg_stime;		/* time of the last msgsnd() */
 	__time_t msg_rtime;		/* time of the last msgrcv() */
-	__time_t msg_ctime;		/* time of the last change time */
+	__time_t msg_ctime;		/* time of the last change */
 	unsigned int unused1;
 	unsigned int unused2;
 	unsigned short int msg_cbytes;	/* number of bytes in queue */
