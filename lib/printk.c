@@ -85,9 +85,11 @@ static void do_printk(char *buffer, const char *format, va_list args)
 
 	/* assumes buffer has a maximum size of MAX_BUF */
 	while((c = *(format++)) && count < MAX_BUF) {
+		if(!in_identifier) {
+			memset_b(str, 0, 32);
+		}
 		if((c != '%') && !in_identifier) {
 			*(buffer++) = c;
-			memset_b(str, 0, 32);
 		} else {
 			in_identifier = 1;
 			switch(c = *(format)) {
