@@ -60,13 +60,13 @@ void bios_map_add(unsigned long int from, unsigned long int to, int from_type, i
 			if(from_type == to_type) {
 				printk("memory    0x%08x%08x-0x%08x%08x %s\n",
 					0, from,
-					0, to,
+					0, to - 1,
 					bios_mem_type[to_type]
 				);
 			} else {
 				printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
 					0, from,
-					0, to,
+					0, to - 1,
 					bios_mem_type[from_type],
 					bios_mem_type[to_type]
 				);
@@ -100,7 +100,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 		while((unsigned int)bmmap < (unsigned int)bmmap_addr + bmmap_length) {
 			from_high = (unsigned int)(bmmap->addr >> 32);
 			from_low = (unsigned int)(bmmap->addr & 0xFFFFFFFF);
-			to = bmmap->addr + bmmap->len;
+			to = (bmmap->addr + bmmap->len) - 1;
 			to_high = (unsigned int)(to >> 32);
 			to_low = (unsigned int)(to & 0xFFFFFFFF);
 			printk("%s    0x%08x%08x-0x%08x%08x %s\n",
