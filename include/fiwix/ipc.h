@@ -31,6 +31,10 @@
 #define MSGRCV		12
 #define MSGGET		13
 #define MSGCTL		14
+#define SHMAT		21
+#define SHMDT		22
+#define SHMGET		23
+#define SHMCTL		24
 
 #define IPC_UNUSED	((void *) -1)
 
