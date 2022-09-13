@@ -27,7 +27,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 	struct msqid_ds *mq;
 	struct msgbuf *mb;
 	struct msg *m;
-	int errno, count;
+	int errno, found, count;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_msgrcv(%d, 0x%08x, %d, %d, 0x%x)\n", current->pid, msqid, (int)msgp, msgsz, msgtyp, msgflg);
@@ -43,6 +43,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 	if(mq == IPC_UNUSED) {
 		return -EINVAL;
 	}
+	found = 0;
 	for(;;) {
 		if(!ipc_has_perms(&mq->msg_perm, IPC_R)) {
 			return -EACCES;
@@ -50,7 +51,30 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 		if((m = mq->msg_first)) {
 			if(!msgtyp) {
 				break;
+			} else if(msgtyp > 0) {
+				if(msgflg & MSG_EXCEPT) {
+					while(m) {
+						if(m->msg_type != msgtyp) {
+							found = 1;
+							break;
+						}
+						m = m->msg_next;
+					}
+				} else {
+					while(m) {
+						if(m->msg_type == msgtyp) {
+							found = 1;
+							break;
+						}
+						m = m->msg_next;
+					}
+				}
+			} else {
+				/* FIXME: pending to do */
 			}
+		}
+		if(found) {
+			break;
 		}
 		if(msgflg & IPC_NOWAIT) {
 			return -ENOMSG;
