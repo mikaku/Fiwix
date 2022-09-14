@@ -182,31 +182,6 @@ static int optimize_vma(void)
 	return 0;
 }
 
-/* return the first free address that matches with the size of length */
-static unsigned int get_unmapped_vma_region(unsigned int length)
-{
-	unsigned int n, addr;
-	struct vma *vma;
-
-	if(!length) {
-		return 0;
-	}
-
-	addr = MMAP_START;
-	vma = current->vma;
-
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
-		if(vma->start < MMAP_START) {
-			continue;
-		}
-		if(vma->start - addr >= length) {
-			return PAGE_ALIGN(addr);
-		}
-		addr = PAGE_ALIGN(vma->end);
-	}
-	return 0;
-}
-
 static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 {
 	unsigned int n, addr;
@@ -348,6 +323,31 @@ int expand_heap(unsigned int new)
 
 	/* out of memory! */
 	return 1;
+}
+
+/* return the first free address that matches with the size of length */
+unsigned int get_unmapped_vma_region(unsigned int length)
+{
+	unsigned int n, addr;
+	struct vma *vma;
+
+	if(!length) {
+		return 0;
+	}
+
+	addr = MMAP_START;
+	vma = current->vma;
+
+	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+		if(vma->start < MMAP_START) {
+			continue;
+		}
+		if(vma->start - addr >= length) {
+			return PAGE_ALIGN(addr);
+		}
+		addr = PAGE_ALIGN(vma->end);
+	}
+	return 0;
 }
 
 int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned int prot, unsigned int flags, unsigned int offset, char type, char mode)
