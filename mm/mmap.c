@@ -15,6 +15,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/shm.h>
 
 void show_vma_regions(struct proc *p)
 {
@@ -53,6 +54,10 @@ void show_vma_regions(struct proc *p)
 					break;
 			case P_MMAP:	section = "mmap ";
 					break;
+#ifdef CONFIG_IPC
+			case P_SHM:	section = "shm  ";
+					break;
+#endif /* CONFIG_IPC */
 			default:
 				section = NULL;
 				break;
@@ -106,6 +111,9 @@ static void sort_vma(void)
 				  (vma[n].flags == vma[n2].flags) &&
 				  (vma[n].offset == vma[n2].offset) &&
 				  (vma[n].s_type == vma[n2].s_type) &&
+#ifdef CONFIG_IPC
+				  (vma[n].s_type != P_SHM) &&
+#endif /* CONFIG_IPC */
 				  (vma[n].inode == vma[n2].inode)) {
 					vma[n].end = vma[n2].end;
 					memset_b(&vma[n2], 0, sizeof(struct vma));
@@ -213,6 +221,11 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 
 				kfree(P2V(pgtbl[pte]) & PAGE_MASK);
 				current->rss--;
+#ifdef CONFIG_IPC
+				if(vma->object) {
+					shm_rss--;
+				}
+#endif /* CONFIG_IPC */
 				pgtbl[pte] = 0;
 
 				/* check if a page table can be freed */
@@ -299,6 +312,24 @@ struct vma *find_vma_region(unsigned int addr)
 	return NULL;
 }
 
+struct vma *find_vma_intersection(unsigned int start, unsigned int end)
+{
+	unsigned int n;
+	struct vma *vma;
+
+	vma = current->vma;
+
+	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+                if(end <= vma->start) {
+                        break;
+		}
+                if(start < vma->end) {
+                        return vma;
+		}
+        }
+        return NULL;
+}
+
 int expand_heap(unsigned int new)
 {
 	unsigned int n;
@@ -350,7 +381,7 @@ unsigned int get_unmapped_vma_region(unsigned int length)
 	return 0;
 }
 
-int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned int prot, unsigned int flags, unsigned int offset, char type, char mode)
+int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned int prot, unsigned int flags, unsigned int offset, char type, char mode, void *object)
 {
 	struct vma *vma;
 	int errno;
@@ -400,6 +431,12 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 
 		/* anonymous objects must be filled with zeros */
 		flags |= ZERO_PAGE;
+#ifdef CONFIG_IPC
+		/* ... except for SHM regions */
+		if(type == P_SHM) {
+			flags &= ~ZERO_PAGE;
+		}
+#endif /* CONFIG_IPC */
 	}
 
 	if(flags & MAP_FIXED) {
@@ -427,6 +464,9 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	vma->s_type = type;
 	vma->inode = i;
 	vma->o_mode = mode;
+#ifdef CONFIG_IPC
+	vma->object = (struct shmid_ds *)object;
+#endif /* CONFIG_IPC */
 
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {

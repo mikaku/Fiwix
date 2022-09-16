@@ -51,8 +51,10 @@ struct mmap {
 void show_vma_regions(struct proc *);
 void release_binary(void);
 struct vma *find_vma_region(unsigned int);
+struct vma *find_vma_intersection(unsigned int, unsigned int);
 int expand_heap(unsigned int);
-int do_mmap(struct inode *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, char, char);
+unsigned int get_unmapped_vma_region(unsigned int);
+int do_mmap(struct inode *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, char, char, void *);
 int do_munmap(unsigned int, __size_t);
 int do_mprotect(struct vma *, unsigned int, __size_t, int);
 

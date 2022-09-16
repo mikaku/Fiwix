@@ -48,6 +48,7 @@
 #define P_HEAP	4	/* heap section (sys_brk()) */
 #define P_STACK	5	/* stack section */
 #define P_MMAP	6	/* mmap() section */
+#define P_SHM	7	/* shared memory section */
 
 struct page {
 	int page;		/* page number */

@@ -17,6 +17,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/shm.h>
 
 /* send the SIGSEGV signal to the ofending process */
 static void send_sigsegv(struct sigcontext *sc)
@@ -138,6 +139,13 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 	} else {
 		current->usage.ru_minflt++;
 		addr = 0;
+#ifdef CONFIG_IPC
+		if(vma->s_type == P_SHM) {
+			if(shm_map_page(vma, cr2)) {
+				return 1;
+			}
+		}
+#endif /* CONFIG_IPC */
 	}
 
 	if(vma->flags & ZERO_PAGE) {

@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/syscalls/old_mmap.c
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -44,7 +44,7 @@ int old_mmap(struct mmap *mmap)
 		}
 		flags = fd_table[current->fd[mmap->fd]].flags & O_ACCMODE;
 	}
-	page = do_mmap(i, mmap->start, mmap->length, mmap->prot, mmap->flags, mmap->offset, P_MMAP, flags);
+	page = do_mmap(i, mmap->start, mmap->length, mmap->prot, mmap->flags, mmap->offset, P_MMAP, flags, NULL);
 #ifdef __DEBUG__
 	printk("0x%08x\n", page);
 #endif /*__DEBUG__ */

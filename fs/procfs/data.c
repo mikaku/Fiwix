@@ -577,6 +577,8 @@ int data_proc_pid_maps(char *buffer, __pid_t pid)
 						break;
 				case P_MMAP:	section = "mmap";
 						break;
+				case P_SHM:	section = "shm";
+						break;
 				default:
 					section = NULL;
 					break;
@@ -670,6 +672,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 					stack += vma->end - vma->start;
 					break;
 				case P_MMAP:
+				case P_SHM:
 					mmap += vma->end - vma->start;
 					break;
 			}
@@ -752,6 +755,7 @@ int data_proc_pid_statm(char *buffer, __pid_t pid)
 					stack += vma->end - vma->start;
 					break;
 				case P_MMAP:
+				case P_SHM:
 					mmap += vma->end - vma->start;
 					break;
 			}
@@ -795,6 +799,7 @@ int data_proc_pid_status(char *buffer, __pid_t pid)
 					stack += vma->end - vma->start;
 					break;
 				case P_MMAP:
+				case P_SHM:
 					mmap += vma->end - vma->start;
 					break;
 			}

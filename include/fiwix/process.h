@@ -17,6 +17,7 @@ struct vma {
 	char s_type;		/* section type (P_TEXT, P_DATA, ...) */
 	struct inode *inode;	/* file inode */
 	char o_mode;		/* open mode (O_RDONLY, O_RDWR, ...) */
+	void *object;		/* generic pointer (currently only for shm) */
 };
 
 #include <fiwix/config.h>

@@ -36,7 +36,7 @@ static int check_elf(struct elf32_hdr *elf32_h)
 }
 
 /*
- * Setup the initial process stack (System V ABI for i386)
+ * Setup the initial process stack (UNIX System V ABI for i386)
  * ----------------------------------------------------------------------------
  * 0xBFFFFFFF
  * 	+---------------+	\
@@ -359,7 +359,7 @@ static int elf_load_interpreter(struct inode *ii)
 				prot |= PROT_EXEC;
 				type = P_TEXT;
 			}
-			errno = do_mmap(ii, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY);
+			errno = do_mmap(ii, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {
 				kfree((unsigned int)data);
 				send_sig(current, SIGSEGV);
@@ -391,7 +391,7 @@ static int elf_load_interpreter(struct inode *ii)
 	end = (elf32_ph->p_vaddr + elf32_ph->p_memsz) + MMAP_START;
 	end = PAGE_ALIGN(end);
 	length = end - start;
-	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0);
+	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		kfree((unsigned int)data);
 		send_sig(current, SIGSEGV);
@@ -506,7 +506,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 				prot |= PROT_EXEC;
 				type = P_TEXT;
 			}
-			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY);
+			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {
 				send_sig(current, SIGSEGV);
 				return -ENOEXEC;
@@ -537,7 +537,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	end = elf32_ph->p_vaddr + elf32_ph->p_memsz;
 	end = PAGE_ALIGN(end);
 	length = end - start;
-	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0);
+	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
@@ -548,7 +548,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	start = elf32_ph->p_vaddr + elf32_ph->p_memsz;
 	start = PAGE_ALIGN(start);
 	length = PAGE_SIZE;
-	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_HEAP, 0);
+	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_HEAP, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
@@ -563,7 +563,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	sp -= at_base ? (AT_ITEMS * 2) * sizeof(unsigned int) : 2 * sizeof(unsigned int);
 	sp -= ae_ptr_len;
 	length = KERNEL_BASE_ADDR - (sp & PAGE_MASK);
-	errno = do_mmap(NULL, sp & PAGE_MASK, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0);
+	errno = do_mmap(NULL, sp & PAGE_MASK, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
