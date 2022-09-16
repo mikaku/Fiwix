@@ -14,6 +14,7 @@
 #include <fiwix/ipc.h>
 #include <fiwix/sem.h>
 #include <fiwix/msg.h>
+#include <fiwix/shm.h>
 
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
@@ -23,11 +24,13 @@
 #ifdef CONFIG_IPC
 struct resource ipcsem_resource = { 0, 0 };
 struct resource ipcmsg_resource = { 0, 0 };
+struct resource ipcshm_resource = { 0, 0 };
 
 void ipc_init(void)
 {
 	sem_init();
 	msg_init();
+	shm_init();
 }
 
 int ipc_has_perms(struct ipc_perm *perm, int mode)
@@ -45,7 +48,7 @@ int ipc_has_perms(struct ipc_perm *perm, int mode)
 
 	/*
 	 * The user may specify zero for the second argument in xxxget() to
-	 * bypass this check and be able to obtain an identifier for an IPC
+	 * bypass this check, and be able to obtain an identifier for an IPC
 	 * object even when the user don't has read or write access to that
 	 * IPC object. Later specific IPC calls will return error if the
 	 * program attempted an operation requiring read or write permission
@@ -62,7 +65,36 @@ int ipc_has_perms(struct ipc_perm *perm, int mode)
 	return 0;
 }
 
+/*
+ * This implementation follows basically the same semantics as in Linux 2.0
+ * ABI. That is, the sys_ipc() system call acts as a common entry point for
+ * the System V IPC calls for semaphores, message queues and shared memory.
+ *
+ * The only exception is that Fiwix, by default, uses a structure that holds
+ * all arguments needed by all System V IPC functions. This, of course, breaks
+ * compatibility with the Linux 2.0 ABI, unless you rebuild the program under
+ * FiwixOS. For those that are unable to rebuild an old program (no source code
+ * available, etc.), you must rebuild the Fiwix kernel with the configuration
+ * option CONFIG_SYSCALL_6TH_ARG enabled. This will enable full Linux 2.0 ABI
+ * compatibility and the program will run successfully.
+ */
+
 #ifdef CONFIG_SYSCALL_6TH_ARG
+/*
+ * This option adds more Linux 2.0 ABI compatibility to support the original
+ * sys_ipc() system call, which requires up to 6 arguments.
+ *
+ * Fiwix by default uses a maximum of 5 arguments per system call, so any
+ * binary built on FiwixOS will use a different implementation of the
+ * sys_ipc(), and also any other system call that requires more than 5
+ * arguments. This breaks compatibility with Linux 2.0 ABI.
+ *
+ * In order to include the 6th argument, Fiwix will use the register 'ebp'
+ * which might lead to some problems. Use this with caution.
+ *
+ * This configuration option should only be used if you need to execute a
+ * Linux 2.0 binary and, for some reason, you cannot rebuild it on FiwixOS.
+ */
 int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long fifth)
 {
 	struct sysipc_args orig_args, *args;
@@ -115,6 +147,19 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 					break;
 			}
 			break;
+		case SHMAT:
+			version = call >> 16;
+			switch(version) {
+				case 0:
+					if((errno = check_user_area(VERIFY_WRITE, (unsigned long int *)third, sizeof(unsigned long int)))) {
+						return errno;
+					}
+					orig_args.arg3 = (int)&third;
+					break;
+				default:
+					return -EINVAL;
+			}
+			break;
 	}
 	args = &orig_args;
 #else
@@ -146,6 +191,22 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 			return sys_msgget((key_t)args->arg1, args->arg2);
 		case MSGCTL:
 			return sys_msgctl(args->arg1, args->arg2, args->ptr);
+		case SHMAT:
+			if((errno = sys_shmat(args->arg1, args->ptr, args->arg2, (unsigned long int *)&args->arg3))) {
+				return errno;
+			}
+#ifdef CONFIG_SYSCALL_6TH_ARG
+			memcpy_l((unsigned long int *)third, &args->arg3, 1);
+			return 0;
+#else
+			return args->arg3;
+#endif /* CONFIG_SYSCALL_6TH_ARG */
+		case SHMDT:
+			return sys_shmdt(args->ptr);
+		case SHMGET:
+			return sys_shmget(args->arg1, args->arg2, args->arg3);
+		case SHMCTL:
+			return sys_shmctl(args->arg1, args->arg2, args->ptr);
 	}
 	return -EINVAL;
 }
