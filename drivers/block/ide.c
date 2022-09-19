@@ -279,7 +279,8 @@ static int get_piomode(struct ide *ide, int drive)
 static void ide_results(struct ide *ide, int drive)
 {
 	unsigned int cyl, hds, sect;
-	__loff_t capacity;
+	__loff_t size;
+	int ksize;
 	int udma, piomode;
 	int udma_speed[] = { 16, 25, 33, 44, 66, 100 };
 
@@ -302,8 +303,16 @@ static void ide_results(struct ide *ide, int drive)
 	 * FIXME: Currently only PIO mode is supported.
 	 */
 
-	capacity = (__loff_t)ide->drive[drive].nr_sects * BPS;
-	capacity = capacity / 1024 / 1024;
+	size = (__loff_t)ide->drive[drive].nr_sects * BPS;
+	size = size / 1024;
+	if(size < 1024) {
+		/* the size is less than 1MB (will be reported in KB) */
+		ksize = size;
+		size = 0;
+	} else {
+		size = size / 1024;
+		ksize = 0;
+	}
 
 	printk("%s       0x%04x-0x%04x    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 	swap_asc_word(ide->drive[drive].ident.model_number, 40);
@@ -320,7 +329,11 @@ static void ide_results(struct ide *ide, int drive)
 	}
 
 	if(ide->drive[drive].flags & DEVICE_IS_DISK) {
-		printk(" DISK drive %dMB\n", (unsigned int)capacity);
+		if(ksize) {
+			printk(" DISK drive %dKB\n", ksize);
+		} else {
+			printk(" DISK drive %dMB\n", (unsigned int)size);
+		}
 		printk("                                model=%s\n", ide->drive[drive].ident.model_number);
 		if(ide->drive[drive].nr_sects < IDE_MIN_LBA) {
 			printk("\t\t\t\tCHS=%d/%d/%d", cyl, hds, sect);
