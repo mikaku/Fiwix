@@ -127,7 +127,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
 	int drive;
-	int sectors_to_read, cmd;
+	int sectors_to_read, cmd, mode, lba_head;
 	int n, status, r, retries;
 	int cyl, head, sector;
 	__off_t offset;
@@ -172,23 +172,23 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_SECNUM, offset & 0xFF);
 			outport_b(ide->base + IDE_LCYL, (offset >> 8) & 0xFF);
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
-			if(ide_drvsel(ide, drive, IDE_LBA_MODE, (offset >> 24) & 0x0F)) {
-				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide->resource);
-				return -EIO;
-			}
+			mode = IDE_LBA_MODE;
+			lba_head = (offset >> 24) & 0x0F;
 		} else {
 			sector2chs(offset, &cyl, &head, &sector, ident);
 			outport_b(ide->base + IDE_SECNUM, sector);
 			outport_b(ide->base + IDE_LCYL, cyl);
 			outport_b(ide->base + IDE_HCYL, (cyl >> 8));
-			if(ide_drvsel(ide, drive, IDE_CHS_MODE, head)) {
-				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide->resource);
-				return -EIO;
-			}
+			mode = IDE_CHS_MODE;
+			lba_head = head;
+		}
+		if(ide_drvsel(ide, drive, mode, lba_head)) {
+			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
+			unlock_resource(&ide->resource);
+			return -EIO;
 		}
 		outport_b(ide->base + IDE_COMMAND, cmd);
+
 		if(ide->channel == IDE_PRIMARY) {
 			ide0_wait_interrupt = ide->base;
 			creq.fn = ide0_timer;
@@ -255,7 +255,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
 	int drive;
-	int sectors_to_write, cmd;
+	int sectors_to_write, cmd, mode, lba_head;
 	int n, status, r, retries;
 	int cyl, head, sector;
 	__off_t offset;
@@ -300,23 +300,23 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			outport_b(ide->base + IDE_SECNUM, offset & 0xFF);
 			outport_b(ide->base + IDE_LCYL, (offset >> 8) & 0xFF);
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
-			if(ide_drvsel(ide, drive, IDE_LBA_MODE, (offset >> 24) & 0x0F)) {
-				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide->resource);
-				return -EIO;
-			}
+			mode = IDE_LBA_MODE;
+			lba_head = (offset >> 24) & 0x0F;
 		} else {
 			sector2chs(offset, &cyl, &head, &sector, ident);
 			outport_b(ide->base + IDE_SECNUM, sector);
 			outport_b(ide->base + IDE_LCYL, cyl);
 			outport_b(ide->base + IDE_HCYL, (cyl >> 8));
-			if(ide_drvsel(ide, drive, IDE_CHS_MODE, head)) {
-				printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
-				unlock_resource(&ide->resource);
-				return -EIO;
-			}
+			mode = IDE_CHS_MODE;
+			lba_head = head;
+		}
+		if(ide_drvsel(ide, drive, mode, lba_head)) {
+			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
+			unlock_resource(&ide->resource);
+			return -EIO;
 		}
 		outport_b(ide->base + IDE_COMMAND, cmd);
+
 		for(r = 0; r < retries; r++) {
 			status = inport_b(ide->base + IDE_STATUS);
 			if(!(status & IDE_STAT_BSY) && (status & IDE_STAT_DRQ)) {
@@ -333,12 +333,12 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
-
 		if(cmd == ATA_WRITE_MULTIPLE_PIO) {
 			outport_sw(ide->base + IDE_DATA, (void *)buffer, (IDE_HD_SECTSIZE * sectors_to_write) / sizeof(short int));
 		} else {
 			outport_sw(ide->base + IDE_DATA, (void *)buffer, IDE_HD_SECTSIZE / sizeof(short int));
 		}
+
 		if(ide->channel == IDE_PRIMARY) {
 			ide0_wait_interrupt = ide->base;
 			creq.fn = ide0_timer;
