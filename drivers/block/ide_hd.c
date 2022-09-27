@@ -107,9 +107,12 @@ static __off_t block2sector(__blk_t block, int blksize, struct partition *part, 
 
 static void sector2chs(__off_t offset, int *cyl, int *head, int *sector, struct ide_drv_ident *ident)
 {
+	int r;
+
 	*cyl = offset / (ident->logic_spt * ident->logic_heads);
-	*head = (offset / ident->logic_spt) % ident->logic_heads;
-	*sector = (offset % ident->logic_spt) + 1;
+	r = offset % (ident->logic_spt * ident->logic_heads);
+	*head = r / ident->logic_spt;
+	*sector = (r % ident->logic_spt) + 1;
 }
 
 int ide_hd_open(struct inode *i, struct fd *fd_table)
