@@ -504,32 +504,32 @@ void ide_error(struct ide *ide, int status)
 		error = inport_b(ide->base + IDE_ERROR);
 		if(error) {
 			printk("error=0x%x [", error);
+			if(error & IDE_ERR_AMNF) {
+				printk("address mark not found, ");
+			}
+			if(error & IDE_ERR_TK0NF) {
+				printk("track 0 not found (no media) or media error, ");
+			}
+			if(error & IDE_ERR_ABRT) {
+				printk("command aborted, ");
+			}
+			if(error & IDE_ERR_MCR) {
+				printk("media change requested, ");
+			}
+			if(error & IDE_ERR_IDNF) {
+				printk("id mark not found, ");
+			}
+			if(error & IDE_ERR_MC) {
+				printk("media changer, ");
+			}
+			if(error & IDE_ERR_UNC) {
+				printk("uncorrectable data, ");
+			}
+			if(error & IDE_ERR_BBK) {
+				printk("bad block, ");
+			}
+			printk("]");
 		}
-		if(error & IDE_ERR_AMNF) {
-			printk("address mark not found, ");
-		}
-		if(error & IDE_ERR_TK0NF) {
-			printk("track 0 not found (no media) or media error, ");
-		}
-		if(error & IDE_ERR_ABRT) {
-			printk("command aborted, ");
-		}
-		if(error & IDE_ERR_MCR) {
-			printk("media change requested, ");
-		}
-		if(error & IDE_ERR_IDNF) {
-			printk("id mark not found, ");
-		}
-		if(error & IDE_ERR_MC) {
-			printk("media changer, ");
-		}
-		if(error & IDE_ERR_UNC) {
-			printk("uncorrectable data, ");
-		}
-		if(error & IDE_ERR_BBK) {
-			printk("bad block, ");
-		}
-		printk("]");
 	}
 	if(status & IDE_STAT_DWF) {
 		printk("device fault, ");
