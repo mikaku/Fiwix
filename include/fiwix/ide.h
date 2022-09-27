@@ -242,7 +242,6 @@ struct ide {
 	int base;			/* base address */
 	int ctrl;			/* control port address */
 	short int irq;
-	int current;			/* avoids re-select the drive */
 	struct resource resource;
 	struct ide_drv drive[NR_IDE_DRVS];
 };

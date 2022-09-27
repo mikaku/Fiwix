@@ -30,13 +30,13 @@ int ide1_wait_interrupt = 0;
 int ide1_timeout = 0;
 
 struct ide ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, -1, { 0, 0 },
+	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { 0, 0 },
 		{
 			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
 			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
 		}
 	},
-	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, -1, { 0, 0 },
+	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, { 0, 0 },
 		{
 			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
 			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
@@ -562,14 +562,6 @@ void ide_wait400ns(struct ide *ide)
 int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 {
 	int n, status;
-	int selected;
-
-	selected = (mode + (drive << 4)) | lba24_head;
-
-	/* just return if the drive is already setup with the same parameters */
-	if(selected == ide->current) {
-		return 0;
-	}
 
 	status = 0;
 
@@ -583,8 +575,7 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 		return status;
 	}
 
-	ide->current = selected;
-	outport_b(ide->base + IDE_DRVHD, selected);
+	outport_b(ide->base + IDE_DRVHD, (mode + (drive << 4)) | lba24_head);
 	ide_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
