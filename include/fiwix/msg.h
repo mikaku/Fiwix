@@ -11,6 +11,7 @@
 #include <fiwix/ipc.h>
 
 #define MSG_NOERROR	010000		/* no error if message is too big */
+#define MSG_EXCEPT	020000		/* recv any msg except of specified type */
 
 /* system-wide limits */
 #define MSGMAX		4096		/* max. size of a message */
