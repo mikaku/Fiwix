@@ -740,6 +740,13 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termios)))) {
 				return errno;
 			}
+			/* not tested */
+			while(tty->write_q.count) {
+				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+					return -EINTR;
+				}
+				do_sched();
+			}
 			set_termios(tty, (struct termios *)arg);
 			break;
 
@@ -750,6 +757,13 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		case TCSETSF:
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termios)))) {
 				return errno;
+			}
+			/* not tested */
+			while(tty->write_q.count) {
+				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+					return -EINTR;
+				}
+				do_sched();
 			}
 			set_termios(tty, (struct termios *)arg);
 			tty_queue_flush(&tty->read_q);
@@ -785,6 +799,13 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termio)))) {
 				return errno;
 			}
+			/* not tested */
+			while(tty->write_q.count) {
+				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+					return -EINTR;
+				}
+				do_sched();
+			}
 			set_termio(tty, (struct termio *)arg);
 			break;
 
@@ -795,6 +816,13 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		case TCSETAF:
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(struct termio)))) {
 				return errno;
+			}
+			/* not tested */
+			while(tty->write_q.count) {
+				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+					return -EINTR;
+				}
+				do_sched();
 			}
 			set_termio(tty, (struct termio *)arg);
 			tty_queue_flush(&tty->read_q);
