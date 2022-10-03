@@ -1,7 +1,8 @@
 1.4.0 - DD-MMM-2022
 ===================
 - Added support for the PCI local bus.
-- Added support for the System V IPC mechanism message queues.
+- Added support for the UNIX System V IPC mechanisms (semaphores, message queues
+  and shared memory).
 - Added the character device /dev/full.
 - Added the character device /dev/port.
 - Added the system call sys_getcwd. [#4]
@@ -26,6 +27,14 @@
   to use the same checking mechanism as if they were sent by a user process.
   This also fixes a permission problem when sending the SIGCHLD signal to a
   parent process owned by a different user, during the context of sys_exit().
+- IDE driver now shows the PIO mode instead of UDMA mode, since the later is not
+  supported yet.
+- IDE driver now will use the current logical values if they are valid in the
+  identify field.
+- Changed the bios memory map functions to show that the ending address is
+  inside each range.
+- Reverted 75bb49d and 4ecf9dd, as the PC emulator 'copy.sh/v86' (maybe others)
+  requires to select the drive on every command.
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
   using interrupts during its own initialization.
 - Fixed ext2_truncate() to return the error code after calling free_dblock().
@@ -56,6 +65,12 @@
   using the QEMU argument '-kernel'.
 - Fixed a possible out of bounds access in CHECK_UFD() macro.
 - Fixed a possible out of bounds in utsname structures.
+- Fixed UTS_MACHINE to return always 'i386' in all processor types on the i386
+  architecture.
+- Fixed do_printk() to show correctly the value of the second identifier when
+  there are two consecutive identifiers
+- Fixed to show the size of an ATA drive in KB if it's less than 1MB.
+- Fixed to use the standard algorithm to convert LBA to CHS in the ATA driver.
 - Small fixes and cosmetic changes.
 
 
