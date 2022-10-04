@@ -176,6 +176,7 @@ static void set_termio(struct tty *tty, struct termio *new_termio)
 	struct termios new_termios;
 
 	termio2termios(new_termio, &new_termios);
+	memcpy_b(&tty->termios, &new_termios, sizeof(struct termios));
 }
 
 int register_tty(__dev_t dev)
