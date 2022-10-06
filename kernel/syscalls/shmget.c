@@ -65,6 +65,14 @@ void free_seg(int shmid)
 	shm_tot -= npages;
 	shm_seq++;
 	shmseg[shmid % SHMMNI] = (struct shmid_ds *)IPC_UNUSED;
+	if((shmid % SHMMNI) == max_segid) {
+		while(max_segid) {
+			if(shmseg[max_segid] != IPC_UNUSED) {
+				break;
+			}
+			max_segid--;
+		}
+	}
 	shm_release_seg(seg);
 }
 
