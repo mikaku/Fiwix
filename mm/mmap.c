@@ -320,14 +320,14 @@ struct vma *find_vma_intersection(unsigned int start, unsigned int end)
 	vma = current->vma;
 
 	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
-                if(end <= vma->start) {
-                        break;
+		if(end <= vma->start) {
+			break;
 		}
-                if(start < vma->end) {
-                        return vma;
+		if(start < vma->end) {
+			return vma;
 		}
-        }
-        return NULL;
+	}
+	return NULL;
 }
 
 int expand_heap(unsigned int new)

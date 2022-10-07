@@ -57,11 +57,11 @@ struct shmid_ds {
 };
 
 struct shminfo {
-    int shmmax;
-    int shmmin;
-    int shmmni;
-    int shmseg;
-    int shmall;
+	int shmmax;
+	int shmmin;
+	int shmmni;
+	int shmseg;
+	int shmall;
 };
 
 struct shm_info {

@@ -115,7 +115,7 @@ static int baud_table[] = {
 
 #ifdef CONFIG_PCI
 static struct pci_supported_devices supported[] = {
-        { 0x1b36, 0x0002 },	/* Red Hat, Inc., QEMU PCI 16550A Adapter */
+	{ 0x1b36, 0x0002 },	/* QEMU PCI 16550A Adapter (Red Hat, Inc.) */
 	{ 0, 0 }
 };
 #endif /* CONFIG_PCI */

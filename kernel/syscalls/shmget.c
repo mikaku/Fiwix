@@ -197,7 +197,7 @@ init:
 	perm = &seg->shm_perm;
 	perm->key = key;
 	perm->uid = perm->cuid = current->euid;
-        perm->gid = perm->cgid = current->egid;
+	perm->gid = perm->cgid = current->egid;
 	perm->mode = shmflg & 0777;
 	perm->seq = shm_seq;
 	seg->shm_segsz = size;

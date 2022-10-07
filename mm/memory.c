@@ -333,10 +333,10 @@ void mem_init(void)
 
 
 	/* reserve memory space for buffer_hash_table */
-   	n = (buffer_table_size / sizeof(struct buffer) * BUFFER_HASH_PERCENTAGE) / 100;
+	n = (buffer_table_size / sizeof(struct buffer) * BUFFER_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 buffer hashes as minimum */
 	/* buffer_hash_table is an array of pointers */
-   	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
+	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
 	buffer_hash_table_size = pages << PAGE_SHIFT;
 /*	printk("_last_data_addr = 0x%08x-0x%08x (buffer_hash_table)\n", _last_data_addr, _last_data_addr + buffer_hash_table_size); */
 	if(!addr_in_bios_map(V2P(_last_data_addr) + buffer_hash_table_size)) {
@@ -361,10 +361,10 @@ void mem_init(void)
 
 
 	/* reserve memory space for inode_hash_table */
-   	n = ((inode_table_size / sizeof(struct inode)) * INODE_HASH_PERCENTAGE) / 100;
+	n = ((inode_table_size / sizeof(struct inode)) * INODE_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 inode hash buckets as minimum */
 	/* inode_hash_table is an array of pointers */
-   	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
+	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
 	inode_hash_table_size = pages << PAGE_SHIFT;
 /*	printk("_last_data_addr = 0x%08x-0x%08x (inode_hash_table)\n", _last_data_addr, _last_data_addr + inode_hash_table_size); */
 	if(!addr_in_bios_map(V2P(_last_data_addr) + inode_hash_table_size)) {

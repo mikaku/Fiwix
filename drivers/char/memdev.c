@@ -606,9 +606,9 @@ int urandom_lseek(struct inode *i, __off_t offset)
 
 int memdev_open(struct inode *i, struct fd *fd_table)
 {
-        unsigned char minor;
+	unsigned char minor;
 
-        minor = MINOR(i->rdev);
+	minor = MINOR(i->rdev);
 	switch(minor) {
 		case MEMDEV_MEM:
 			i->fsop = &mem_driver_fsop;

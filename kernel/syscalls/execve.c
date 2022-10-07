@@ -354,8 +354,8 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 #endif /*__DEBUG__ */
 
 	if((errno = malloc_name(argv[0], &tmp_name)) < 0) {
-                return errno;
-        }
+		return errno;
+	}
 	/* copy filename into kernel address space */
 	strncpy(argv0, tmp_name, NAME_MAX);
 	free_name(tmp_name);

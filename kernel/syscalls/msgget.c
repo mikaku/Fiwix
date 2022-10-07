@@ -149,7 +149,7 @@ init:
 	perm = &mq->msg_perm;
 	perm->key = key;
 	perm->uid = perm->cuid = current->euid;
-        perm->gid = perm->cgid = current->egid;
+	perm->gid = perm->cgid = current->egid;
 	perm->mode = msgflg & 0777;
 	perm->seq = msg_seq;
 	mq->msg_first = mq->msg_last = NULL;

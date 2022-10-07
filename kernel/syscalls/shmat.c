@@ -101,13 +101,13 @@ int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned long int *raddr)
 	}
 
 	sega->start = addr;
-        sega->end = addr + seg->shm_segsz;
+	sega->end = addr + seg->shm_segsz;
 	sega->prot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	sega->flags = MAP_PRIVATE | MAP_FIXED;
-        sega->offset = 0;
-        sega->s_type = P_SHM;
-        sega->inode = NULL;
-        sega->o_mode = shmflg & SHM_RDONLY ? O_RDONLY : O_RDWR;
+	sega->offset = 0;
+	sega->s_type = P_SHM;
+	sega->inode = NULL;
+	sega->o_mode = shmflg & SHM_RDONLY ? O_RDONLY : O_RDWR;
 	seg->shm_nattch++;
 
 	errno = do_mmap(NULL, addr, seg->shm_segsz, sega->prot, sega->flags, sega->offset, sega->s_type, sega->o_mode, seg);
@@ -115,7 +115,7 @@ int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned long int *raddr)
 		return errno;
 	}
 
-        seg->shm_atime = CURRENT_TIME;
+	seg->shm_atime = CURRENT_TIME;
 	seg->shm_lpid = current->pid;
 	*raddr = addr;
 

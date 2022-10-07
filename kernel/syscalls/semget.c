@@ -196,7 +196,7 @@ init:
 	perm = &ss->sem_perm;
 	perm->key = key;
 	perm->uid = perm->cuid = current->euid;
-        perm->gid = perm->cgid = current->egid;
+	perm->gid = perm->cgid = current->egid;
 	perm->mode = semflg & 0777;
 	perm->seq = sem_seq;
 	ss->sem_otime = 0;

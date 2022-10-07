@@ -76,8 +76,8 @@ int sys_msgsnd(int msqid, const void *msgp, __size_t msgsz, int msgflg)
 	m->msg_type = mb->mtype;
 	if(!(m->msg_spot = (void *)kmalloc())) {
 		msg_release_md(m);
-                return -ENOMEM;
-        }
+		return -ENOMEM;
+	}
 	memcpy_b(m->msg_spot, mb->mtext, msgsz);
 	m->msg_stime = CURRENT_TIME;
 	m->msg_ts = msgsz;

@@ -93,7 +93,7 @@ static struct fs_operations ide_driver_fsop = {
 };
 
 static struct device ide0_device = {
-        "ide0",
+	"ide0",
 	IDE0_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
@@ -103,7 +103,7 @@ static struct device ide0_device = {
 };
 
 static struct device ide1_device = {
-        "ide1",
+	"ide1",
 	IDE1_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	0,
