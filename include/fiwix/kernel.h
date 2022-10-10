@@ -11,6 +11,8 @@
 #include <fiwix/limits.h>
 #include <fiwix/i386elf.h>
 
+#define QEMU_DEBUG_PORT		0xE9	/* for Bochs-style debug console */
+
 #define PANIC(format, args...)						\
 {									\
 	printk("\nPANIC: in %s()", __FUNCTION__);			\
@@ -22,6 +24,9 @@
 #define CURRENT_TIME	(kstat.system_time)
 #define CURRENT_TICKS	(kstat.ticks)
 #define INIT_PROGRAM	"/sbin/init"
+
+/* kernel flags */
+#define KF_HAS_DEBUGCON		0x02	/* QEMU debug console support */
 
 extern char *init_argv[];
 extern char *init_envp[];
@@ -55,6 +60,7 @@ extern char _etext[], _edata[], _end[];
 extern char cmdline[NAME_MAX + 1];
 
 struct kernel_stat {
+	int flags;			/* kernel flags */
 	unsigned int cpu_user;		/* ticks in user-mode */
 	unsigned int cpu_nice;		/* ticks in user-mode (with priority) */
 	unsigned int cpu_system;	/* ticks in kernel-mode */

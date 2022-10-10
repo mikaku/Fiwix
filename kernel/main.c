@@ -70,6 +70,12 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	dev_init();
 	tty_init();
 
+#ifdef CONFIG_QEMU_DEBUGCON
+	if(inport_b(QEMU_DEBUG_PORT) == QEMU_DEBUG_PORT) {
+		kstat.flags |= KF_HAS_DEBUGCON;
+	}
+#endif /* CONFIG_QEMU_DEBUGCON */
+
 	printk("                                Welcome to %s\n", UTS_SYSNAME);
 	printk("                     Copyright (c) 2018-2021, Jordi Sanfeliu\n");
 	printk("\n");

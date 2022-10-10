@@ -5,6 +5,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/tty.h>
 #include <fiwix/stdio.h>
@@ -28,6 +29,11 @@ static void puts(char *buffer)
 	b = buffer;
 
 	while(count--) {
+#ifdef CONFIG_QEMU_DEBUGCON
+		if(kstat.flags & KF_HAS_DEBUGCON) {
+			outport_b(QEMU_DEBUG_PORT, *b);
+		}
+#endif /* CONFIG_QEMU_DEBUGCON */
 		if(!tty) {
 			if(log_count < LOG_BUF_LEN) {
 		 		log_buf[log_count++] = *(b++);

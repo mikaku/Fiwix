@@ -35,12 +35,13 @@
 #define VMA_REGIONS		150	/* max. number of virtual memory maps */
 
 
-/* configuration options */
+/* toggle configuration options */
 
 #undef CONFIG_VERBOSE_SEGFAULTS
 #define CONFIG_PCI
 #define CONFIG_PCI_NAMES
 #undef CONFIG_SYSCALL_6TH_ARG
 #define CONFIG_IPC
+#undef CONFIG_QEMU_DEBUGCON
 
 #endif /* _FIWIX_CONFIG_H */

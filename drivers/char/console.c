@@ -997,11 +997,10 @@ void console_init(void)
 	struct tty *tty;
 
 	if(video.flags & VPF_VGA) {
-		printk("console   0x%04x-0x%04x     -\t%s (%d virtual consoles)\n", video.port, video.port + 1, video.signature, NR_VCONSOLES);
+		printk("console   0x%04x-0x%04x     -\t%s\n", video.port, video.port + 1, video.signature);
 	}
 	if(video.flags & VPF_VESAFB) {
 		printk("console                     -\tcolor frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
-		printk("\t\t\t\t(%d virtual consoles)\n", NR_VCONSOLES);
 	}
 
 	for(n = 1; n <= NR_VCONSOLES; n++) {
@@ -1026,6 +1025,13 @@ void console_init(void)
 			vconsole_reset(tty);
 		}
 	}
+	printk("\t\t\t\t%d virtual consoles\n", NR_VCONSOLES);
+
+#ifdef CONFIG_QEMU_DEBUGCON
+	if(kstat.flags & KF_HAS_DEBUGCON) {
+		printk("\t\t\t\tQEMU Bochs-style debug console emulation\n");
+	}
+#endif /* CONFIG_QEMU_DEBUGCON */
 
 	current_cons = 1;
 	video.show_cursor(&vc[current_cons], ON);
