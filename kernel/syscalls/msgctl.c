@@ -10,7 +10,6 @@
 #include <fiwix/types.h>
 #include <fiwix/string.h>
 #include <fiwix/process.h>
-#include <fiwix/sleep.h>
 #include <fiwix/sched.h>
 #include <fiwix/errno.h>
 #include <fiwix/ipc.h>
