@@ -281,7 +281,7 @@ static void serial_reset(struct tty *tty)
 	tty->winsize.ws_col = 80;
 	tty->winsize.ws_xpixel = 0;
 	tty->winsize.ws_ypixel = 0;
-	tty->lnext = 0;
+	tty->flags = 0;
 }
 
 static void serial_errors(struct serial *s, int status)

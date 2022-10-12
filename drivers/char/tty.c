@@ -108,7 +108,7 @@ static int opost(struct tty *tty, unsigned char ch)
 static void out_char(struct tty *tty, unsigned char ch)
 {
 	if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
-		if(tty->lnext || (!tty->lnext && ch != tty->termios.c_cc[VEOF])) {
+		if(tty->flags & TTY_HAS_LNEXT || (!(tty->flags & TTY_HAS_LNEXT) && ch != tty->termios.c_cc[VEOF])) {
 			tty_queue_putchar(tty, &tty->write_q, '^');
 			tty_queue_putchar(tty, &tty->write_q, ch + 64);
 			tty->column += 2;
@@ -290,7 +290,7 @@ void do_cook(struct tty *tty)
 	while(tty->read_q.count > 0) {
 		ch = tty_queue_getchar(&tty->read_q);
 
-		if((tty->termios.c_lflag & ISIG) && !tty->lnext) {
+		if((tty->termios.c_lflag & ISIG) && !(tty->flags & TTY_HAS_LNEXT)) {
 			if(ch == tty->termios.c_cc[VINTR]) {
 				if(!(tty->termios.c_lflag & NOFLSH)) {
 					tty_queue_flush(&tty->read_q);
@@ -324,7 +324,7 @@ void do_cook(struct tty *tty)
 			}
 		}
 
-		if(!tty->lnext) {
+		if(!(tty->flags & TTY_HAS_LNEXT)) {
 			if(ch == '\r') {
 				if(tty->termios.c_iflag & IGNCR) {
 					continue;
@@ -341,7 +341,7 @@ void do_cook(struct tty *tty)
 			}
 		}
 
-		if(tty->termios.c_lflag & ICANON && !tty->lnext) {
+		if(tty->termios.c_lflag & ICANON && !(tty->flags & TTY_HAS_LNEXT)) {
 			if(ch == tty->termios.c_cc[VERASE] || ch == tty->termios.c_cc[VWERASE] || ch == tty->termios.c_cc[VKILL]) {
 				erase_char(tty, ch);
 				continue;
@@ -363,7 +363,7 @@ void do_cook(struct tty *tty)
 			}
 
 			if(ch == tty->termios.c_cc[VLNEXT] && tty->termios.c_lflag & IEXTEN) {
-				tty->lnext = 1;
+				tty->flags |= TTY_HAS_LNEXT;
 				if(tty->termios.c_lflag & ECHOCTL) {
 					tty_queue_putchar(tty, &tty->write_q, '^');
 					tty_queue_putchar(tty, &tty->write_q, '\b');
@@ -391,7 +391,7 @@ void do_cook(struct tty *tty)
 			if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
 				out_char(tty, ch);
 				tty_queue_putchar(tty, &tty->cooked_q, ch);
-				tty->lnext = 0;
+				tty->flags &= ~TTY_HAS_LNEXT;
 				continue;
 			}
 			if(ch == '\n') {
@@ -407,7 +407,7 @@ void do_cook(struct tty *tty)
 			}
 		}
 		tty_queue_putchar(tty, &tty->cooked_q, ch);
-		tty->lnext = 0;
+		tty->flags &= ~TTY_HAS_LNEXT;
 	}
 	tty->output(tty);
 	if(!(tty->termios.c_lflag & ICANON) || ((tty->termios.c_lflag & ICANON) && tty->canon_data)) {

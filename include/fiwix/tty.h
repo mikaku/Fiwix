@@ -24,6 +24,9 @@
 
 #define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : '\0')
 
+/* tty flags */
+#define TTY_HAS_LNEXT		0x01
+
 struct clist {
 	unsigned short int count;
 	unsigned short int cb_num;
@@ -53,11 +56,11 @@ struct tty {
 	struct winsize winsize;
 	struct kbd_state kbd;
 	__pid_t pid, pgid, sid;
-	unsigned char lnext;
 	void *driver_data;
 	int canon_data;
 	char tab_stop[132];
 	int column;
+	int flags;
 
 	/* formerly tty driver operations */
 	void (*stop)(struct tty *);
