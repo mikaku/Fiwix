@@ -1,14 +1,14 @@
 /*
  * fiwix/include/fiwix/segments.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_SEGMENTS_H
 #define _FIWIX_SEGMENTS_H
 
-#define KERNEL_BASE_ADDR	0xC0000000
+#define PAGE_OFFSET	0xC0000000
 #define KERNEL_ENTRY_ADDR	0x100000
 
 #define KERNEL_CS	0x08	/* kernel code segment */

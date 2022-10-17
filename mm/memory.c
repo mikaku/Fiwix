@@ -18,7 +18,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define KERNEL_TEXT_SIZE	((int)_etext - (KERNEL_BASE_ADDR + KERNEL_ENTRY_ADDR))
+#define KERNEL_TEXT_SIZE	((int)_etext - (PAGE_OFFSET + KERNEL_ENTRY_ADDR))
 #define KERNEL_DATA_SIZE	((int)_edata - (int)_etext)
 #define KERNEL_BSS_SIZE		((int)_end - (int)_edata)
 
@@ -91,7 +91,7 @@ unsigned int setup_minmem(void)
 	short int pd, mb4;
 
 	mb4 = 1;	/* 4MB units */
-	addr = KERNEL_BASE_ADDR + PGDIR_4MB_ADDR;
+	addr = PAGE_OFFSET + PGDIR_4MB_ADDR;
 
 	kpage_dir = (unsigned int *)addr;
 	memset_b(kpage_dir, 0, PAGE_SIZE);
@@ -105,7 +105,7 @@ unsigned int setup_minmem(void)
 		if(!(n % 1024)) {
 			pd = n / 1024;
 			kpage_dir[pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
-			kpage_dir[GET_PGDIR(KERNEL_BASE_ADDR) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
 		}
 	}
 	return (unsigned int)kpage_dir + 0x40000000;
@@ -285,7 +285,7 @@ void mem_init(void)
 	for(n = 0; n < kstat.physical_pages; n++) {
 		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
-			kpage_dir[GET_PGDIR(KERNEL_BASE_ADDR) + (n / 1024)] = (unsigned int)&kpage_table[n] | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&kpage_table[n] | PAGE_PRESENT | PAGE_RW;
 		}
 	}
 

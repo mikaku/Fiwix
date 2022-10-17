@@ -717,7 +717,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 		0x7FFFFFFF,		/* rlim */
 		vma_start,		/* startcode */
 		vma_end,		/* endcode */
-		KERNEL_BASE_ADDR - 1,	/* startstack */
+		PAGE_OFFSET - 1,	/* startstack */
 		esp,			/* kstkesp */
 		eip,			/* kstkeip */
 		p->sigpending,

@@ -306,7 +306,7 @@ void multiboot(unsigned long magic, unsigned long info)
 		from = (unsigned long int)video.address;
 		to = from + video.memsize;
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_AVAILABLE);
-		from = (unsigned long int)video.address - KERNEL_BASE_ADDR;
+		from = (unsigned long int)video.address - PAGE_OFFSET;
 		to = (from + video.memsize);
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
 	} else {

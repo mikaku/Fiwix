@@ -57,7 +57,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 {
 	struct proc *init;
 
-	_last_data_addr = stack - KERNEL_BASE_ADDR;
+	_last_data_addr = stack - PAGE_OFFSET;
 	memset_b(&kstat, 0, sizeof(kstat));
 
 	/* default kernel values */

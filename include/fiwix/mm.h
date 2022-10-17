@@ -13,12 +13,12 @@
 #include <fiwix/process.h>
 
 /*
- * Convert only from physical to virtual the addresses below KERNEL_BASE_ADDR
+ * Convert only from physical to virtual the addresses below PAGE_OFFSET
  * (formerly 0xC0000000).
  */
-#define P2V(addr)		(addr < KERNEL_BASE_ADDR ? addr + KERNEL_BASE_ADDR : addr)
+#define P2V(addr)		(addr < PAGE_OFFSET ? addr + PAGE_OFFSET : addr)
 
-#define V2P(addr)		(addr - KERNEL_BASE_ADDR)
+#define V2P(addr)		(addr - PAGE_OFFSET)
 
 #define PAGE_SIZE		4096
 #define PAGE_SHIFT		0x0C

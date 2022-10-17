@@ -317,7 +317,7 @@ void vgacon_init(void)
 	short int *bios_data;
 
 	/* get the VGA type from the BIOS equipment information */
-	bios_data = (short int *)(KERNEL_BASE_ADDR + 0x410);
+	bios_data = (short int *)(PAGE_OFFSET + 0x410);
 	if((*bios_data & 0x30) == 0x30) {
 		/* monochrome = 0x30 */
 		video.address = (void *)MONO_ADDR;

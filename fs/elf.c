@@ -83,7 +83,7 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 	/* copy strings */
 	for(n = 0; n < ARG_MAX; n++) {
 		if(barg->page[n]) {
-			addr = KERNEL_BASE_ADDR - ((ARG_MAX - n) * PAGE_SIZE);
+			addr = PAGE_OFFSET - ((ARG_MAX - n) * PAGE_SIZE);
 			memcpy_b((void *)addr, (void *)barg->page[n], PAGE_SIZE);
 		}
 	}
@@ -556,13 +556,13 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	current->brk = start;
 
 	/* setup the STACK section */
-	sp = KERNEL_BASE_ADDR - 4;	/* formerly 0xBFFFFFFC */
+	sp = PAGE_OFFSET - 4;	/* formerly 0xBFFFFFFC */
 	sp -= ae_str_len;
 	str = sp;	/* this is the address of the first string (argv[0]) */
 	sp &= ~3;
 	sp -= at_base ? (AT_ITEMS * 2) * sizeof(unsigned int) : 2 * sizeof(unsigned int);
 	sp -= ae_ptr_len;
-	length = KERNEL_BASE_ADDR - (sp & PAGE_MASK);
+	length = PAGE_OFFSET - (sp & PAGE_MASK);
 	errno = do_mmap(NULL, sp & PAGE_MASK, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		send_sig(current, SIGSEGV);

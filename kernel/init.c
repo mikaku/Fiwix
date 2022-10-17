@@ -107,7 +107,7 @@ void init_init(void)
 	init->tss.ss0 = KERNEL_DS;
 
 	/* setup the init_trampoline */
-	page = map_page(init, KERNEL_BASE_ADDR - PAGE_SIZE, 0, PROT_READ | PROT_WRITE);
+	page = map_page(init, PAGE_OFFSET - PAGE_SIZE, 0, PROT_READ | PROT_WRITE);
 	memcpy_b((void *)page, init_trampoline, INIT_TRAMPOLINE_SIZE);
 
 	init->tss.eip = (unsigned int)switch_to_user_mode;

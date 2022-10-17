@@ -214,13 +214,13 @@ BUILD_IRQ(15, irq15)
 	movw	%ax, %fs
 	movw	%ax, %gs
 	pushl	%eax
-	pushl	$KERNEL_BASE_ADDR - 4	# user stack address
+	pushl	$PAGE_OFFSET - 4	# user stack address
 	pushl	$0x202			# initialize eflags (Linux 2.2 = 0x292)
 	popfl
 	pushfl
 	movl	$(USER_CS | SS_RPL3), %eax
 	pushl	%eax
-	pushl	$KERNEL_BASE_ADDR - 0x1000	# go to init_trampoline() in user mode
+	pushl	$PAGE_OFFSET - 0x1000	# go to init_trampoline() in user mode
 	iret
 
 .align 4

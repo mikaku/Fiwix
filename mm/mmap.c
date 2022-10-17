@@ -390,7 +390,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 		return start;
 	}
 
-	if(start > KERNEL_BASE_ADDR || start + length > KERNEL_BASE_ADDR) {
+	if(start > PAGE_OFFSET || start + length > PAGE_OFFSET) {
 		return -EINVAL;
 	}
 
