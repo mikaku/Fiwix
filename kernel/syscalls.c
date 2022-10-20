@@ -16,6 +16,50 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
+static int verify_address(int type, const void *addr, unsigned int size)
+{
+#ifdef CONFIG_LAZY_USER_ADDR_CHECK
+	if(!addr) {
+		return -EFAULT;
+	}
+#else
+	struct vma *vma;
+	unsigned int start;
+
+	/*
+	 * Verifies if the 'vma' array of that process is not empty. It can
+	 * only be empty during the initialization of INIT, when it calls to
+	 * sys_execve and sys_open without having yet a proper setup.
+	 */
+	if(current->vma[0].s_type != 0) {
+		start = (unsigned int)addr;
+		if(!(vma = find_vma_region(start))) {
+			return -EFAULT;
+		}
+
+		for(;;) {
+			if(type == VERIFY_WRITE) {
+				if(!(vma->prot & PROT_WRITE)) {
+					return -EFAULT;
+				}
+			} else {
+				if(!(vma->prot & PROT_READ)) {
+					return -EFAULT;
+				}
+			}
+			if(start + size <= vma->end) {	/* FIXME: < */
+				break;
+			}
+			if(!(vma = find_vma_region(vma->end))) {
+				return -EFAULT;
+			}
+		}
+	}
+#endif /* CONFIG_LAZY_USER_ADDR_CHECK */
+
+	return 0;
+}
+
 void free_name(const char *name)
 {
 	kfree((unsigned int)name);
@@ -24,49 +68,27 @@ void free_name(const char *name)
 /*
  * This function has two objectives:
  *
- * 1. to check the memory address validity of the char pointer supplied by the
- *    user, while at the same time limit its length to PAGE_SIZE (4096) bytes.
- * 2. to create a copy of 'filename' in the kernel data space before using it.
+ * 1. verifies the memory address validity of the char pointer supplied by the
+ *    user and, at the same time, limits its length to PAGE_SIZE (4096) bytes.
+ * 2. creates a copy of 'filename' in the kernel data space before using it.
  */
 int malloc_name(const char *filename, char **name)
 {
-	struct vma *vma;
-	unsigned int start;
 	short int n, len;
 	char *b;
+	int errno;
 
-	/*
-	 * Verifies if the 'vma' array of that process is not empty. It can
-	 * only be empty during the initialization of INIT, when it calls to
-	 * sys_execve and sys_open without having yet a proper setup.
-	 */
-	if(current->vma[0].s_type != 0) {
-		if(!filename) {
-			return -EFAULT;
-		}
-		start = (unsigned int)filename;
-		if(!(vma = find_vma_region(start))) {
-			return -EFAULT;
-		}
-		if(!(vma->prot & PROT_READ)) {
-			return -EFAULT;
-		}
-		len = MIN(vma->end - start, PAGE_SIZE);
-		if(len < PAGE_SIZE) {
-			if((vma = find_vma_region(vma->end))) {
-				if(vma->prot & PROT_READ) {
-					len = PAGE_SIZE;
-				}
-			}
-		}
-	} else {
-		len = PAGE_SIZE;
+	/* verifies only the pointer address */
+	if((errno = verify_address(PROT_READ, filename, 0))) {
+		return errno;
 	}
+
+	len = MIN(strlen(filename), PAGE_SIZE);
 	if(!(b = (char *)kmalloc())) {
 		return -ENOMEM;
 	}
 	*name = b;
-	for(n = 0; n < len; n++) {
+	for(n = 0; n < (len + 1); n++) {
 		if(!(*b = *filename)) {
 			return 0;
 		}
@@ -116,40 +138,7 @@ int check_group(struct inode *i)
 
 int check_user_area(int type, const void *addr, unsigned int size)
 {
-	struct vma *vma;
-	unsigned int start;
-
-	/*
-	 * Verifies if the 'vma' array of that process is not empty. It can
-	 * only be empty during the initialization of INIT, when it calls to
-	 * sys_execve and sys_open without having yet a proper setup.
-	 */
-	if(current->vma[0].s_type != 0) {
-		start = (unsigned int)addr;
-		if(!(vma = find_vma_region(start))) {
-			return -EFAULT;
-		}
-
-		for(;;) {
-			if(type == VERIFY_WRITE) {
-				if(!(vma->prot & PROT_WRITE)) {
-					return -EFAULT;
-				}
-			} else {
-				if(!(vma->prot & PROT_READ)) {
-					return -EFAULT;
-				}
-			}
-			if(start + size <= vma->end) {
-				break;
-			}
-			if(!(vma = find_vma_region(vma->end))) {
-				return -EFAULT;
-			}
-		}
-	}
-
-	return 0;
+	return verify_address(type, addr, size);
 }
 
 int check_permission(int mask, struct inode *i)
