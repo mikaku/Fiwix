@@ -142,7 +142,7 @@ int sys_iopl(int, int, int, int, int, struct sigcontext *);
 int sys_wait4(__pid_t, int *, int, struct rusage *);
 int sys_sysinfo(struct sysinfo *);
 #ifdef CONFIG_IPC
-int sys_ipc(unsigned int, struct sysipc_args *);
+int sys_ipc(unsigned int, struct sysvipc_args *);
 #endif /* CONFIG_IPC */
 int sys_fsync(unsigned int);
 #ifdef CONFIG_SYSCALL_6TH_ARG

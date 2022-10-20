@@ -40,7 +40,7 @@
 
 typedef int key_t;
 
-struct sysipc_args {
+struct sysvipc_args {
 	int arg1;
 	int arg2;
 	int arg3;
@@ -59,12 +59,12 @@ struct ipc_perm {
 	unsigned short int seq;		/* slot sequence number */
 };
 
-#endif /* _FIWIX_IPC_H */
-
 extern struct resource ipcsem_resource;
 extern struct resource ipcmsg_resource;
 
 void ipc_init(void);
 int ipc_has_perms(struct ipc_perm *, int);
+
+#endif /* _FIWIX_IPC_H */
 
 #endif /* CONFIG_IPC */

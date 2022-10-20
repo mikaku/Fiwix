@@ -96,7 +96,7 @@ int ipc_has_perms(struct ipc_perm *perm, int mode)
  */
 int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long fifth)
 {
-	struct sysipc_args orig_args, *args;
+	struct sysvipc_args orig_args, *args;
 	struct ipc_kludge {
 		struct msgbuf *msgp;
 		long msgtyp;
@@ -162,7 +162,7 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 	}
 	args = &orig_args;
 #else
-int sys_ipc(unsigned int call, struct sysipc_args *args)
+int sys_ipc(unsigned int call, struct sysvipc_args *args)
 {
 	int errno;
 
@@ -170,7 +170,7 @@ int sys_ipc(unsigned int call, struct sysipc_args *args)
 	printk("(pid %d) sys_ipc(%d, 0x%08x)\n", current->pid, call, (int)args);
 #endif /*__DEBUG__ */
 
-	if((errno = check_user_area(VERIFY_READ, args, sizeof(struct sysipc_args)))) {
+	if((errno = check_user_area(VERIFY_READ, args, sizeof(struct sysvipc_args)))) {
 		return errno;
 	}
 
