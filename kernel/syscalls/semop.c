@@ -21,7 +21,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 static void semundo_ops(struct semid_ds *ss, struct sembuf *sops, int max)
 {
 	struct sem *s;
@@ -224,4 +224,4 @@ loop:
 	ss->sem_otime = CURRENT_TIME;
 	return 0;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

@@ -14,9 +14,9 @@
 #include <fiwix/sleep.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 #include <fiwix/sem.h>
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 
 void do_exit(int exit_code)
 {
@@ -29,11 +29,11 @@ void do_exit(int exit_code)
 	printk("------------------------------\n");
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 	if(current->semundo) {
 		semexit();
 	}
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 
 	release_binary();
 	current->argv = NULL;

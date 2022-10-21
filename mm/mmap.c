@@ -54,10 +54,10 @@ void show_vma_regions(struct proc *p)
 					break;
 			case P_MMAP:	section = "mmap ";
 					break;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 			case P_SHM:	section = "shm  ";
 					break;
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 			default:
 				section = NULL;
 				break;
@@ -111,9 +111,9 @@ static void sort_vma(void)
 				  (vma[n].flags == vma[n2].flags) &&
 				  (vma[n].offset == vma[n2].offset) &&
 				  (vma[n].s_type == vma[n2].s_type) &&
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 				  (vma[n].s_type != P_SHM) &&
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 				  (vma[n].inode == vma[n2].inode)) {
 					vma[n].end = vma[n2].end;
 					memset_b(&vma[n2], 0, sizeof(struct vma));
@@ -221,11 +221,11 @@ static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
 
 				kfree(P2V(pgtbl[pte]) & PAGE_MASK);
 				current->rss--;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 				if(vma->object) {
 					shm_rss--;
 				}
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 				pgtbl[pte] = 0;
 
 				/* check if a page table can be freed */
@@ -431,12 +431,12 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 
 		/* anonymous objects must be filled with zeros */
 		flags |= ZERO_PAGE;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 		/* ... except for SHM regions */
 		if(type == P_SHM) {
 			flags &= ~ZERO_PAGE;
 		}
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 	}
 
 	if(flags & MAP_FIXED) {
@@ -464,9 +464,9 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	vma->s_type = type;
 	vma->inode = i;
 	vma->o_mode = mode;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 	vma->object = (struct shmid_ds *)object;
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {

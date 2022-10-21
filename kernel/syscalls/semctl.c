@@ -20,7 +20,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int sys_semctl(int semid, int semnum, int cmd, void *arg)
 {
 	struct semid_ds *ss, *tmp;
@@ -250,4 +250,4 @@ int sys_semctl(int semid, int semnum, int cmd, void *arg)
 
 	return -EINVAL;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

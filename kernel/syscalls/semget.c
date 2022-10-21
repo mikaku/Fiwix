@@ -17,7 +17,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 struct semid_ds *semset[SEMMNI];
 unsigned int num_semsets;
 unsigned int num_sems;
@@ -211,4 +211,4 @@ init:
 	num_semsets++;
 	return (ss->sem_perm.seq * SEMMNI) + n;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

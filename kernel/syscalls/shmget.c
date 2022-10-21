@@ -18,7 +18,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 struct shmid_ds *shmseg[SHMMNI];
 unsigned int num_segs;
 unsigned int max_segid;
@@ -216,4 +216,4 @@ init:
 	shm_tot += npages;
 	return (seg->shm_perm.seq * SHMMNI) + n;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

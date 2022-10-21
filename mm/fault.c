@@ -139,13 +139,13 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 	} else {
 		current->usage.ru_minflt++;
 		addr = 0;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 		if(vma->s_type == P_SHM) {
 			if(shm_map_page(vma, cr2)) {
 				return 1;
 			}
 		}
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 	}
 
 	if(vma->flags & ZERO_PAGE) {

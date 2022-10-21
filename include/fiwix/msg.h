@@ -2,7 +2,7 @@
  * fiwix/include/fiwix/msg.h
  */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 
 #ifndef _FIWIX_MSG_H
 #define _FIWIX_MSG_H
@@ -83,4 +83,4 @@ int sys_msgctl(int, int, struct msqid_ds *);
 
 #endif /* _FIWIX_MSG_H */
 
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

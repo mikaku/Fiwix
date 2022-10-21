@@ -2,7 +2,7 @@
  * fiwix/include/fiwix/sem.h
  */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 
 #ifndef _FIWIX_SEM_H
 #define _FIWIX_SEM_H
@@ -109,4 +109,4 @@ int sys_semctl(int, int, int, void *);
 
 #endif /* _FIWIX_SEM_H */
 
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

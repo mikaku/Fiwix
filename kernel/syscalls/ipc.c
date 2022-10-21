@@ -20,7 +20,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 struct resource ipcsem_resource = { 0, 0 };
 struct resource ipcmsg_resource = { 0, 0 };
 struct resource ipcshm_resource = { 0, 0 };
@@ -209,4 +209,4 @@ int sys_ipc(unsigned int call, struct sysvipc_args *args)
 	}
 	return -EINVAL;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

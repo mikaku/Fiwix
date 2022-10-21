@@ -21,7 +21,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgflg)
 {
 	struct msqid_ds *mq;
@@ -114,4 +114,4 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgfl
 	wakeup(mq);
 	return count;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

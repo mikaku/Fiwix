@@ -296,11 +296,11 @@ void *syscall_table[] = {
 	sys_wait4,
 	NULL,	/* sys_swapoff */	/* 115 */
 	sys_sysinfo,
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 	sys_ipc,
 #else
 	NULL,	/* sys_ipc */
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 	sys_fsync,
 	sys_sigreturn,
 	NULL,	/* sys_clone */		/* 120 */

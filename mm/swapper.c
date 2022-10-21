@@ -50,9 +50,9 @@ int kswapd(void)
 	fd_init();
 	flock_init();
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 	ipc_init();
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 	mem_stats();
 	fs_init();
 	mount_root();

@@ -17,7 +17,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 struct msqid_ds *msgque[MSGMNI];
 unsigned int num_queues;
 unsigned int num_msgs;
@@ -165,4 +165,4 @@ init:
 	num_queues++;
 	return (mq->msg_perm.seq * MSGMNI) + n;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

@@ -20,7 +20,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int sys_shmctl(int shmid, int cmd, struct shmid_ds *buf)
 {
 	struct shmid_ds *seg;
@@ -128,4 +128,4 @@ int sys_shmctl(int shmid, int cmd, struct shmid_ds *buf)
 
 	return -EINVAL;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

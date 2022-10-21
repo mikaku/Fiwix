@@ -2,7 +2,7 @@
  * fiwix/include/fiwix/shm.h
  */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 
 #ifndef _FIWIX_SHM_H
 #define _FIWIX_SHM_H
@@ -94,4 +94,4 @@ int sys_shmctl(int, int, struct shmid_ds *);
 
 #endif /* _FIWIX_SHM_H */
 
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

@@ -22,7 +22,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int sys_shmdt(char *shmaddr)
 {
 	struct vma *vma;
@@ -59,4 +59,4 @@ int sys_shmdt(char *shmaddr)
 
 	return 0;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

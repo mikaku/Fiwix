@@ -100,9 +100,9 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->it_virt_value = 0;
 	child->it_prof_interval = 0;
 	child->it_prof_value = 0;
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 	current->semundo = NULL;
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
 
 
 	if(!(child->tss.esp0 = kmalloc())) {

@@ -2,7 +2,7 @@
  * fiwix/include/fiwix/ipc.h
  */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 
 #ifndef _FIWIX_IPC_H
 #define _FIWIX_IPC_H
@@ -67,4 +67,4 @@ int ipc_has_perms(struct ipc_perm *, int);
 
 #endif /* _FIWIX_IPC_H */
 
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

@@ -20,7 +20,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 {
 	struct msqid_ds *mq;
@@ -139,4 +139,4 @@ int sys_msgctl(int msqid, int cmd, struct msqid_ds *buf)
 
 	return -EINVAL;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */

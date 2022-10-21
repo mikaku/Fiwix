@@ -23,7 +23,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-#ifdef CONFIG_IPC
+#ifdef CONFIG_SYSVIPC
 int shm_map_page(struct vma *vma, unsigned int cr2)
 {
 	struct shmid_ds *seg;
@@ -120,4 +120,4 @@ int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned long int *raddr)
 
 	return 0;
 }
-#endif /* CONFIG_IPC */
+#endif /* CONFIG_SYSVIPC */
