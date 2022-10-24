@@ -42,14 +42,6 @@
 #define GET_PGDIR(address)	((unsigned int)((address) >> 22) & 0x3FF)
 #define GET_PGTBL(address)	((unsigned int)((address) >> 12) & 0x3FF)
 
-#define P_TEXT	1	/* text section */
-#define P_DATA	2	/* data section */
-#define P_BSS	3	/* BSS section */
-#define P_HEAP	4	/* heap section (sys_brk()) */
-#define P_STACK	5	/* stack section */
-#define P_MMAP	6	/* mmap() section */
-#define P_SHM	7	/* shared memory section */
-
 struct page {
 	int page;		/* page number */
 	int count;		/* usage counter */

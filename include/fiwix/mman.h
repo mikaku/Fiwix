@@ -28,12 +28,21 @@
 
 #define ZERO_PAGE	0x80000000	/* this page must be zero-filled */
 
-#define MS_ASYNC	1		/* sync memory asynchronously */
-#define MS_INVALIDATE	2		/* invalidate the caches */
-#define MS_SYNC		4		/* synchronous memory sync */
 
-#define MCL_CURRENT	1		/* lock all current mappings */
-#define MCL_FUTURE	2		/* lock all future mappings */
+#define MS_ASYNC	0x1	/* sync memory asynchronously */
+#define MS_INVALIDATE	0x2	/* invalidate the caches */
+#define MS_SYNC		0x4	/* synchronous memory sync */
+
+#define MCL_CURRENT	1	/* lock all current mappings */
+#define MCL_FUTURE	2	/* lock all future mappings */
+
+#define P_TEXT		1	/* text section */
+#define P_DATA		2	/* data section */
+#define P_BSS		3	/* BSS section */
+#define P_HEAP		4	/* heap section (sys_brk()) */
+#define P_STACK		5	/* stack section */
+#define P_MMAP		6	/* mmap() section */
+#define P_SHM		7	/* shared memory section */
 
 /* compatibility flags */
 #define MAP_ANON	MAP_ANONYMOUS
