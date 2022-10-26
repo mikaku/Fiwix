@@ -86,8 +86,8 @@ struct sigaction {
 
 #define SIG_MASK(sig)	(~(1 << ((sig) - 1)))
 
-#define	FROM_KERNEL	1	/* kernel is who sent the signal */
-#define	FROM_USER	2	/* user is who sent the signal */
+#define	KERNEL		1	/* kernel is who has sent the signal */
+#define	USER		2	/* user is who has sent the signal */
 
 int issig(void);
 void psig(unsigned int);

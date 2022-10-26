@@ -40,11 +40,11 @@ int sys_kill(__pid_t pid, __sigset_t signum)
 		return count ? 0 : -ESRCH;
 	}
 	if(!pid) {
-		return kill_pgrp(current->pgid, signum, FROM_USER);
+		return kill_pgrp(current->pgid, signum, USER);
 	}
 	if(pid < 1) {
-		return kill_pgrp(-pid, signum, FROM_USER);
+		return kill_pgrp(-pid, signum, USER);
 	}
 
-	return kill_pid(pid, signum, FROM_USER);
+	return kill_pid(pid, signum, USER);
 }

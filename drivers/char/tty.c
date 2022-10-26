@@ -250,8 +250,8 @@ void disassociate_ctty(struct tty *tty)
 		}
 		p = p->next;
 	}
-	kill_pgrp(current->pgid, SIGHUP, FROM_KERNEL);
-	kill_pgrp(current->pgid, SIGCONT, FROM_KERNEL);
+	kill_pgrp(current->pgid, SIGHUP, KERNEL);
+	kill_pgrp(current->pgid, SIGCONT, KERNEL);
 }
 
 void termios_reset(struct tty *tty)
@@ -297,19 +297,19 @@ void do_cook(struct tty *tty)
 					tty_queue_flush(&tty->cooked_q);
 				}
 				if(tty->pgid > 0) {
-					kill_pgrp(tty->pgid, SIGINT, FROM_KERNEL);
+					kill_pgrp(tty->pgid, SIGINT, KERNEL);
 				}
 				break;
 			}
 			if(ch == tty->termios.c_cc[VQUIT]) {
 				if(tty->pgid > 0) {
-					kill_pgrp(tty->pgid, SIGQUIT, FROM_KERNEL);
+					kill_pgrp(tty->pgid, SIGQUIT, KERNEL);
 				}
 				break;
 			}
 			if(ch == tty->termios.c_cc[VSUSP]) {
 				if(tty->pgid > 0) {
-					kill_pgrp(tty->pgid, SIGTSTP, FROM_KERNEL);
+					kill_pgrp(tty->pgid, SIGTSTP, KERNEL);
 				}
 				break;
 			}
@@ -506,7 +506,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 		if(current->sigaction[SIGTTIN - 1].sa_handler == SIG_IGN || current->sigblocked & (1 << (SIGTTIN - 1)) || is_orphaned_pgrp(current->pgid)) {
 			return -EIO;
 		}
-		kill_pgrp(current->pgid, SIGTTIN, FROM_KERNEL);
+		kill_pgrp(current->pgid, SIGTTIN, KERNEL);
 		return -ERESTART;
 	}
 
@@ -654,7 +654,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 				if(is_orphaned_pgrp(current->pgid)) {
 					return -EIO;
 				}
-				kill_pgrp(current->pgid, SIGTTOU, FROM_KERNEL);
+				kill_pgrp(current->pgid, SIGTTOU, KERNEL);
 				return -ERESTART;
 			}
 		}
@@ -956,7 +956,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			tty->winsize.ws_xpixel = ws->ws_xpixel;
 			tty->winsize.ws_ypixel = ws->ws_ypixel;
 			if(changed) {
-				kill_pgrp(tty->pgid, SIGWINCH, FROM_KERNEL);
+				kill_pgrp(tty->pgid, SIGWINCH, KERNEL);
 			}
 		}
 			break;

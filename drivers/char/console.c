@@ -844,7 +844,7 @@ void vconsole_select(int new_cons)
 	new_cons++;
 	if(current_cons != new_cons) {
 		if(vc[current_cons].vt_mode.mode == VT_PROCESS) {
-			if(!kill_pid(vc[current_cons].tty->pid, vc[current_cons].vt_mode.acqsig, FROM_KERNEL)) {
+			if(!kill_pid(vc[current_cons].tty->pid, vc[current_cons].vt_mode.acqsig, KERNEL)) {
 				vc[current_cons].switchto_tty = new_cons;
 				return;
 			}
@@ -861,7 +861,7 @@ void vconsole_select_final(int new_cons)
 {
 	if(current_cons != new_cons) {
 		if(vc[new_cons].vt_mode.mode == VT_PROCESS) {
-			if(kill_pid(vc[new_cons].tty->pid, vc[new_cons].vt_mode.acqsig, FROM_KERNEL)) {
+			if(kill_pid(vc[new_cons].tty->pid, vc[new_cons].vt_mode.acqsig, KERNEL)) {
 				init_vt(&vc[new_cons]);
 			}
 		}

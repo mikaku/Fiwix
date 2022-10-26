@@ -230,7 +230,7 @@ int kill_pid(__pid_t pid, __sigset_t signum, int sender)
 
 	FOR_EACH_PROCESS(p) {
 		if(p->pid == pid && p->state != PROC_ZOMBIE) {
-			if(sender == FROM_USER) {
+			if(sender == USER) {
 				if(!can_signal(p)) {
 					return -EPERM;
 				}
@@ -250,7 +250,7 @@ int kill_pgrp(__pid_t pgid, __sigset_t signum, int sender)
 	found = 0;
 	FOR_EACH_PROCESS(p) {
 		if(p->pgid == pgid && p->state != PROC_ZOMBIE) {
-			if(sender == FROM_USER) {
+			if(sender == USER) {
 				if(!can_signal(p)) {
 					p = p->next;
 					continue;
