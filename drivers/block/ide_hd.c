@@ -371,11 +371,11 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			}
 		}
 
-		inport_b(ide->ctrl + IDE_ALT_STATUS);	/* ignore results */
-		inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 		if(cmd == ATA_WRITE_MULTIPLE_PIO) {
 			break;
 		}
+		inport_b(ide->ctrl + IDE_ALT_STATUS);	/* ignore results */
+		inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 		n++;
 		offset++;
 		buffer += IDE_HD_SECTSIZE;
