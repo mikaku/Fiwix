@@ -151,7 +151,7 @@ static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_de
 static void scan_bus(void)
 {
 	int b, d, f;
-	unsigned short int vendor_id, device_id, class;
+	unsigned int vendor_id, device_id, class;
 	unsigned char header, irq, prog_if;
 	struct pci_device pci_dev;
 	const char *name;
