@@ -15,7 +15,7 @@
 #define PCI_ADDRESS	0x0CF8
 #define PCI_DATA	0x0CFC
 
-#define PCI_MAX_BUS	8	/* 256 buses maximum */
+#define PCI_MAX_BUS	16	/* 256 buses maximum */
 #define PCI_MAX_DEV	32
 #define PCI_MAX_FUNC	8
 
