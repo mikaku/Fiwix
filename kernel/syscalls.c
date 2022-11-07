@@ -47,7 +47,7 @@ static int verify_address(int type, const void *addr, unsigned int size)
 					return -EFAULT;
 				}
 			}
-			if(start + size <= vma->end) {	/* FIXME: < */
+			if(start + size < vma->end) {
 				break;
 			}
 			if(!(vma = find_vma_region(vma->end))) {
