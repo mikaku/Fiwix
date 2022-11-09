@@ -161,6 +161,7 @@ void wakeup_proc(struct proc *p)
 		}
 	}
 	p->sleep_address = NULL;
+	p->cpu_count = p->priority;
 	runnable(p);
 	need_resched = 1;
 
