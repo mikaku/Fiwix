@@ -14,7 +14,7 @@ LANG = -std=c89
 CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) $(LANG) -D__KERNEL__ #-D__DEBUG__
 LD = $(CROSS_COMPILE)ld
 
-CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra
+CFLAGS = -I$(INCLUDE) -O2 -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 
 DIRS =	kernel \
@@ -46,7 +46,7 @@ export CC LD CFLAGS LDFLAGS INCLUDE
 
 all:
 	@echo "#define UTS_VERSION \"`date`\"" > include/fiwix/version.h
-	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) ; done
+	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
 	$(LD) -N -T fiwix.ld $(LDFLAGS) $(OBJS) -o fiwix
 	nm fiwix | sort | gzip -9c > System.map.gz
 
