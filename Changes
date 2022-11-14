@@ -6,6 +6,8 @@
 - Added the character device /dev/full.
 - Added the character device /dev/port.
 - Added the system call sys_getcwd. [#4]
+- Added the configuration option CONFIG_QEMU_DEBUGCON to include support for the
+  QEMU Bochs-style debug console.
 - Improved the serial driver to support QEMU PCI serial devices.
 - Removed the extra lock when dispatching the bottom halves.
 - Mask the interrupt during the execution of the interrupt handler.
@@ -15,6 +17,9 @@
 - Moved the start and stop tty functions into the bottom half of the keyboard
   interrupt.
 - Removed the command to detect the interface type of the keyboard.
+- Removed the kernel parameter 'noramdisk', so from now on the RAM disk driver
+  is disabled by default. Use the kernel parameter 'ramdisksize=' to configure
+  and enable it.
 - Reversed the check order of schedule and signals before leaving the kernel
   space.
 - Improved the cooperation with reclaim_buffers() when kernel runs out of memory
@@ -23,6 +28,8 @@
 - Added the sleeping address value in the SysRq process listing.
 - Added the configuration option CONFIG_SYSCALL_6TH_ARG (disabled by default),
   to enable the 6th argument in the system calls.
+- Added the configuration option CONFIG_LAZY_USER_ADDR_CHECK to relax the number
+  of checks in the linear address of a system call parameter.
 - Reorganized the signal functions to avoid that signals sent by the kernel have
   to use the same checking mechanism as if they were sent by a user process.
   This also fixes a permission problem when sending the SIGCHLD signal to a
@@ -71,7 +78,12 @@
   there are two consecutive identifiers
 - Fixed to show the size of an ATA drive in KB if it's less than 1MB.
 - Fixed to use the standard algorithm to convert LBA to CHS in the ATA driver.
+- Fixed the TCSETSW, TCSETSF, TCSETAW and TCSETAF ioctl functions, so now they
+  wait output buffer to drain before apply the new settings.
+- Fixed a missing update of the termios structure during the ioctl functions:
+  TCSETA, TCSETAW and TCSETAF
 - Small fixes and cosmetic changes.
+- Cleaned up a lot of code.
 
 
 1.3.0 - 08-Dec-2021
