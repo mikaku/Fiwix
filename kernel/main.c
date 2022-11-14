@@ -32,7 +32,6 @@ unsigned int _last_data_addr;
 int _memsize;
 int _extmemsize;
 int _rootdev;
-int _noramdisk;
 int _ramdisksize;
 char _rootfstype[10];
 char _rootdevname[DEVNAME_MAX + 1];

@@ -32,10 +32,6 @@ static struct kparms parm_table[] = {
 	     0x1640, 0x1641, 0x1642, 0x1643, 0x1644,
 	   }
 	},
-	{ "noramdisk",
-	   { 0 },
-	   { 0 },
-	},
 	{ "ramdisksize=",
 	   { 0 },
 	   { 0 },

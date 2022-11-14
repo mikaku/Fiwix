@@ -38,7 +38,6 @@ extern unsigned int _last_data_addr;
 extern int _memsize;
 extern int _extmemsize;
 extern int _rootdev;
-extern int _noramdisk;
 extern int _ramdisksize;
 extern char _rootfstype[10];
 extern char _rootdevname[DEVNAME_MAX + 1];

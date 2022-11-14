@@ -182,7 +182,7 @@ void ramdisk_init(void)
 	int n;
 	struct ramdisk *ramdisk;
 
-	if(!_noramdisk) {
+	if(_ramdisksize > 0) {
 		for(n = 0; n < RAMDISK_MINORS; n++) {
 			SET_MINOR(ramdisk_device.minors, n);
 			rd_sizes[n] = _ramdisksize;

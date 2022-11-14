@@ -37,10 +37,6 @@ static int check_parm(struct kparms *parm, const char *value)
 		}
 		return 1;
 	}
-	if(!strcmp(parm->name, "noramdisk")) {
-		_noramdisk = 1;
-		return 0;
-	}
 	if(!strcmp(parm->name, "ramdisksize=")) {
 		int size = atoi(value);
 		if(!size || size > RAMDISK_MAXSIZE) {

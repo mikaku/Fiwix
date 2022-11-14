@@ -9,9 +9,7 @@ console=	Set the output console device
 
 initrd=		Optional ramdisk image file which will be loaded by GRUB
 
-noramdisk	Disable RAM disk driver
-
-ramdisksize=	Size of the RAM disk (in KiB)
+ramdisksize=	Enable the RAM disk drive and configure its size (in KiB)
 
 root=		Root device name
 		Options: /dev/fd0, /dev/hda1, ...
