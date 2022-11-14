@@ -37,12 +37,16 @@
 
 /* toggle configuration options */
 
-#undef CONFIG_VERBOSE_SEGFAULTS
 #define CONFIG_PCI
 #define CONFIG_PCI_NAMES
 #undef CONFIG_SYSCALL_6TH_ARG
 #define CONFIG_SYSVIPC
-#undef CONFIG_QEMU_DEBUGCON
 #define CONFIG_LAZY_USER_ADDR_CHECK
+
+
+/* configuration options to help debug or to test new features */
+#define CONFIG_VERBOSE_SEGFAULTS
+#undef CONFIG_QEMU_DEBUGCON
+
 
 #endif /* _FIWIX_CONFIG_H */
