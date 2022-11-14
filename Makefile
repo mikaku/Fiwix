@@ -54,22 +54,3 @@ clean:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE) clean) ; done
 	rm -f *.o fiwix System.map.gz
 
-floppy:
-	mkfs.ext2 -m 0 /dev/fd0
-	mount -t ext2 /dev/fd0 /mnt/floppy
-	@mkdir -p /mnt/floppy/boot/grub
-	@echo "(fd0)   /dev/fd0" > /mnt/floppy/boot/grub/device.map
-	@grub-install --root-directory=/mnt/floppy /dev/fd0
-	@tools/MAKEBOOTDISK
-	@cp -prf tools/etc/* /mnt/floppy/etc
-	@cp fiwix /mnt/floppy/boot
-	@cp System.map.gz /mnt/floppy/boot
-	@cp tools/install.sh /mnt/floppy/sbin
-	umount /mnt/floppy
-
-floppy_update:
-	mount -t ext2 /dev/fd0 /mnt/floppy
-	cp fiwix /mnt/floppy/boot
-	cp System.map.gz /mnt/floppy/boot
-	umount /mnt/floppy
-
