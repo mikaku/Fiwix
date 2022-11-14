@@ -60,11 +60,17 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 			free_name(tmp_name);
 			return -EEXIST;
 		}
-		if(check_permission(TO_EXEC | TO_WRITE, dir) < 0) {
-			iput(i);
-			iput(dir);
-			free_name(tmp_name);
-			return -EACCES;
+		if(!i) {
+			/*
+			 * If the file does not exist, you need enough
+			 * permission in the directory to create it.
+			 */
+			if(check_permission(TO_EXEC | TO_WRITE, dir) < 0) {
+				iput(i);
+				iput(dir);
+				free_name(tmp_name);
+				return -EACCES;
+			}
 		}
 		if(errno) {	/* assumes -ENOENT */
 			if(dir->fsop && dir->fsop->create) {
