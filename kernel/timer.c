@@ -341,7 +341,7 @@ void do_callouts_bh(void)
 			break;
 		}
 		if(lock_area(AREA_CALLOUT)) {
-			continue;
+			break;
 		}
 		fn = callout_head->fn;
 		arg = callout_head->arg;
