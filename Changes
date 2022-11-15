@@ -1,4 +1,4 @@
-1.4.0 - DD-MMM-2022
+1.4.0 - 15-Nov-2022
 ===================
 - Added support for the PCI local bus.
 - Added support for the UNIX System V IPC mechanisms (semaphores, message queues
@@ -40,6 +40,7 @@
   identify field.
 - Changed the bios memory map functions to show that the ending address is
   inside each range.
+- Changed sys_execve() to use the first argument instead of argv[0].
 - Reverted 75bb49d and 4ecf9dd, as the PC emulator 'copy.sh/v86' (maybe others)
   requires to select the drive on every command.
 - Fixed the slowness during the system boot-up caused by the keyboard driver not
@@ -82,6 +83,9 @@
   wait output buffer to drain before apply the new settings.
 - Fixed a missing update of the termios structure during the ioctl functions:
   TCSETA, TCSETAW and TCSETAF
+- Fixed sys_open() to check directory permissions only if the file does not
+  exist and O_CREAT has been specified.
+- Fixed callouts bottom half to avoid nesting.
 - Small fixes and cosmetic changes.
 - Cleaned up a lot of code.
 

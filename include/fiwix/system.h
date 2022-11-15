@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/system.h
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -10,7 +10,7 @@
 
 #define UTS_SYSNAME	"Fiwix"
 #define UTS_NODENAME	"(none)"
-#define UTS_RELEASE	"1.3.0"
+#define UTS_RELEASE	"1.4.0"
 #define UTS_DOMAINNAME	"(none)"
 
 struct sysinfo {

@@ -13,6 +13,7 @@ Features
  - POSIX-compliant (mostly).
  - Process groups, sessions and job control.
  - Interprocess communication with pipes and signals.
+ - UNIX System V IPC (semaphores, message queues and shared memory).
  - BSD file locking mechanism (POSIX restricted to file and advisory only).
  - Virtual memory management up to 4GB (1GB physical only and no swapping yet).
  - Demand paging with Copy-On-Write feature.
@@ -28,10 +29,13 @@ Features
  - RAMdisk device support.
  - Initial RAMdisk (initrd) image support.
  - SVGAlib based applications support.
+ - PCI local bus support.
+   - QEMU PCI serial device support.
  - Keyboard driver with Linux keymaps support.
  - Frame buffer device support for VESA VBE 2.0+ compliant graphic cards.
  - Serial port (RS-232) driver support.
  - Remote serial console support.
+ - QEMU Bochs-style debug console support.
  - Parallel port printer driver support.
  - Basic implementation of a Pseudo-Random Number Generator.
  - Floppy disk device driver and DMA management.
@@ -55,7 +59,7 @@ Let the system boot and when you are ready, just type `install.sh`.
 The minimal hardware requirements are as follows:
 
  - Standard IBM PC-AT architecture.
- - i386 processor or higher.
+ - i386 processor (with floating-point processor).
  - 3MB of RAM memory (128MB recommended).
  - IDE/ATAPI CD-ROM or floppy disk (3.5", 1.44MB).
  - 1GB ATA hard disk.
@@ -73,13 +77,13 @@ Please keep in mind that this is a kernel in its very early stages and may well 
 References
 ----------
 - [Website](https://www.fiwix.org)
-- [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
 - [IRC](https://web.libera.chat/)
+- [Mailing List](https://lists.sourceforge.net/lists/listinfo/fiwix-general)
 
 License
 -------
 Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.  
-Copyright (C) 2018-2021, Jordi Sanfeliu.
+Copyright (C) 2018-2022, Jordi Sanfeliu.
 
 Credits
 -------
