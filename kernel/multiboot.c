@@ -173,6 +173,11 @@ unsigned int get_last_boot_addr(unsigned int info)
 
 	addr = strtab->sh_addr + strtab->sh_size;
 
+	/* no ELF header tables */
+	if(!(mbi->flags & MULTIBOOT_INFO_ELF_SHDR)) {
+		addr = (unsigned int)_end + PAGE_SIZE;
+	}
+
 	/*
 	 * https://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 	 *
@@ -184,11 +189,6 @@ unsigned int get_last_boot_addr(unsigned int info)
 		for(n = 0; n < mbi->mods_count; n++, mod++) {
 			addr = mod->mod_end;
 		}
-	}
-
-	/* no ELF header tables */
-	if(!(mbi->flags & MULTIBOOT_INFO_ELF_SHDR)) {
-		addr = (unsigned int)_end + PAGE_SIZE;
 	}
 
 	return P2V(addr);
