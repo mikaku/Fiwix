@@ -52,6 +52,25 @@ int data_proc_self(char *buffer, __pid_t pid)
 	return sprintk(buffer, "%s", current->pidstr);
 }
 
+int data_proc_buddyinfo(char *buffer, __pid_t pid)
+{
+	int n, level, size;
+
+	size = sprintk(buffer, "Sizes:");
+	for(level = 32, n = 0; n < BUDDY_MAX_LEVEL; n++, level <<= 1) {
+		size += sprintk(buffer + size, "\t%d", level);
+	}
+	size += sprintk(buffer + size, "\n");
+	size += sprintk(buffer + size, "------------------------------------------------------------\n");
+	for(n = 0; n < BUDDY_MAX_LEVEL; n++) {
+		size += sprintk(buffer + size, "\t%d", kstat.buddy_low_count[n]);
+	}
+	size += sprintk(buffer + size, "\n\n");
+	size += sprintk(buffer + size, "Mem. requested (used): %d bytes (%dKB)\n", kstat.buddy_low_mem_requested, (kstat.buddy_low_num_pages * PAGE_SIZE / 1024));
+
+	return size;
+}
+
 int data_proc_cmdline(char *buffer, __pid_t pid)
 {
 	return sprintk(buffer, "%s\n", cmdline);

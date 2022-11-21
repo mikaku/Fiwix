@@ -17,7 +17,7 @@
 #define PROC_PID_INO		0x40000000	/* base for PID inodes */
 #define PROC_PID_LEV		1	/* array level for PID */
 
-#define PROC_ARRAY_ENTRIES	20
+#define PROC_ARRAY_ENTRIES	21
 
 enum pid_dir_inodes {
 	PROC_PID_FD = PROC_PID_INO + 1001,
@@ -49,6 +49,7 @@ struct procfs_dir_entry {
 
 extern struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1];
 
+int data_proc_buddyinfo(char *, __pid_t);
 int data_proc_cmdline(char *, __pid_t);
 int data_proc_cpuinfo(char *, __pid_t);
 int data_proc_devices(char *, __pid_t);
