@@ -12,6 +12,7 @@
 #include <fiwix/i386elf.h>
 
 #define QEMU_DEBUG_PORT		0xE9	/* for Bochs-style debug console */
+#define BUDDY_MAX_LEVEL		7
 
 #define PANIC(format, args...)						\
 {									\
@@ -85,6 +86,11 @@ struct kernel_stat {
 	int dirty;			/* dirty buffers (in KB) */
 	unsigned long int random_seed;	/* next random seed */
 	int pages_reclaimed;		/* last pages reclaimed from buffer */
+
+	/* buddy_low algorithm statistics */
+	int buddy_low_count[BUDDY_MAX_LEVEL + 1];
+	int buddy_low_num_pages;	/* number of pages used */
+	int buddy_low_mem_requested;	/* total memory requested (in bytes) */
 };
 extern struct kernel_stat kstat;
 

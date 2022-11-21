@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = bios_map.o memory.o page.o alloc.o fault.o mmap.o swapper.o
+OBJS = bios_map.o buddy_low.o memory.o page.o alloc.o fault.o mmap.o swapper.o
 
 all:	$(OBJS)
 

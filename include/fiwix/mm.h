@@ -66,6 +66,11 @@ extern unsigned int page_hash_table_size;	/* size in bytes */
 extern unsigned int *kpage_dir;
 extern unsigned int *kpage_table;
 
+/* buddy_low.c */
+unsigned int kmalloc2(__size_t);
+void kfree2(unsigned int);
+void buddy_low_init(void);
+
 /* alloc.c */
 unsigned int kmalloc(void);
 void kfree(unsigned int);
