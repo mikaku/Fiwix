@@ -59,12 +59,14 @@ int sys_wait4(__pid_t pid, int *status, int options, struct rusage *ru)
 			}
 			if(flag) {
 				if(p->state == PROC_STOPPED) {
-					if(p->exit_code) {
-						if(status) {
-							*status = (p->exit_code << 8) | 0x7F;
-						}
-						p->exit_code = 0;
+					if(!p->exit_code) {
+						p = p->next;
+						continue;
 					}
+					if(status) {
+						*status = (p->exit_code << 8) | 0x7F;
+					}
+					p->exit_code = 0;
 					if(ru) {
 						get_rusage(p, ru);
 					}
