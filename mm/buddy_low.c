@@ -82,7 +82,8 @@ static void deallocate(struct head *block)
 		}
 
 		if(level == BUDDY_MAX_LEVEL - 1) {
-			addr = (unsigned int)V2P(block - 1);
+			addr = (unsigned int)block;
+			addr = V2P(addr);
 			release_page(addr >> PAGE_SHIFT);
 			kstat.buddy_low_num_pages--;
 		}
@@ -179,10 +180,11 @@ void kfree2(unsigned int addr)
 	int level;
 
 	block = (struct head *)addr;
+	block--;
 	level = block->level;
 	kstat.buddy_low_count[level]--;
 	kstat.buddy_low_mem_requested -= blocksize[level];
-	deallocate(block - 1);
+	deallocate(block);
 }
 
 void buddy_low_init(void)
