@@ -86,6 +86,8 @@
 - Fixed sys_open() to check directory permissions only if the file does not
   exist and O_CREAT has been specified.
 - Fixed callouts bottom half to avoid nesting.
+- Fixed a bug introduced in 8eaed51 that prevented initrd images from
+  working. [#7]
 - Small fixes and cosmetic changes.
 - Cleaned up a lot of code.
 
