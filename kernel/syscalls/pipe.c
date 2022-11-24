@@ -31,7 +31,7 @@ int sys_pipe(int pipefd[2])
 	if((errno = check_user_area(VERIFY_WRITE, pipefd, sizeof(int) * 2))) {
 		return errno;
 	}
-	if(!(i = ialloc(&fs->mt->sb, S_IFIFO))) {
+	if(!(i = ialloc(&fs->mp->sb, S_IFIFO))) {
 		return -EINVAL;
 	}
 	if((rfd = get_new_fd(i)) < 0) {

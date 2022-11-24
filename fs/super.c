@@ -209,7 +209,7 @@ int kern_mount(__dev_t dev, struct filesystems *fs)
 
 	mp->sb.dir = NULL;
 	mp->fs = fs;
-	fs->mt = mp;
+	fs->mp = mp;
 	return 0;
 }
 

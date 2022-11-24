@@ -16,7 +16,7 @@
 struct filesystems {
 	const char *name;		/* filesystem name */
 	struct fs_operations *fsop;	/* filesystem operations */
-	struct mount *mt;		/* mount-table entry (only for nodev) */
+	struct mount *mp;		/* mount-table entry (only for nodev) */
 };
 struct filesystems filesystems_table[NR_FILESYSTEMS];
 
