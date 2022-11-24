@@ -294,3 +294,12 @@
 - Fixed to show the complete pathname in the argv[0] of the init process.
 - Fixed to protect INIT process from unexpected signals.
 
+
+1.0.0 - 23-Apr-2018
+===================
+- Fixed a bug in reclaim_buffers() to avoid kernel freeze.
+- Fixed a corruption bug when creating the dirent structure in the dir_readdir()
+  functions.
+- Massive code cleaning.
+- New system calls:
+	sys_select
