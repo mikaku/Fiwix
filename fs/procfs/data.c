@@ -266,20 +266,19 @@ int data_proc_meminfo(char *buffer, __pid_t pid)
 
 int data_proc_mounts(char *buffer, __pid_t pid)
 {
-	int n, size;
+	int size;
 	char *flag;
+	struct mount *mp;
 
 	size = 0;
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].used) {
-			if(mount_table[n].fs->fsop->flags != FSOP_KERN_MOUNT) {
-				flag = "rw";
-				if(mount_table[n].sb.flags & MS_RDONLY) {
-					flag = "ro";
-				}
-				size += sprintk(buffer + size, "%s %s %s %s 0 0\n", mount_table[n].devname, mount_table[n].dirname, mount_table[n].fs->name, flag);
-			}
+	mp = mount_table;
+
+	while(mp) {
+		if(mp->fs->fsop->flags != FSOP_KERN_MOUNT) {
+			flag = mp->sb.flags & MS_RDONLY ? "ro" : "rw";
+			size += sprintk(buffer + size, "%s %s %s %s 0 0\n", mp->devname, mp->dirname, mp->fs->name, flag);
 		}
+		mp = mp->next;
 	}
 	return size;
 }
@@ -619,22 +618,22 @@ int data_proc_pid_mountinfo(char *buffer, __pid_t pid)
 {
 	int n, size;
 	char *flag, *devname;
+	struct mount *mp;
 
-	size = 0;
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].used) {
-			if(mount_table[n].fs->fsop->flags != FSOP_KERN_MOUNT) {
-				flag = "rw";
-				if(mount_table[n].sb.flags & MS_RDONLY) {
-					flag = "ro";
-				}
-				devname = mount_table[n].devname;
-				if(!strcmp(mount_table[n].devname, "/dev/root")) {
-					devname = _rootdevname;
-				}
-				size += sprintk(buffer + size, "%d 0 %d:%d %s %s %s - %s %s %s\n", n, MAJOR(mount_table[n].dev), MINOR(mount_table[n].dev), "/", mount_table[n].dirname, flag, mount_table[n].fs->name, devname, flag);
+	size = n = 0;
+	mp = mount_table;
+
+	while(mp) {
+		if(mp->fs->fsop->flags != FSOP_KERN_MOUNT) {
+			flag = mp->sb.flags & MS_RDONLY ? "ro" : "rw";
+			devname = mp->devname;
+			if(!strcmp(devname, "/dev/root")) {
+				devname = _rootdevname;
 			}
+			size += sprintk(buffer + size, "%d 0 %d:%d %s %s %s - %s %s %s\n", n, MAJOR(mp->dev), MINOR(mp->dev), "/", mp->dirname, flag, mp->fs->name, devname, flag);
 		}
+		n++;
+		mp = mp->next;
 	}
 	return size;
 }

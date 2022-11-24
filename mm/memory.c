@@ -14,7 +14,6 @@
 #include <fiwix/process.h>
 #include <fiwix/buffer.h>
 #include <fiwix/fs.h>
-#include <fiwix/filesystems.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -44,9 +43,6 @@ struct inode **inode_hash_table;
 
 unsigned int fd_table_size = 0;
 struct fd *fd_table;
-
-unsigned int mount_table_size = 0;
-struct mount *mount_table;
 
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
@@ -382,16 +378,6 @@ void mem_init(void)
 	}
 	fd_table = (struct fd *)_last_data_addr;
 	_last_data_addr += fd_table_size;
-
-
-	/* reserve memory space for mount_table[NR_MOUNT_POINTS] */
-	mount_table_size = PAGE_ALIGN(sizeof(struct mount) * NR_MOUNT_POINTS);
-/*	printk("_last_data_addr = 0x%08x-0x%08x (mount_table)\n", _last_data_addr, _last_data_addr + mount_table_size); */
-	if(!addr_in_bios_map(V2P(_last_data_addr) + mount_table_size)) {
-		PANIC("Not enough memory for mount_table.\n");
-	}
-	mount_table = (struct mount *)_last_data_addr;
-	_last_data_addr += mount_table_size;
 
 
 	/* reserve memory space for RAMdisk(s) */

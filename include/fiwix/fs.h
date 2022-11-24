@@ -243,8 +243,8 @@ int namei(char *, struct inode **, struct inode **, int);
 
 void superblock_lock(struct superblock *);
 void superblock_unlock(struct superblock *);
-struct mount *get_free_mount_point(__dev_t);
-void release_mount_point(struct mount *);
+struct mount *add_mount_point(__dev_t, const char *, const char *);
+void del_mount_point(struct mount *);
 struct mount *get_mount_point(struct inode *);
 
 int get_new_fd(struct inode *);

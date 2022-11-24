@@ -91,6 +91,8 @@ struct kernel_stat {
 	int buddy_low_count[BUDDY_MAX_LEVEL + 1];
 	int buddy_low_num_pages;	/* number of pages used */
 	int buddy_low_mem_requested;	/* total memory requested (in bytes) */
+
+	int mount_points;		/* number of fs currently mounted */
 };
 extern struct kernel_stat kstat;
 

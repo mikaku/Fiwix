@@ -21,7 +21,7 @@ static struct resource umount_resource = { 0, 0 };
 int sys_umount2(const char *target, int flags)
 {
 	struct inode *i_target;
-	struct mount *mt = NULL;
+	struct mount *mp = NULL;
 	struct filesystems *fs;
 	struct device *d;
 	struct inode dummy_i;
@@ -50,7 +50,7 @@ int sys_umount2(const char *target, int flags)
 		return -EINVAL;
 	}
 
-	if(!(mt = get_mount_point(i_target))) {
+	if(!(mp = get_mount_point(i_target))) {
 		iput(i_target);
 		free_name(tmp_target);
 		return -EINVAL;
@@ -82,7 +82,7 @@ int sys_umount2(const char *target, int flags)
 
 	lock_resource(&umount_resource);
 
-	fs = mt->fs;
+	fs = mp->fs;
 	if(fs->fsop && fs->fsop->release_superblock) {
 		fs->fsop->release_superblock(sb);
 	}
@@ -109,7 +109,7 @@ int sys_umount2(const char *target, int flags)
 	invalidate_buffers(dev);
 	invalidate_inodes(dev);
 
-	release_mount_point(mt);
+	del_mount_point(mp);
 	unlock_resource(&umount_resource);
 	return 0;
 }

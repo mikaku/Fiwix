@@ -45,7 +45,6 @@ int kswapd(void)
 	sleep_init();
 	buffer_init();
 	sched_init();
-	mount_init();
 	inode_init();
 	fd_init();
 	flock_init();

@@ -16,8 +16,9 @@
 #include <fiwix/sched.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/mm.h>
 
-struct mount *mount_table;
+struct mount *mount_table = NULL;
 static struct resource sync_resource = { 0, 0 };
 
 void superblock_lock(struct superblock *sb)
@@ -51,77 +52,117 @@ void superblock_unlock(struct superblock *sb)
 	RESTORE_FLAGS(flags);
 }
 
-struct mount *get_free_mount_point(__dev_t dev)
+struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirname)
 {
 	unsigned long int flags;
-	int n;
+	struct mount *mp;
 
-	if(!dev) {
-		printk("%s(): invalid device %d,%d.\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
+	if(kstat.mount_points + 1 > NR_MOUNT_POINTS) {
+		printk("WARNING: tried to excedeed NR_MOUNT_POINTS (%d).\n", NR_MOUNT_POINTS);
 		return NULL;
 	}
 
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].dev == dev) {
-			printk("%s(): device %d,%d already mounted.\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-			return NULL;
-		}
+	if(!(mp = (struct mount *)kmalloc2(sizeof(struct mount)))) {
+		return NULL;
+	}
+	memset_b(mp, 0, sizeof(struct mount));
+
+	if(!(mp->devname = (char *)kmalloc2(strlen(devname) + 1))) {
+		kfree2((unsigned int)mp);
+		return NULL;
+	}
+	if(!(mp->dirname = (char *)kmalloc2(strlen(dirname) + 1))) {
+		kfree2((unsigned int)mp->devname);
+		kfree2((unsigned int)mp);
+		return NULL;
 	}
 
 	SAVE_FLAGS(flags); CLI();
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(!mount_table[n].used) {
-			/* 'dev' is saved here now for get_superblock() (which
-			 * in turn is called by read_inode(), which in turn is
-			 * called by iget(), which in turn is called by
-			 * read_superblock) to be able to find the device.
-			 */
-			mount_table[n].dev = dev; 
-			mount_table[n].used = 1;
-			RESTORE_FLAGS(flags);
-			return &mount_table[n];
+	if(!mount_table) {
+		mount_table = mp;
+	} else {
+		mp->prev = mount_table->prev;
+		mount_table->prev->next = mp;
+	}
+	mount_table->prev = mp;
+	RESTORE_FLAGS(flags);
+
+	mp->dev = dev;
+	strcpy(mp->devname, devname);
+	strcpy(mp->dirname, dirname);
+	kstat.mount_points++;
+	return mp;
+}
+
+void del_mount_point(struct mount *mp)
+{
+	unsigned long int flags;
+	struct mount *tmp;
+
+	tmp = mp;
+
+	if(!mp->next && !mp->prev) {
+		printk("WARNING: %s(): trying to umount an unexistent mount point (%x, '%s', '%s').\n", __FUNCTION__, mp->dev, mp->devname, mp->dirname);
+		return;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if(mp->next) {
+		mp->next->prev = mp->prev;
+	}
+	if(mp->prev) {
+		if(mp != mount_table) {
+			mp->prev->next = mp->next;
 		}
+	}
+	if(!mp->next) {
+		mount_table->prev = mp->prev;
+	}
+	if(mp == mount_table) {
+		mount_table = mp->next;
 	}
 	RESTORE_FLAGS(flags);
 
-	printk("WARNING: %s(): mount-point table is full.\n", __FUNCTION__);
-	return NULL;
+	kfree2((unsigned int)tmp->devname);
+	kfree2((unsigned int)tmp->dirname);
+	kfree2((unsigned int)tmp);
+	kstat.mount_points--;
 }
 
-void release_mount_point(struct mount *mt)
+struct mount *get_mount_point(struct inode *i)
 {
-	memset_b(mt, 0, sizeof(struct mount));
-}
+	struct mount *mp;
 
-struct mount *get_mount_point(struct inode *i_target)
-{
-	int n;
+	mp = mount_table;
 
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].used) {
-			if(S_ISDIR(i_target->i_mode)) {
-				if(mount_table[n].sb.root == i_target) {
-					return &mount_table[n];
-				}
-			}
-			if(S_ISBLK(i_target->i_mode)) {
-				if(mount_table[n].dev == i_target->rdev) {
-					return &mount_table[n];
-				}
+	while(mp) {
+		if(S_ISDIR(i->i_mode)) {
+			if(mp->sb.root == i) {
+				return mp;
 			}
 		}
+		if(S_ISBLK(i->i_mode)) {
+			if(mp->dev == i->rdev) {
+				return mp;
+			}
+		}
+		mp = mp->next;
 	}
+
 	return NULL;
 }
 
 struct superblock *get_superblock(__dev_t dev)
 {
-	int n;
+	struct mount *mp;
 
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].used && mount_table[n].dev == dev) {
-			return &mount_table[n].sb;
+	mp = mount_table;
+
+	while(mp) {
+		if(mp->dev == dev) {
+			return &mp->sb;
 		}
+		mp = mp->next;
 	}
 	return NULL;
 }
@@ -129,12 +170,15 @@ struct superblock *get_superblock(__dev_t dev)
 void sync_superblocks(__dev_t dev)
 {
 	struct superblock *sb;
-	int n, errno;
+	struct mount *mp;
+	int errno;
+
+	mp = mount_table;
 
 	lock_resource(&sync_resource);
-	for(n = 0; n < NR_MOUNT_POINTS; n++) {
-		if(mount_table[n].used && (!dev || mount_table[n].dev == dev)) {
-			sb = &mount_table[n].sb;
+	while(mp) {
+		if(mp->dev == dev) {
+			sb = &mp->sb;
 			if(sb->dirty && !(sb->flags & MS_RDONLY)) {
 				if(sb->fsop && sb->fsop->write_superblock) {
 					errno = sb->fsop->write_superblock(sb);
@@ -144,6 +188,7 @@ void sync_superblocks(__dev_t dev)
 				}
 			}
 		}
+		mp = mp->next;
 	}
 	unlock_resource(&sync_resource);
 }
@@ -151,32 +196,30 @@ void sync_superblocks(__dev_t dev)
 /* pseudo-filesystems are only mountable by the kernel */
 int kern_mount(__dev_t dev, struct filesystems *fs)
 {
-	struct mount *mt;
+	struct mount *mp;
 
-	if(!(mt = get_free_mount_point(dev))) {
+	if(!(mp = add_mount_point(dev, "none", "none"))) {
 		return -EBUSY;
 	}
 
-	if(fs->fsop->read_superblock(dev, &mt->sb)) {
-		release_mount_point(mt);
+	if(fs->fsop->read_superblock(dev, &mp->sb)) {
+		del_mount_point(mp);
 		return -EINVAL;
 	}
 
-	mt->dev = dev;
-	strcpy(mt->devname, "none");
-	strcpy(mt->dirname, "none");
-	mt->sb.dir = NULL;
-	mt->fs = fs;
-	fs->mt = mt;
+	mp->sb.dir = NULL;
+	mp->fs = fs;
+	fs->mt = mp;
 	return 0;
 }
 
 int mount_root(void)
 {
 	struct filesystems *fs;
-	struct mount *mt;
+	struct mount *mp;
 
-	/* FIXME: before trying to mount the filesystem, we should first
+	/*
+	 * FIXME: before trying to mount the filesystem, we should first
 	 * check if '_rootdev' is a device successfully registered.
 	 */
 
@@ -191,37 +234,29 @@ int mount_root(void)
 		}
 	}
 
-	if(!(mt = get_free_mount_point(_rootdev))) {
+	if(!(mp = add_mount_point(_rootdev, "/dev/root", "/"))) {
 		PANIC("unable to get a free mount point.\n");
 	}
 
-	mt->sb.flags = MS_RDONLY;
+	mp->sb.flags = MS_RDONLY;
 	if(fs->fsop && fs->fsop->read_superblock) {
-		if(fs->fsop->read_superblock(_rootdev, &mt->sb)) {
+		if(fs->fsop->read_superblock(_rootdev, &mp->sb)) {
 			PANIC("unable to mount root filesystem on %s.\n", _rootdevname);
 		}
 	}
 
-	strcpy(mt->devname, "/dev/root");
-	strcpy(mt->dirname, "/");
-	mt->dev = _rootdev;
-	mt->sb.root->mount_point = mt->sb.root;
-	mt->sb.root->count++;
-	mt->sb.dir = mt->sb.root;
-	mt->sb.dir->count++;
-	mt->fs = fs;
+	mp->sb.root->mount_point = mp->sb.root;
+	mp->sb.root->count++;
+	mp->sb.dir = mp->sb.root;
+	mp->sb.dir->count++;
+	mp->fs = fs;
 
-	current->root = mt->sb.root;
+	current->root = mp->sb.root;
 	current->root->count++;
-	current->pwd = mt->sb.root;
+	current->pwd = mp->sb.root;
 	current->pwd->count++;
-	iput(mt->sb.root);
+	iput(mp->sb.root);
 
 	printk("mounted root device (%s filesystem) in readonly mode.\n", fs->name);
 	return 0;
-}
-
-void mount_init(void)
-{
-	memset_b(mount_table, 0, mount_table_size);
 }

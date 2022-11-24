@@ -13,9 +13,6 @@
 
 #define NR_FILESYSTEMS		5	/* supported filesystems */
 
-/* value to be determined during system startup */
-extern unsigned int mount_table_size;	/* size in bytes */
-
 struct filesystems {
 	const char *name;		/* filesystem name */
 	struct fs_operations *fsop;	/* filesystem operations */
@@ -25,11 +22,12 @@ struct filesystems filesystems_table[NR_FILESYSTEMS];
 
 struct mount {
 	__dev_t dev;			/* device number */
-	char devname[DEVNAME_MAX + 1];	/* device name */
-	char dirname[NAME_MAX + 1];	/* mount point directory name */
-	unsigned char used;		/* 1=busy, 0=free */
+	char *devname;			/* device name */
+	char *dirname;			/* mount point directory name */
 	struct superblock sb;		/* superblock */
 	struct filesystems *fs;		/* pointer to filesystem structure */
+	struct mount *prev;
+	struct mount *next;
 };
 extern struct mount *mount_table;
 
@@ -41,7 +39,6 @@ struct superblock *get_superblock(__dev_t);
 void sync_superblocks(__dev_t);
 int kern_mount(__dev_t, struct filesystems *);
 int mount_root(void);
-void mount_init(void);
 
 
 /* minix prototypes */

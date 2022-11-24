@@ -23,7 +23,7 @@
 int sys_mount(const char *source, const char *target, const char *fstype, unsigned long int flags, const void *data)
 {
 	struct inode *i_source, *i_target;
-	struct mount *mt;
+	struct mount *mp;
 	struct filesystems *fs;
 	struct vma *vma;
 	char *tmp_source, *tmp_target, *tmp_fstype;
@@ -55,14 +55,14 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 	}
 
 	if(flags & MS_REMOUNT) {
-		if(!(mt = get_mount_point(i_target))) {
+		if(!(mp = get_mount_point(i_target))) {
 			iput(i_target);
 			free_name(tmp_target);
 			return -EINVAL;
 		}
-		fs = mt->fs;
+		fs = mp->fs;
 		if(fs->fsop && fs->fsop->remount_fs) {
-			if((errno = fs->fsop->remount_fs(&mt->sb, flags))) {
+			if((errno = fs->fsop->remount_fs(&mp->sb, flags))) {
 				iput(i_target);
 				free_name(tmp_target);
 				return errno;
@@ -74,22 +74,22 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		}
 
 		/* switching from RW to RO */
-		if(flags & MS_RDONLY && !(mt->sb.flags & MS_RDONLY)) {
-			dev = mt->dev;
+		if(flags & MS_RDONLY && !(mp->sb.flags & MS_RDONLY)) {
+			dev = mp->dev;
 			/* 
 			 * FIXME: if there are files opened in RW mode then
 			 * we can't continue and must return -EBUSY.
 			 */
 			if(fs->fsop && fs->fsop->release_superblock) {
-				fs->fsop->release_superblock(&mt->sb);
+				fs->fsop->release_superblock(&mp->sb);
 			}
 			sync_superblocks(dev);
 			sync_inodes(dev);
 			sync_buffers(dev);
 		}
 
-		mt->sb.flags &= ~MS_RDONLY;
-		mt->sb.flags |= (flags & MS_RDONLY);
+		mp->sb.flags &= ~MS_RDONLY;
+		mp->sb.flags |= (flags & MS_RDONLY);
 		iput(i_target);
 		free_name(tmp_target);
 		return 0;
@@ -170,7 +170,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		dev = i_source->rdev;
 	}
 
-	if(!(mt = get_free_mount_point(dev))) {
+	if(!(mp = add_mount_point(dev, tmp_source, tmp_target))) {
 		if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
 			i_source->fsop->close(i_source, NULL);
 			iput(i_source);
@@ -182,15 +182,15 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		return -EBUSY;
 	}
 
-	mt->sb.flags = flags;
+	mp->sb.flags = flags;
 	if(fs->fsop->read_superblock) {
-		if((errno = fs->fsop->read_superblock(dev, &mt->sb))) {
+		if((errno = fs->fsop->read_superblock(dev, &mp->sb))) {
 			i_source->fsop->close(i_source, NULL);
 			if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
 				iput(i_source);
 			}
 			iput(i_target);
-			release_mount_point(mt);
+			del_mount_point(mp);
 			free_name(tmp_target);
 			free_name(tmp_fstype);
 			free_name(tmp_source);
@@ -201,19 +201,16 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 			iput(i_source);
 		}
 		iput(i_target);
-		release_mount_point(mt);
+		del_mount_point(mp);
 		free_name(tmp_target);
 		free_name(tmp_fstype);
 		free_name(tmp_source);
 		return -EINVAL;
 	}
 
-	mt->dev = dev;
-	strncpy(mt->devname, tmp_source, DEVNAME_MAX);
-	strcpy(mt->dirname, tmp_target);
-	mt->sb.dir = i_target;
-	mt->fs = fs;
-	i_target->mount_point = mt->sb.root;
+	mp->sb.dir = i_target;
+	mp->fs = fs;
+	i_target->mount_point = mp->sb.root;
 	free_name(tmp_target);
 	free_name(tmp_fstype);
 	free_name(tmp_source);
