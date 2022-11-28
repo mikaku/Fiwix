@@ -107,7 +107,6 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 	if(!(child->tss.esp0 = kmalloc())) {
 		kfree((unsigned int)child_pgdir);
-		kfree((unsigned int)child->vma);
 		release_proc(child);
 		return -ENOMEM;
 	}
@@ -116,7 +115,6 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 		printk("WARNING: %s(): not enough memory, can't clone pages.\n", __FUNCTION__);
 		free_page_tables(child);
 		kfree((unsigned int)child_pgdir);
-		kfree((unsigned int)child->vma);
 		release_proc(child);
 		return -ENOMEM;
 	}
