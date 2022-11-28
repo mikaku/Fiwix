@@ -66,7 +66,7 @@ int data_proc_buddyinfo(char *buffer, __pid_t pid)
 		size += sprintk(buffer + size, "\t%d", kstat.buddy_low_count[n]);
 	}
 	size += sprintk(buffer + size, "\n\n");
-	size += sprintk(buffer + size, "Mem. requested (used): %d bytes (%dKB)\n", kstat.buddy_low_mem_requested, (kstat.buddy_low_num_pages * PAGE_SIZE / 1024));
+	size += sprintk(buffer + size, "Memory requested (used): %d bytes (%dKB)\n", kstat.buddy_low_mem_requested, (kstat.buddy_low_num_pages * PAGE_SIZE / 1024));
 
 	return size;
 }
