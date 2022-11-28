@@ -1,3 +1,16 @@
+1.5.0 - DD-MMM-2023
+===================
+- Added a kernel memory allocator that uses the buddy algorithm to manage
+  requests smaller than PAGE_SIZE (4KiB).
+- Added the new file /proc/buddyinfo to view buddy algorithm statistics.
+- Changed mount_table from static to dynamically allocated array.
+- Modified the Makefile to disable compiling with PIE option enabled by some
+  builds of GCC. [#8]
+- Fixed a bug in syscalls/wait4.c introduced in 9cfe372 that created malfunction
+  in control jobs.
+- Small fixes and cosmetic changes.
+
+
 1.4.0 - 15-Nov-2022
 ===================
 - Added support for the PCI local bus.
