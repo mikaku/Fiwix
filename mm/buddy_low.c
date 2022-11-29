@@ -190,5 +190,4 @@ void kfree2(unsigned int addr)
 void buddy_low_init(void)
 {
 	memset_b(freelist, 0, sizeof(freelist));
-	memset_b(kstat.buddy_low_count, 0, sizeof(kstat.buddy_low_count));
 }
