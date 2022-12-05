@@ -60,21 +60,21 @@
 	testl	$SS_RPL3, CS(%esp)					;\
 	jz	2f
 
-#define CHECK_IF_NEED_SCHEDULE						\
-	movl	need_resched, %eax					;\
-	testl	$0xFFFFFFFF, %eax					;\
-	jz	1f							;\
-	call	do_sched						;\
-1:
-
 #define CHECK_IF_SIGNALS						\
 	call	issig							;\
 	testl	$0xFFFFFFFF, %eax					;\
-	jz	2f							;\
+	jz	1f							;\
 	movl	%esp, %eax						;\
 	pushl	%eax							;\
 	call	psig							;\
 	addl	$4, %esp						;\
+1:
+
+#define CHECK_IF_NEED_SCHEDULE						\
+	movl	need_resched, %eax					;\
+	testl	$0xFFFFFFFF, %eax					;\
+	jz	2f							;\
+	call	do_sched						;\
 2:
 
 #define RESTORE_ALL							\
@@ -96,8 +96,8 @@
 	EXCEPTION(num)							;\
 	BOTTOM_HALVES							;\
 	CHECK_IF_NESTED_INTERRUPT					;\
-	CHECK_IF_NEED_SCHEDULE						;\
 	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -108,8 +108,8 @@
 	EXCEPTION(num)							;\
 	BOTTOM_HALVES							;\
 	CHECK_IF_NESTED_INTERRUPT					;\
-	CHECK_IF_NEED_SCHEDULE						;\
 	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -129,8 +129,8 @@ BUILD_EXCEPTION_SIMUL_ERR(6, except6)	/* INVALID OPCODE */
 	clts			# floating-opcode cached!
 	BOTTOM_HALVES
 	CHECK_IF_NESTED_INTERRUPT
-	CHECK_IF_NEED_SCHEDULE
 	CHECK_IF_SIGNALS
+	CHECK_IF_NEED_SCHEDULE
 	RESTORE_ALL
 	iret
 
@@ -168,8 +168,8 @@ BUILD_EXCEPTION_SIMUL_ERR(31, except31)	/* INTEL RESERVED */
 	IRQ(num)							;\
 	BOTTOM_HALVES							;\
 	CHECK_IF_NESTED_INTERRUPT					;\
-	CHECK_IF_NEED_SCHEDULE						;\
 	CHECK_IF_SIGNALS						;\
+	CHECK_IF_NEED_SCHEDULE						;\
 	RESTORE_ALL							;\
 	iret
 
@@ -271,8 +271,8 @@ BUILD_IRQ(15, irq15)
 	movl	%eax, EAX(%esp)		# save the return value
 
 	BOTTOM_HALVES
-	CHECK_IF_NEED_SCHEDULE
 	CHECK_IF_SIGNALS
+	CHECK_IF_NEED_SCHEDULE
 .align 4
 .globl return_from_syscall; return_from_syscall:
 	RESTORE_ALL
