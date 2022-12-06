@@ -439,6 +439,7 @@ void mem_init(void)
 	_last_data_addr += page_table_size;
 
 	page_init(kstat.physical_pages);
+	buddy_low_init();
 }
 
 void mem_stats(void)
