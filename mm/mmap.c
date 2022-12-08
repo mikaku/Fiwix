@@ -17,6 +17,8 @@
 #include <fiwix/string.h>
 #include <fiwix/shm.h>
 
+void merge_vma_regions(struct vma *, struct vma *);
+
 void show_vma_regions(struct proc *p)
 {
 	__ino_t inode;
@@ -27,10 +29,12 @@ void show_vma_regions(struct proc *p)
 	unsigned int n;
 	int count;
 
-	vma = p->vma;
+	vma = p->vma_table;
+	n = 0;
 	printk("num  address range         flag offset     dev   inode      mod section cnt\n");
 	printk("---- --------------------- ---- ---------- ----- ---------- --- ------- ----\n");
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+
+	while(vma) {
 		r = vma->prot & PROT_READ ? 'r' : '-';
 		w = vma->prot & PROT_WRITE ? 'w' : '-';
 		x = vma->prot & PROT_EXEC ? 'x' : '-';
@@ -70,124 +74,142 @@ void show_vma_regions(struct proc *p)
 			count = vma->inode->count;
 		}
 		printk("[%02d] 0x%08x-0x%08x %c%c%c%c 0x%08x %02d:%02d %- 10u <%d> [%s]  (%d)\n", n, vma->start, vma->end, r, w, x, f, vma->offset, major, minor, inode, vma->o_mode, section, count);
+		vma = vma->next;
+		n++;
 	}
 	if(!n) {
 		printk("[no vma regions]\n");
 	}
 }
 
-static struct vma *get_new_vma_region(void)
+/* insert a vma structure into vma_table sorted by address */
+static void insert_vma_region(struct vma *vma)
 {
-	unsigned int n;
-	struct vma *vma;
+	struct vma *vmat;
 
-	vma = current->vma;
+	vmat = current->vma_table;
 
-	for(n = 0; n < VMA_REGIONS; n++, vma++) {
-		if(!vma->start && !vma->end) {
-			return vma;
-		}
-	}
-	return NULL;
-}
-
-/*
- * This sorts regions (in ascending order), merging equal regions and keeping
- * the unused ones at the end of the array.
- */
-static void sort_vma(void)
-{
-	unsigned int n, n2, needs_sort;
-	struct vma *vma, tmp;
-
-	vma = current->vma;
-
-	do {
-		needs_sort = 0;
-		for(n = 0, n2 = 1; n2 < VMA_REGIONS; n++, n2++) {
-			if(vma[n].end && vma[n2].start) {
-				if((vma[n].end == vma[n2].start) &&
-				  (vma[n].prot == vma[n2].prot) &&
-				  (vma[n].flags == vma[n2].flags) &&
-				  (vma[n].offset == vma[n2].offset) &&
-				  (vma[n].s_type == vma[n2].s_type) &&
-#ifdef CONFIG_SYSVIPC
-				  (vma[n].s_type != P_SHM) &&
-#endif /* CONFIG_SYSVIPC */
-				  (vma[n].inode == vma[n2].inode)) {
-					vma[n].end = vma[n2].end;
-					memset_b(&vma[n2], 0, sizeof(struct vma));
-					needs_sort++;
-				}
-			}
-			if((vma[n2].start && (vma[n].start > vma[n2].start)) || (!vma[n].start && vma[n2].start)) {
-				memcpy_b(&tmp, &vma[n], sizeof(struct vma));
-				memcpy_b(&vma[n], &vma[n2], sizeof(struct vma));
-				memcpy_b(&vma[n2], &tmp, sizeof(struct vma));
-				needs_sort++;
-			}
-		}
-	} while(needs_sort);
-}
-
-/*
- * This function removes all redundant entries.
- *
- * for example, if for any reason the map looks like this:
- * [01] 0x0808e984-0x08092000 rw-p 0x00000000 0
- * [02] 0x0808f000-0x0808ffff rw-p 0x000c0000 4066
- *
- * this function converts it to this:
- * [01] 0x0808e984-0x0808f000 rw-p 0x00000000 0
- * [02] 0x0808f000-0x0808ffff rw-p 0x000c0000 4066
- * [03] 0x08090000-0x08092000 rw-p 0x00000000 0
- */
-static int optimize_vma(void)
-{
-	unsigned int n, needs_sort;
-	struct vma *vma, *prev, *new;
-
-	for(;;) {
-		needs_sort = 0;
-		prev = new = NULL;
-		vma = current->vma;
-		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
-			if(!prev) {
-				prev = vma;
-				continue;
-			}
-			if((vma->start < prev->end)) {
-				if(!(new = get_new_vma_region())) {
-					printk("WARNING: %s(): unable to get a free vma region.\n", __FUNCTION__);
-					return -ENOMEM;
-				}
-				new->start = vma->end;
-				new->end = prev->end;
-				new->prot = prev->prot;
-				new->flags = prev->flags;
-				new->offset = prev->offset;
-				new->s_type = prev->s_type;
-				new->inode = prev->inode;
-				new->o_mode = prev->o_mode;
-				prev->end = vma->start;
-				needs_sort++;
-				if(prev->start == prev->end) {
-					memset_b(prev, 0, sizeof(struct vma));
-				}
-				if(new->start == new->end) {
-					memset_b(new, 0, sizeof(struct vma));
-				}
-				break;
-			}
-			prev = vma;
-		}
-		if(!needs_sort) {
+	while(vmat) {
+		if(vmat->start > vma->start) {
 			break;
 		}
-		sort_vma();
+		vmat = vmat->next;
+	}
+
+	if(!vmat) {
+		/* append */
+		vma->prev = current->vma_table->prev;
+		current->vma_table->prev->next = vma;
+		current->vma_table->prev = vma;
+	} else {
+		/* insert */
+		vma->prev = vmat->prev;
+		vma->next = vmat;
+		vmat->prev->next = vma;
+		vmat->prev = vma;
+	}
+
+	if(vma->prev->start == vma->start || vma->prev->end == vma->end) {
+		merge_vma_regions(vma->prev, vma);
+	}
+}
+
+static void add_vma_region(struct vma *vma)
+{
+	unsigned long int flags;
+
+	SAVE_FLAGS(flags); CLI();
+	if(!current->vma_table) {
+		current->vma_table = vma;
+		current->vma_table->prev = vma;
+	} else {
+		insert_vma_region(vma);
+	}
+	RESTORE_FLAGS(flags);
+}
+
+static void del_vma_region(struct vma *vma)
+{
+	unsigned long int flags;
+	struct vma *tmp;
+
+	tmp = vma;
+
+	if(!vma->next && !vma->prev) {
+		printk("WARNING: %s(): trying to delete an unexistent vma region (%x).\n", __FUNCTION__, vma->start);
+		return;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if(vma->next) {
+		vma->next->prev = vma->prev;
+	}
+	if(vma->prev) {
+		if(vma != current->vma_table) {
+			vma->prev->next = vma->next;
+		}
+	}
+	if(!vma->next) {
+		current->vma_table->prev = vma->prev;
+	}
+	if(vma == current->vma_table) {
+		current->vma_table = vma->next;
+	}
+	RESTORE_FLAGS(flags);
+
+	kfree2((unsigned int)tmp);
+}
+
+static int can_be_merged(struct vma *a, struct vma *b)
+{
+	if((a->end == b->start) &&
+	   (a->prot == b->prot) &&
+	   (a->flags == b->flags) &&
+	   (a->offset == b->offset) &&
+	   (a->s_type == b->s_type) &&
+#ifdef CONFIG_SYSVIPC
+	   (a->s_type != P_SHM) &&
+#endif /* CONFIG_SYSVIPC */
+	   (a->inode == b->inode)) {
+		return 1;
 	}
 
 	return 0;
+}
+
+/* this assumes that vma_table is sorted by address */
+void merge_vma_regions(struct vma *a, struct vma *b)
+{
+	struct vma *new;
+
+	if(b->start == a->end) {
+		if(can_be_merged(a, b)) {
+			a->end = b->end;
+			kfree2((unsigned int)b);
+			return;
+		}
+	}
+
+	if((b->start < a->end)) {
+		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+			return;
+		}
+		new->start = b->end;
+		new->end = a->end;
+		new->prot = a->prot;
+		new->flags = a->flags;
+		new->offset = a->offset;
+		new->s_type = a->s_type;
+		new->inode = a->inode;
+		new->o_mode = a->o_mode;
+		a->end = b->start;
+		if(a->start == a->end) {
+			del_vma_region(a);
+		}
+		if(new->start == new->end) {
+			kfree2((unsigned int)new);
+		}
+	}
 }
 
 static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
@@ -248,53 +270,57 @@ static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length
 {
 	struct vma *new;
 
-	if(!(new = get_new_vma_region())) {
-		printk("WARNING: %s(): unable to get a free vma region.\n", __FUNCTION__);
-		return -ENOMEM;
+	if(start + length < vma->end) {
+		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+			return -ENOMEM;
+		}
+		memset_b(new, 0, sizeof(struct vma));
+		new->start = start + length;
+		new->end = vma->end;
+		new->prot = vma->prot;
+		new->flags = vma->flags;
+		new->offset = vma->offset;
+		new->s_type = vma->s_type;
+		new->inode = vma->inode;
+		new->o_mode = vma->o_mode;
+	} else {
+		new = NULL;
 	}
 
-	new->start = start + length;
-	new->end = vma->end;
-	new->prot = vma->prot;
-	new->flags = vma->flags;
-	new->offset = vma->offset;
-	new->s_type = vma->s_type;
-	new->inode = vma->inode;
-	new->o_mode = vma->o_mode;
-
-	vma->end = start;
-
-	if(vma->start == vma->end) {
+	if(vma->start == start) {
 		if(vma->inode) {
 			iput(vma->inode);
 		}
-		memset_b(vma, 0, sizeof(struct vma));
+		del_vma_region(vma);
+	} else {
+		vma->end = start;
 	}
-	if(new->start == new->end) {
-		memset_b(new, 0, sizeof(struct vma));
+
+	if(new) {
+		add_vma_region(new);
 	}
+
 	return 0;
 }
 
 void release_binary(void)
 {
-	unsigned int n;
-	struct vma *vma;
+	struct vma *vma, *tmp;
 
-	vma = current->vma;
+	vma = current->vma_table;
 
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+	while(vma) {
+		tmp = vma->next;
 		free_vma_pages(vma->start, vma->end - vma->start, vma);
 		free_vma_region(vma, vma->start, vma->end - vma->start);
+		vma = tmp;
 	}
-	sort_vma();
-	optimize_vma();
+
 	invalidate_tlb();
 }
 
 struct vma *find_vma_region(unsigned int addr)
 {
-	unsigned int n;
 	struct vma *vma;
 
 	if(!addr) {
@@ -302,43 +328,43 @@ struct vma *find_vma_region(unsigned int addr)
 	}
 
 	addr &= PAGE_MASK;
-	vma = current->vma;
+	vma = current->vma_table;
 
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+	while(vma) {
 		if((addr >= vma->start) && (addr < vma->end)) {
 			return vma;
 		}
+		vma = vma->next;
 	}
 	return NULL;
 }
 
 struct vma *find_vma_intersection(unsigned int start, unsigned int end)
 {
-	unsigned int n;
 	struct vma *vma;
 
-	vma = current->vma;
+	vma = current->vma_table;
 
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+	while(vma) {
 		if(end <= vma->start) {
 			break;
 		}
 		if(start < vma->end) {
 			return vma;
 		}
+		vma = vma->next;
 	}
 	return NULL;
 }
 
 int expand_heap(unsigned int new)
 {
-	unsigned int n;
 	struct vma *vma, *heap;
 
-	vma = current->vma;
+	vma = current->vma_table;
 	heap = NULL;
 
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+	while(vma) {
 		/* make sure the new heap won't overlap the next region */
 		if(heap && new < vma->start) {
 			heap->end = new;
@@ -348,8 +374,8 @@ int expand_heap(unsigned int new)
 		}
 		if(!heap && vma->s_type == P_HEAP) {
 			heap = vma;	/* possible candidate */
-			continue;
 		}
+		vma = vma->next;
 	}
 
 	/* out of memory! */
@@ -359,7 +385,7 @@ int expand_heap(unsigned int new)
 /* return the first free address that matches with the size of length */
 unsigned int get_unmapped_vma_region(unsigned int length)
 {
-	unsigned int n, addr;
+	unsigned int addr;
 	struct vma *vma;
 
 	if(!length) {
@@ -367,16 +393,18 @@ unsigned int get_unmapped_vma_region(unsigned int length)
 	}
 
 	addr = MMAP_START;
-	vma = current->vma;
+	vma = current->vma_table;
 
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+	while(vma) {
 		if(vma->start < MMAP_START) {
+			vma = vma->next;
 			continue;
 		}
 		if(vma->start - addr >= length) {
 			return PAGE_ALIGN(addr);
 		}
 		addr = PAGE_ALIGN(vma->end);
+		vma = vma->next;
 	}
 	return 0;
 }
@@ -451,11 +479,10 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 		}
 	}
 
-	if(!(vma = get_new_vma_region())) {
-		printk("WARNING: %s(): unable to get a free vma region.\n", __FUNCTION__);
-		return -ENOMEM;
-	}
-
+	if(!(vma = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+                return -ENOMEM;
+        }
+        memset_b(vma, 0, sizeof(struct vma));
 	vma->start = start;
 	vma->end = start + length;
 	vma->prot = prot;
@@ -473,20 +500,15 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 			int errno2;
 
 			if((errno2 = free_vma_region(vma, start, length))) {
+				kfree2((unsigned int)vma);
 				return errno2;
 			}
-			sort_vma();
-			if((errno2 = optimize_vma())) {
-				return errno2;
-			}
+			kfree2((unsigned int)vma);
 			return errno;
 		}
 	}
 
-	sort_vma();
-	if((errno = optimize_vma())) {
-		return errno;
-	}
+	add_vma_region(vma);
 	return start;
 }
 
@@ -494,7 +516,6 @@ int do_munmap(unsigned int addr, __size_t length)
 {
 	struct vma *vma;
 	unsigned int size;
-	int errno;
 
 	if(addr & ~PAGE_MASK) {
 		return -EINVAL;
@@ -512,17 +533,9 @@ int do_munmap(unsigned int addr, __size_t length)
 
 			free_vma_pages(addr, size, vma);
 			invalidate_tlb();
-			if((errno = free_vma_region(vma, addr, size))) {
-				return errno;
-			}
-			sort_vma();
-			if((errno = optimize_vma())) {
-				return errno;
-			}
+			free_vma_region(vma, addr, size);
 			length -= size;
 			addr += size;
-		} else {
-			break;
 		}
 	}
 
@@ -532,13 +545,11 @@ int do_munmap(unsigned int addr, __size_t length)
 int do_mprotect(struct vma *vma, unsigned int addr, __size_t length, int prot)
 {
 	struct vma *new;
-	int errno;
 
-	if(!(new = get_new_vma_region())) {
-		printk("WARNING: %s(): unable to get a free vma region.\n", __FUNCTION__);
-		return -ENOMEM;
-	}
-
+	if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+                return -ENOMEM;
+        }
+        memset_b(new, 0, sizeof(struct vma));
 	new->start = addr;
 	new->end = addr + length;
 	new->prot = prot;
@@ -547,10 +558,7 @@ int do_mprotect(struct vma *vma, unsigned int addr, __size_t length, int prot)
 	new->s_type = vma->s_type;
 	new->inode = vma->inode;
 	new->o_mode = vma->o_mode;
+	add_vma_region(new);
 
-	sort_vma();
-	if((errno = optimize_vma())) {
-		return errno;
-	}
 	return 0;
 }

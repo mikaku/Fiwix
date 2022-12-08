@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/symlink.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -123,11 +123,15 @@ int procfs_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 			iput(i);
 			break;
 		case PROC_PID_EXE:
-			if(!p->vma || !p->vma->inode) {
+			/*
+			 * This assumes that the first entry in the vma_table
+			 * contains the program's inode.
+			 */
+			if(!p->vma_table || !p->vma_table->inode) {
 				return -ENOENT;
 			}
-			*i_res = p->vma->inode;
-			p->vma->inode->count++;
+			*i_res = p->vma_table->inode;
+			p->vma_table->inode->count++;
 			iput(i);
 			break;
 		case PROC_PID_ROOT:

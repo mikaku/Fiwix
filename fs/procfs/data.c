@@ -544,11 +544,16 @@ int data_proc_pid_exe(char *buffer, __pid_t pid)
 	if((p = get_proc_by_pid(pid))) {
 
 		/* kernel and zombie processes are programless */
-		if(!p->vma || !p->vma->inode) {
+
+		/*
+		 * This assumes that the first entry in the vma_table
+		 * contains the program's inode.
+		 */
+		if(!p->vma_table || !p->vma_table->inode) {
 			return -ENOENT;
 		}
 
-		i = p->vma->inode;
+		i = p->vma_table->inode;
 		size = sprintk(buffer, "[%02d%02d]:%d", MAJOR(i->rdev), MINOR(i->rdev), i->inode);
 	}
 	return size;
@@ -556,7 +561,6 @@ int data_proc_pid_exe(char *buffer, __pid_t pid)
 
 int data_proc_pid_maps(char *buffer, __pid_t pid)
 {
-	unsigned int n;
 	int size, len;
 	__ino_t inode;
 	int major, minor;
@@ -567,11 +571,8 @@ int data_proc_pid_maps(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(!p->vma) {
-			return 0;
-		}
-		vma = p->vma;
-		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+		vma = p->vma_table;
+		while(vma) {
 			r = vma->prot & PROT_READ ? 'r' : '-';
 			w = vma->prot & PROT_WRITE ? 'w' : '-';
 			x = vma->prot & PROT_EXEC ? 'x' : '-';
@@ -609,8 +610,10 @@ int data_proc_pid_maps(char *buffer, __pid_t pid)
 			}
 			len = sprintk(buffer + size, "%08x-%08x %c%c%c%c %08x %02d:%02d %- 10u [%s]\n", vma->start, vma->end, r, w, x, f, vma->offset, major, minor, inode, section);
 			size += len;
+			vma = vma->next;
 		}
 	}
+
 	return size;
 }
 
@@ -660,7 +663,7 @@ int data_proc_pid_root(char *buffer, __pid_t pid)
 
 int data_proc_pid_stat(char *buffer, __pid_t pid)
 {
-	int n, size, vma_start, vma_end;
+	int size, vma_start, vma_end;
 	unsigned int esp, eip;
 	int signum, mask;
 	__sigset_t sigignored, sigcaught;
@@ -671,14 +674,19 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 
 	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(!p->vma) {
+		vma = p->vma_table;
+		if(!vma) {
 			return 0;
 		}
-		vma_start = p->vma[0].start;
-		vma_end = p->vma[0].end;
 
-		vma = p->vma;
-		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+		/*
+		 * This assumes that the first entry in the vma_table
+		 * contains the program's inode.
+		 */
+		vma_start = vma->start;
+		vma_end = vma->end;
+
+		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
 					text += vma->end - vma->start;
@@ -694,6 +702,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 					mmap += vma->end - vma->start;
 					break;
 			}
+			vma = vma->next;
 		}
 
 		sigignored = sigcaught = 0;
@@ -713,36 +722,36 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 			eip = sc->eip;
 		}
 		size = sprintk(buffer, "%d (%s) %c %d %d %d %d %d %d %d %d %d %d %u %u %u %u %d %d %d %d %d %d %u %u %u %u %u %u %u %d %d %u %u %u\n",
-		p->pid,
-		p->argv0,
-		pstate[p->state][0],
-		p->ppid, p->pgid, p->sid,
-		p->ctty ? p->ctty->dev : 0,
-		p->ctty ? p->ctty->pgid : - 1,
-		0,			/* flags */
-		0, 0, 0, 0,		/* minflt, cminflt, majflt, cmajflt */
-		tv2ticks(&p->usage.ru_utime),
-		tv2ticks(&p->usage.ru_stime),
-		tv2ticks(&p->cusage.ru_utime),
-		tv2ticks(&p->cusage.ru_stime),
-		0,			/* counter */
-		0,			/* priority */
-		0,			/* timeout */
-		0,			/* itrealvalue */
-		p->start_time,
-		text + data + stack + mmap,
-		p->rss,
-		0x7FFFFFFF,		/* rlim */
-		vma_start,		/* startcode */
-		vma_end,		/* endcode */
-		PAGE_OFFSET - 1,	/* startstack */
-		esp,			/* kstkesp */
-		eip,			/* kstkeip */
-		p->sigpending,
-		p->sigblocked,
-		sigignored,
-		sigcaught,
-		p->sleep_address
+			p->pid,
+			p->argv0,
+			pstate[p->state][0],
+			p->ppid, p->pgid, p->sid,
+			p->ctty ? p->ctty->dev : 0,
+			p->ctty ? p->ctty->pgid : - 1,
+			0,			/* flags */
+			0, 0, 0, 0,		/* minflt, cminflt, majflt, cmajflt */
+			tv2ticks(&p->usage.ru_utime),
+			tv2ticks(&p->usage.ru_stime),
+			tv2ticks(&p->cusage.ru_utime),
+			tv2ticks(&p->cusage.ru_stime),
+			0,			/* counter */
+			0,			/* priority */
+			0,			/* timeout */
+			0,			/* itrealvalue */
+			p->start_time,
+			text + data + stack + mmap,
+			p->rss,
+			0x7FFFFFFF,		/* rlim */
+			vma_start,		/* startcode */
+			vma_end,		/* endcode */
+			PAGE_OFFSET - 1,	/* startstack */
+			esp,			/* kstkesp */
+			eip,			/* kstkeip */
+			p->sigpending,
+			p->sigblocked,
+			sigignored,
+			sigcaught,
+			p->sleep_address
 		);
 	}
 	return size;
@@ -750,18 +759,18 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 
 int data_proc_pid_statm(char *buffer, __pid_t pid)
 {
-	int n, size;
+	int size;
 	struct proc *p;
 	struct vma *vma;
 	int text, data, stack, mmap;
 
 	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(!p->vma) {
+		vma = p->vma_table;
+		if(!vma) {
 			return 0;
 		}
-		vma = p->vma;
-		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
 					text += vma->end - vma->start;
@@ -777,6 +786,7 @@ int data_proc_pid_statm(char *buffer, __pid_t pid)
 					mmap += vma->end - vma->start;
 					break;
 			}
+			vma = vma->next;
 		}
 
 		size = sprintk(buffer, "%d", (text + data + stack + mmap) / PAGE_SIZE);
@@ -792,7 +802,7 @@ int data_proc_pid_statm(char *buffer, __pid_t pid)
 
 int data_proc_pid_status(char *buffer, __pid_t pid)
 {
-	int n, size;
+	int size;
 	int signum, mask;
 	__sigset_t sigignored, sigcaught;
 	struct proc *p;
@@ -801,11 +811,11 @@ int data_proc_pid_status(char *buffer, __pid_t pid)
 
 	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
-		if(!p->vma) {
+		vma = p->vma_table;
+		if(!vma) {
 			return 0;
 		}
-		vma = p->vma;
-		for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
+		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
 					text += vma->end - vma->start;
@@ -821,6 +831,7 @@ int data_proc_pid_status(char *buffer, __pid_t pid)
 					mmap += vma->end - vma->start;
 					break;
 			}
+			vma = vma->next;
 		}
 
 		size = sprintk(buffer, "Name:\t%s\n", p->argv0);

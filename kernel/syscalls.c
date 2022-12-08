@@ -27,32 +27,34 @@ static int verify_address(int type, const void *addr, unsigned int size)
 	unsigned int start;
 
 	/*
-	 * Verifies if the 'vma' array of that process is not empty. It can
-	 * only be empty during the initialization of INIT, when it calls to
-	 * sys_execve and sys_open without having yet a proper setup.
+	 * The vma_table of the INIT process is not setup yet when it
+	 * calls sys_open() and sys_execve() from init_trampoline(),
+	 * but these calls are trusted.
 	 */
-	if(current->vma[0].s_type != 0) {
-		start = (unsigned int)addr;
-		if(!(vma = find_vma_region(start))) {
-			return -EFAULT;
-		}
+	if(!current->vma_table) {
+		return 0;
+	}
 
-		for(;;) {
-			if(type == VERIFY_WRITE) {
-				if(!(vma->prot & PROT_WRITE)) {
-					return -EFAULT;
-				}
-			} else {
-				if(!(vma->prot & PROT_READ)) {
-					return -EFAULT;
-				}
-			}
-			if(start + size < vma->end) {
-				break;
-			}
-			if(!(vma = find_vma_region(vma->end))) {
+	start = (unsigned int)addr;
+	if(!(vma = find_vma_region(start))) {
+		return -EFAULT;
+	}
+
+	for(;;) {
+		if(type == VERIFY_WRITE) {
+			if(!(vma->prot & PROT_WRITE)) {
 				return -EFAULT;
 			}
+		} else {
+			if(!(vma->prot & PROT_READ)) {
+				return -EFAULT;
+			}
+		}
+		if(start + size < vma->end) {
+			break;
+		}
+		if(!(vma = find_vma_region(vma->end))) {
+			return -EFAULT;
 		}
 	}
 #endif /* CONFIG_LAZY_USER_ADDR_CHECK */

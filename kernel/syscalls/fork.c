@@ -18,6 +18,18 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+static void free_vma_table(struct proc *p)
+{
+	struct vma *vma, *tmp;
+
+	vma = p->vma_table;
+	while(vma) {
+		tmp = vma;
+		vma = vma->next;
+		kfree2((unsigned int)tmp);
+	}
+}
+
 #ifdef CONFIG_SYSCALL_6TH_ARG
 int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext *sc)
 #else
@@ -29,7 +41,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	unsigned int *child_pgdir;
 	struct sigcontext *stack;
 	struct proc *child, *p;
-	struct vma *vma;
+	struct vma *vma, *child_vma;
 	__pid_t pid;
 
 #ifdef __DEBUG__
@@ -81,12 +93,28 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->start_time = CURRENT_TICKS;
 	child->sleep_address = NULL;
 
-	memcpy_b(child->vma, current->vma, sizeof(child->vma));
-	vma = child->vma;
-	for(n = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
-		if(vma->inode) {
-			vma->inode->count++;
+	vma = current->vma_table;
+	child->vma_table = NULL;
+	while(vma) {
+		if(!(child_vma = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+			kfree((unsigned int)child_pgdir);
+			free_vma_table(child);
+			release_proc(child);
+			return -ENOMEM;
 		}
+		*child_vma = *vma;
+		child_vma->prev = child_vma->next = NULL;
+		if(child_vma->inode) {
+			child_vma->inode->count++;
+		}
+		if(!child->vma_table) {
+			child->vma_table = child_vma;
+		} else {
+			child_vma->prev = child->vma_table->prev;
+			child->vma_table->prev->next = child_vma;
+		}
+		child->vma_table->prev = child_vma;
+		vma = vma->next;
 	}
 
 	child->sigpending = 0;
@@ -107,14 +135,16 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 	if(!(child->tss.esp0 = kmalloc())) {
 		kfree((unsigned int)child_pgdir);
+		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;
 	}
 
 	if(!(pages = clone_pages(child))) {
-		printk("WARNING: %s(): not enough memory, can't clone pages.\n", __FUNCTION__);
+		printk("WARNING: %s(): not enough memory when cloning pages.\n", __FUNCTION__);
 		free_page_tables(child);
 		kfree((unsigned int)child_pgdir);
+		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;
 	}

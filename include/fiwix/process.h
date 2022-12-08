@@ -14,10 +14,12 @@ struct vma {
 	char prot;		/* PROT_READ, PROT_WRITE, ... */
 	unsigned int flags;	/* MAP_SHARED, MAP_PRIVATE, ... */
 	unsigned int offset;
-	char s_type;		/* section type (P_TEXT, P_DATA, ...) */
+	char s_type;		/* segment type (P_TEXT, P_DATA, ...) */
 	struct inode *inode;	/* file inode */
 	char o_mode;		/* open mode (O_RDONLY, O_RDWR, ...) */
 	void *object;		/* generic pointer (currently only for shm) */
+	struct vma *prev;
+	struct vma *next;
 };
 
 #include <fiwix/config.h>
@@ -132,7 +134,7 @@ struct proc {
 	int envc;
 	char **envp;
 	char pidstr[5];			/* PID number converted to string */
-	struct vma vma[VMA_REGIONS];	/* virtual memory-map addresses */
+	struct vma *vma_table;		/* virtual memory-map addresses */
 	unsigned int brk_lower;		/* lower limit of the heap section */
 	unsigned int brk;		/* current limit of the heap */
 	__sigset_t sigpending;

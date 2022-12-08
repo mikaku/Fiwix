@@ -32,7 +32,6 @@
 					   scroll back */
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
-#define VMA_REGIONS		150	/* max. number of virtual memory maps */
 
 
 /* toggle configuration options */

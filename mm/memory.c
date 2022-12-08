@@ -126,21 +126,23 @@ int clone_pages(struct proc *child)
 	unsigned int *src_pgtbl, *dst_pgtbl;
 	unsigned int pde, pte;
 	unsigned int p_addr, c_addr;
-	unsigned int n, n2, pages;
+	unsigned int n, pages;
 	struct page *pg;
 	struct vma *vma;
 
 	src_pgdir = (unsigned int *)P2V(current->tss.cr3);
 	dst_pgdir = (unsigned int *)P2V(child->tss.cr3);
-	vma = current->vma;
+	vma = current->vma_table;
+	pages = 0;
 
-	for(n = 0, pages = 0; n < VMA_REGIONS && vma->start; n++, vma++) {
-		for(n2 = vma->start; n2 < vma->end; n2 += PAGE_SIZE) {
+	while(vma) {
+		for(n = vma->start; n < vma->end; n += PAGE_SIZE) {
 			if(vma->flags & MAP_SHARED) {
+				vma = vma->next;
 				continue;
 			}
-			pde = GET_PGDIR(n2);
-			pte = GET_PGTBL(n2);
+			pde = GET_PGDIR(n);
+			pte = GET_PGTBL(n);
 			if(src_pgdir[pde] & PAGE_PRESENT) {
 				src_pgtbl = (unsigned int *)P2V((src_pgdir[pde] & PAGE_MASK));
 				if(!(dst_pgdir[pde] & PAGE_PRESENT)) {
@@ -158,6 +160,7 @@ int clone_pages(struct proc *child)
 					p_addr = src_pgtbl[pte] >> PAGE_SHIFT;
 					pg = &page_table[p_addr];
 					if(pg->flags & PAGE_RESERVED) {
+						vma = vma->next;
 						continue;
 					}
 					src_pgtbl[pte] &= ~PAGE_RW;
@@ -174,6 +177,7 @@ int clone_pages(struct proc *child)
 				}
 			}
 		}
+		vma = vma->next;
 	}
 	return pages;
 }

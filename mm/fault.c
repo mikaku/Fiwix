@@ -91,7 +91,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 	if(!vma) {
 		if(cr2 >= (sc->oldesp - 32) && cr2 < PAGE_OFFSET) {
 			if(!(vma = find_vma_region(PAGE_OFFSET - 1))) {
-				printk("WARNING: %s(): process %d doesn't have an stack region in vma!\n", __FUNCTION__, current->pid);
+				printk("WARNING: %s(): process %d doesn't have an stack region in vma_table!\n", __FUNCTION__, current->pid);
 				send_sigsegv(sc);
 				return 0;
 			} else {

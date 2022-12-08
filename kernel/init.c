@@ -63,7 +63,6 @@ void init_init(void)
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
 	init->tss.cr3 = V2P((unsigned int)pgdir);
 
-	memset_b(init->vma, 0, sizeof(init->vma));
 	init->ppid = 0;
 	init->pgid = 0;
 	init->sid = 0;
