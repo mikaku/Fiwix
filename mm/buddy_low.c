@@ -140,10 +140,10 @@ static struct head *allocate(int size)
 	} else {
 		/* split a bigger block */
 		block = allocate(blocksize[level + 1]);
-		block->level = level;
 
 		if(block != NULL) {
 			/* put the buddy on the free list */
+			block->level = level;
 			buddy = get_buddy(block);
 			buddy->level = level;
 			buddy->prev = buddy->next = NULL;
