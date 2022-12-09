@@ -260,7 +260,7 @@ int data_proc_meminfo(char *buffer, __pid_t pid)
 	size += sprintk(buffer + size, "Cached:   %9d kB\n", kstat.cached);
 	size += sprintk(buffer + size, "SwapTotal:%9d kB\n", 0);
 	size += sprintk(buffer + size, "SwapFree: %9d kB\n", 0);
-	size += sprintk(buffer + size, "Dirty:    %9d kB\n", kstat.dirty);
+	size += sprintk(buffer + size, "Dirty:    %9d kB\n", kstat.dirty_buffers);
 	return size;
 }
 

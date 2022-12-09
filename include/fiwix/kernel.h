@@ -83,7 +83,7 @@ struct kernel_stat {
 	int buffers;			/* memory used by buffers (in KB) */
 	int cached;			/* memory used to cache file pages */
 	int shared;			/* pages with count > 1 */
-	int dirty;			/* dirty buffers (in KB) */
+	int dirty_buffers;		/* dirty buffers (in KB) */
 	unsigned long int random_seed;	/* next random seed */
 	int pages_reclaimed;		/* last pages reclaimed from buffer */
 
