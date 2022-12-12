@@ -7,11 +7,9 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
-#include <fiwix/limits.h>
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>
 #include <fiwix/sched.h>
-#include <fiwix/tty.h>
 #include <fiwix/memdev.h>
 #include <fiwix/serial.h>
 #include <fiwix/lp.h>
@@ -21,10 +19,8 @@
 #include <fiwix/buffer.h>
 #include <fiwix/mm.h>
 #include <fiwix/fs.h>
-#include <fiwix/locks.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/stdio.h>
-#include <fiwix/ipc.h>
 
 /* kswapd continues the kernel initialization */
 int kswapd(void)
@@ -41,17 +37,8 @@ int kswapd(void)
 	floppy_init();
 	ide_init();
 
-	/* data structures */
-	sleep_init();
-	buffer_init();
-	sched_init();
-	inode_init();
-	fd_init();
-	flock_init();
 
-#ifdef CONFIG_SYSVIPC
-	ipc_init();
-#endif /* CONFIG_SYSVIPC */
+	/* starting system */
 	mem_stats();
 	fs_init();
 	mount_root();

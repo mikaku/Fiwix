@@ -21,12 +21,15 @@
 #include <fiwix/irq.h>
 #include <fiwix/segments.h>
 #include <fiwix/devices.h>
+#include <fiwix/buffer.h>
 #include <fiwix/cpu.h>
 #include <fiwix/timer.h>
 #include <fiwix/sleep.h>
+#include <fiwix/locks.h>
 #include <fiwix/keyboard.h>
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
+#include <fiwix/ipc.h>
 
 unsigned int _last_data_addr;
 int _memsize;
@@ -89,12 +92,24 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	mem_init();
 	video_init();
 	console_init();
+
 #ifdef CONFIG_PCI
 	pci_init();
 #endif /* CONFIG_PCI */
+
 	timer_init();
 	keyboard_init();
 	proc_init();
+	sleep_init();
+	buffer_init();
+	sched_init();
+	inode_init();
+	fd_init();
+	flock_init();
+
+#ifdef CONFIG_SYSVIPC
+	ipc_init();
+#endif /* CONFIG_SYSVIPC */
 
 	/*
 	 * IDLE is now the current process (created manually as PID 0),
