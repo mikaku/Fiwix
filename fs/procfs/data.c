@@ -111,7 +111,7 @@ int data_proc_cpuinfo(char *buffer, __pid_t pid)
 	}
 	size += sprintk(buffer + size, "cpuid           : %s\n", cpu_table.has_cpuid ? "yes" : "no");
 	size += sprintk(buffer + size, "fpu             : %s\n", cpu_table.has_fpu ? "yes" : "no");
-	size += get_cpu_flags(buffer, size);
+	size += get_cpu_flags(buffer + size);
 	return size;
 }
 

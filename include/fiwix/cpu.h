@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/cpu.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -62,7 +62,7 @@ struct cpu_type {
 	char *name[20];
 };
 
-int get_cpu_flags(char *, int);
+int get_cpu_flags(char *);
 void cpu_init(void);
 
 #endif /* _FIWIX_CPU_H */

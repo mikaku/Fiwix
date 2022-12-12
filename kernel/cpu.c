@@ -181,18 +181,18 @@ static void check_cache(int maxcpuid)
 	}
 }
 
-int get_cpu_flags(char *buffer, int offset)
+int get_cpu_flags(char *buffer)
 {
 	int n, size;
 	unsigned int mask;
 
-	size = sprintk(buffer + offset, "flags           :");
+	size = sprintk(buffer, "flags           :");
 	for(n = 0, mask = 1; n < 32; n++, mask <<= 1) {
 		if(_cpuflags & mask) {
-			size += sprintk(buffer + offset + size, " %s", cpu_flags[n]);
+			size += sprintk(buffer + size, " %s", cpu_flags[n]);
 		}
 	}
-	size += sprintk(buffer + offset + size, "\n");
+	size += sprintk(buffer + size, "\n");
 	return size;
 }
 
