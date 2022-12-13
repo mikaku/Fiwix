@@ -161,8 +161,8 @@ unsigned int kmalloc2(__size_t size)
 
 	size += sizeof(struct head);
 
-	if(size >= PAGE_SIZE) {
-		printk("WARNING: size >= PAGE_SIZE!\n");
+	if(size > blocksize[BUDDY_MAX_LEVEL - 1]) {
+		printk("WARNING: size > %d!\n", blocksize[BUDDY_MAX_LEVEL - 1]);
 		return 0;
 	}
 
