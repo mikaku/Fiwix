@@ -971,22 +971,20 @@ void vconsole_deltab(struct tty *tty)
 
 void console_flush_log_buf(char *buffer, unsigned int count)
 {
-	char *b;
 	struct tty *tty;
 
 	if(!(tty = get_tty(_syscondev))) {
 		_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
 		tty = get_tty(_syscondev);
 	}
-	b = buffer;
 
 	while(count) {
-		if(tty_queue_putchar(tty, &tty->write_q, *b) < 0) {
+		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
 			tty->output(tty);
 			continue;
 		}
 		count--;
-		b++;
+		buffer++;
 	}
 	tty->output(tty);
 }

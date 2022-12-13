@@ -22,24 +22,22 @@ static void puts(char *buffer)
 {
 	struct tty *tty;
 	unsigned short int count;
-	char *b;
 
 	tty = get_tty(_syscondev);
 	count = strlen(buffer);
-	b = buffer;
 
 	while(count--) {
 #ifdef CONFIG_QEMU_DEBUGCON
 		if(kstat.flags & KF_HAS_DEBUGCON) {
-			outport_b(QEMU_DEBUG_PORT, *b);
+			outport_b(QEMU_DEBUG_PORT, *buffer);
 		}
 #endif /* CONFIG_QEMU_DEBUGCON */
 		if(!tty) {
 			if(log_count < LOG_BUF_LEN) {
-		 		log_buf[log_count++] = *(b++);
+				log_buf[log_count++] = *(buffer++);
 			}
 		} else {
-		 	tty_queue_putchar(tty, &tty->write_q, *(b++));
+			tty_queue_putchar(tty, &tty->write_q, *(buffer++));
 
 			/* kernel messages must be shown immediately */
 			tty->output(tty);
