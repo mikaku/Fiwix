@@ -304,7 +304,7 @@ static int elf_load_interpreter(struct inode *ii)
 	struct elf32_hdr *elf32_h;
 	struct elf32_phdr *elf32_ph, *last_ptload;
 	__blk_t block;
-	unsigned int start, end, length;
+	unsigned int start, end, length, offset;
 	unsigned int prot;
 	char *data;
 	char type;
@@ -347,6 +347,7 @@ static int elf_load_interpreter(struct inode *ii)
 #endif /*__DEBUG__ */
 			start = (elf32_ph->p_vaddr & PAGE_MASK) + MMAP_START;
 			length = (elf32_ph->p_vaddr & ~PAGE_MASK) + elf32_ph->p_filesz;
+			offset = elf32_ph->p_offset - (elf32_ph->p_vaddr & ~PAGE_MASK);
 			type = P_DATA;
 			prot = 0;
 			if(elf32_ph->p_flags & PF_R) {
@@ -359,7 +360,7 @@ static int elf_load_interpreter(struct inode *ii)
 				prot |= PROT_EXEC;
 				type = P_TEXT;
 			}
-			errno = do_mmap(ii, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY, NULL);
+			errno = do_mmap(ii, start, length, prot, MAP_PRIVATE | MAP_FIXED, offset, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {
 				kfree((unsigned int)data);
 				send_sig(current, SIGSEGV);
@@ -407,7 +408,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	struct elf32_hdr *elf32_h;
 	struct elf32_phdr *elf32_ph, *last_ptload;
 	struct inode *ii;
-	unsigned int start, end, length;
+	unsigned int start, end, length, offset;
 	unsigned int prot;
 	char *interpreter;
 	int at_base, phdr_addr;
@@ -494,6 +495,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 		if(elf32_ph->p_type == PT_LOAD) {
 			start = elf32_ph->p_vaddr & PAGE_MASK;
 			length = (elf32_ph->p_vaddr & ~PAGE_MASK) + elf32_ph->p_filesz;
+			offset = elf32_ph->p_offset - (elf32_ph->p_vaddr & ~PAGE_MASK);
 			type = P_DATA;
 			prot = 0;
 			if(elf32_ph->p_flags & PF_R) {
@@ -506,7 +508,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 				prot |= PROT_EXEC;
 				type = P_TEXT;
 			}
-			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, elf32_ph->p_offset & PAGE_MASK, type, O_RDONLY, NULL);
+			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, offset, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {
 				send_sig(current, SIGSEGV);
 				return -ENOEXEC;
