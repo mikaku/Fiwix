@@ -163,6 +163,21 @@ void psig(unsigned int stack)
 			current->sigpending &= ~mask;
 
 			if((unsigned int)current->sigaction[signum - 1].sa_handler) {
+
+				/*
+				 * page_not_present() may have raised a SIGSEGV if it
+				 * detected that this process doesn't have an stack
+				 * region in vma_table.
+				 *
+				 * So, this check is needed to make sure to terminate the
+				 * process now, otherwise the kernel would panic when using
+				 * 'sc->oldesp' during the 'memcpy_b' below.
+				 */
+				if(!find_vma_region(sc->oldesp)) {
+					printk("WARNING: %s(): no stack region in vma table for process %d. Terminated.\n", __FUNCTION__, current->pid);
+					do_exit(signum);
+				}
+
 				current->sigexecuting = mask;
 				if(!(current->sigaction[signum - 1].sa_flags & SA_NODEFER)) {
 					current->sigblocked |= mask;
