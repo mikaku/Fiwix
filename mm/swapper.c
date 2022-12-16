@@ -49,7 +49,6 @@ int kswapd(void)
 		if((kstat.pages_reclaimed = reclaim_buffers())) {
 			continue;
 		}
-		printk("WARNING: %s(): out of memory and swapping is not implemented yet, sorry.\n", __FUNCTION__);
 		wakeup(&get_free_page);
 	}
 }

@@ -43,6 +43,8 @@ struct page *page_table;		/* page pool */
 struct page *page_head;			/* page pool head */
 struct page **page_hash_table;
 
+static int min_free_pages;
+
 static void insert_to_hash(struct page *pg)
 {
 	struct page **h;
@@ -158,23 +160,26 @@ struct page *get_free_page(void)
 	unsigned long int flags;
 	struct page *pg;
 
-	/* if no more pages on free list */
-	if(!kstat.free_pages) {
-		/* reclaim some memory from buffer cache */
+	/* if the number of pages is low then reclaim some buffers */
+	if(kstat.free_pages < min_free_pages) {
+		/* reclaim memory from buffer cache */
 		wakeup(&kswapd);
-		sleep(&get_free_page, PROC_UNINTERRUPTIBLE);
+		if(!kstat.free_pages) {
+			sleep(&get_free_page, PROC_UNINTERRUPTIBLE);
 
-		if(!kstat.free_pages && !kstat.pages_reclaimed) {
-			/* definitely out of memory! (no more pages) */
-			printk("%s(): pid %d ran out of memory. OOM killer needed!\n", __FUNCTION__, current->pid);
-			return NULL;
+			if(!kstat.free_pages && !kstat.pages_reclaimed) {
+				/* definitely out of memory! (no more pages) */
+				printk("WARNING: %s(): out of memory and swapping is not implemented yet, sorry.\n", __FUNCTION__);
+				printk("%s(): pid %d ran out of memory. OOM killer needed!\n", __FUNCTION__, current->pid);
+				return NULL;
+			}
 		}
 	}
 
 	SAVE_FLAGS(flags); CLI();
 
 	if(!(pg = page_head)) {
-		printk("WARNING: page_head returned NULL! (free_pages = %d, reclaimed = %d)\n", kstat.free_pages, kstat.pages_reclaimed);
+		printk("WARNING: page_head returned NULL! (free_pages = %d)\n", kstat.free_pages);
 		RESTORE_FLAGS(flags);
 		return NULL;
 	}
@@ -427,4 +432,6 @@ void page_init(int pages)
 	kstat.total_mem_pages = kstat.free_pages;
 	kstat.kernel_reserved <<= 2;
 	kstat.physical_reserved <<= 2;
+
+	min_free_pages = (kstat.total_mem_pages * MIN_FREE_PAGES_RATIO) / 100;
 }
