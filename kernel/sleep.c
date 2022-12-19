@@ -24,21 +24,28 @@ static unsigned int area = 0;
 
 void runnable(struct proc *p)
 {
+	unsigned long int flags;
+
 	if(p->state == PROC_RUNNING) {
 		printk("WARNING: %s(): process with pid '%d' is already running!\n", __FUNCTION__, p->pid);
 		return;
 	}
 
+	SAVE_FLAGS(flags); CLI();
 	if(proc_run_head) {
 		p->next_run = proc_run_head;
 		proc_run_head->prev_run = p;
 	}
 	proc_run_head = p;
 	p->state = PROC_RUNNING;
+	RESTORE_FLAGS(flags);
 }
 
 void not_runnable(struct proc *p, int state)
 {
+	unsigned long int flags;
+
+	SAVE_FLAGS(flags); CLI();
 	if(p->next_run) {
 		p->next_run->prev_run = p->prev_run;
 	}
@@ -50,6 +57,7 @@ void not_runnable(struct proc *p, int state)
 	}
 	p->prev_run = p->next_run = NULL;
 	p->state = state;
+	RESTORE_FLAGS(flags);
 }
 
 int sleep(void *address, int state)
