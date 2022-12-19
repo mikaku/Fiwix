@@ -46,9 +46,9 @@ int shm_map_page(struct vma *vma, unsigned int cr2)
 			printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 			return 1;
 		}
-		pg = &page_table[V2P(addr) >> PAGE_SHIFT];
-		pg->count++;
 	}
+	pg = &page_table[V2P(addr) >> PAGE_SHIFT];
+	pg->count++;
 
 	return 0;
 }
