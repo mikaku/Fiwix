@@ -16,7 +16,7 @@
 #define NR_OPENS		1024	/* max. number of opened files */
 #define NR_FLOCKS		(NR_PROCS * 5)	/* max. number of flocks */
 
-#define MIN_FREE_PAGES_RATIO	5	/* % minimum of free memory pages */
+#define FREE_PAGES_RATIO	5	/* % minimum of free memory pages */
 #define BUFFER_PERCENTAGE	100	/* % of memory for buffer cache */
 #define BUFFER_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the buffer table */

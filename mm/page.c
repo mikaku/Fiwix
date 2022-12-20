@@ -433,5 +433,5 @@ void page_init(int pages)
 	kstat.kernel_reserved <<= 2;
 	kstat.physical_reserved <<= 2;
 
-	min_free_pages = (kstat.total_mem_pages * MIN_FREE_PAGES_RATIO) / 100;
+	min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 }
