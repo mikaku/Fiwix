@@ -129,8 +129,8 @@ static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_de
 		if(!pci_device_table[n].vendor_id) {
 
 			/* fill in the rest of fields */
-			pci_dev->command = pci_read_char(bus, dev, func, PCI_COMMAND);
-			pci_dev->status = pci_read_char(bus, dev, func, PCI_STATUS);
+			pci_dev->command = pci_read_short(bus, dev, func, PCI_COMMAND);
+			pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
 			pci_dev->rev = pci_read_char(bus, dev, func, PCI_REVISION_ID);
 			pci_dev->prog_if = pci_read_char(bus, dev, func, PCI_PROG_IF);
 			for(bar = 0; bar < 6; bar++) {
