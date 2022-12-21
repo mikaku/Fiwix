@@ -601,7 +601,7 @@ static int serial_pci(int minor)
 			continue;
 		}
 
-		if(!(pci_dev->bar[0] & PCI_BASE_ADDR_SPACE_IO)) {
+		if((pci_dev->bar[0] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
 			printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
 			continue;
 		}
