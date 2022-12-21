@@ -105,7 +105,13 @@ static void insert_vma_region(struct vma *vma)
 		/* insert */
 		vma->prev = vmat->prev;
 		vma->next = vmat;
-		vmat->prev->next = vma;
+		if(vmat == current->vma_table) {
+			/* insert in the head */
+			current->vma_table = vma;
+		} else {
+			/* insert in the middle */
+			vmat->prev->next = vma;
+		}
 		vmat->prev = vma;
 	}
 
