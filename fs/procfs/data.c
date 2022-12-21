@@ -613,7 +613,6 @@ int data_proc_pid_maps(char *buffer, __pid_t pid)
 			vma = vma->next;
 		}
 	}
-
 	return size;
 }
 
