@@ -68,6 +68,8 @@ struct pci_device {
 };
 struct pci_device pci_device_table[NR_PCI_DEVICES];
 
+unsigned int pci_get_bar(int, int, int, int);
+unsigned int pci_get_barsize(int, int, int, int);
 void pci_show_desc(struct pci_device *);
 struct pci_device *pci_get_device(unsigned short int, unsigned short int);
 void pci_init(void);

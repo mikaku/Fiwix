@@ -184,9 +184,9 @@ unsigned int pci_get_bar(int bus, int dev, int func, int bar)
 	return pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
 }
 
-int pci_get_barsize(int bus, int dev, int func, int bar)
+unsigned int pci_get_barsize(int bus, int dev, int func, int bar)
 {
-	int tmp, retval;
+	unsigned int tmp, retval;
 
 	/* backup original value */
 	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
