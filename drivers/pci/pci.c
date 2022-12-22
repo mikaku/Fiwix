@@ -104,23 +104,6 @@ static void pci_write_long(int bus, int dev, int func, int offset, unsigned int 
 	outport_l(PCI_DATA, buf);
 }
 
-static int pci_get_barsize(int bus, int dev, int func, int bar)
-{
-	int tmp, retval;
-
-	/* backup original value */
-	tmp = pci_read_long(bus, dev, func, bar);
-
-	pci_write_long(bus, dev, func, bar, ~0);
-	retval = pci_read_long(bus, dev, func, bar);
-	retval = (~retval) + 1;
-
-	/* restore original value */
-	pci_write_long(bus, dev, func, bar, tmp);
-
-	return retval;
-}
-
 static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_dev)
 {
 	int n, bar;
@@ -133,12 +116,7 @@ static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_de
 			pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
 			pci_dev->rev = pci_read_char(bus, dev, func, PCI_REVISION_ID);
 			pci_dev->prog_if = pci_read_char(bus, dev, func, PCI_PROG_IF);
-			for(bar = 0; bar < 6; bar++) {
-				pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
-				if(pci_dev->bar[bar]) {
-					pci_dev->size[bar] = pci_get_barsize(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
-				}
-			}
+			/* BARs are special, they must be handled by the driver */
 			pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
 			pci_device_table[n] = *pci_dev;
 			return;
@@ -199,6 +177,28 @@ static void scan_bus(void)
 			}
 		}
 	}
+}
+
+unsigned int pci_get_bar(int bus, int dev, int func, int bar)
+{
+	return pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+}
+
+int pci_get_barsize(int bus, int dev, int func, int bar)
+{
+	int tmp, retval;
+
+	/* backup original value */
+	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+
+	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar, ~0);
+	retval = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+	retval = (~retval) + 1;
+
+	/* restore original value */
+	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar, tmp);
+
+	return retval;
 }
 
 void pci_show_desc(struct pci_device *pci_dev)
