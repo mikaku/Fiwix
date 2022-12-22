@@ -13,7 +13,7 @@
  *
  * This system call sets the IOPL field in the EFLAGS register to the value of
  * 'level' (which is pressumably zero), so the current process will have
- * privileges to use any port, even when the port if denied by the I/O bitmap
+ * privileges to use any port, even when the port is denied by the I/O bitmap
  * in TSS.  Otherwise the processor would check the I/O permission bitmap to
  * determine if access to a specific I/O port is allowed.
  *
