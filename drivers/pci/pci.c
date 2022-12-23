@@ -13,6 +13,8 @@
 
 #ifdef CONFIG_PCI
 
+struct pci_device pci_device_table[NR_PCI_DEVICES];
+
 /* supported device classes only */
 static const char *pci_get_strclass(unsigned short int class)
 {

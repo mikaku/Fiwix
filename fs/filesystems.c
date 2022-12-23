@@ -15,6 +15,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+struct filesystems filesystems_table[NR_FILESYSTEMS];
+
 int register_filesystem(const char *name, struct fs_operations *fsop)
 {
 	int n;

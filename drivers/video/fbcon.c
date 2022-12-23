@@ -19,7 +19,6 @@
 
 unsigned char *font_data;
 unsigned char *cursor_shape;
-struct video_parms video;
 static unsigned char screen_is_off = 0;
 
 /* RGB colors */

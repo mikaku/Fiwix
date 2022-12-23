@@ -23,7 +23,7 @@
 #define DMA_MODE_BLOCK		0x80
 #define DMA_MODE_CASCADE	0xC0
 
-char *dma_resources[DMA_CHANNELS];
+extern char *dma_resources[DMA_CHANNELS];
 
 void start_dma(int, void *, unsigned int, int);
 int dma_register(int, char *);

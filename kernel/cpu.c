@@ -16,6 +16,7 @@
 #include <fiwix/string.h>
 
 char UTS_MACHINE[_UTSNAME_LENGTH + 1];
+struct cpu cpu_table;
 
 static struct cpu_type intel[] = {
 	{ 4,

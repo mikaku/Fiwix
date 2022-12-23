@@ -45,6 +45,8 @@
 
 
 short int current_cons;
+short int *vc_screen[NR_VCONSOLES + 1];
+short int *vcbuf;
 
 struct video_parms video;
 struct vconsole vc[NR_VCONSOLES + 1];

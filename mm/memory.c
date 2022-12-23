@@ -26,28 +26,18 @@
 unsigned int *kpage_dir;
 unsigned int *kpage_table;
 
-unsigned int _last_data_addr;
-
 unsigned int proc_table_size = 0;
-struct proc *proc_table;
 
 unsigned int buffer_table_size = 0;
 unsigned int buffer_hash_table_size = 0;
-struct buffer *buffer_table;
-struct buffer **buffer_hash_table;
 
 unsigned int inode_table_size = 0;
 unsigned int inode_hash_table_size = 0;
-struct inode *inode_table;
-struct inode **inode_hash_table;
 
 unsigned int fd_table_size = 0;
-struct fd *fd_table;
 
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
-struct page *page_table;
-struct page **page_hash_table;
 
 static void map_kaddr(unsigned int from, unsigned int to, int flags)
 {

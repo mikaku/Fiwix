@@ -55,7 +55,7 @@ struct cpu {
 	char has_fpu;
 	int flags;
 };
-struct cpu cpu_table;
+extern struct cpu cpu_table;
 
 struct cpu_type {
 	int cpu;
