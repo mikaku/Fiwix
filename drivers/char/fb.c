@@ -68,8 +68,6 @@ static struct device fb_device = {
 	NULL
 };
 
-struct video_parms video;
-
 int fb_open(struct inode *i, struct fd *fd_table)
 {
 	return 0;

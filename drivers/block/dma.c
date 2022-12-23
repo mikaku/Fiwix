@@ -38,6 +38,8 @@ unsigned char dma_address[DMA_CHANNELS] =
 unsigned char dma_count[DMA_CHANNELS] =
 	{ 0x01, 0x03, 0x05, 0x07, 0xC2, 0xC6, 0xCA, 0xCE };
 
+char *dma_resources[DMA_CHANNELS];
+
 
 void start_dma(int channel, void *address, unsigned int count, int mode)
 {

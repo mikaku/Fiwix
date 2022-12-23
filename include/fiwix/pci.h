@@ -66,7 +66,7 @@ struct pci_device {
 
 	unsigned int size[6];
 };
-struct pci_device pci_device_table[NR_PCI_DEVICES];
+extern struct pci_device pci_device_table[NR_PCI_DEVICES];
 
 unsigned int pci_get_bar(int, int, int, int);
 unsigned int pci_get_barsize(int, int, int, int);

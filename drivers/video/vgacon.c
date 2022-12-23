@@ -31,7 +31,6 @@ static const char *iso8859 =
 	"\376\244\225\242\223\376\224\366\355\227\243\226\201\376\376\230"
 ;
 
-struct video_parms video;
 static unsigned char screen_is_off = 0;
 
 void vgacon_put_char(struct vconsole *vc, unsigned char ch)

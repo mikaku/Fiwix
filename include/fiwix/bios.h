@@ -17,7 +17,7 @@ struct bios_mem_map {
 	unsigned long int to;
 	int type;
 };
-struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
+extern struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
 
 int addr_in_bios_map(unsigned int);
 void bios_map_add(unsigned long int, unsigned long int, int, int);

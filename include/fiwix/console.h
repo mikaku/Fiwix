@@ -96,7 +96,7 @@
 
 extern short int current_cons;	/* current console (/dev/tty1 ... /dev/tty12) */
 
-short int *vc_screen[NR_VCONSOLES + 1];
+extern short int *vc_screen[NR_VCONSOLES + 1];
 
 /*
  * This is the scrollback history buffer which is used only in the active
@@ -104,7 +104,7 @@ short int *vc_screen[NR_VCONSOLES + 1];
  * new vconsole is copied back to this buffer. Only the visible screen is
  * copied, so switching vconsoles means losing the scrollback history.
  */
-short int *vcbuf;
+extern short int *vcbuf;
 
 struct vconsole {
 	int x;		/* current column */

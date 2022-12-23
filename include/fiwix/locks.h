@@ -18,7 +18,7 @@ struct flock_file {
 	struct proc *proc;	/* owner */
 };
 
-struct flock_file flock_file_table[NR_FLOCKS];
+extern struct flock_file flock_file_table[NR_FLOCKS];
 
 int posix_lock(int, int, struct flock *);
 

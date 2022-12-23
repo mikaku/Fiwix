@@ -113,12 +113,10 @@ static unsigned char do_buf_scroll = 0;
 static unsigned char do_setleds = 0;
 static unsigned char do_tty_stop = 0;
 static unsigned char do_tty_start = 0;
-struct video_parms video;
 
 unsigned char kb_identify[2] = {0, 0};
 char ps2_active_ports = 0;
 char ps2_supp_ports = 0;
-short int current_cons;
 char ctrl_alt_del = 1;
 char any_key_to_reboot = 0;
 

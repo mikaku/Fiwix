@@ -14,8 +14,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct video_parms video;
-
 void video_init(void)
 {
 	memset_b(vcbuf, 0, (video.columns * video.lines * SCREENS_LOG * 2 * sizeof(short int)));

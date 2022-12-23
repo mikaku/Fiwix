@@ -11,6 +11,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
+
 static char *bios_mem_type[] = {
 	NULL,
 	"available",

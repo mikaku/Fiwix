@@ -18,7 +18,7 @@ struct filesystems {
 	struct fs_operations *fsop;	/* filesystem operations */
 	struct mount *mp;		/* mount-table entry (only for nodev) */
 };
-struct filesystems filesystems_table[NR_FILESYSTEMS];
+extern struct filesystems filesystems_table[NR_FILESYSTEMS];
 
 struct mount {
 	__dev_t dev;			/* device number */

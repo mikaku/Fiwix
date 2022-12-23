@@ -14,6 +14,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+struct flock_file flock_file_table[NR_FLOCKS];
+
 static struct resource flock_resource = { 0, 0 };
 
 static struct flock_file *get_new_flock(struct inode *i)
