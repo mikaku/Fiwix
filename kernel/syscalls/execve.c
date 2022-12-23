@@ -239,7 +239,7 @@ static int do_execve(const char *filename, char *argv[], char *envp[], struct si
 	struct buffer *buf;
 	struct inode *i;
 	struct binargs barg;
-	char *data, *tmp_name;
+	char *data;
 	int errno;
 
 	if((errno = initialize_barg(&barg, &(*argv), &(*envp))) < 0) {
@@ -255,14 +255,7 @@ static int do_execve(const char *filename, char *argv[], char *envp[], struct si
 		return -ENOMEM;
 	}
 
-	if((errno = malloc_name(filename, &tmp_name)) < 0) {
-		kfree((unsigned int)data);
-		free_barg_pages(&barg);
-		return errno;
-	}
-	strcpy(name, tmp_name);
-	free_name(tmp_name);
-
+	strcpy(name, filename);
 
 loop:
 	if((errno = namei(name, &i, NULL, FOLLOW_LINKS))) {
@@ -346,7 +339,6 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 #endif /* CONFIG_SYSCALL_6TH_ARG */
 {
 	char *tmp_name;
-	char argv0[NAME_MAX + 1];
 	int n, errno;
 
 #ifdef __DEBUG__
@@ -356,14 +348,12 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 	if((errno = malloc_name(filename, &tmp_name)) < 0) {
 		return errno;
 	}
-	/* copy filename into kernel address space */
-	strncpy(argv0, tmp_name, NAME_MAX);
-	free_name(tmp_name);
-	if((errno = do_execve(filename, &(*argv), &(*envp), sc))) {
+	if((errno = do_execve(tmp_name, &(*argv), &(*envp), sc))) {
+		free_name(tmp_name);
 		return errno;
 	}
 
-	strncpy(current->argv0, argv0, NAME_MAX);
+	strncpy(current->argv0, tmp_name, NAME_MAX);
 	for(n = 0; n < OPEN_MAX; n++) {
 		if(current->fd[n] && (current->fd_flags[n] & FD_CLOEXEC)) {
 			sys_close(n);
@@ -383,5 +373,6 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 	}
 	current->sleep_address = NULL;
 	current->flags |= PF_PEXEC;
+	free_name(tmp_name);
 	return 0;
 }
