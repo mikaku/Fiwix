@@ -128,7 +128,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		} else {
 			/* that's an non-existent directory */
 			*d_res = NULL;
-			errno = -ENOTDIR;
+			errno = -ENOENT;
 		}
 		iput(dir);
 		*i_res = NULL;
