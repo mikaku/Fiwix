@@ -330,6 +330,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 			return -EIO;
 		}
 		tindblock = (__blk_t *)buf3->data;
+		tblock -= BLOCKS_PER_DIND_BLOCK(i->sb) * block;
 		block = tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)];
 		if(!block) {
 			if(mode == FOR_WRITING) {
