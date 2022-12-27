@@ -354,6 +354,7 @@ int v2_minix_bmap(struct inode *i, __off_t offset, int mode)
 			return -EIO;
 		}
 		tindblock = (__u32 *)buf3->data;
+		tblock -= BLOCKS_PER_DIND_BLOCK(i->sb) * block;
 		block = tindblock[tblock / BLOCKS_PER_IND_BLOCK(i->sb)];
 		if(!block) {
 			if(mode == FOR_WRITING) {
