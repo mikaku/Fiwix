@@ -64,7 +64,7 @@ static int verify_address(int type, const void *addr, unsigned int size)
 
 void free_name(const char *name)
 {
-	kfree2((unsigned int)name);
+	kfree((unsigned int)name);
 }
 
 /*
@@ -72,25 +72,22 @@ void free_name(const char *name)
  *
  * 1. verifies the memory address validity of the char pointer supplied by the
  *    user and, at the same time, limits its length to PAGE_SIZE (4096) bytes.
- * 2. creates a copy of 'string' in the kernel data space before using it.
+ * 2. creates a copy of 'string' in the kernel data space.
  */
 int malloc_name(const char *string, char **name)
 {
-	short int n, len;
 	char *b;
-	int errno;
+	int n, errno;
 
-	/* verifies only the pointer address */
 	if((errno = verify_address(PROT_READ, string, 0))) {
 		return errno;
 	}
 
-	len = MIN(strlen(string) + 1, PAGE_SIZE);
-	if(!(b = (char *)kmalloc2(len))) {
+	if(!(b = (char *)kmalloc())) {
 		return -ENOMEM;
 	}
 	*name = b;
-	for(n = 0; n < len; n++) {
+	for(n = 0; n < PAGE_SIZE; n++) {
 		if(!(*b = *string)) {
 			return 0;
 		}
