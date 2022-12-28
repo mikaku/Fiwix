@@ -17,6 +17,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/syscalls.h>
 #include <fiwix/shm.h>
 
 /* send the SIGSEGV signal to the ofending process */
@@ -201,7 +202,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
  * U2 - !vma + user + PF + (read | write)	-> STACK grows
  *	(!vma page in user-mode, page-fault during read or write)
  *
- * K1 - !vma + kernel + (PV | PF) + (read | write)	-> PANIC
+ * K1 - !vma + kernel + (PV | PF) + (read | write)	-> Terminate process
  *	(!vma page in kernel-mode, page-fault or page-violation during read
  *	or write)
  */
@@ -262,6 +263,10 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 				}
 			}
 			return;
+
+		/* in kernel mode */
+		} else {
+			do_exit(SIGTERM);
 		}
 	}
 
