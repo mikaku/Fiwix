@@ -634,6 +634,7 @@ static int serial_isa(void)
 			return minor;
 		}
 		s->ioaddr = isa_ioports[n];
+		s->iosize = 7;
 		if(!(minor & 1)) {
 			s->irq = SERIAL4_IRQ;
 		} else {
