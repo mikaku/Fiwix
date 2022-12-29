@@ -106,6 +106,7 @@ int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	}
 
 	if(current->loopcnt > MAX_SYMLINKS) {
+		iput(i);
 		printk("%s(): too many nested symbolic links!\n", __FUNCTION__);
 		return -ELOOP;
 	}
