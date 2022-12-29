@@ -69,6 +69,8 @@ struct pci_device {
 };
 extern struct pci_device pci_device_table[NR_PCI_DEVICES];
 
+void pci_enable_device(int, int, int, int);
+void pci_disable_device(int, int, int);
 unsigned int pci_get_bar(int, int, int, int);
 unsigned int pci_get_barsize(int, int, int, int);
 void pci_show_desc(struct pci_device *);

@@ -100,6 +100,12 @@ static unsigned int pci_read_long(int bus, int dev, int func, int offset)
 	return retval;
 }
 
+static void pci_write_short(int bus, int dev, int func, int offset, unsigned short int buf)
+{
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_w(PCI_DATA, buf);
+}
+
 static void pci_write_long(int bus, int dev, int func, int offset, unsigned int buf)
 {
 	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
@@ -108,7 +114,7 @@ static void pci_write_long(int bus, int dev, int func, int offset, unsigned int 
 
 static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_dev)
 {
-	int n, bar;
+	int n;
 
 	for(n = 0; n < NR_PCI_DEVICES; n++) {
 		if(!pci_device_table[n].vendor_id) {
@@ -179,6 +185,16 @@ static void scan_bus(void)
 			}
 		}
 	}
+}
+
+void pci_enable_device(int bus, int dev, int func, int val)
+{
+	pci_write_short(bus, dev, func, PCI_COMMAND, val);
+}
+
+void pci_disable_device(int bus, int dev, int func)
+{
+	pci_write_short(bus, dev, func, PCI_COMMAND, 0);
 }
 
 unsigned int pci_get_bar(int bus, int dev, int func, int bar)
