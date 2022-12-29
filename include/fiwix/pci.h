@@ -45,6 +45,7 @@
 struct pci_supported_devices {
 	unsigned short vendor_id;
 	unsigned short device_id;
+	int bars;
 };
 
 struct pci_device {

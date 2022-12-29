@@ -115,7 +115,7 @@ static int baud_table[] = {
 
 #ifdef CONFIG_PCI
 static struct pci_supported_devices supported[] = {
-	{ 0x1b36, 0x0002 },	/* QEMU PCI 16550A Adapter (Red Hat, Inc.) */
+	{ 0x1b36, 0x0002, 2 },	/* QEMU PCI 16550A Adapter (Red Hat, Inc.) */
 	{ 0, 0 }
 };
 #endif /* CONFIG_PCI */
@@ -594,11 +594,23 @@ static int serial_pci(int minor)
 {
 	struct pci_device *pci_dev;
 	struct serial *s;
-	int n;
+	int bus, dev, func;
+	int n, bar;
 
 	for(n = 0; (supported[n].vendor_id && supported[n].device_id) && minor < NR_SERIAL; n++) {
 		if(!(pci_dev = pci_get_device(supported[n].vendor_id, supported[n].device_id))) {
 			continue;
+		}
+
+		bus = pci_dev->bus;
+		dev = pci_dev->dev;
+		func = pci_dev->func;
+
+		for(bar = 0; bar < supported[n].bars; bar++) {
+			pci_dev->bar[bar] = pci_get_bar(bus, dev, func, bar);
+			if(pci_dev->bar[bar]) {
+				pci_dev->size[bar] = pci_get_barsize(bus, dev, func, bar);
+			}
 		}
 
 		if((pci_dev->bar[0] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
