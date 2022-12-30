@@ -18,6 +18,26 @@ struct kparms {
 };
 
 static struct kparms parm_table[] = {
+	{ "console=",
+	   { "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4", "/dev/tty5",
+	     "/dev/tty6", "/dev/tty7", "/dev/tty8", "/dev/tty9", "/dev/tty10",
+	     "/dev/tty11", "/dev/tty12",
+	     "/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3"
+	   },
+	   { 0x401, 0x402, 0x403, 0x404, 0x405,
+	     0x406, 0x407, 0x408, 0x409, 0x40A,
+	     0x40B, 0x40C,
+	     0x440, 0x441, 0x442, 0x443
+	   }
+	},
+	{ "initrd=",
+	   { 0 },
+	   { 0 },
+	},
+	{ "ramdisksize=",
+	   { 0 },
+	   { 0 },
+	},
 	{ "root=",
 	   { "/dev/ram0", "/dev/fd0", "/dev/fd1",
 	     "/dev/hda", "/dev/hda1", "/dev/hda2", "/dev/hda3", "/dev/hda4",
@@ -32,29 +52,9 @@ static struct kparms parm_table[] = {
 	     0x1640, 0x1641, 0x1642, 0x1643, 0x1644,
 	   }
 	},
-	{ "ramdisksize=",
-	   { 0 },
-	   { 0 },
-	},
-	{ "initrd=",
-	   { 0 },
-	   { 0 },
-	},
 	{ "rootfstype=",
 	   { "minix", "ext2", "iso9660" },
 	   { 0 }
-	},
-	{ "console=",
-	   { "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4", "/dev/tty5",
-	     "/dev/tty6", "/dev/tty7", "/dev/tty8", "/dev/tty9", "/dev/tty10",
-	     "/dev/tty11", "/dev/tty12",
-	     "/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3"
-	   },
-	   { 0x401, 0x402, 0x403, 0x404, 0x405,
-	     0x406, 0x407, 0x408, 0x409, 0x40A,
-	     0x40B, 0x40C,
-	     0x440, 0x441, 0x442, 0x443
-	   }
 	},
 
 	{ NULL }
