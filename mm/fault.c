@@ -266,6 +266,8 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 
 		/* in kernel mode */
 		} else {
+			dump_registers(trap, sc);
+			show_vma_regions(current);
 			do_exit(SIGTERM);
 		}
 	}
