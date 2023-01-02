@@ -126,11 +126,11 @@ int clone_pages(struct proc *child)
 	pages = 0;
 
 	while(vma) {
+		if(vma->flags & MAP_SHARED) {
+			vma = vma->next;
+			continue;
+		}
 		for(n = vma->start; n < vma->end; n += PAGE_SIZE) {
-			if(vma->flags & MAP_SHARED) {
-				vma = vma->next;
-				continue;
-			}
 			pde = GET_PGDIR(n);
 			pte = GET_PGTBL(n);
 			if(src_pgdir[pde] & PAGE_PRESENT) {
