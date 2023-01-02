@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/main.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -66,12 +66,6 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	strcpy(_rootfstype, "ext2");		/* filesystem is ext2 */
 	_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
 
-	pic_init();
-	irq_init();
-	idt_init();
-	dev_init();
-	tty_init();
-
 #ifdef CONFIG_QEMU_DEBUGCON
 	if(inport_b(QEMU_DEBUG_PORT) == QEMU_DEBUG_PORT) {
 		kstat.flags |= KF_HAS_DEBUGCON;
@@ -89,14 +83,19 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 
 	cpu_init();
 	multiboot(magic, info);
+	pic_init();
+	irq_init();
+	idt_init();
+	dev_init();
+	tty_init();
 	mem_init();
-	video_init();
-	console_init();
 
 #ifdef CONFIG_PCI
 	pci_init();
 #endif /* CONFIG_PCI */
 
+	video_init();
+	console_init();
 	timer_init();
 	keyboard_init();
 	proc_init();
