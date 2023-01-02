@@ -150,7 +150,6 @@ int clone_pages(struct proc *child)
 					p_addr = src_pgtbl[pte] >> PAGE_SHIFT;
 					pg = &page_table[p_addr];
 					if(pg->flags & PAGE_RESERVED) {
-						vma = vma->next;
 						continue;
 					}
 					src_pgtbl[pte] &= ~PAGE_RW;
