@@ -1,7 +1,7 @@
 /*
  * fiwix/mm/memory.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -336,22 +336,15 @@ void mem_init(void)
 	_last_data_addr += buffer_hash_table_size;
 
 
-	/* reserve memory space for inode_table */
+	/* reserve memory space for inode_hash_table */
 	sizek = physical_memory / 1024;	/* this helps to avoid overflow */
 	inode_table_size = (sizek * INODE_PERCENTAGE) / 100;
 	inode_table_size *= 1024;
 	pages = inode_table_size >> PAGE_SHIFT;
 	inode_table_size = pages << PAGE_SHIFT;
-/*	printk("_last_data_addr = 0x%08x-0x%08x (inode_table)\n", _last_data_addr, _last_data_addr + inode_table_size); */
-	if(!addr_in_bios_map(V2P(_last_data_addr) + inode_table_size)) {
-		PANIC("Not enough memory for inode_table.\n");
-	}
-	inode_table = (struct inode *)_last_data_addr;
-	_last_data_addr += inode_table_size;
 
-
-	/* reserve memory space for inode_hash_table */
-	n = ((inode_table_size / sizeof(struct inode)) * INODE_HASH_PERCENTAGE) / 100;
+	kstat.max_inodes = inode_table_size / sizeof(struct inode);
+	n = (kstat.max_inodes * INODE_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 inode hash buckets as minimum */
 	/* inode_hash_table is an array of pointers */
 	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
@@ -441,5 +434,5 @@ void mem_stats(void)
 	printk("\n");
 	printk("memory: total=%dKB, user=%dKB, kernel=%dKB, reserved=%dKB\n", kstat.physical_pages << 2, kstat.total_mem_pages << 2, kstat.kernel_reserved, kstat.physical_reserved);
 	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d (%dKB)\n", KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024, buffer_table_size / sizeof(struct buffer), (buffer_table_size + buffer_hash_table_size) / 1024);
-	printk("\tinodes=%d (%dKB)\n\n", inode_table_size / sizeof(struct inode), (inode_table_size + inode_hash_table_size) / 1024);
+	printk("\tinodes=%d\n\n", inode_table_size / sizeof(struct inode));
 }

@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/fs.h
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -91,6 +91,8 @@ struct inode {
 	__dev_t		rdev;
 	struct fs_operations *fsop;
 	struct superblock *sb;
+	struct inode *prev;
+	struct inode *next;
 	struct inode *prev_hash;
 	struct inode *next_hash;
 	struct inode *prev_free;
@@ -107,7 +109,6 @@ extern struct inode *inode_table;
 extern struct inode **inode_hash_table;
 
 /* values to be determined during system startup */
-extern unsigned int inode_table_size;		/* size in bytes */
 extern unsigned int inode_hash_table_size;	/* size in bytes */
 extern unsigned int fd_table_size;		/* size in bytes */
 

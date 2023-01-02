@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/inode.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -35,14 +35,37 @@
 #include <fiwix/string.h>
 
 #define INODE_HASH(dev, inode)	(((__dev_t)(dev) ^ (__ino_t)(inode)) % (NR_INO_HASH))
-#define NR_INODES	(inode_table_size / sizeof(struct inode))
 #define NR_INO_HASH	(inode_hash_table_size / sizeof(unsigned int))
 
 struct inode *inode_table;		/* inode pool */
-struct inode *inode_head;		/* inode pool head */
+struct inode *inode_head;		/* head of free list */
 struct inode **inode_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
+
+/* append a new inode into the inode pool */
+static struct inode *add_inode(void)
+{
+	unsigned long int flags;
+	struct inode *i;
+
+	if(!(i = (struct inode *)kmalloc2(sizeof(struct inode)))) {
+		return NULL;
+	}
+	memset_b(i, 0, sizeof(struct inode));
+
+	SAVE_FLAGS(flags); CLI();
+	if(!inode_table) {
+		inode_table = i;
+	} else {
+		i->prev = inode_table->prev;
+		inode_table->prev->next = i;
+	}
+	inode_table->prev = i;
+	RESTORE_FLAGS(flags);
+	kstat.nr_inodes++;
+	return i;
+}
 
 static void insert_to_hash(struct inode *i)
 {
@@ -95,34 +118,35 @@ static void remove_from_hash(struct inode *i)
 static void insert_on_free_list(struct inode *i)
 {
 	if(!inode_head) {
-		i->prev_free = i->next_free = i;
 		inode_head = i;
 	} else {
-		i->next_free = inode_head;
 		i->prev_free = inode_head->prev_free;
 		inode_head->prev_free->next_free = i;
-		inode_head->prev_free = i;
 	}
-
-	kstat.free_inodes++;
+	inode_head->prev_free = i;
 }
 
 static void remove_from_free_list(struct inode *i)
 {
-	if(!kstat.free_inodes) {
+	if(!inode_head) {
 		return;
 	}
 
-	i->prev_free->next_free = i->next_free;
-	i->next_free->prev_free = i->prev_free;
-	kstat.free_inodes--;
+	if(i->next_free) {
+		i->next_free->prev_free = i->prev_free;
+	}
+	if(i->prev_free) {
+		if(i != inode_head) {
+			i->prev_free->next_free = i->next_free;
+		}
+	}
+	if(!i->next_free) {
+		inode_head->prev_free = i->prev_free;
+	}
 	if(i == inode_head) {
 		inode_head = i->next_free;
 	}
-
-	if(!kstat.free_inodes) {
-		inode_head = NULL;
-	}
+	i->prev_free = i->next_free = NULL;
 }
 
 static struct inode *get_free_inode(void)
@@ -130,14 +154,20 @@ static struct inode *get_free_inode(void)
 	unsigned long int flags;
 	struct inode *i;
 
-	/* no more inodes on free list */
-	if(!kstat.free_inodes) {
-		return NULL;
+	if(kstat.nr_inodes < kstat.max_inodes) {
+		if(!(i = add_inode())) {
+			return NULL;
+		}
+		return i;
 	}
 
 	SAVE_FLAGS(flags); CLI();
+	if(!(i = inode_head)) {
+		/* no more inodes on free list */
+		RESTORE_FLAGS(flags);
+		return NULL;
+	}
 
-	i = inode_head;
 	remove_from_free_list(i);
 	remove_from_hash(i);
 	i->i_mode = 0;
@@ -160,7 +190,6 @@ static struct inode *get_free_inode(void)
 	i->fsop = NULL;
 	i->sb = NULL;
 	memset_b(&i->u, 0, sizeof(i->u));
-
 	RESTORE_FLAGS(flags);
 	return i;
 }
@@ -299,7 +328,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 		}
 
 		if(!(i = get_free_inode())) {
-			printk("WARNING: %s(): no more inodes on free list! (%d).\n", __FUNCTION__, kstat.free_inodes);
+			printk("WARNING: %s(): no more inodes on free list!\n", __FUNCTION__);
 			return NULL;
 		}
 
@@ -329,12 +358,12 @@ int bmap(struct inode *i, __off_t offset, int mode)
 int check_fs_busy(__dev_t dev, struct inode *root)
 {
 	struct inode *i;
-	unsigned int n;
 
-	i = &inode_table[0];
-	for(n = 0; n < NR_INODES; n++, i = &inode_table[n]) {
+	i = inode_table;
+	while(i) {
 		if(i->dev == dev && i->count) {
 			if(i == root && i->count == 1) {
+				i = i->next;
 				continue;
 			}
 			/* FIXME: to be removed */
@@ -342,6 +371,7 @@ int check_fs_busy(__dev_t dev, struct inode *root)
 			printk("WARNING: inode %d with count %d (on dev %d,%d)\n", i->inode, i->count, MAJOR(i->dev), MINOR(i->dev));
 			return 1;
 		}
+		i = i->next;
 	}
 	return 0;
 }
@@ -387,12 +417,11 @@ void iput(struct inode *i)
 void sync_inodes(__dev_t dev)
 {
 	struct inode *i;
-	int n;
 
-	i = &inode_table[0];
+	i = inode_table;
 
 	lock_resource(&sync_resource);
-	for(n = 0; n < NR_INODES; n++) {
+	while(i) {
 		if(i->dirty) {
 			if(!dev || i->dev == dev) {
 				if(write_inode(i)) {
@@ -400,7 +429,7 @@ void sync_inodes(__dev_t dev)
 				}
 			}
 		}
-		i++;
+		i = i->next;
 	}
 	unlock_resource(&sync_resource);
 }
@@ -408,19 +437,18 @@ void sync_inodes(__dev_t dev)
 void invalidate_inodes(__dev_t dev)
 {
 	unsigned long int flags;
-	unsigned int n;
 	struct inode *i;
 
-	i = &inode_table[0];
+	i = inode_table;
 	SAVE_FLAGS(flags); CLI();
 
-	for(n = 0; n < NR_INODES; n++) {
+	while(i) {
 		if(i->dev == dev) {
 			inode_lock(i);
 			remove_from_hash(i);
 			inode_unlock(i);
 		}
-		i++;
+		i = i->next;
 	}
 
 	RESTORE_FLAGS(flags);
@@ -428,14 +456,6 @@ void invalidate_inodes(__dev_t dev)
 
 void inode_init(void)
 {
-	struct inode *i;
-	unsigned int n;
-
-	memset_b(inode_table, 0, inode_table_size);
+	inode_table = inode_head = NULL;
 	memset_b(inode_hash_table, 0, inode_hash_table_size);
-	for(n = 0; n < NR_INODES; n++) {
-		i = &inode_table[n];
-		i->count = 1;
-		insert_on_free_list(i);
-	}
 }

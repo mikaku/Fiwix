@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/config.h
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -21,8 +21,8 @@
 #define BUFFER_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the buffer table */
 #define NR_BUF_RECLAIM		250	/* buffers reclaimed in a single shot */
-#define INODE_PERCENTAGE	1	/* % of memory for to the inode table
-					   and hash table */
+#define INODE_PERCENTAGE	1	/* % of memory for the inode table and
+					   hash table */
 #define INODE_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the inode table */
 

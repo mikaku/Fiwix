@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/kernel.h
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -79,7 +79,8 @@ struct kernel_stat {
 	int physical_reserved;		/* physical memory reserved (in KB) */
 	int total_mem_pages;		/* total memory (in pages) */
 	int free_pages;			/* pages on free list */
-	int free_inodes;		/* inodes on free list */
+	int max_inodes;			/* max. number of allocated inodes */
+	int nr_inodes;			/* current allocated inodes */
 	int buffers;			/* memory used by buffers (in KB) */
 	int cached;			/* memory used to cache file pages */
 	int shared;			/* pages with count > 1 */

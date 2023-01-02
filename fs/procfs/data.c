@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/data.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -424,12 +424,12 @@ int data_proc_hostname(char *buffer, __pid_t pid)
 
 int data_proc_inodemax(char *buffer, __pid_t pid)
 {
-	return sprintk(buffer, "%d\n", inode_table_size / sizeof(struct inode));
+	return sprintk(buffer, "%d\n", kstat.max_inodes);
 }
 
 int data_proc_inodenr(char *buffer, __pid_t pid)
 {
-	return sprintk(buffer, "%d\n", (inode_table_size / sizeof(struct inode)) - kstat.free_inodes);
+	return sprintk(buffer, "%d\n", kstat.nr_inodes);
 }
 
 int data_proc_osrelease(char *buffer, __pid_t pid)
