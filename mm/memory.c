@@ -313,16 +313,10 @@ void mem_init(void)
 	buffer_table_size *= sizeof(struct buffer);
 	pages = buffer_table_size >> PAGE_SHIFT;
 	buffer_table_size = !pages ? 4096 : pages << PAGE_SHIFT;
-/*	printk("_last_data_addr = 0x%08x-0x%08x (buffer_table)\n", _last_data_addr, _last_data_addr + buffer_table_size); */
-	if(!addr_in_bios_map(V2P(_last_data_addr) + buffer_table_size)) {
-		PANIC("Not enough memory for buffer_table.\n");
-	}
-	buffer_table = (struct buffer *)_last_data_addr;
-	_last_data_addr += buffer_table_size;
-
 
 	/* reserve memory space for buffer_hash_table */
-	n = (buffer_table_size / sizeof(struct buffer) * BUFFER_HASH_PERCENTAGE) / 100;
+	kstat.max_buffers = buffer_table_size / sizeof(struct buffer);
+	n = (kstat.max_buffers * BUFFER_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 buffer hashes as minimum */
 	/* buffer_hash_table is an array of pointers */
 	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
@@ -432,6 +426,5 @@ void mem_stats(void)
 {
 	printk("\n");
 	printk("memory: total=%dKB, user=%dKB, kernel=%dKB, reserved=%dKB\n", kstat.physical_pages << 2, kstat.total_mem_pages << 2, kstat.kernel_reserved, kstat.physical_reserved);
-	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d (%dKB)\n", KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024, buffer_table_size / sizeof(struct buffer), (buffer_table_size + buffer_hash_table_size) / 1024);
-	printk("\tinodes=%d\n\n", inode_table_size / sizeof(struct inode));
+	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n", KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024, buffer_table_size / sizeof(struct buffer), inode_table_size / sizeof(struct inode));
 }

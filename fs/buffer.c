@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/buffer.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -37,15 +37,38 @@
 #include <fiwix/stat.h>
 
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
-#define NR_BUFFERS	(buffer_table_size / sizeof(struct buffer))
 #define NR_BUF_HASH	(buffer_hash_table_size / sizeof(unsigned int))
 
 struct buffer *buffer_table;		/* buffer pool */
-struct buffer *buffer_head;		/* buffer pool head */
+struct buffer *buffer_head;		/* head of free list */
 struct buffer *buffer_dirty_head;
 struct buffer **buffer_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
+
+/* append a new buffer into the buffer pool */
+static struct buffer *add_buffer(void)
+{
+	unsigned long int flags;
+	struct buffer *buf;
+
+	if(!(buf = (struct buffer *)kmalloc2(sizeof(struct buffer)))) {
+		return NULL;
+	}
+	memset_b(buf, 0, sizeof(struct buffer));
+
+	SAVE_FLAGS(flags); CLI();
+	if(!buffer_table) {
+		buffer_table = buf;
+	} else {
+		buf->prev = buffer_table->prev;
+		buffer_table->prev->next = buf;
+	}
+	buffer_table->prev = buf;
+	RESTORE_FLAGS(flags);
+	kstat.nr_buffers++;
+	return buf;
+}
 
 static void insert_to_hash(struct buffer *buf)
 {
@@ -124,22 +147,24 @@ static void remove_from_dirty_list(struct buffer *buf)
 static void insert_on_free_list(struct buffer *buf)
 {
 	if(!buffer_head) {
-		buf->prev_free = buf->next_free = buf;
 		buffer_head = buf;
 	} else {
-		buf->next_free = buffer_head;
 		buf->prev_free = buffer_head->prev_free;
-		buffer_head->prev_free->next_free = buf;
-		buffer_head->prev_free = buf;
 
 		/*
-		 * If is marked as not valid then the buffer is
-		 * placed at the beginning of the free list.
+		 * If is marked as not valid then this buffer
+		 * is placed at the beginning of the free list.
 		 */
 		if(!(buf->flags & BUFFER_VALID)) {
+			buf->next_free = buffer_head;
+			buffer_head->prev_free = buf;
 			buffer_head = buf;
+			return;
+		} else {
+			buffer_head->prev_free->next_free = buf;
 		}
 	}
+	buffer_head->prev_free = buf;
 }
 
 static void remove_from_free_list(struct buffer *buf)
@@ -148,15 +173,21 @@ static void remove_from_free_list(struct buffer *buf)
 		return;
 	}
 
-	buf->prev_free->next_free = buf->next_free;
-	buf->next_free->prev_free = buf->prev_free;
+	if(buf->next_free) {
+		buf->next_free->prev_free = buf->prev_free;
+	}
+	if(buf->prev_free) {
+		if(buf != buffer_head) {
+			buf->prev_free->next_free = buf->next_free;
+		}
+	}
+	if(!buf->next_free) {
+		buffer_head->prev_free = buf->prev_free;
+	}
 	if(buf == buffer_head) {
 		buffer_head = buf->next_free;
 	}
-
-	if(buffer_head == buffer_head->next_free) {
-		buffer_head = NULL;
-	}
+	buf->prev_free = buf->next_free = NULL;
 }
 
 static void buffer_wait(struct buffer *buf)
@@ -180,6 +211,14 @@ static struct buffer *get_free_buffer(void)
 {
 	unsigned long int flags;
 	struct buffer *buf;
+
+	if(kstat.nr_buffers < kstat.max_buffers) {
+		if(!(buf = add_buffer())) {
+			return NULL;
+		}
+		buf->flags |= BUFFER_LOCKED;
+		return buf;
+	}
 
 	/* no more buffers on free list */
 	if(!buffer_head) {
@@ -294,7 +333,7 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 		}
 
 		SAVE_FLAGS(flags); CLI();
-		remove_from_hash(buf);	/* remove it from old hash */
+		remove_from_hash(buf);	/* remove it from its old hash */
 		buf->dev = dev;
 		buf->block = block;
 		buf->size = size;
@@ -310,14 +349,14 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 	struct buffer *buf;
 	struct device *d;
 
-	if(!(d = get_device(BLK_DEV, dev))) {
-		printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
-		return NULL;
-	}
-
 	if((buf = getblk(dev, block, size))) {
 		if(buf->flags & BUFFER_VALID) {
 			return buf;
+		}
+
+		if(!(d = get_device(BLK_DEV, dev))) {
+			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
+			return NULL;
 		}
 		if(d->fsop && d->fsop->read_block) {
 			if(d->fsop->read_block(dev, block, buf->data, size) >= 0) {
@@ -382,20 +421,19 @@ void sync_buffers(__dev_t dev)
 void invalidate_buffers(__dev_t dev)
 {
 	unsigned long int flags;
-	unsigned int n;
 	struct buffer *buf;
 
-	buf = &buffer_table[0];
+	buf = buffer_table;
 	SAVE_FLAGS(flags); CLI();
 
-	for(n = 0; n < NR_BUFFERS; n++) {
+	while(buf) {
 		if(!(buf->flags & BUFFER_LOCKED) && buf->dev == dev) {
 			buffer_wait(buf);
 			remove_from_hash(buf);
 			buf->flags &= ~(BUFFER_VALID | BUFFER_LOCKED);
 			wakeup(&buffer_wait);
 		}
-		buf++;
+		buf = buf->next;
 	}
 
 	RESTORE_FLAGS(flags);
@@ -466,14 +504,6 @@ int reclaim_buffers(void)
 
 void buffer_init(void)
 {
-	struct buffer *buf;
-	unsigned int n;
-
-	memset_b(buffer_table, 0, buffer_table_size);
+	buffer_table = buffer_head = NULL;
 	memset_b(buffer_hash_table, 0, buffer_hash_table_size);
-
-	for(n = 0; n < NR_BUFFERS; n++) {
-		buf = &buffer_table[n];
-		insert_on_free_list(buf);
-	}
 }

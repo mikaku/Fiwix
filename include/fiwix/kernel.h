@@ -81,6 +81,8 @@ struct kernel_stat {
 	int free_pages;			/* pages on free list */
 	int max_inodes;			/* max. number of allocated inodes */
 	int nr_inodes;			/* current allocated inodes */
+	int max_buffers;		/* max. number of allocated buffers */
+	int nr_buffers;			/* current allocated buffers */
 	int buffers;			/* memory used by buffers (in KB) */
 	int cached;			/* memory used to cache file pages */
 	int shared;			/* pages with count > 1 */

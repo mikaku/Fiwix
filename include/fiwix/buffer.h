@@ -22,6 +22,8 @@ struct buffer {
 	int size;			/* block size (in bytes) */
 	int flags;
 	char *data;			/* block contents */
+	struct buffer *prev;
+	struct buffer *next;
 	struct buffer *prev_hash;
 	struct buffer *next_hash;
 	struct buffer *prev_free;
@@ -32,8 +34,7 @@ struct buffer {
 extern struct buffer *buffer_table;
 extern struct buffer **buffer_hash_table;
 
-/* values to be determined during system startup */
-extern unsigned int buffer_table_size;		/* size in bytes */
+/* value to be determined during system startup */
 extern unsigned int buffer_hash_table_size;	/* size in bytes */
 
 struct buffer *bread(__dev_t, __blk_t, int);
