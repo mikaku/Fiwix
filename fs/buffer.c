@@ -197,11 +197,11 @@ static void buffer_wait(struct buffer *buf)
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
 		if(buf->flags & BUFFER_LOCKED) {
-			RESTORE_FLAGS(flags);
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
+		RESTORE_FLAGS(flags);
 	}
 	buf->flags |= BUFFER_LOCKED;
 	RESTORE_FLAGS(flags);
@@ -229,11 +229,11 @@ static struct buffer *get_free_buffer(void)
 		SAVE_FLAGS(flags); CLI();
 		buf = buffer_head;
 		if(buf->flags & BUFFER_LOCKED) {
-			RESTORE_FLAGS(flags);
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
+		RESTORE_FLAGS(flags);
 	}
 
 	remove_from_free_list(buf);
@@ -303,8 +303,8 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 		if((buf = search_buffer_hash(dev, block, size))) {
 			SAVE_FLAGS(flags); CLI();
 			if(buf->flags & BUFFER_LOCKED) {
-				RESTORE_FLAGS(flags);
 				sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
+				RESTORE_FLAGS(flags);
 				continue;
 			}
 			buf->flags |= BUFFER_LOCKED;
@@ -401,8 +401,10 @@ void brelse(struct buffer *buf)
 void sync_buffers(__dev_t dev)
 {
 	struct buffer *buf, *next;
+	int synced;
 
 	buf = buffer_dirty_head;
+	synced = 0;
 
 	lock_resource(&sync_resource);
 	while(buf) {
@@ -411,11 +413,15 @@ void sync_buffers(__dev_t dev)
 			buffer_wait(buf);
 			sync_one_buffer(buf);
 			buf->flags &= ~BUFFER_LOCKED;
-			wakeup(&buffer_wait);
+			synced = 1;
 		}
 		buf = next;
 	}
 	unlock_resource(&sync_resource);
+
+	if(synced) {
+		wakeup(&buffer_wait);
+	}
 }
 
 void invalidate_buffers(__dev_t dev)
