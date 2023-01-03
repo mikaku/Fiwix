@@ -1,7 +1,7 @@
 /*
  * fiwix/include/fiwix/fs_proc.h
  *
- * Copyright 2018, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -66,6 +66,8 @@ int data_proc_self(char *, __pid_t);
 int data_proc_stat(char *, __pid_t);
 int data_proc_uptime(char *, __pid_t);
 int data_proc_fullversion(char *, __pid_t);
+int data_proc_buffermax(char *, __pid_t);
+int data_proc_buffernr(char *, __pid_t);
 int data_proc_domainname(char *, __pid_t);
 int data_proc_filemax(char *, __pid_t);
 int data_proc_filenr(char *, __pid_t);

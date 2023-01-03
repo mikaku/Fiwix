@@ -394,6 +394,17 @@ int data_proc_fullversion(char *buffer, __pid_t pid)
 	return sprintk(buffer, "Fiwix version %s %s\n", UTS_RELEASE, UTS_VERSION);
 }
 
+
+int data_proc_buffermax(char *buffer, __pid_t pid)
+{
+	return sprintk(buffer, "%d\n", kstat.max_buffers);
+}
+
+int data_proc_buffernr(char *buffer, __pid_t pid)
+{
+	return sprintk(buffer, "%d\n", kstat.nr_buffers);
+}
+
 int data_proc_domainname(char *buffer, __pid_t pid)
 {
 	return sprintk(buffer, "%s\n", sys_utsname.domainname);

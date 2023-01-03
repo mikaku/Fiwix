@@ -1,7 +1,7 @@
 /*
  * fiwix/fs/procfs/tree.c
  *
- * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2018-2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -77,15 +77,17 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
    {	/* [4] /sys/kernel/ */
 	{ 2001,  DIR,  2, 4, 1,  ".",            NULL },
 	{ 3,     DIR,  2, 3, 2,  "..",           NULL },
-	{ 3001,  REG,  1, 4, 10, "domainname",   data_proc_domainname },
-	{ 3002,  REG,  1, 4, 8,  "file-max",     data_proc_filemax },
-	{ 3003,  REG,  1, 4, 7,  "file-nr",      data_proc_filenr },
-	{ 3004,  REG,  1, 4, 8,  "hostname",     data_proc_hostname },
-	{ 3005,  REG,  1, 4, 9,  "inode-max",    data_proc_inodemax },
-	{ 3006,  REG,  1, 4, 8,  "inode-nr",     data_proc_inodenr },
-	{ 3007,  REG,  1, 4, 9,  "osrelease",    data_proc_osrelease },
-	{ 3008,  REG,  1, 4, 6,  "ostype",       data_proc_ostype },
-	{ 3009,  REG,  1, 4, 7,  "version",      data_proc_version },
+	{ 3001,  REG,  1, 4, 10, "buffer-max",   data_proc_buffermax },
+	{ 3002,  REG,  1, 4, 9,  "buffer-nr",    data_proc_buffernr },
+	{ 3003,  REG,  1, 4, 10, "domainname",   data_proc_domainname },
+	{ 3004,  REG,  1, 4, 8,  "file-max",     data_proc_filemax },
+	{ 3005,  REG,  1, 4, 7,  "file-nr",      data_proc_filenr },
+	{ 3006,  REG,  1, 4, 8,  "hostname",     data_proc_hostname },
+	{ 3007,  REG,  1, 4, 9,  "inode-max",    data_proc_inodemax },
+	{ 3008,  REG,  1, 4, 8,  "inode-nr",     data_proc_inodenr },
+	{ 3009,  REG,  1, 4, 9,  "osrelease",    data_proc_osrelease },
+	{ 3010,  REG,  1, 4, 6,  "ostype",       data_proc_ostype },
+	{ 3011,  REG,  1, 4, 7,  "version",      data_proc_version },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    }
 };
