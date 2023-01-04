@@ -683,18 +683,20 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 	int text, data, stack, mmap;
 
 	size = text = data = stack = mmap = 0;
+	vma_start = vma_end = 0;
+
 	if((p = get_proc_by_pid(pid))) {
 		vma = p->vma_table;
-		if(!vma) {
-			return 0;
-		}
 
 		/*
 		 * This assumes that the first entry in the vma_table
 		 * contains the program's inode.
 		 */
-		vma_start = vma->start;
-		vma_end = vma->end;
+		vma_start = vma_end = 0;
+		if(vma) {
+			vma_start = vma->start;
+			vma_end = vma->end;
+		}
 
 		while(vma) {
 			switch(vma->s_type) {
@@ -777,9 +779,6 @@ int data_proc_pid_statm(char *buffer, __pid_t pid)
 	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
 		vma = p->vma_table;
-		if(!vma) {
-			return 0;
-		}
 		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
@@ -822,9 +821,6 @@ int data_proc_pid_status(char *buffer, __pid_t pid)
 	size = text = data = stack = mmap = 0;
 	if((p = get_proc_by_pid(pid))) {
 		vma = p->vma_table;
-		if(!vma) {
-			return 0;
-		}
 		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
