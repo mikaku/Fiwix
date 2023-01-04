@@ -115,7 +115,7 @@ static void insert_vma_region(struct vma *vma)
 		vmat->prev = vma;
 	}
 
-	if(vma->prev->start == vma->start || vma->prev->end == vma->end) {
+	if(vma->prev->end >= vma->start) {
 		merge_vma_regions(vma->prev, vma);
 	}
 }
@@ -191,7 +191,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 	if(b->start == a->end) {
 		if(can_be_merged(a, b)) {
 			a->end = b->end;
-			kfree2((unsigned int)b);
+			del_vma_region(b);
 			return;
 		}
 	}
@@ -212,8 +212,10 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 		if(a->start == a->end) {
 			del_vma_region(a);
 		}
-		if(new->start == new->end) {
+		if(new->start >= new->end) {
 			kfree2((unsigned int)new);
+		} else {
+			insert_vma_region(new);
 		}
 	}
 }
