@@ -115,7 +115,7 @@ static void insert_vma_region(struct vma *vma)
 		vmat->prev = vma;
 	}
 
-	if(vma->prev->end >= vma->start) {
+	if(vma != vma->prev && vma->start >= vma->prev->start && vma->start <= vma->prev->end) {
 		merge_vma_regions(vma->prev, vma);
 	}
 }
