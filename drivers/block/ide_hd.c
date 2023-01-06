@@ -202,6 +202,9 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			}
 			if(ide0_timeout) {
 				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+				unlock_resource(&ide->resource);
+				return -EIO;
 			} else {
 				del_callout(&creq);
 			}
@@ -216,6 +219,9 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			}
 			if(ide1_timeout) {
 				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+				unlock_resource(&ide->resource);
+				return -EIO;
 			} else {
 				del_callout(&creq);
 			}
@@ -352,6 +358,9 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			}
 			if(ide0_timeout) {
 				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+				unlock_resource(&ide->resource);
+				return -EIO;
 			} else {
 				del_callout(&creq);
 			}
@@ -366,6 +375,9 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			}
 			if(ide1_timeout) {
 				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+				unlock_resource(&ide->resource);
+				return -EIO;
 			} else {
 				del_callout(&creq);
 			}
