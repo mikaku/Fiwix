@@ -220,7 +220,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 	}
 }
 
-static void free_vma_pages(unsigned int start, __size_t length, struct vma *vma)
+static void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 {
 	unsigned int n, addr;
 	unsigned int *pgdir, *pgtbl;
@@ -319,7 +319,7 @@ void release_binary(void)
 
 	while(vma) {
 		tmp = vma->next;
-		free_vma_pages(vma->start, vma->end - vma->start, vma);
+		free_vma_pages(vma, vma->start, vma->end - vma->start);
 		free_vma_region(vma, vma->start, vma->end - vma->start);
 		vma = tmp;
 	}
@@ -539,7 +539,7 @@ int do_munmap(unsigned int addr, __size_t length)
 				size = length;
 			}
 
-			free_vma_pages(addr, size, vma);
+			free_vma_pages(vma, addr, size);
 			invalidate_tlb();
 			free_vma_region(vma, addr, size);
 			length -= size;
