@@ -22,6 +22,8 @@ int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 {
 	int errno;
 	long int nsec;
+	unsigned long int timeout;
+	unsigned long int flags;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_nanosleep(0x%08x, 0x%08x)\n", current->pid, (unsigned int)req, (unsigned int)rem);
@@ -44,9 +46,19 @@ int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 		nsec *= 10;
 	}
 
-	current->timeout = (req->tv_sec * HZ) + (nsec * HZ / 1000000000L);
-	if(current->timeout) {
+	/*
+	 * Interrupts must be disabled before setting current->timeout in order
+	 * to avoid a race condition. Otherwise it might occur that timeout is
+	 * so small that it would reach zero before the call to sleep(). In this
+	 * case, the process would miss the wakeup() and would stay in the sleep
+	 * queue forever.
+	 */
+	timeout = (req->tv_sec * HZ) + (nsec * HZ / 1000000000L);
+	if(timeout) {
+		SAVE_FLAGS(flags); CLI();
+		current->timeout = timeout;
 		sleep(&sys_nanosleep, PROC_INTERRUPTIBLE);
+		RESTORE_FLAGS(flags);
 		if(current->timeout) {
 			if(rem) {
 				if((errno = check_user_area(VERIFY_WRITE, rem, sizeof(struct timespec)))) {
