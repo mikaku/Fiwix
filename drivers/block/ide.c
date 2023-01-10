@@ -182,8 +182,7 @@ static int ide_identify(struct ide *ide, int drive)
 	if(ide->drive[drive].ident.logic_cyls > 0xF000 &&
 	   ide->drive[drive].ident.logic_heads > 0xF000 &&
 	   ide->drive[drive].ident.logic_spt > 0xF000 &&
-	   ide->drive[drive].ident.buffer_cache > 0xF000
-	) {
+	   ide->drive[drive].ident.buffer_cache > 0xF000) {
 		memset_b(&ide->drive[drive].ident, 0, sizeof(struct ide_drv_ident));
 		return 1;
 	}
@@ -199,6 +198,15 @@ static int ide_identify(struct ide *ide, int drive)
 		if(ide->drive[drive].ident.gen_config & 0x3) {
 			printk("WARNING: %s(): packet size must be 16 bytes!\n");
 		}
+	}
+
+	/* more checks */
+	if(!(ide->drive[drive].flags & DEVICE_IS_CDROM) &&
+	   (!ide->drive[drive].ident.logic_cyls ||
+	   !ide->drive[drive].ident.logic_heads ||
+	   !ide->drive[drive].ident.logic_spt)) {
+		memset_b(&ide->drive[drive].ident, 0, sizeof(struct ide_drv_ident));
+		return 1;
 	}
 
 	/* only bits 0-7 are relevant */
