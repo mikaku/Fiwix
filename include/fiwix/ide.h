@@ -223,8 +223,8 @@ struct ide_drv_ident {
 };
 
 struct ide_drv {
-	int drive;			/* master or slave */
-	char *drv_name;
+	int num;			/* master or slave */
+	char *name;
 	char *dev_name;
 	unsigned char major;		/* major number */
 	unsigned int flags;
@@ -240,7 +240,7 @@ struct ide_drv {
 
 struct ide {
 	int channel;			/* primary or secondary */
-	char *chan_name;
+	char *name;
 	int base;			/* base address */
 	int ctrl;			/* control port address */
 	short int irq;

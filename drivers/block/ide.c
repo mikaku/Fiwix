@@ -117,17 +117,17 @@ static struct interrupt irq_config_ide[NR_IDE_CTRLS] = {
 };
 
 
-static int ide_identify(struct ide *ide, int drive)
+static int ide_identify(struct ide *ide, struct ide_drv *drive)
 {
 	short int status, *buffer;
 	struct callout_req creq;
 
-	if((status = ide_drvsel(ide, drive, IDE_CHS_MODE, 0))) {
+	if((status = ide_drvsel(ide, drive->num, IDE_CHS_MODE, 0))) {
 		/* some controllers return 0xFF to indicate a non-drive condition */
 		if(status == 0xFF) {
 			return status;
 		}
-		printk("WARNING: %s(): error on device '%s'.\n", __FUNCTION__, ide->drive[drive].dev_name);
+		printk("WARNING: %s(): error on device '%s'.\n", __FUNCTION__, drive->dev_name);
 		ide_error(ide, status);
 		return status;
 	}
@@ -137,7 +137,7 @@ static int ide_identify(struct ide *ide, int drive)
 		creq.fn = ide0_timer;
 		creq.arg = 0;
 		add_callout(&creq, WAIT_FOR_IDE);
-		outport_b(ide->base + IDE_COMMAND, (ide->drive[drive].flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
+		outport_b(ide->base + IDE_COMMAND, (drive->flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
 		if(ide0_wait_interrupt) {
 			sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
 		}
@@ -154,7 +154,7 @@ static int ide_identify(struct ide *ide, int drive)
 		creq.fn = ide1_timer;
 		creq.arg = 0;
 		add_callout(&creq, WAIT_FOR_IDE);
-		outport_b(ide->base + IDE_COMMAND, (ide->drive[drive].flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
+		outport_b(ide->base + IDE_COMMAND, (drive->flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
 		if(ide1_wait_interrupt) {
 			sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
 		}
@@ -177,42 +177,42 @@ static int ide_identify(struct ide *ide, int drive)
 	}
 
 	inport_sw(ide->base + IDE_DATA, (void *)buffer, IDE_HD_SECTSIZE / sizeof(short int));
-	memcpy_b(&ide->drive[drive].ident, (void *)buffer, sizeof(struct ide_drv_ident));
+	memcpy_b(&drive->ident, (void *)buffer, sizeof(struct ide_drv_ident));
 	kfree((unsigned int)buffer);
 
 	/* some basic checks to make sure that data received makes sense */
-	if(ide->drive[drive].ident.logic_cyls > 0xF000 &&
-	   ide->drive[drive].ident.logic_heads > 0xF000 &&
-	   ide->drive[drive].ident.logic_spt > 0xF000 &&
-	   ide->drive[drive].ident.buffer_cache > 0xF000) {
-		memset_b(&ide->drive[drive].ident, 0, sizeof(struct ide_drv_ident));
+	if(drive->ident.logic_cyls > 0xF000 &&
+	   drive->ident.logic_heads > 0xF000 &&
+	   drive->ident.logic_spt > 0xF000 &&
+	   drive->ident.buffer_cache > 0xF000) {
+		memset_b(&drive->ident, 0, sizeof(struct ide_drv_ident));
 		return 1;
 	}
 
-	if(ide->drive[drive].ident.gen_config == IDE_SUPPORTS_CFA) {
-		ide->drive[drive].flags |= DEVICE_IS_CFA;
+	if(drive->ident.gen_config == IDE_SUPPORTS_CFA) {
+		drive->flags |= DEVICE_IS_CFA;
 	}
 
-	if(ide->drive[drive].flags & DEVICE_IS_ATAPI) {
-		if(((ide->drive[drive].ident.gen_config >> 8) & 0x1F) == ATAPI_IS_CDROM) {
-			ide->drive[drive].flags |= DEVICE_IS_CDROM;
+	if(drive->flags & DEVICE_IS_ATAPI) {
+		if(((drive->ident.gen_config >> 8) & 0x1F) == ATAPI_IS_CDROM) {
+			drive->flags |= DEVICE_IS_CDROM;
 		}
-		if(ide->drive[drive].ident.gen_config & 0x3) {
+		if(drive->ident.gen_config & 0x3) {
 			printk("WARNING: %s(): packet size must be 16 bytes!\n");
 		}
 	}
 
 	/* more checks */
-	if(!(ide->drive[drive].flags & DEVICE_IS_CDROM) &&
-	   (!ide->drive[drive].ident.logic_cyls ||
-	   !ide->drive[drive].ident.logic_heads ||
-	   !ide->drive[drive].ident.logic_spt)) {
-		memset_b(&ide->drive[drive].ident, 0, sizeof(struct ide_drv_ident));
+	if(!(drive->flags & DEVICE_IS_CDROM) &&
+	   (!drive->ident.logic_cyls ||
+	   !drive->ident.logic_heads ||
+	   !drive->ident.logic_spt)) {
+		memset_b(&drive->ident, 0, sizeof(struct ide_drv_ident));
 		return 1;
 	}
 
 	/* only bits 0-7 are relevant */
-	ide->drive[drive].ident.rw_multiple &= 0xFF;
+	drive->ident.rw_multiple &= 0xFF;
 	return 0;
 }
 
@@ -244,20 +244,20 @@ static void get_device_size(struct ide_drv *drive)
 
 }
 
-static int get_udma(struct ide *ide, int drive)
+static int get_udma(struct ide_drv *drive)
 {
 	int udma;
 
-	if(ide->drive[drive].ident.fields_validity & IDE_HAS_UDMA) {
-		if((ide->drive[drive].ident.ultradma >> 13) & 1) {
+	if(drive->ident.fields_validity & IDE_HAS_UDMA) {
+		if((drive->ident.ultradma >> 13) & 1) {
 			udma = 5;
-		} else if((ide->drive[drive].ident.ultradma >> 12) & 1) {
+		} else if((drive->ident.ultradma >> 12) & 1) {
 			udma = 4;
-		} else if((ide->drive[drive].ident.ultradma >> 11) & 1) {
+		} else if((drive->ident.ultradma >> 11) & 1) {
 			udma = 3;
-		} else if((ide->drive[drive].ident.ultradma >> 10) & 1) {
+		} else if((drive->ident.ultradma >> 10) & 1) {
 			udma = 2;
-		} else if((ide->drive[drive].ident.ultradma >> 9) & 1) {
+		} else if((drive->ident.ultradma >> 9) & 1) {
 			udma = 1;
 		} else {
 			udma = 0;
@@ -268,17 +268,17 @@ static int get_udma(struct ide *ide, int drive)
 	return udma;
 }
 
-static int get_piomode(struct ide *ide, int drive)
+static int get_piomode(struct ide_drv *drive)
 {
 	int piomode;
 
 	piomode = 0;
 
-	if(ide->drive[drive].ident.fields_validity & IDE_HAS_ADVANCED_PIO) {
-		if(ide->drive[drive].ident.adv_pio_modes & 1) {
+	if(drive->ident.fields_validity & IDE_HAS_ADVANCED_PIO) {
+		if(drive->ident.adv_pio_modes & 1) {
 			piomode = 3;
 		}
-		if(ide->drive[drive].ident.adv_pio_modes & 2) {
+		if(drive->ident.adv_pio_modes & 2) {
 			piomode = 4;
 		}
 	}
@@ -286,7 +286,7 @@ static int get_piomode(struct ide *ide, int drive)
 	return piomode;
 }
 
-static void ide_results(struct ide *ide, int drive)
+static void ide_results(struct ide *ide, struct ide_drv *drive)
 {
 	unsigned int cyl, hds, sect;
 	__loff_t size;
@@ -294,18 +294,18 @@ static void ide_results(struct ide *ide, int drive)
 	int udma, piomode;
 	int udma_speed[] = { 16, 25, 33, 44, 66, 100 };
 
-	cyl = ide->drive[drive].ident.logic_cyls;
-	hds = ide->drive[drive].ident.logic_heads;
-	sect = ide->drive[drive].ident.logic_spt;
+	cyl = drive->ident.logic_cyls;
+	hds = drive->ident.logic_heads;
+	sect = drive->ident.logic_spt;
 
-	if(ide->drive[drive].ident.fields_validity & IDE_HAS_CURR_VALUES) {
-		cyl = ide->drive[drive].ident.cur_log_cyls;
-		hds = ide->drive[drive].ident.cur_log_heads;
-		sect = ide->drive[drive].ident.cur_log_spt;
+	if(drive->ident.fields_validity & IDE_HAS_CURR_VALUES) {
+		cyl = drive->ident.cur_log_cyls;
+		hds = drive->ident.cur_log_heads;
+		sect = drive->ident.cur_log_spt;
 	}
 
-	udma = get_udma(ide, drive);
-	piomode = get_piomode(ide, drive);
+	udma = get_udma(drive);
+	piomode = get_piomode(drive);
 
 	/*
 	 * After knowing if the device is UDMA capable we could choose between
@@ -313,7 +313,7 @@ static void ide_results(struct ide *ide, int drive)
 	 * FIXME: Currently only PIO mode is supported.
 	 */
 
-	size = (__loff_t)ide->drive[drive].nr_sects * BPS;
+	size = (__loff_t)drive->nr_sects * BPS;
 	size = size / 1024;
 	if(size < 1024) {
 		/* the size is less than 1MB (will be reported in KB) */
@@ -324,40 +324,40 @@ static void ide_results(struct ide *ide, int drive)
 		ksize = 0;
 	}
 
-	printk("%s       0x%04x-0x%04x    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
-	swap_asc_word(ide->drive[drive].ident.model_number, 40);
-	printk("%s %s ", ide->chan_name, ide->drive[drive].drv_name);
+	printk("%s       0x%04x-0x%04x    %d\t", drive->dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
+	swap_asc_word(drive->ident.model_number, 40);
+	printk("%s %s ", ide->name, drive->name);
 
-	if(!(ide->drive[drive].flags & DEVICE_IS_ATAPI)) {
+	if(!(drive->flags & DEVICE_IS_ATAPI)) {
 		printk("ATA");
 	} else {
 		printk("ATAPI");
 	}
 
-	if(ide->drive[drive].flags & DEVICE_IS_CFA) {
+	if(drive->flags & DEVICE_IS_CFA) {
 		printk(" CFA");
 	}
 
-	if(ide->drive[drive].flags & DEVICE_IS_DISK) {
+	if(drive->flags & DEVICE_IS_DISK) {
 		if(ksize) {
 			printk(" DISK drive %dKB\n", ksize);
 		} else {
 			printk(" DISK drive %dMB\n", (unsigned int)size);
 		}
-		printk("                                model=%s\n", ide->drive[drive].ident.model_number);
-		if(ide->drive[drive].nr_sects < IDE_MIN_LBA) {
+		printk("                                model=%s\n", drive->ident.model_number);
+		if(drive->nr_sects < IDE_MIN_LBA) {
 			printk("\t\t\t\tCHS=%d/%d/%d", cyl, hds, sect);
 		} else {
-			ide->drive[drive].flags |= DEVICE_REQUIRES_LBA;
-			printk("\t\t\t\tsectors=%d", ide->drive[drive].nr_sects);
+			drive->flags |= DEVICE_REQUIRES_LBA;
+			printk("\t\t\t\tsectors=%d", drive->nr_sects);
 		}
-		printk(" cache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
+		printk(" cache=%dKB", drive->ident.buffer_cache >> 1);
 	}
 
-	if(ide->drive[drive].flags & DEVICE_IS_CDROM) {
+	if(drive->flags & DEVICE_IS_CDROM) {
 		printk(" CDROM drive\n");
-		printk("\t\t\t\tmodel=%s\n", ide->drive[drive].ident.model_number);
-		printk("\t\t\t\tcache=%dKB", ide->drive[drive].ident.buffer_cache >> 1);
+		printk("\t\t\t\tmodel=%s\n", drive->ident.model_number);
+		printk("\t\t\t\tcache=%dKB", drive->ident.buffer_cache >> 1);
 	}
 
 	/*
@@ -367,14 +367,14 @@ static void ide_results(struct ide *ide, int drive)
 	*/
 	printk(" PIO mode=%d", piomode);
 
-	if(ide->drive[drive].ident.capabilities & IDE_HAS_LBA) {
-		ide->drive[drive].flags |= DEVICE_REQUIRES_LBA;
+	if(drive->ident.capabilities & IDE_HAS_LBA) {
+		drive->flags |= DEVICE_REQUIRES_LBA;
 		printk(" LBA");
 	}
 
 	printk("\n");
 
-	if(ide->drive[drive].ident.rw_multiple > 1) {
+	if(drive->ident.rw_multiple > 1) {
 		/*
 		 * Some very old controllers report a value of 16 here but they
 		 * don't support read or write multiple in PIO mode. So far,
@@ -382,72 +382,72 @@ static void ide_results(struct ide *ide, int drive)
 		 * in the Advanced PIO Data Transfer Supported Field (word 64).
 		 */
 		if(piomode > 0) {
-			ide->drive[drive].flags |= DEVICE_HAS_RW_MULTIPLE;
+			drive->flags |= DEVICE_HAS_RW_MULTIPLE;
 		}
 	}
 
 	/*
 	printk("\n");
-	printk("%s -> %s\n", ide->drive[drive].dev_name, ide->drive[drive].flags & DEVICE_IS_ATAPI ? "ATAPI" : "ATA");
-	printk("general conf  = %d (%b) (0x%x)\n", ide->drive[drive].ident.gen_config, ide->drive[drive].ident.gen_config, ide->drive[drive].ident.gen_config);
-	printk("logic_cyls    = %d (%b)\n", ide->drive[drive].ident.logic_cyls, ide->drive[drive].ident.logic_cyls);
-	printk("reserved2     = %d (%b)\n", ide->drive[drive].ident.reserved2, ide->drive[drive].ident.reserved2);
-	printk("logic_heads   = %d (%b)\n", ide->drive[drive].ident.logic_heads, ide->drive[drive].ident.logic_heads);
-	printk("retired4      = %d (%b)\n", ide->drive[drive].ident.retired4, ide->drive[drive].ident.retired4);
-	printk("retired5      = %d (%b)\n", ide->drive[drive].ident.retired5, ide->drive[drive].ident.retired5);
-	printk("logic_spt     = %d (%b)\n", ide->drive[drive].ident.logic_spt, ide->drive[drive].ident.logic_spt);
-	printk("retired7      = %d (%b)\n", ide->drive[drive].ident.retired7, ide->drive[drive].ident.retired7);
-	printk("retired8      = %d (%b)\n", ide->drive[drive].ident.retired8, ide->drive[drive].ident.retired8);
-	printk("retired9      = %d (%b)\n", ide->drive[drive].ident.retired9, ide->drive[drive].ident.retired9);
-	printk("serial number = '%s'\n", ide->drive[drive].ident.serial_number);
-	printk("vendor spec20 = %d (%b)\n", ide->drive[drive].ident.vendor_spec20, ide->drive[drive].ident.vendor_spec20);
-	printk("buffer cache  = %d (%b)\n", ide->drive[drive].ident.buffer_cache, ide->drive[drive].ident.buffer_cache);
-	printk("vendor spec22 = %d (%b)\n", ide->drive[drive].ident.vendor_spec22, ide->drive[drive].ident.vendor_spec22);
-	printk("firmware rev  = '%s'\n", ide->drive[drive].ident.firmware_rev);
-	printk("model number  = '%s'\n", ide->drive[drive].ident.model_number);
-	printk("rw multiple   = %d (%b)\n", ide->drive[drive].ident.rw_multiple, ide->drive[drive].ident.rw_multiple);
-	printk("reserved48    = %d (%b)\n", ide->drive[drive].ident.reserved48, ide->drive[drive].ident.reserved48);
-	printk("capabilities  = %d (%b)\n", ide->drive[drive].ident.capabilities, ide->drive[drive].ident.capabilities);
-	printk("reserved50    = %d (%b)\n", ide->drive[drive].ident.reserved50, ide->drive[drive].ident.reserved50);
-	printk("pio mode      = %d (%b)\n", ide->drive[drive].ident.pio_mode, ide->drive[drive].ident.pio_mode);
-	printk("dma mode      = %d (%b)\n", ide->drive[drive].ident.dma_mode, ide->drive[drive].ident.dma_mode);
-	printk("fields validi = %d (%b)\n", ide->drive[drive].ident.fields_validity, ide->drive[drive].ident.fields_validity);
-	printk("cur log cyls  = %d (%b)\n", ide->drive[drive].ident.cur_log_cyls, ide->drive[drive].ident.cur_log_cyls);
-	printk("cur log heads = %d (%b)\n", ide->drive[drive].ident.cur_log_heads, ide->drive[drive].ident.cur_log_heads);
-	printk("cur log spt   = %d (%b)\n", ide->drive[drive].ident.cur_log_spt, ide->drive[drive].ident.cur_log_spt);
-	printk("cur capacity  = %d (%b)\n", ide->drive[drive].ident.cur_capacity | (ide->drive[drive].ident.cur_capacity2 << 16), ide->drive[drive].ident.cur_capacity | (ide->drive[drive].ident.cur_capacity2 << 16));
-	printk("mult sect set = %d (%b)\n", ide->drive[drive].ident.mult_sect_set, ide->drive[drive].ident.mult_sect_set);
-	printk("tot sectors   = %d (%b)\n", ide->drive[drive].ident.tot_sectors | (ide->drive[drive].ident.tot_sectors2 << 16), ide->drive[drive].ident.tot_sectors | (ide->drive[drive].ident.tot_sectors2 << 16));
-	printk("singleword dma= %d (%b)\n", ide->drive[drive].ident.singleword_dma, ide->drive[drive].ident.singleword_dma);
-	printk("multiword dma = %d (%b)\n", ide->drive[drive].ident.multiword_dma, ide->drive[drive].ident.multiword_dma);
-	printk("adv pio modes = %d (%b)\n", ide->drive[drive].ident.adv_pio_modes, ide->drive[drive].ident.adv_pio_modes);
-	printk("min multiword = %d (%b)\n", ide->drive[drive].ident.min_multiword, ide->drive[drive].ident.min_multiword);
-	printk("rec multiword = %d (%b)\n", ide->drive[drive].ident.rec_multiword, ide->drive[drive].ident.rec_multiword);
-	printk("min pio wo fc = %d (%b)\n", ide->drive[drive].ident.min_pio_wo_fc, ide->drive[drive].ident.min_pio_wo_fc);
-	printk("min pio w fc  = %d (%b)\n", ide->drive[drive].ident.min_pio_w_fc, ide->drive[drive].ident.min_pio_w_fc);
-	printk("reserved69    = %d (%b)\n", ide->drive[drive].ident.reserved69, ide->drive[drive].ident.reserved69);
-	printk("reserved70    = %d (%b)\n", ide->drive[drive].ident.reserved70, ide->drive[drive].ident.reserved70);
-	printk("reserved71    = %d (%b)\n", ide->drive[drive].ident.reserved71, ide->drive[drive].ident.reserved71);
-	printk("reserved72    = %d (%b)\n", ide->drive[drive].ident.reserved72, ide->drive[drive].ident.reserved72);
-	printk("reserved73    = %d (%b)\n", ide->drive[drive].ident.reserved73, ide->drive[drive].ident.reserved73);
-	printk("reserved74    = %d (%b)\n", ide->drive[drive].ident.reserved74, ide->drive[drive].ident.reserved74);
-	printk("queue depth   = %d (%b)\n", ide->drive[drive].ident.queue_depth, ide->drive[drive].ident.queue_depth);
-	printk("reserved76    = %d (%b)\n", ide->drive[drive].ident.reserved76, ide->drive[drive].ident.reserved76);
-	printk("reserved77    = %d (%b)\n", ide->drive[drive].ident.reserved77, ide->drive[drive].ident.reserved77);
-	printk("reserved78    = %d (%b)\n", ide->drive[drive].ident.reserved78, ide->drive[drive].ident.reserved78);
-	printk("reserved79    = %d (%b)\n", ide->drive[drive].ident.reserved79, ide->drive[drive].ident.reserved79);
-	printk("major version = %d (%b)\n", ide->drive[drive].ident.majorver, ide->drive[drive].ident.majorver);
-	printk("minor version = %d (%b)\n", ide->drive[drive].ident.minorver, ide->drive[drive].ident.minorver);
-	printk("cmdset1       = %d (%b)\n", ide->drive[drive].ident.cmdset1, ide->drive[drive].ident.cmdset1);
-	printk("cmdset2       = %d (%b)\n", ide->drive[drive].ident.cmdset2, ide->drive[drive].ident.cmdset2);
-	printk("cmdsf ext     = %d (%b)\n", ide->drive[drive].ident.cmdsf_ext, ide->drive[drive].ident.cmdsf_ext);
-	printk("cmdsf enable1 = %d (%b)\n", ide->drive[drive].ident.cmdsf_enable1, ide->drive[drive].ident.cmdsf_enable1);
-	printk("cmdsf enable2 = %d (%b)\n", ide->drive[drive].ident.cmdsf_enable2, ide->drive[drive].ident.cmdsf_enable2);
-	printk("cmdsf default = %d (%b)\n", ide->drive[drive].ident.cmdsf_default, ide->drive[drive].ident.cmdsf_default);
-	printk("ultra dma     = %d (%b)\n", ide->drive[drive].ident.ultradma, ide->drive[drive].ident.ultradma);
-	printk("reserved89    = %d (%b)\n", ide->drive[drive].ident.reserved89, ide->drive[drive].ident.reserved89);
-	printk("reserved90    = %d (%b)\n", ide->drive[drive].ident.reserved90, ide->drive[drive].ident.reserved90);
-	printk("current apm   = %d (%b)\n", ide->drive[drive].ident.curapm, ide->drive[drive].ident.curapm);
+	printk("%s -> %s\n", drive->dev_name, drive->flags & DEVICE_IS_ATAPI ? "ATAPI" : "ATA");
+	printk("general conf  = %d (%b) (0x%x)\n", drive->ident.gen_config, drive->ident.gen_config, drive->ident.gen_config);
+	printk("logic_cyls    = %d (%b)\n", drive->ident.logic_cyls, drive->ident.logic_cyls);
+	printk("reserved2     = %d (%b)\n", drive->ident.reserved2, drive->ident.reserved2);
+	printk("logic_heads   = %d (%b)\n", drive->ident.logic_heads, drive->ident.logic_heads);
+	printk("retired4      = %d (%b)\n", drive->ident.retired4, drive->ident.retired4);
+	printk("retired5      = %d (%b)\n", drive->ident.retired5, drive->ident.retired5);
+	printk("logic_spt     = %d (%b)\n", drive->ident.logic_spt, drive->ident.logic_spt);
+	printk("retired7      = %d (%b)\n", drive->ident.retired7, drive->ident.retired7);
+	printk("retired8      = %d (%b)\n", drive->ident.retired8, drive->ident.retired8);
+	printk("retired9      = %d (%b)\n", drive->ident.retired9, drive->ident.retired9);
+	printk("serial number = '%s'\n", drive->ident.serial_number);
+	printk("vendor spec20 = %d (%b)\n", drive->ident.vendor_spec20, drive->ident.vendor_spec20);
+	printk("buffer cache  = %d (%b)\n", drive->ident.buffer_cache, drive->ident.buffer_cache);
+	printk("vendor spec22 = %d (%b)\n", drive->ident.vendor_spec22, drive->ident.vendor_spec22);
+	printk("firmware rev  = '%s'\n", drive->ident.firmware_rev);
+	printk("model number  = '%s'\n", drive->ident.model_number);
+	printk("rw multiple   = %d (%b)\n", drive->ident.rw_multiple, drive->ident.rw_multiple);
+	printk("reserved48    = %d (%b)\n", drive->ident.reserved48, drive->ident.reserved48);
+	printk("capabilities  = %d (%b)\n", drive->ident.capabilities, drive->ident.capabilities);
+	printk("reserved50    = %d (%b)\n", drive->ident.reserved50, drive->ident.reserved50);
+	printk("pio mode      = %d (%b)\n", drive->ident.pio_mode, drive->ident.pio_mode);
+	printk("dma mode      = %d (%b)\n", drive->ident.dma_mode, drive->ident.dma_mode);
+	printk("fields validi = %d (%b)\n", drive->ident.fields_validity, drive->ident.fields_validity);
+	printk("cur log cyls  = %d (%b)\n", drive->ident.cur_log_cyls, drive->ident.cur_log_cyls);
+	printk("cur log heads = %d (%b)\n", drive->ident.cur_log_heads, drive->ident.cur_log_heads);
+	printk("cur log spt   = %d (%b)\n", drive->ident.cur_log_spt, drive->ident.cur_log_spt);
+	printk("cur capacity  = %d (%b)\n", drive->ident.cur_capacity | (drive->ident.cur_capacity2 << 16), drive->ident.cur_capacity | (drive->ident.cur_capacity2 << 16));
+	printk("mult sect set = %d (%b)\n", drive->ident.mult_sect_set, drive->ident.mult_sect_set);
+	printk("tot sectors   = %d (%b)\n", drive->ident.tot_sectors | (drive->ident.tot_sectors2 << 16), drive->ident.tot_sectors | (drive->ident.tot_sectors2 << 16));
+	printk("singleword dma= %d (%b)\n", drive->ident.singleword_dma, drive->ident.singleword_dma);
+	printk("multiword dma = %d (%b)\n", drive->ident.multiword_dma, drive->ident.multiword_dma);
+	printk("adv pio modes = %d (%b)\n", drive->ident.adv_pio_modes, drive->ident.adv_pio_modes);
+	printk("min multiword = %d (%b)\n", drive->ident.min_multiword, drive->ident.min_multiword);
+	printk("rec multiword = %d (%b)\n", drive->ident.rec_multiword, drive->ident.rec_multiword);
+	printk("min pio wo fc = %d (%b)\n", drive->ident.min_pio_wo_fc, drive->ident.min_pio_wo_fc);
+	printk("min pio w fc  = %d (%b)\n", drive->ident.min_pio_w_fc, drive->ident.min_pio_w_fc);
+	printk("reserved69    = %d (%b)\n", drive->ident.reserved69, drive->ident.reserved69);
+	printk("reserved70    = %d (%b)\n", drive->ident.reserved70, drive->ident.reserved70);
+	printk("reserved71    = %d (%b)\n", drive->ident.reserved71, drive->ident.reserved71);
+	printk("reserved72    = %d (%b)\n", drive->ident.reserved72, drive->ident.reserved72);
+	printk("reserved73    = %d (%b)\n", drive->ident.reserved73, drive->ident.reserved73);
+	printk("reserved74    = %d (%b)\n", drive->ident.reserved74, drive->ident.reserved74);
+	printk("queue depth   = %d (%b)\n", drive->ident.queue_depth, drive->ident.queue_depth);
+	printk("reserved76    = %d (%b)\n", drive->ident.reserved76, drive->ident.reserved76);
+	printk("reserved77    = %d (%b)\n", drive->ident.reserved77, drive->ident.reserved77);
+	printk("reserved78    = %d (%b)\n", drive->ident.reserved78, drive->ident.reserved78);
+	printk("reserved79    = %d (%b)\n", drive->ident.reserved79, drive->ident.reserved79);
+	printk("major version = %d (%b)\n", drive->ident.majorver, drive->ident.majorver);
+	printk("minor version = %d (%b)\n", drive->ident.minorver, drive->ident.minorver);
+	printk("cmdset1       = %d (%b)\n", drive->ident.cmdset1, drive->ident.cmdset1);
+	printk("cmdset2       = %d (%b)\n", drive->ident.cmdset2, drive->ident.cmdset2);
+	printk("cmdsf ext     = %d (%b)\n", drive->ident.cmdsf_ext, drive->ident.cmdsf_ext);
+	printk("cmdsf enable1 = %d (%b)\n", drive->ident.cmdsf_enable1, drive->ident.cmdsf_enable1);
+	printk("cmdsf enable2 = %d (%b)\n", drive->ident.cmdsf_enable2, drive->ident.cmdsf_enable2);
+	printk("cmdsf default = %d (%b)\n", drive->ident.cmdsf_default, drive->ident.cmdsf_default);
+	printk("ultra dma     = %d (%b)\n", drive->ident.ultradma, drive->ident.ultradma);
+	printk("reserved89    = %d (%b)\n", drive->ident.reserved89, drive->ident.reserved89);
+	printk("reserved90    = %d (%b)\n", drive->ident.reserved90, drive->ident.reserved90);
+	printk("current apm   = %d (%b)\n", drive->ident.curapm, drive->ident.curapm);
 	*/
 }
 
@@ -801,9 +801,10 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 
 void ide_init(void)
 {
-	int channel;
+	int channel, drv_num;
 	int devices, errno;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	for(channel = IDE_PRIMARY; channel <= IDE_SECONDARY; channel++) {
 		ide = &ide_table[channel];
@@ -813,40 +814,30 @@ void ide_init(void)
 
 		errno = ide_softreset(ide);
 		devices = 0;
-		if(!(errno & 1)) {
-			if(!(ide_identify(ide, IDE_MASTER))) {
-				get_device_size(&ide->drive[IDE_MASTER]);
-				ide_results(ide, IDE_MASTER);
-				SET_MINOR(ide_device[channel].minors, 0);
-				register_device(BLK_DEV, &ide_device[channel]);
-				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
-					if(!ide_hd_init(ide, IDE_MASTER)) {
-						devices++;
+		for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
+			/*
+			 * ide_softreset() returns error in the low nibble
+			 * for master devices, and in the high nibble for
+			 * slave devices.
+			 */
+			if(!(errno & (1 << (drv_num * 4)))) {
+				drive = &ide->drive[drv_num];
+				if(!(ide_identify(ide, drive))) {
+					get_device_size(drive);
+					ide_results(ide, drive);
+					SET_MINOR(ide_device[channel].minors, drv_num << drive->minor_shift);
+					if(!devices) {
+						register_device(BLK_DEV, &ide_device[channel]);
 					}
-				}
-				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
-					if(!ide_cd_init(ide, IDE_MASTER)) {
-						devices++;
+					if(drive->flags & DEVICE_IS_DISK) {
+						if(!ide_hd_init(ide, drv_num)) {
+							devices++;
+						}
 					}
-				}
-			}
-		}
-		if(!(errno & 0x10)) {
-			if(!(ide_identify(ide, IDE_SLAVE))) {
-				get_device_size(&ide->drive[IDE_SLAVE]);
-				ide_results(ide, IDE_SLAVE);
-				SET_MINOR(ide_device[channel].minors, 1 << IDE_SLAVE_MSF);
-				if(!devices) {
-					register_device(BLK_DEV, &ide_device[channel]);
-				}
-				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
-					if(!ide_hd_init(ide, IDE_SLAVE)) {
-						devices++;
-					}
-				}
-				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
-					if(!ide_cd_init(ide, IDE_SLAVE)) {
-						devices++;
+					if(drive->flags & DEVICE_IS_CDROM) {
+						if(!ide_cd_init(ide, drv_num)) {
+							devices++;
+						}
 					}
 				}
 			}
