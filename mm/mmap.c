@@ -183,6 +183,43 @@ static int can_be_merged(struct vma *a, struct vma *b)
 	return 0;
 }
 
+static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length)
+{
+	struct vma *new;
+
+	if(start + length < vma->end) {
+		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+			return -ENOMEM;
+		}
+		memset_b(new, 0, sizeof(struct vma));
+		new->start = start + length;
+		new->end = vma->end;
+		new->prot = vma->prot;
+		new->flags = vma->flags;
+		new->offset = vma->offset;
+		new->s_type = vma->s_type;
+		new->inode = vma->inode;
+		new->o_mode = vma->o_mode;
+	} else {
+		new = NULL;
+	}
+
+	if(vma->start == start) {
+		if(vma->inode) {
+			iput(vma->inode);
+		}
+		del_vma_region(vma);
+	} else {
+		vma->end = start;
+	}
+
+	if(new) {
+		add_vma_region(new);
+	}
+
+	return 0;
+}
+
 /* this assumes that vma_table is sorted by address */
 void merge_vma_regions(struct vma *a, struct vma *b)
 {
@@ -208,6 +245,8 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 		new->s_type = a->s_type;
 		new->inode = a->inode;
 		new->o_mode = a->o_mode;
+		free_vma_pages(a, b->start, a->end - b->start);
+		invalidate_tlb();
 		a->end = b->start;
 		if(a->start == a->end) {
 			del_vma_region(a);
@@ -220,7 +259,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 	}
 }
 
-static void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
+void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 {
 	unsigned int n, addr;
 	unsigned int *pgdir, *pgtbl;
@@ -272,43 +311,6 @@ static void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 			}
 		}
 	}
-}
-
-static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length)
-{
-	struct vma *new;
-
-	if(start + length < vma->end) {
-		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
-			return -ENOMEM;
-		}
-		memset_b(new, 0, sizeof(struct vma));
-		new->start = start + length;
-		new->end = vma->end;
-		new->prot = vma->prot;
-		new->flags = vma->flags;
-		new->offset = vma->offset;
-		new->s_type = vma->s_type;
-		new->inode = vma->inode;
-		new->o_mode = vma->o_mode;
-	} else {
-		new = NULL;
-	}
-
-	if(vma->start == start) {
-		if(vma->inode) {
-			iput(vma->inode);
-		}
-		del_vma_region(vma);
-	} else {
-		vma->end = start;
-	}
-
-	if(new) {
-		add_vma_region(new);
-	}
-
-	return 0;
 }
 
 void release_binary(void)
