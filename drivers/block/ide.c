@@ -22,34 +22,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-int ide0_need_reset = 0;
-int ide0_wait_interrupt = 0;
-int ide0_timeout = 0;
-int ide1_need_reset = 0;
-int ide1_wait_interrupt = 0;
-int ide1_timeout = 0;
-
-struct ide ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { 0, 0 },
-		{
-			{ IDE_MASTER, "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
-		}
-	},
-	{ IDE_SECONDARY, IDE1_BASE, IDE1_CTRL, IDE1_IRQ, { 0, 0 },
-		{
-			{ IDE_MASTER, "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
-		}
-	}
-};
-
-static char *ide_ctrl_name[] = { "primary", "secondary" };
-static char *ide_drv_name[] = { "master", "slave" };
-
-static unsigned int ide0_sizes[256];
-static unsigned int ide1_sizes[256];
-
 static struct fs_operations ide_driver_fsop = {
 	0,
 	0,
@@ -92,28 +64,58 @@ static struct fs_operations ide_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct device ide0_device = {
-	"ide0",
-	IDE0_MAJOR,
-	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
-	&ide0_sizes,
-	&ide_driver_fsop,
-	NULL
+int ide0_need_reset = 0;
+int ide0_wait_interrupt = 0;
+int ide0_timeout = 0;
+int ide1_need_reset = 0;
+int ide1_wait_interrupt = 0;
+int ide1_timeout = 0;
+
+struct ide ide_table[NR_IDE_CTRLS] = {
+	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { 0, 0 },
+		{
+			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
+		}
+	},
+	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, IDE1_IRQ, { 0, 0 },
+		{
+			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
+		}
+	}
 };
 
-static struct device ide1_device = {
-	"ide1",
-	IDE1_MAJOR,
-	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
-	&ide1_sizes,
-	&ide_driver_fsop,
-	NULL
+static unsigned int ide0_sizes[256];
+static unsigned int ide1_sizes[256];
+
+static struct device ide_device[NR_IDE_CTRLS] = {
+	{
+		"ide0",
+		IDE0_MAJOR,
+		{ 0, 0, 0, 0, 0, 0, 0, 0 },
+		0,
+		&ide0_sizes,
+		&ide_driver_fsop,
+		NULL
+	},
+
+	{
+		"ide1",
+		IDE1_MAJOR,
+		{ 0, 0, 0, 0, 0, 0, 0, 0 },
+		0,
+		&ide1_sizes,
+		&ide_driver_fsop,
+		NULL
+	}
 };
 
-static struct interrupt irq_config_ide0 = { 0, "ide0", &irq_ide0, NULL };
-static struct interrupt irq_config_ide1 = { 0, "ide1", &irq_ide1, NULL };
+static struct interrupt irq_config_ide[NR_IDE_CTRLS] = {
+	{ 0, "ide0", &irq_ide0, NULL },
+	{ 0, "ide1", &irq_ide1, NULL }
+};
+
 
 static int ide_identify(struct ide *ide, int drive)
 {
@@ -324,7 +326,7 @@ static void ide_results(struct ide *ide, int drive)
 
 	printk("%s       0x%04x-0x%04x    %d\t", ide->drive[drive].dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 	swap_asc_word(ide->drive[drive].ident.model_number, 40);
-	printk("%s %s ", ide_ctrl_name[ide->channel], ide_drv_name[ide->drive[drive].drive]);
+	printk("%s %s ", ide->chan_name, ide->drive[drive].drv_name);
 
 	if(!(ide->drive[drive].flags & DEVICE_IS_ATAPI)) {
 		printk("ATA");
@@ -799,105 +801,59 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 
 void ide_init(void)
 {
+	int channel;
 	int devices, errno;
 	struct ide *ide;
 
-	if(!register_irq(IDE0_IRQ, &irq_config_ide0)) {
-		enable_irq(IDE0_IRQ);
-	}
-	devices = 0;
+	for(channel = IDE_PRIMARY; channel <= IDE_SECONDARY; channel++) {
+		ide = &ide_table[channel];
+		if(!register_irq(ide->irq, &irq_config_ide[channel])) {
+			enable_irq(ide->irq);
+		}
 
-	ide = &ide_table[IDE_PRIMARY];
-	errno = ide_softreset(ide);
-	if(!(errno & 1)) {
-		if(!(ide_identify(ide, IDE_MASTER))) {
-			get_device_size(&ide->drive[IDE_MASTER]);
-			ide_results(ide, IDE_MASTER);
-			SET_MINOR(ide0_device.minors, 0);
-			register_device(BLK_DEV, &ide0_device);
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_MASTER)) {
-					devices++;
+		errno = ide_softreset(ide);
+		devices = 0;
+		if(!(errno & 1)) {
+			if(!(ide_identify(ide, IDE_MASTER))) {
+				get_device_size(&ide->drive[IDE_MASTER]);
+				ide_results(ide, IDE_MASTER);
+				SET_MINOR(ide_device[channel].minors, 0);
+				register_device(BLK_DEV, &ide_device[channel]);
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
-			}
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_MASTER)) {
-					devices++;
-				}
-			}
-		}
-	}
-	if(!(errno & 0x10)) {
-		if(!(ide_identify(ide, IDE_SLAVE))) {
-			get_device_size(&ide->drive[IDE_SLAVE]);
-			ide_results(ide, IDE_SLAVE);
-			SET_MINOR(ide0_device.minors, 1 << IDE_SLAVE_MSF);
-			if(!devices) {
-				register_device(BLK_DEV, &ide0_device);
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_SLAVE)) {
-					devices++;
-				}
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_SLAVE)) {
-					devices++;
+				if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_MASTER)) {
+						devices++;
+					}
 				}
 			}
 		}
-	}
-	if(!devices) {
-		disable_irq(IDE0_IRQ);
-		unregister_irq(IDE0_IRQ, &irq_config_ide0);
-	}
-
-	if(!register_irq(IDE1_IRQ, &irq_config_ide1)) {
-		enable_irq(IDE1_IRQ);
-	}
-	devices = 0;
-	ide = &ide_table[IDE_SECONDARY];
-	errno = ide_softreset(ide);
-	if(!(errno & 1)) {
-		if(!(ide_identify(ide, IDE_MASTER))) {
-			get_device_size(&ide->drive[IDE_MASTER]);
-			ide_results(ide, IDE_MASTER);
-			SET_MINOR(ide1_device.minors, 0);
-			register_device(BLK_DEV, &ide1_device);
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_MASTER)) {
-					devices++;
+		if(!(errno & 0x10)) {
+			if(!(ide_identify(ide, IDE_SLAVE))) {
+				get_device_size(&ide->drive[IDE_SLAVE]);
+				ide_results(ide, IDE_SLAVE);
+				SET_MINOR(ide_device[channel].minors, 1 << IDE_SLAVE_MSF);
+				if(!devices) {
+					register_device(BLK_DEV, &ide_device[channel]);
 				}
-			}
-			if(ide->drive[IDE_MASTER].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_MASTER)) {
-					devices++;
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
+					if(!ide_hd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
+				}
+				if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
+					if(!ide_cd_init(ide, IDE_SLAVE)) {
+						devices++;
+					}
 				}
 			}
 		}
-	}
-	if(!(errno & 0x10)) {
-		if(!(ide_identify(ide, IDE_SLAVE))) {
-			get_device_size(&ide->drive[IDE_SLAVE]);
-			ide_results(ide, IDE_SLAVE);
-			SET_MINOR(ide1_device.minors, 1 << IDE_SLAVE_MSF);
-			if(!devices) {
-				register_device(BLK_DEV, &ide1_device);
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_DISK) {
-				if(!ide_hd_init(ide, IDE_SLAVE)) {
-					devices++;
-				}
-			}
-			if(ide->drive[IDE_SLAVE].flags & DEVICE_IS_CDROM) {
-				if(!ide_cd_init(ide, IDE_SLAVE)) {
-					devices++;
-				}
-			}
+		if(!devices) {
+			disable_irq(ide->irq);
+			unregister_irq(ide->irq, &irq_config_ide[channel]);
 		}
-	}
-	if(!devices) {
-		disable_irq(IDE1_IRQ);
-		unregister_irq(IDE1_IRQ, &irq_config_ide1);
 	}
 }
