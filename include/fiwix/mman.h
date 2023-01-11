@@ -58,6 +58,7 @@ struct mmap {
 };
 
 void show_vma_regions(struct proc *);
+void free_vma_pages(struct vma *, unsigned int, __size_t);
 void release_binary(void);
 struct vma *find_vma_region(unsigned int);
 struct vma *find_vma_intersection(unsigned int, unsigned int);
