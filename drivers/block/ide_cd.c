@@ -499,16 +499,16 @@ int ide_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int ide_cd_init(struct ide *ide, int drive)
+int ide_cd_init(struct ide *ide, struct ide_drv *drive)
 {
 	struct device *d;
 	unsigned char minor;
 
-	ide->drive[drive].fsop = &ide_cd_driver_fsop;
+	drive->fsop = &ide_cd_driver_fsop;
 
-	minor = !ide->drive[drive].minor_shift ? 0 : 1 << ide->drive[drive].minor_shift;
+	minor = !drive->minor_shift ? 0 : 1 << drive->minor_shift;
 
-	if(!(d = get_device(BLK_DEV, MKDEV(ide->drive[drive].major, minor)))) {
+	if(!(d = get_device(BLK_DEV, MKDEV(drive->major, minor)))) {
 		return -EINVAL;
 	}
 	SET_MINOR(d->minors, minor);

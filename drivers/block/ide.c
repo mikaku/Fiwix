@@ -830,12 +830,12 @@ void ide_init(void)
 						register_device(BLK_DEV, &ide_device[channel]);
 					}
 					if(drive->flags & DEVICE_IS_DISK) {
-						if(!ide_hd_init(ide, drv_num)) {
+						if(!ide_hd_init(ide, drive)) {
 							devices++;
 						}
 					}
 					if(drive->flags & DEVICE_IS_CDROM) {
-						if(!ide_cd_init(ide, drv_num)) {
+						if(!ide_cd_init(ide, drive)) {
 							devices++;
 						}
 					}
