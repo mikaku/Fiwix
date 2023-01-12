@@ -19,6 +19,6 @@ int ide_cd_close(struct inode *, struct fd *);
 int ide_cd_read(__dev_t, __blk_t, char *, int);
 int ide_cd_ioctl(struct inode *, int, unsigned long int);
 
-int ide_cd_init(struct ide *, int);
+int ide_cd_init(struct ide *, struct ide_drv *);
 
 #endif /* _FIWIX_IDE_CD_H */

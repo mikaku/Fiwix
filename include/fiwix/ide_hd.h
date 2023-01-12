@@ -18,6 +18,6 @@ int ide_hd_read(__dev_t, __blk_t, char *, int);
 int ide_hd_write(__dev_t, __blk_t, char *, int);
 int ide_hd_ioctl(struct inode *, int, unsigned long int);
 
-int ide_hd_init(struct ide *, int);
+int ide_hd_init(struct ide *, struct ide_drv *);
 
 #endif /* _FIWIX_IDE_HD_H */
