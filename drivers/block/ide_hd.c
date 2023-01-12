@@ -65,14 +65,12 @@ static struct fs_operations ide_hd_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static void assign_minors(__dev_t rdev, struct ide *ide, struct partition *part)
+static void assign_minors(__dev_t rdev, struct ide_drv *drive, struct partition *part)
 {
-	int n;
-	int drive, minor;
+	int n, minor;
 	struct device *d;
 
 	minor = 0;
-	drive = get_ide_drive(rdev);
 
 	if(!(d = get_device(BLK_DEV, rdev))) {
 		printk("WARNING: %s(): unable to assign minors to device %d,%d.\n", __FUNCTION__, MAJOR(rdev), MINOR(rdev));
@@ -80,11 +78,11 @@ static void assign_minors(__dev_t rdev, struct ide *ide, struct partition *part)
 	}
 
 	for(n = 0; n < NR_PARTITIONS; n++) {
-		if(drive == IDE_MASTER) {
-			minor = (1 << ide->drive[drive].minor_shift) + n;
+		if(drive->num == IDE_MASTER) {
+			minor = (1 << drive->minor_shift) + n;
 		}
-		if(drive == IDE_SLAVE) {
-			minor = (1 << ide->drive[drive].minor_shift) + n + 1;
+		if(drive->num == IDE_SLAVE) {
+			minor = (1 << drive->minor_shift) + n + 1;
 		}
 		CLEAR_MINOR(d->minors, minor);
 		if(part[n].type) {
@@ -401,9 +399,9 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	int minor;
-	int drive;
+	int drv_num;
 	struct ide *ide;
-	struct ide_drv_ident *ident;
+	struct ide_drv *drive;
 	struct partition *part;
 	struct hd_geometry *geom;
 	int errno;
@@ -413,13 +411,13 @@ int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	}
 
 	minor = MINOR(i->rdev);
-	drive = get_ide_drive(i->rdev);
-	if(drive) {
+	drv_num = get_ide_drive(i->rdev);
+	if(drv_num) {
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
-	ident = &ide->drive[drive].ident;
-	part = ide->drive[drive].part_table;
+	drive = &ide->drive[drv_num];
+	part = drive->part_table;
 
 	switch(cmd) {
 		case HDIO_GETGEO:
@@ -427,9 +425,9 @@ int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 				return errno;
 			}
 			geom = (struct hd_geometry *)arg;
-	                geom->cylinders = ident->logic_cyls;
-	                geom->heads = (char)ident->logic_heads;
-	                geom->sectors = (char)ident->logic_spt;
+	                geom->cylinders = drive->ident.logic_cyls;
+	                geom->heads = (char)drive->ident.logic_heads;
+	                geom->sectors = (char)drive->ident.logic_spt;
 			geom->start = 0;
 			if(minor) {
 	                	geom->start = part[minor - 1].startsect;
@@ -440,9 +438,9 @@ int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 				return errno;
 			}
 			if(!minor) {
-				*(int *)arg = (unsigned int)ide->drive[drive].nr_sects;
+				*(int *)arg = (unsigned int)drive->nr_sects;
 			} else {
-				*(int *)arg = (unsigned int)ide->drive[drive].part_table[minor - 1].nr_sects;
+				*(int *)arg = (unsigned int)drive->part_table[minor - 1].nr_sects;
 			}
 			break;
 		case BLKFLSBUF:
@@ -451,7 +449,7 @@ int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 			break;
 		case BLKRRPART:
 			read_msdos_partition(i->rdev, part);
-			assign_minors(i->rdev, ide, part);
+			assign_minors(i->rdev, drive, part);
 			break;
 		default:
 			return -EINVAL;
@@ -510,7 +508,7 @@ int ide_hd_init(struct ide *ide, struct ide_drv *drive)
 	}
 
 	read_msdos_partition(rdev, part);
-	assign_minors(rdev, ide, part);
+	assign_minors(rdev, drive, part);
 	printk("\t\t\t\tpartition summary: ");
 	for(n = 0; n < NR_PARTITIONS; n++) {
 		/* status values other than 0x00 and 0x80 are invalid */
