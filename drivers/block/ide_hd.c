@@ -470,41 +470,20 @@ int ide_hd_init(struct ide *ide, struct ide_drv *drive)
 	drive->fsop = &ide_hd_driver_fsop;
 	part = drive->part_table;
 
-	if(ide->channel == IDE_PRIMARY) {
-		if(drive->num == IDE_MASTER) {
-			rdev = MKDEV(IDE0_MAJOR, drive->num);
-			drive->minor_shift = IDE_MASTER_MSF;
-			if(!(d = get_device(BLK_DEV, rdev))) {
-				return -EINVAL;
-			}
-			((unsigned int *)d->device_data)[0] = drive->nr_sects / 2;
-		} else {
-			rdev = MKDEV(IDE0_MAJOR, 1 << IDE_SLAVE_MSF);
-			drive->minor_shift = IDE_SLAVE_MSF;
-			if(!(d = get_device(BLK_DEV, rdev))) {
-				return -EINVAL;
-			}
-			((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = drive->nr_sects / 2;
+	if(drive->num == IDE_MASTER) {
+		rdev = MKDEV(drive->major, drive->num);
+		drive->minor_shift = IDE_MASTER_MSF;
+		if(!(d = get_device(BLK_DEV, rdev))) {
+			return -EINVAL;
 		}
-	} else if(ide->channel == IDE_SECONDARY) {
-		if(drive->num == IDE_MASTER) {
-			rdev = MKDEV(IDE1_MAJOR, drive->num);
-			drive->minor_shift = IDE_MASTER_MSF;
-			if(!(d = get_device(BLK_DEV, rdev))) {
-				return -EINVAL;
-			}
-			((unsigned int *)d->device_data)[0] = drive->nr_sects / 2;
-		} else {
-			rdev = MKDEV(IDE1_MAJOR, 1 << IDE_SLAVE_MSF);
-			drive->minor_shift = IDE_SLAVE_MSF;
-			if(!(d = get_device(BLK_DEV, rdev))) {
-				return -EINVAL;
-			}
-			((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = drive->nr_sects / 2;
-		}
+		((unsigned int *)d->device_data)[0] = drive->nr_sects / 2;
 	} else {
-		printk("WARNING: %s(): invalid drive number %d.\n", __FUNCTION__, drive->num);
-		return 1;
+		rdev = MKDEV(drive->major, 1 << IDE_SLAVE_MSF);
+		drive->minor_shift = IDE_SLAVE_MSF;
+		if(!(d = get_device(BLK_DEV, rdev))) {
+			return -EINVAL;
+		}
+		((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = drive->nr_sects / 2;
 	}
 
 	read_msdos_partition(rdev, part);
