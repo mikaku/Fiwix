@@ -286,6 +286,25 @@ static int get_piomode(struct ide_drv *drive)
 	return piomode;
 }
 
+static int get_ata(struct ide_drv *drive)
+{
+	int ata;
+
+	ata = 3;	/* minimum is ATA-3 */
+	while(drive->ident.majorver & (1 << (ata + 1))) {
+		ata++;
+	}
+
+	if(!ata) {
+		ata = 1;	/* now minimum is ATA-1 */
+		while(drive->ident.majorver & (1 << (ata + 1))) {
+			ata++;
+		}
+	}
+
+	return ata;
+}
+
 static void ide_results(struct ide *ide, struct ide_drv *drive)
 {
 	unsigned int cyl, hds, sect;
@@ -330,6 +349,7 @@ static void ide_results(struct ide *ide, struct ide_drv *drive)
 
 	if(!(drive->flags & DEVICE_IS_ATAPI)) {
 		printk("ATA");
+		printk("%d", get_ata(drive));
 	} else {
 		printk("ATAPI");
 	}
