@@ -680,25 +680,10 @@ struct ide *get_ide_controller(__dev_t dev)
 	return &ide_table[controller];
 }
 
-int get_ide_drive(__dev_t dev)
-{
-	int drive;
-
-	drive = MINOR(dev);
-	if(drive) {
-		if(drive & (1 << IDE_SLAVE_MSF)) {
-			drive = IDE_SLAVE;
-		} else {
-			drive = IDE_MASTER;
-		}
-	}
-	return drive;
-}
-
 int ide_open(struct inode *i, struct fd *fd_table)
 {
-	int drive;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -708,17 +693,17 @@ int ide_open(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 
-	drive = get_ide_drive(i->rdev);
-	if(ide->drive[drive].fsop && ide->drive[drive].fsop->open) {
-		return ide->drive[drive].fsop->open(i, fd_table);
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	if(drive->fsop && drive->fsop->open) {
+		return drive->fsop->open(i, fd_table);
 	}
 	return -EINVAL;
 }
 
 int ide_close(struct inode *i, struct fd *fd_table)
 {
-	int drive;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -728,17 +713,17 @@ int ide_close(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 
-	drive = get_ide_drive(i->rdev);
-	if(ide->drive[drive].fsop && ide->drive[drive].fsop->close) {
-		return ide->drive[drive].fsop->close(i, fd_table);
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	if(drive->fsop && drive->fsop->close) {
+		return drive->fsop->close(i, fd_table);
 	}
 	return -EINVAL;
 }
 
 int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	int drive;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
@@ -749,9 +734,9 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -ENXIO;
 	}
 
-	drive = get_ide_drive(dev);
-	if(ide->drive[drive].fsop && ide->drive[drive].fsop->read_block) {
-		return ide->drive[drive].fsop->read_block(dev, block, buffer, blksize);
+	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	if(drive->fsop && drive->fsop->read_block) {
+		return drive->fsop->read_block(dev, block, buffer, blksize);
 	}
 	printk("WARNING: %s(): device %d,%d does not have the read_block() method!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 	return -EINVAL;
@@ -759,8 +744,8 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	int drive;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
@@ -771,9 +756,9 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -ENXIO;
 	}
 
-	drive = get_ide_drive(dev);
-	if(ide->drive[drive].fsop && ide->drive[drive].fsop->write_block) {
-		return ide->drive[drive].fsop->write_block(dev, block, buffer, blksize);
+	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	if(drive->fsop && drive->fsop->write_block) {
+		return drive->fsop->write_block(dev, block, buffer, blksize);
 	}
 	printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 	return -EINVAL;
@@ -781,8 +766,8 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
-	int drive;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -792,9 +777,9 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		return -ENXIO;
 	}
 
-	drive = get_ide_drive(i->rdev);
-	if(ide->drive[drive].fsop && ide->drive[drive].fsop->ioctl) {
-		return ide->drive[drive].fsop->ioctl(i, cmd, arg);
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	if(drive->fsop && drive->fsop->ioctl) {
+		return drive->fsop->ioctl(i, cmd, arg);
 	}
 	return -EINVAL;
 }

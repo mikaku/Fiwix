@@ -102,7 +102,7 @@ enum {
 	RS_RESERVED4
 };
 
-static int send_packet_command(unsigned char *pkt, struct ide *ide, int drive, int blksize)
+static int send_packet_command(unsigned char *pkt, struct ide *ide, struct ide_drv *drive, int blksize)
 {
 	int n, retries, status;
 
@@ -110,8 +110,8 @@ static int send_packet_command(unsigned char *pkt, struct ide *ide, int drive, i
 	ide_delay();
 	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
 	ide_delay();
-	if(ide_drvsel(ide, drive, IDE_CHS_MODE, 0)) {
-		printk("WARNING: %s(): %s: drive not ready to receive PACKET command.\n", __FUNCTION__, ide->drive[drive].dev_name);
+	if(ide_drvsel(ide, drive->num, IDE_CHS_MODE, 0)) {
+		printk("WARNING: %s(): %s: drive not ready to receive PACKET command.\n", __FUNCTION__, drive->dev_name);
 		return 1;
 	}
 
@@ -121,7 +121,7 @@ static int send_packet_command(unsigned char *pkt, struct ide *ide, int drive, i
 	outport_b(ide->base + IDE_SECNUM, 0);
 	outport_b(ide->base + IDE_LCYL, blksize & 0xFF);
 	outport_b(ide->base + IDE_HCYL, blksize >> 8);
-	outport_b(ide->base + IDE_DRVHD, drive << 4);
+	outport_b(ide->base + IDE_DRVHD, drive->num << 4);
 	outport_b(ide->base + IDE_COMMAND, ATA_PACKET);
 	ide_wait400ns(ide);
 
@@ -140,7 +140,7 @@ static int send_packet_command(unsigned char *pkt, struct ide *ide, int drive, i
 		ide_delay();
 	}
 	if(n >= retries) {
-		printk("WARNING: %s(): %s: drive not ready to receive command packet (retries = %d).\n", __FUNCTION__, ide->drive[drive].dev_name, n);
+		printk("WARNING: %s(): %s: drive not ready to receive command packet (retries = %d).\n", __FUNCTION__, drive->dev_name, n);
 		return 1;
 	}
 
@@ -219,7 +219,7 @@ static int atapi_read_data(__dev_t dev, char *data, struct ide *ide, int blksize
 	return 0;
 }
 
-static int atapi_cmd_testunit(struct ide *ide, int drive)
+static int atapi_cmd_testunit(struct ide *ide, struct ide_drv *drive)
 {
 	unsigned char pkt[12];
 
@@ -238,7 +238,7 @@ static int atapi_cmd_testunit(struct ide *ide, int drive)
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
-static int atapi_cmd_reqsense(struct ide *ide, int drive)
+static int atapi_cmd_reqsense(struct ide *ide, struct ide_drv *drive)
 {
 	unsigned char pkt[12];
 
@@ -257,7 +257,7 @@ static int atapi_cmd_reqsense(struct ide *ide, int drive)
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
-static int atapi_cmd_startstop(int action, struct ide *ide, int drive)
+static int atapi_cmd_startstop(int action, struct ide *ide, struct ide_drv *drive)
 {
 	unsigned char pkt[12];
 
@@ -276,7 +276,7 @@ static int atapi_cmd_startstop(int action, struct ide *ide, int drive)
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
-static int atapi_cmd_mediumrm(int action, struct ide *ide, int drive)
+static int atapi_cmd_mediumrm(int action, struct ide *ide, struct ide_drv *drive)
 {
 	unsigned char pkt[12];
 
@@ -295,7 +295,7 @@ static int atapi_cmd_mediumrm(int action, struct ide *ide, int drive)
 	return send_packet_command(pkt, ide, drive, 0);
 }
 
-static int request_sense(char *buffer, __dev_t dev, struct ide *ide, int drive)
+static int request_sense(char *buffer, __dev_t dev, struct ide *ide, struct ide_drv *drive)
 {
 	int errcode;
 	int sense_key, sense_asc;
@@ -323,18 +323,18 @@ void ide_cd_timer(unsigned int arg)
 
 int ide_cd_open(struct inode *i, struct fd *fd_table)
 {
-	int drive;
 	char *buffer;
 	int errcode;
 	int sense_key, sense_asc;
 	int retries;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
 	}
 
-	drive = get_ide_drive(i->rdev);
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
 
 	lock_resource(&ide->resource);
 
@@ -394,9 +394,9 @@ int ide_cd_open(struct inode *i, struct fd *fd_table)
 
 int ide_cd_close(struct inode *i, struct fd *fd_table)
 {
-	int drive;
 	char *buffer;
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -406,7 +406,7 @@ int ide_cd_close(struct inode *i, struct fd *fd_table)
 		return -ENOMEM;
 	}
 
-	drive = get_ide_drive(i->rdev);
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
 
 	/* FIXME: only if device usage == 0 */
 	invalidate_buffers(i->rdev);
@@ -424,17 +424,17 @@ int ide_cd_close(struct inode *i, struct fd *fd_table)
 
 int ide_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	int drive;
 	int sectors_to_read;
 	int n, retries;
 	unsigned char pkt[12];
 	struct ide *ide;
+	struct ide_drv *drive;
 
 	if(!(ide = get_ide_controller(dev))) {
 		return -EINVAL;
 	}
 
-	drive = get_ide_drive(dev);
+	drive = &ide->drive[GET_IDE_DRIVE(dev)];
 	blksize = BLKSIZE_2K;
 	sectors_to_read = blksize / IDE_CD_SECTSIZE;
 

@@ -28,6 +28,7 @@
 #define IDE_SLAVE		1
 #define IDE_ATA			0
 #define IDE_ATAPI		1
+#define GET_IDE_DRIVE(_dev_)	((MINOR(_dev_) & (1 <<IDE_SLAVE_MSF)) ? IDE_SLAVE : IDE_MASTER)
 
 #define NR_IDE_CTRLS		2	/* IDE controllers */
 #define NR_IDE_DRVS		2	/* max. drives per IDE controller */
@@ -269,7 +270,6 @@ int ide_drvsel(struct ide *, int, int, unsigned char);
 int ide_softreset(struct ide *);
 
 struct ide *get_ide_controller(__dev_t);
-int get_ide_drive(__dev_t);
 
 int ide_open(struct inode *, struct fd *);
 int ide_close(struct inode *, struct fd *);

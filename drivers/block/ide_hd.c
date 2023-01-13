@@ -127,12 +127,12 @@ int ide_hd_close(struct inode *i, struct fd *fd_table)
 int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
-	int drive;
 	int sectors_to_read, cmd, mode, lba_head;
 	int n, status, r, retries;
 	int cyl, head, sector;
 	__off_t offset;
 	struct ide *ide;
+	struct ide_drv *drive;
 	struct ide_drv_ident *ident;
 	struct partition *part;
 	struct callout_req creq;
@@ -142,7 +142,8 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	minor = MINOR(dev);
-	if((drive = get_ide_drive(dev))) {
+	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	if(drive->num) {
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
@@ -151,8 +152,8 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	blksize = blksize ? blksize : BLKSIZE_1K;
 	sectors_to_read = MIN(blksize, PAGE_SIZE) / IDE_HD_SECTSIZE;
 
-	ident = &ide->drive[drive].ident;
-	part = ide->drive[drive].part_table;
+	ident = &drive->ident;
+	part = drive->part_table;
 	offset = block2sector(block, blksize, part, minor);
 
 	CLI();
@@ -161,7 +162,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	n = 0;
 
 	while(n < sectors_to_read) {
-		if(ide->drive[drive].flags & DEVICE_HAS_RW_MULTIPLE) {
+		if(drive->flags & DEVICE_HAS_RW_MULTIPLE) {
 			outport_b(ide->base + IDE_SECCNT, sectors_to_read);
 			cmd = ATA_READ_MULTIPLE_PIO;
 		} else {
@@ -169,7 +170,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			cmd = ATA_READ_PIO;
 		}
 
-		if(ide->drive[drive].flags & DEVICE_REQUIRES_LBA) {
+		if(drive->flags & DEVICE_REQUIRES_LBA) {
 			outport_b(ide->base + IDE_SECNUM, offset & 0xFF);
 			outport_b(ide->base + IDE_LCYL, (offset >> 8) & 0xFF);
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
@@ -183,8 +184,8 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			mode = IDE_CHS_MODE;
 			lba_head = head;
 		}
-		if(ide_drvsel(ide, drive, mode, lba_head)) {
-			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
+		if(ide_drvsel(ide, drive->num, mode, lba_head)) {
+			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
@@ -199,7 +200,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
 			}
 			if(ide0_timeout) {
-				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 				unlock_resource(&ide->resource);
 				return -EIO;
@@ -216,7 +217,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
 			}
 			if(ide1_timeout) {
-				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 				unlock_resource(&ide->resource);
 				return -EIO;
@@ -232,7 +233,7 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ide_delay();
 		}
 		if(status & IDE_STAT_ERR) {
-			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);
 			ide_error(ide, status);
 			printk("\tblock %d, sector %d.\n", block, offset);
@@ -261,12 +262,12 @@ int ide_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
-	int drive;
 	int sectors_to_write, cmd, mode, lba_head;
 	int n, status, r, retries;
 	int cyl, head, sector;
 	__off_t offset;
 	struct ide *ide;
+	struct ide_drv *drive;
 	struct ide_drv_ident *ident;
 	struct partition *part;
 	struct callout_req creq;
@@ -276,7 +277,8 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	minor = MINOR(dev);
-	if((drive = get_ide_drive(dev))) {
+	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	if(drive->num) {
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
@@ -285,8 +287,8 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	blksize = blksize ? blksize : BLKSIZE_1K;
 	sectors_to_write = MIN(blksize, PAGE_SIZE) / IDE_HD_SECTSIZE;
 
-	ident = &ide->drive[drive].ident;
-	part = ide->drive[drive].part_table;
+	ident = &drive->ident;
+	part = drive->part_table;
 	offset = block2sector(block, blksize, part, minor);
 
 	CLI();
@@ -295,7 +297,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	n = 0;
 
 	while(n < sectors_to_write) {
-		if(ide->drive[drive].flags & DEVICE_HAS_RW_MULTIPLE) {
+		if(drive->flags & DEVICE_HAS_RW_MULTIPLE) {
 			outport_b(ide->base + IDE_SECCNT, sectors_to_write);
 			cmd = ATA_WRITE_MULTIPLE_PIO;
 		} else {
@@ -303,7 +305,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			cmd = ATA_WRITE_PIO;
 		}
 
-		if(ide->drive[drive].flags & DEVICE_REQUIRES_LBA) {
+		if(drive->flags & DEVICE_REQUIRES_LBA) {
 			outport_b(ide->base + IDE_SECNUM, offset & 0xFF);
 			outport_b(ide->base + IDE_LCYL, (offset >> 8) & 0xFF);
 			outport_b(ide->base + IDE_HCYL, (offset >> 16) & 0xFF);
@@ -317,8 +319,8 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			mode = IDE_CHS_MODE;
 			lba_head = head;
 		}
-		if(ide_drvsel(ide, drive, mode, lba_head)) {
-			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, ide->drive[drive].dev_name);
+		if(ide_drvsel(ide, drive->num, mode, lba_head)) {
+			printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
@@ -332,7 +334,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ide_delay();
 		}
 		if(status & IDE_STAT_ERR) {
-			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);
 			ide_error(ide, status);
 			printk("\tblock %d, sector %d.\n", block, offset);
@@ -355,7 +357,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
 			}
 			if(ide0_timeout) {
-				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 				unlock_resource(&ide->resource);
 				return -EIO;
@@ -372,7 +374,7 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
 			}
 			if(ide1_timeout) {
-				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, ide->drive[drive].dev_name, MAJOR(dev), MINOR(dev));
+				printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 				inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
 				unlock_resource(&ide->resource);
 				return -EIO;
@@ -399,7 +401,6 @@ int ide_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	int minor;
-	int drv_num;
 	struct ide *ide;
 	struct ide_drv *drive;
 	struct partition *part;
@@ -411,12 +412,11 @@ int ide_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	}
 
 	minor = MINOR(i->rdev);
-	drv_num = get_ide_drive(i->rdev);
-	if(drv_num) {
+	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	if(drive->num) {
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
-	drive = &ide->drive[drv_num];
 	part = drive->part_table;
 
 	switch(cmd) {
