@@ -261,7 +261,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 
 void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 {
-	unsigned int n, addr;
+	unsigned int n, offset;
 	unsigned int *pgdir, *pgtbl;
 	unsigned int pde, pte;
 	struct page *pg;
@@ -284,8 +284,8 @@ void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 				}
 
 				if(vma->prot & PROT_WRITE && vma->flags & MAP_SHARED) {
-					addr = start - vma->start + vma->offset;
-					write_page(pg, vma->inode, addr, length);
+					offset = start - vma->start + vma->offset + n * PAGE_SIZE;
+					write_page(pg, vma->inode, offset, PAGE_SIZE);
 				}
 
 				kfree(P2V(pgtbl[pte]) & PAGE_MASK);

@@ -291,7 +291,7 @@ int write_page(struct page *pg, struct inode *i, __off_t offset, unsigned int le
 	unsigned int size;
 	int errno;
 
-	size = MIN(i->i_size, length);
+	size = MIN(i->i_size - offset, length);
 	fdt.inode = i;
 	fdt.flags = 0;
 	fdt.count = 0;
