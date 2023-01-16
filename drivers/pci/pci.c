@@ -38,7 +38,7 @@ static const char *pci_get_strdevice_id(unsigned short int device_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(device_id) {
-		case PCI_DEVICE_QEMU_PCI_16550A:	return "QEMU PCI 16550A Adapter";
+		case PCI_DEVICE_ID_QEMU_16550A:		return "QEMU 16550A UART";
 	}
 #endif /* CONFIG_PCI_NAMES */
 	return NULL;
