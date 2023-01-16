@@ -606,12 +606,18 @@ static int serial_pci(int minor)
 		dev = pci_dev->dev;
 		func = pci_dev->func;
 
+		/* disable I/O space and address space */
+		pci_write_short(bus, dev, func, PCI_COMMAND, ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY));
+
 		for(bar = 0; bar < supported[n].bars; bar++) {
-			pci_dev->bar[bar] = pci_get_bar(bus, dev, func, bar);
+			pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
 			if(pci_dev->bar[bar]) {
 				pci_dev->size[bar] = pci_get_barsize(bus, dev, func, bar);
 			}
 		}
+
+		/* enable I/O space and address space */
+		pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
 
 		if((pci_dev->bar[0] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
 			printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
