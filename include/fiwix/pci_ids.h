@@ -35,11 +35,7 @@
 #define PCI_CLASS_SERIAL_USB		0x0c03
 
 
-/* vendors */
 #define PCI_VENDOR_ID_REDHAT		0x1b36
-
-
-/* devices */
 #define PCI_DEVICE_QEMU_PCI_16550A	0x0002
 
 #endif /* _FIWIX_PCI_IDS_H */
