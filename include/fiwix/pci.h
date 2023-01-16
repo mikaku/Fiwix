@@ -21,7 +21,12 @@
 
 #define PCI_VENDOR_ID		0x00	/* 16 bits */
 #define PCI_DEVICE_ID		0x02	/* 16 bits */
+
 #define PCI_COMMAND		0x04	/* 16 bits */
+#define PCI_COMMAND_IO		0x1	/* enable response in I/O space */
+#define PCI_COMMAND_MEMORY	0x2	/* enable response in memory space */
+#define PCI_COMMAND_MASTER	0x4	/* enable bus mastering */
+
 #define PCI_STATUS		0x06	/* 16 bits */
 #define PCI_REVISION_ID		0x08	/*  8 bits */
 #define PCI_PROG_IF		0x09	/*  8 bits */
@@ -69,9 +74,12 @@ struct pci_device {
 };
 extern struct pci_device pci_device_table[NR_PCI_DEVICES];
 
-void pci_enable_device(int, int, int, int);
-void pci_disable_device(int, int, int);
-unsigned int pci_get_bar(int, int, int, int);
+unsigned char pci_read_char(int, int, int, int);
+unsigned short int pci_read_short(int, int, int, int);
+unsigned int pci_read_long(int, int, int, int);
+void pci_write_char(int, int, int, int, unsigned char);
+void pci_write_short(int, int, int, int, unsigned short int);
+void pci_write_long(int, int, int, int, unsigned int);
 unsigned int pci_get_barsize(int, int, int, int);
 void pci_show_desc(struct pci_device *);
 struct pci_device *pci_get_device(unsigned short int, unsigned short int);

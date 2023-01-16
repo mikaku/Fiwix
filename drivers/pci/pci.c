@@ -73,45 +73,6 @@ static int is_mechanism_1_supported(void)
 	return 0;
 }
 
-static unsigned char pci_read_char(int bus, int dev, int func, int offset)
-{
-	unsigned char retval;
-
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
-	retval = inport_l(PCI_DATA) >> ((offset & 3) * 8) & 0xFF;
-	return retval;
-}
-
-static unsigned short int pci_read_short(int bus, int dev, int func, int offset)
-{
-	unsigned short int retval;
-
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
-	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8) & 0xFFFF;
-	return retval;
-}
-
-static unsigned int pci_read_long(int bus, int dev, int func, int offset)
-{
-	unsigned int retval;
-
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
-	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8);
-	return retval;
-}
-
-static void pci_write_short(int bus, int dev, int func, int offset, unsigned short int buf)
-{
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
-	outport_w(PCI_DATA, buf);
-}
-
-static void pci_write_long(int bus, int dev, int func, int offset, unsigned int buf)
-{
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
-	outport_l(PCI_DATA, buf);
-}
-
 static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_dev)
 {
 	int n;
@@ -187,19 +148,49 @@ static void scan_bus(void)
 	}
 }
 
-void pci_enable_device(int bus, int dev, int func, int val)
+unsigned char pci_read_char(int bus, int dev, int func, int offset)
 {
-	pci_write_short(bus, dev, func, PCI_COMMAND, val);
+	unsigned char retval;
+
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	retval = inport_l(PCI_DATA) >> ((offset & 3) * 8) & 0xFF;
+	return retval;
 }
 
-void pci_disable_device(int bus, int dev, int func)
+unsigned short int pci_read_short(int bus, int dev, int func, int offset)
 {
-	pci_write_short(bus, dev, func, PCI_COMMAND, 0);
+	unsigned short int retval;
+
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8) & 0xFFFF;
+	return retval;
 }
 
-unsigned int pci_get_bar(int bus, int dev, int func, int bar)
+unsigned int pci_read_long(int bus, int dev, int func, int offset)
 {
-	return pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+	unsigned int retval;
+
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8);
+	return retval;
+}
+
+void pci_write_char(int bus, int dev, int func, int offset, unsigned char buf)
+{
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_b(PCI_DATA, buf);
+}
+
+void pci_write_short(int bus, int dev, int func, int offset, unsigned short int buf)
+{
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_w(PCI_DATA, buf);
+}
+
+void pci_write_long(int bus, int dev, int func, int offset, unsigned int buf)
+{
+	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_DATA, buf);
 }
 
 unsigned int pci_get_barsize(int bus, int dev, int func, int bar)
@@ -207,14 +198,14 @@ unsigned int pci_get_barsize(int bus, int dev, int func, int bar)
 	unsigned int tmp, retval;
 
 	/* backup original value */
-	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
 
-	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar, ~0);
-	retval = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar);
+	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), ~0);
+	retval = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
 	retval = (~retval) + 1;
 
 	/* restore original value */
-	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar, tmp);
+	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), tmp);
 
 	return retval;
 }
