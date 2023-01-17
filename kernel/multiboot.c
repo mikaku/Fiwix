@@ -27,15 +27,23 @@ static int check_parm(struct kparms *parm, const char *value)
 {
 	int n;
 
-	if(!strcmp(parm->name, "root=")) {
+	if(!strcmp(parm->name, "console=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
-				_rootdev = parm->sysval[n];
-				strncpy(_rootdevname, value, DEVNAME_MAX);
-				return 0;
+				if(parm->sysval[n]) {
+					_syscondev = parm->sysval[n];
+					return 0;
+				}
+				printk("WARNING: device name for '%s' is not defined!\n", parm->name);
 			}
 		}
 		return 1;
+	}
+	if(!strcmp(parm->name, "initrd=")) {
+		if(value[0]) {
+			strncpy(_initrd, value, DEVNAME_MAX);
+			return 0;
+		}
 	}
 	if(!strcmp(parm->name, "ramdisksize=")) {
 		int size = atoi(value);
@@ -47,29 +55,21 @@ static int check_parm(struct kparms *parm, const char *value)
 		}
 		return 0;
 	}
-	if(!strcmp(parm->name, "initrd=")) {
-		if(value[0]) {
-			strncpy(_initrd, value, DEVNAME_MAX);
-			return 0;
+	if(!strcmp(parm->name, "root=")) {
+		for(n = 0; parm->value[n]; n++) {
+			if(!strcmp(parm->value[n], value)) {
+				_rootdev = parm->sysval[n];
+				strncpy(_rootdevname, value, DEVNAME_MAX);
+				return 0;
+			}
 		}
+		return 1;
 	}
 	if(!strcmp(parm->name, "rootfstype=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
 				strncpy(_rootfstype, value, sizeof(_rootfstype));
 				return 0;
-			}
-		}
-		return 1;
-	}
-	if(!strcmp(parm->name, "console=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				if(parm->sysval[n]) {
-					_syscondev = parm->sysval[n];
-					return 0;
-				}
-				printk("WARNING: device name for '%s' is not defined!\n", parm->name);
 			}
 		}
 		return 1;
