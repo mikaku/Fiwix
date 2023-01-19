@@ -43,6 +43,7 @@ void brelse(struct buffer *);
 void sync_buffers(__dev_t);
 void invalidate_buffers(__dev_t);
 int reclaim_buffers(void);
+int kbdflushd(void);
 void buffer_init(void);
 
 #endif /* _FIWIX_BUFFER_H */

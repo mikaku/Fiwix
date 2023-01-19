@@ -41,7 +41,7 @@
 
 struct buffer *buffer_table;		/* buffer pool */
 struct buffer *buffer_head;		/* head of free list */
-struct buffer *buffer_dirty_head;
+struct buffer *buffer_dirty_head;	/* head of dirty list */
 struct buffer **buffer_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
@@ -119,29 +119,45 @@ static void insert_on_dirty_list(struct buffer *buf)
 	if(buf->prev_dirty || buf->next_dirty) {
 		return;
 	}
-
-	if(buffer_dirty_head) {
-		buf->next_dirty = buffer_dirty_head;
-		buffer_dirty_head->prev_dirty = buf;
+	if(!buffer_dirty_head) {
+		buffer_dirty_head = buf;
+	} else {
+		buf->prev_dirty = buffer_dirty_head->prev_dirty;
+		buffer_dirty_head->prev_dirty->next_dirty = buf;
 	}
-	buffer_dirty_head = buf;
+	buffer_dirty_head->prev_dirty = buf;
+
 	kstat.dirty_buffers += (PAGE_SIZE / 1024);
+	kstat.nr_dirty_buffers++;
+        if(kstat.nr_dirty_buffers > kstat.max_dirty_buffers) {
+                wakeup(&kbdflushd);
+        }
 }
 
 static void remove_from_dirty_list(struct buffer *buf)
 {
+	if(!buffer_dirty_head) {
+		return;
+	}
+
 	if(buf->next_dirty) {
 		buf->next_dirty->prev_dirty = buf->prev_dirty;
 	}
 	if(buf->prev_dirty) {
-		buf->prev_dirty->next_dirty = buf->next_dirty;
+		if(buf != buffer_dirty_head) {
+			buf->prev_dirty->next_dirty = buf->next_dirty;
+		}
+	}
+	if(!buf->next_dirty) {
+		buffer_dirty_head->prev_dirty = buf->prev_dirty;
 	}
 	if(buf == buffer_dirty_head) {
 		buffer_dirty_head = buf->next_dirty;
 	}
 	buf->prev_dirty = buf->next_dirty = NULL;
-	buf->flags &= ~BUFFER_DIRTY;
+
 	kstat.dirty_buffers -= (PAGE_SIZE / 1024);
+	kstat.nr_dirty_buffers--;
 }
 
 static void insert_on_free_list(struct buffer *buf)
@@ -243,6 +259,34 @@ static struct buffer *get_free_buffer(void)
 	return buf;
 }
 
+static struct buffer *get_dirty_buffer(void)
+{
+	unsigned long int flags;
+	struct buffer *buf;
+
+	/* no buffers on dirty list */
+	if(!buffer_dirty_head) {
+		return NULL;
+	}
+
+	for(;;) {
+		SAVE_FLAGS(flags); CLI();
+		buf = buffer_dirty_head;
+		if(buf->flags & BUFFER_LOCKED) {
+			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
+		} else {
+			break;
+		}
+		RESTORE_FLAGS(flags);
+	}
+
+	remove_from_dirty_list(buf);
+	buf->flags |= BUFFER_LOCKED;
+
+	RESTORE_FLAGS(flags);
+	return buf;
+}
+
 static void sync_one_buffer(struct buffer *buf)
 {
 	struct device *d;
@@ -256,7 +300,7 @@ static void sync_one_buffer(struct buffer *buf)
 	/* this shouldn't happen */
 	if(!buf->data) {
 		printk("WARNING: %s(): buffer (dev=%x, block=%d, size=%d) has no data!\n", __FUNCTION__, buf->dev, buf->block, buf->size);
-		remove_from_dirty_list(buf);
+		buf->flags &= ~BUFFER_DIRTY;
 		return;
 	}
 
@@ -270,7 +314,7 @@ static void sync_one_buffer(struct buffer *buf)
 			}
 			return;
 		}
-		remove_from_dirty_list(buf);
+		buf->flags &= ~BUFFER_DIRTY;
 	} else {
 		printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
 	}
@@ -321,6 +365,7 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 
 		if(buf->flags & BUFFER_DIRTY) {
 			sync_one_buffer(buf);
+			remove_from_dirty_list(buf);
 		} else {
 			if(!buf->data) {
 				if(!(buf->data = (char *)kmalloc())) {
@@ -400,22 +445,33 @@ void brelse(struct buffer *buf)
 
 void sync_buffers(__dev_t dev)
 {
-	struct buffer *buf, *next;
+	struct buffer *buf, *first;
 	int synced;
 
-	buf = buffer_dirty_head;
 	synced = 0;
+	first = NULL;
 
 	lock_resource(&sync_resource);
-	while(buf) {
-		next = buf->next_dirty;
-		if(!dev || buf->dev == dev) {
-			buffer_wait(buf);
-			sync_one_buffer(buf);
-			buf->flags &= ~BUFFER_LOCKED;
-			synced = 1;
+	for(;;) {
+		if(!(buf = get_dirty_buffer())) {
+			break;
 		}
-		buf = next;
+		if(first) {
+			if(first == buf) {
+				insert_on_dirty_list(buf);
+				buf->flags &= ~BUFFER_LOCKED;
+				break;
+			}
+		} else {
+			first = buf;
+		}
+		if(!dev || buf->dev == dev) {
+			sync_one_buffer(buf);
+			synced = 1;
+		} else {
+			insert_on_dirty_list(buf);
+		}
+		buf->flags &= ~BUFFER_LOCKED;
 	}
 	unlock_resource(&sync_resource);
 
@@ -467,6 +523,7 @@ int reclaim_buffers(void)
 
 		if(buf->flags & BUFFER_DIRTY) {
 			sync_one_buffer(buf);
+			remove_from_dirty_list(buf);
 		}
 
 		/* this ensures the buffer will go to the tail */
@@ -508,8 +565,56 @@ int reclaim_buffers(void)
 	return reclaimed;
 }
 
+int kbdflushd(void)
+{
+	struct buffer *buf, *first;
+	int flushed;
+
+	for(;;) {
+		sleep(&kbdflushd, PROC_UNINTERRUPTIBLE);
+		flushed = 0;
+		first = NULL;
+
+		lock_resource(&sync_resource);
+		for(;;) {
+			if(!(buf = get_dirty_buffer())) {
+				break;
+			}
+
+			if(!(buf->flags & BUFFER_DIRTY)) {
+				printk("WARNING: %s(): a dirty buffer not maked as dirty!\n", __FUNCTION__);
+			}
+
+			if(first) {
+				if(first == buf) {
+					insert_on_dirty_list(buf);
+					buf->flags &= ~BUFFER_LOCKED;
+					break;
+				}
+			} else {
+				first = buf;
+			}
+
+			sync_one_buffer(buf);
+			buf->flags &= ~BUFFER_LOCKED;
+			flushed++;
+
+			if(flushed == NR_BUF_RECLAIM) {
+				if(kstat.nr_dirty_buffers < kstat.max_dirty_buffers) {
+					break;
+				}
+				flushed = 0;
+				do_sched();
+			}
+		}
+		unlock_resource(&sync_resource);
+		wakeup(&buffer_wait);
+	}
+}
+
 void buffer_init(void)
 {
-	buffer_table = buffer_head = NULL;
+	buffer_table = buffer_head = buffer_dirty_head = NULL;
+	kstat.max_dirty_buffers = (kstat.max_buffers * BUFFER_DIRTY_RATIO) / 100;
 	memset_b(buffer_hash_table, 0, buffer_hash_table_size);
 }

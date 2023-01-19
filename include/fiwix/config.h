@@ -21,6 +21,7 @@
 #define BUFFER_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the buffer table */
 #define NR_BUF_RECLAIM		250	/* buffers reclaimed in a single shot */
+#define BUFFER_DIRTY_RATIO	5	/* % of dirty buffers in buffer cache */
 #define INODE_PERCENTAGE	1	/* % of memory for the inode table and
 					   hash table */
 #define INODE_HASH_PERCENTAGE	10	/* % of hash buckets relative to the

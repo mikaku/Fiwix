@@ -127,8 +127,8 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	proc_slot_init(init);
 	init->pid = get_unused_pid();
 
-	/* PID 2 is for the kswapd process */
-	kernel_process("kswapd", kswapd);
+	kernel_process("kswapd", kswapd);	/* PID 2 */
+	kernel_process("kbdflushd", kbdflushd);	/* PID 3 */
 
 	/* kswapd will take over the rest of the kernel initialization */
 	need_resched = 1;
