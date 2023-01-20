@@ -172,11 +172,15 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 {
 	int n, p, offset;
-	unsigned int ae_str_len;
+	unsigned int ae_ptr_len, ae_str_len;
 	char *page, *str;
 
 	p = ARG_MAX - 1;
+	ae_ptr_len = (1 + (barg->argc + 1) + (barg->envc + 1)) * sizeof(unsigned int);
+	/* The last 4 bytes of the stack pages are not used */
 	ae_str_len = barg->argv_len + barg->envp_len + 4;
+	if (ae_ptr_len + ae_str_len > (ARG_MAX * PAGE_SIZE))
+		return -E2BIG;
 	p -= ae_str_len / PAGE_SIZE;
 	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
 	if(offset == PAGE_SIZE) {
