@@ -1000,7 +1000,7 @@ void console_init(void)
 		printk("console   0x%04x-0x%04x     -\t%s\n", video.port, video.port + 1, video.signature);
 	}
 	if(video.flags & VPF_VESAFB) {
-		printk("console                     -\tcolor frame buffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
+		printk("console                     -\tcolor framebuffer, screen=%dx%d, font=%dx%d\n", video.columns, video.lines, video.fb_char_width, video.fb_char_height);
 	}
 
 	for(n = 1; n <= NR_VCONSOLES; n++) {
@@ -1029,7 +1029,7 @@ void console_init(void)
 
 #ifdef CONFIG_QEMU_DEBUGCON
 	if(kstat.flags & KF_HAS_DEBUGCON) {
-		printk("\t\t\t\tQEMU Bochs-style debug console emulation\n");
+		printk("\t\t\t\tQEMU Bochs-style debug console emulation enabled\n");
 	}
 #endif /* CONFIG_QEMU_DEBUGCON */
 

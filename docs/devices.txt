@@ -31,8 +31,8 @@ Major | Minor | Device	      | Description
 6 Parallel printer devices
 	0	lp0		first parallel printer port
 
-29 Universal frame buffer
-	0	fb0		first frame buffer
+29 Universal framebuffer
+	0	fb0		first framebuffer
 
 
 

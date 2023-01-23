@@ -82,7 +82,7 @@
 #define BS			127	/* backspace */
 
 #define VPF_VGA			0x01	/* VGA text mode */
-#define VPF_VESAFB		0x02	/* x86 frame buffer */
+#define VPF_VESAFB		0x02	/* x86 framebuffer */
 #define VPF_CURSOR_ON		0x04	/* draw cursor */
 
 #define ON			1
