@@ -44,6 +44,7 @@ extern char _rootfstype[10];
 extern char _rootdevname[DEVNAME_MAX + 1];
 extern char _initrd[DEVNAME_MAX + 1];
 extern int _syscondev;
+extern char _bgaresolution[15];
 
 extern int _cputype;
 extern int _cpusignature;

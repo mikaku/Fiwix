@@ -10,6 +10,7 @@
 #include <fiwix/fbcon.h>
 #include <fiwix/font.h>
 #include <fiwix/console.h>
+#include <fiwix/mm.h>
 #include <fiwix/tty.h>
 #include <fiwix/timer.h>
 #include <fiwix/stdio.h>
@@ -565,6 +566,10 @@ void fbcon_cursor_blink(unsigned int arg)
 void fbcon_init(void)
 {
 	struct fbcon_font_desc *font_desc;
+
+	map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, video.pgtbl_addr, PAGE_PRESENT | PAGE_RW);
+
+	/* some parameters already set in multiboot.c */
 
 	video.put_char = fbcon_put_char;
 	video.insert_char = fbcon_insert_char;

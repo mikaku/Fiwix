@@ -18,6 +18,12 @@ struct kparms {
 };
 
 static struct kparms parm_table[] = {
+#ifdef CONFIG_BGA
+	{ "bga=",
+	   { "640x480x32", "800x600x32", "1024x768x32" },
+	   { 0 }
+	},
+#endif /* CONFIG_BGA */
 	{ "console=",
 	   { "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4", "/dev/tty5",
 	     "/dev/tty6", "/dev/tty7", "/dev/tty8", "/dev/tty9", "/dev/tty10",

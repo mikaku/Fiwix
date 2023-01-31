@@ -41,6 +41,7 @@
 #undef CONFIG_SYSCALL_6TH_ARG
 #define CONFIG_SYSVIPC
 #define CONFIG_LAZY_USER_ADDR_CHECK
+#define CONFIG_BGA
 
 
 /* configuration options to help debug or to test new features */

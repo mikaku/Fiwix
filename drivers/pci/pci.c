@@ -19,6 +19,7 @@ struct pci_device pci_device_table[NR_PCI_DEVICES];
 static const char *pci_get_strclass(unsigned short int class)
 {
 	switch(class) {
+		case PCI_CLASS_DISPLAY_VGA:		return "VGA Display controller";
 		case PCI_CLASS_COMMUNICATION_SERIAL:	return "Serial controller";
 	}
 	return NULL;
@@ -28,6 +29,7 @@ static const char *pci_get_strvendor_id(unsigned short int vendor_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(vendor_id) {
+		case PCI_VENDOR_ID_BOCHS:		return "QEMU";
 		case PCI_VENDOR_ID_REDHAT:		return "Red Hat, Inc.";
 	}
 #endif /* CONFIG_PCI_NAMES */
@@ -38,6 +40,7 @@ static const char *pci_get_strdevice_id(unsigned short int device_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(device_id) {
+		case PCI_DEVICE_ID_BGA:			return "Bochs Graphics Adapter";
 		case PCI_DEVICE_ID_QEMU_16550A:		return "QEMU 16550A UART";
 	}
 #endif /* CONFIG_PCI_NAMES */

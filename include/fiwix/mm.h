@@ -64,7 +64,6 @@ extern unsigned int page_table_size;		/* size in bytes */
 extern unsigned int page_hash_table_size;	/* size in bytes */
 
 extern unsigned int *kpage_dir;
-extern unsigned int *kpage_table;
 
 /* buddy_low.c */
 unsigned int kmalloc2(__size_t);
@@ -89,6 +88,7 @@ int file_read(struct inode *, struct fd *, char *, __size_t);
 void page_init(int);
 
 /* memory.c */
+unsigned int map_kaddr(unsigned int, unsigned int, unsigned int, int);
 void bss_init(void);
 unsigned int setup_minmem(void);
 unsigned int get_mapped_addr(struct proc *, unsigned int);

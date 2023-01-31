@@ -40,6 +40,7 @@ char _rootfstype[10];
 char _rootdevname[DEVNAME_MAX + 1];
 char _initrd[DEVNAME_MAX + 1];
 int _syscondev;
+char _bgaresolution[15];
 char *init_args;
 
 char cmdline[NAME_MAX + 1];

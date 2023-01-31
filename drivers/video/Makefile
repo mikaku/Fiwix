@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = video.o vgacon.o fbcon.o fonts.o
+OBJS = video.o vgacon.o fbcon.o bga.o fonts.o
 
 all:	$(OBJS)
 

@@ -10,6 +10,7 @@
 #include <fiwix/vgacon.h>
 #include <fiwix/fb.h>
 #include <fiwix/fbcon.h>
+#include <fiwix/bga.h>
 #include <fiwix/console.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
@@ -20,7 +21,15 @@ void video_init(void)
 
 	if(video.flags & VPF_VGA) {
 		vgacon_init();
+		return;
 	}
+
+#ifdef CONFIG_BGA
+	if(video.flags & VPF_VESAFB) {
+		bga_init();
+	}
+#endif /* CONFIG_BGA */
+
 	if(video.flags & VPF_VESAFB) {
 		fb_init();
 		fbcon_init();

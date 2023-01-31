@@ -3,18 +3,21 @@ Fiwix kernel parameters
 
 The following is a list of the current kernel parameters:
 
-console=	Set the output console device
+bga=		Bochs Graphics Adapter resolution (width x height x bpp)
+		Options: 640x480x32, 800x600x32, 1024x768x32
+
+console=	Set the output console device.
 		Options: /dev/tty[1..12], /dev/ttyS[0..3]
 		Serial consoles have fixed settings: 9600,N,8,1
 
-initrd=		Optional ramdisk image file which will be loaded by GRUB
+initrd=		Optional ramdisk image file which will be loaded by GRUB.
 
-ramdisksize=	Enable the RAM disk drive and configure its size (in KiB)
+ramdisksize=	Enable the RAM disk drive and configure its size (in KiB).
 
-root=		Root device name
+root=		Root device name.
 		Options: /dev/fd0, /dev/hda1, ...
 
-rootfstype=	Set the root filesystem type
+rootfstype=	Set the root filesystem type.
 		Options: ext2, minix, iso9660
 
 

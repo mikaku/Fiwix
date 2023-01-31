@@ -24,7 +24,6 @@
 #define PGDIR_4MB_ADDR		0x50000
 
 unsigned int *kpage_dir;
-unsigned int *kpage_table;
 
 unsigned int proc_table_size = 0;
 
@@ -39,25 +38,25 @@ unsigned int fd_table_size = 0;
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
 
-static void map_kaddr(unsigned int from, unsigned int to, int flags)
+unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, int flags)
 {
 	unsigned int n;
 	unsigned int *pgtbl;
 	unsigned int pde, pte;
 
-	for(n = from >> PAGE_SHIFT; n < (to >> PAGE_SHIFT); n++) {
-		pde = GET_PGDIR(n << PAGE_SHIFT);
-		pte = GET_PGTBL(n << PAGE_SHIFT);
+	for(n = from; n < to; n += PAGE_SIZE) {
+		pde = GET_PGDIR(n);
+		pte = GET_PGTBL(n);
 		if(!(kpage_dir[pde] & ~PAGE_MASK)) {
-			unsigned int addr;
-			addr = _last_data_addr;
-			_last_data_addr += PAGE_SIZE;
 			kpage_dir[pde] = addr | flags;
 			memset_b((void *)addr, 0, PAGE_SIZE);
+			addr += PAGE_SIZE;
 		}
 		pgtbl = (unsigned int *)(kpage_dir[pde] & PAGE_MASK);
-		pgtbl[pte] = (n << PAGE_SHIFT) | flags;
+		pgtbl[pte] = n | flags;
 	}
+
+	return addr;
 }
 
 void bss_init(void)
@@ -74,6 +73,7 @@ unsigned int setup_minmem(void)
 {
 	int n;
 	unsigned int addr;
+	unsigned int *pgtbl;
 	short int pd, mb4;
 
 	mb4 = 1;	/* 4MB units */
@@ -83,11 +83,11 @@ unsigned int setup_minmem(void)
 	memset_b(kpage_dir, 0, PAGE_SIZE);
 
 	addr += PAGE_SIZE;
-	kpage_table = (unsigned int *)addr;
-	memset_b(kpage_table, 0, PAGE_SIZE * mb4);
+	pgtbl = (unsigned int *)addr;
+	memset_b(pgtbl, 0, PAGE_SIZE * mb4);
 
 	for(n = 0; n < (1024 * mb4); n++) {
-		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
+		pgtbl[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
 			pd = n / 1024;
 			kpage_dir[pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
@@ -254,6 +254,7 @@ void mem_init(void)
 	unsigned int sizek;
 	unsigned int physical_page_tables;
 	unsigned int physical_memory;
+	unsigned int *pgtbl;
 	int n, pages;
 
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
@@ -266,31 +267,33 @@ void mem_init(void)
 	_last_data_addr += PAGE_SIZE;
 
 	/* Page Tables */
-	kpage_table = (unsigned int *)_last_data_addr;
-	memset_b(kpage_table, 0, physical_page_tables * PAGE_SIZE);
+	pgtbl = (unsigned int *)_last_data_addr;
+	memset_b(pgtbl, 0, physical_page_tables * PAGE_SIZE);
 	_last_data_addr += physical_page_tables * PAGE_SIZE;
 
 	/* Page Directory and Page Tables initialization */
 	for(n = 0; n < kstat.physical_pages; n++) {
-		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
+		pgtbl[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
-			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&kpage_table[n] | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&pgtbl[n] | PAGE_PRESENT | PAGE_RW;
 		}
 	}
 
-	map_kaddr(KERNEL_ENTRY_ADDR, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr(0xA0000, 0xA0000 + video.memsize, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 
 	/*
-	 * FIXME: this is ugly!
-	 * It should go in console_init() once we have a proper kernel memory/page management.
-	 * Then map_kaddr will be a public function (not static).
+	 * FIXME:
+	 * Why do I need to reserve the page tables for video framebuffer
+	 * here, instead of using kmalloc() in fbcon_init() and bga_init()?
 	 */
-	if(video.flags & VPF_VGA) {
-		map_kaddr(0xA0000, 0xA0000 + video.memsize, PAGE_PRESENT | PAGE_RW);
-	};
+	video.pgtbl_addr = _last_data_addr;
 	if(video.flags & VPF_VESAFB) {
-		map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, PAGE_PRESENT | PAGE_RW);
+		/* reserve 4 page tables (16MB) */
+		_last_data_addr += (PAGE_SIZE * 4);
 	}
+
+	_last_data_addr = map_kaddr(KERNEL_ENTRY_ADDR, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+
 /*	printk("_last_data_addr = 0x%08x-0x%08x (kernel)\n", KERNEL_ENTRY_ADDR, _last_data_addr); */
 	activate_kpage_dir();
 

@@ -131,8 +131,10 @@ struct vconsole {
 };
 
 struct video_parms {
+	struct pci_device *pcidev;
 	int flags;
 	unsigned int *address;
+	unsigned int pgtbl_addr;
 	int port;
 	int memsize;
 	unsigned char signature[32];

@@ -14,6 +14,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/fb.h>
+#include <fiwix/pci.h>
 #include <fiwix/mm.h>
 
 static struct fs_operations fb_driver_fsop = {
@@ -136,6 +137,9 @@ void fb_init(void)
 		video.fb_bpp,
 		video.memsize / 1024 / 1024
 	);
+	if(video.pcidev) {
+		pci_show_desc(video.pcidev);
+	}
 	if(register_device(CHR_DEV, &fb_device)) {
 		printk("ERROR: %s(): unable to register fb device.\n", __FUNCTION__);
 		return;

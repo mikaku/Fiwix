@@ -27,6 +27,18 @@ static int check_parm(struct kparms *parm, const char *value)
 {
 	int n;
 
+#ifdef CONFIG_BGA
+	if(!strcmp(parm->name, "bga=")) {
+		for(n = 0; parm->value[n]; n++) {
+			if(!strcmp(parm->value[n], value)) {
+				strncpy(_bgaresolution, value, 14);
+				_bgaresolution[14] = '\0';
+				return 0;
+			}
+		}
+		return 1;
+	}
+#endif /* CONFIG_BGA */
 	if(!strcmp(parm->name, "console=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
@@ -139,6 +151,35 @@ static char *parse_cmdline(const char *str)
 
 	return NULL;
 }
+
+#ifdef CONFIG_BGA
+static void parse_bgaresolution(void)
+{
+	char str[5], *p;
+	int n;
+
+	n = 0;
+	for(;;) {
+		p = &str[0];
+		while(_bgaresolution[n] && _bgaresolution[n] != 'x') {
+			*p = _bgaresolution[n];
+			p++;
+			n++;
+		}
+		*p = '\0';
+		if(!video.fb_width) {
+			video.fb_width = atoi(str);
+		} else if(!video.fb_height) {
+			video.fb_height = atoi(str);
+		} else if(!video.fb_bpp) {
+			video.fb_bpp = atoi(str);
+		} else {
+			break;
+		}
+		n++;
+	}
+}
+#endif /* CONFIG_BGA */
 
 /*
  * This function returns the last address used by kernel symbols or the value
@@ -302,13 +343,24 @@ void multiboot(unsigned long magic, unsigned long info)
 		from = (unsigned long int)video.address;
 		to = from + video.memsize;
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_AVAILABLE);
-		from = (unsigned long int)video.address - PAGE_OFFSET;
-		to = (from + video.memsize);
-		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
-	} else {
+	}
+
+#ifdef CONFIG_BGA
+	if(*_bgaresolution) {
+		video.flags = VPF_VESAFB;
+		parse_bgaresolution();
+		video.fb_char_width = 8;
+		video.fb_char_height = 16;
+		video.columns = video.fb_width / video.fb_char_width;
+		video.lines = video.fb_height / video.fb_char_height;
+	}
+#endif /* CONFIG_BGA */
+
+	if(!video.flags) {
+		/* fallback to standard VGA */
+		video.flags = VPF_VGA;
 		video.columns = 80;
 		video.lines = 25;
-		video.flags = VPF_VGA;
 		video.memsize = 384 * 1024;
 	}
 }
