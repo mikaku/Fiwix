@@ -32,6 +32,8 @@
 					   scroll back */
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
+#define USER_FREE_STACK_PAGES	16	/* number of stack pages usable by a
+					   user process */
 
 
 /* toggle configuration options */

@@ -565,7 +565,8 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	sp -= at_base ? (AT_ITEMS * 2) * sizeof(unsigned int) : 2 * sizeof(unsigned int);
 	sp -= ae_ptr_len;
 	length = PAGE_OFFSET - (sp & PAGE_MASK);
-	errno = do_mmap(NULL, sp & PAGE_MASK, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0, NULL);
+	length += USER_FREE_STACK_PAGES * PAGE_SIZE;
+	errno = do_mmap(NULL, PAGE_OFFSET - length, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, 0, P_STACK, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
