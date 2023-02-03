@@ -9,9 +9,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/stat.h>
 #include <fiwix/buffer.h>
-#include <fiwix/mman.h>
 #include <fiwix/filesystems.h>
-#include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
 
@@ -25,10 +23,9 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 	struct inode *i_source, *i_target;
 	struct mount *mp;
 	struct filesystems *fs;
-	struct vma *vma;
 	char *tmp_source, *tmp_target, *tmp_fstype;
 	__dev_t dev;
-	int len, errno;
+	int errno;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_mount(%s, %s, %s, 0x%08x, 0x%08x\n", current->pid, source, target, (int)fstype ? fstype : "<NULL>", flags, data);
@@ -101,26 +98,12 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		return -EBUSY;
 	}
 
-	/* check the validity of fstype */
-	if(!(vma = find_vma_region((unsigned int)fstype))) {
+	if((errno = malloc_name(fstype, &tmp_fstype)) < 0) {
 		iput(i_target);
 		free_name(tmp_target);
-		return -EFAULT;
+		return errno;
 	}
-	if(!(vma->prot & PROT_READ)) {
-		iput(i_target);
-		free_name(tmp_target);
-		return -EFAULT;
-	}
-	len = MIN(vma->end - (unsigned int)fstype, PAGE_SIZE - 1);
-	if(!(tmp_fstype = (char *)kmalloc())) {
-		iput(i_target);
-		free_name(tmp_target);
-		return -ENOMEM;
-	}
-	memcpy_b(tmp_fstype, fstype, len);
-
-	if(!(fs = get_filesystem(fstype))) {
+	if(!(fs = get_filesystem(tmp_fstype))) {
 		iput(i_target);
 		free_name(tmp_target);
 		free_name(tmp_fstype);
