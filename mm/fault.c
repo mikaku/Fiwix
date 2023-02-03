@@ -172,8 +172,8 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
  * |has          | U2   |    K2| U2   |    K2|    K2| U2 K2|
  * |a vma region | U3   |      |      | U3   | U3   | U3   |
  * +-------------+------+------+------+------+------+------+
- * |the page     | U1   |    K1| U1 K1|    K1| U1 K1| U1 K1|
- * |doesn't have | U2   |      |      | U2   | U2   | U2   |
+ * |the page     | U1   |    K1| U1   |    K1| U1 K1| U1 K1|
+ * |doesn't have | U2   |    K2|    K2| U2   | U2 K2| U2 K2|
  * |a vma region |      |      |      |      |      |      |
  * +-------------+------+------+------+------+------+------+
  *
@@ -199,12 +199,13 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
  *
  * U1 - !vma + user + PV + (read | write)	-> SIGSEGV
  *	(!vma page in user-mode, page-violation during read or write)
- * U2 - !vma + user + PF + (read | write)	-> STACK grows
+ * U2 - !vma + user + PF + (read | write)	-> STACK?
  *	(!vma page in user-mode, page-fault during read or write)
  *
- * K1 - !vma + kernel + (PV | PF) + (read | write)	-> Terminate process
- *	(!vma page in kernel-mode, page-fault or page-violation during read
- *	or write)
+ * K1 - !vma + kernel + PF + (read | write)	-> STACK?
+ *	(!vma page in kernel-mode, page-fault during read or write)
+ * K2 - !vma + kernel + PV + (read | write)	-> PANIC
+ *	(!vma page in kernel-mode, page-violation during read or write)
  */
 void do_page_fault(unsigned int trap, struct sigcontext *sc)
 {
@@ -266,6 +267,35 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 
 		/* in kernel mode */
 		} else {
+			/*
+			 * When CONFIG_LAZY_USER_ADDR_CHECK is enabled, the
+			 * kernel may incur in a page fault when trying to
+			 * access a possible user stack address. In that case,
+			 * sc->oldesp doesn't point to the user stack, but to
+			 * the kernel stack, because the page fault was raised
+			 * in kernel mode.
+			 * We need to get the original user sigcontext struct
+			 * from the current kernel stack, in order to obtain
+			 * the user stack pointer sc->oldesp, and see if CR2
+			 * looks like a user stack address.
+			 */
+			struct sigcontext *usc;
+
+			/*
+			 * Since the page fault was raised in kernel mode, the
+			 * exception occurred at the same privilege level, hence
+			 * the %ss and %esp registers were not saved.
+			 */
+			usc = (struct sigcontext *)((unsigned int *)sc->esp + 16);
+			usc += 1;
+
+			/* does it look like a user stack address? */
+			if(cr2 >= (usc->oldesp - 32) && cr2 < PAGE_OFFSET) {
+				if((!page_not_present(vma, cr2, usc))) {
+					return;
+				}
+			}
+
 			dump_registers(trap, sc);
 			show_vma_regions(current);
 			do_exit(SIGTERM);
