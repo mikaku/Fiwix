@@ -37,6 +37,20 @@ static int verify_address(int type, const void *addr, unsigned int size)
 
 	start = (unsigned int)addr;
 	if(!(vma = find_vma_region(start))) {
+		/*
+		 * We need to check here if addr looks like a possible
+		 * non-existent user stack address. If so, just return 0
+		 * and let 'do_page_fault()' to handle the imminent page
+		 * fault as soon as the kernel will try to access it.
+		 */
+		vma = current->vma_table->prev;
+		if(vma) {
+			if(vma->s_type == P_STACK) {
+				if(start < vma->start && start > vma->prev->end) {
+					return 0;
+				}
+			}
+		}
 		return -EFAULT;
 	}
 
