@@ -4,12 +4,21 @@
   requests smaller than PAGE_SIZE (4KiB).
 - Added the new file /proc/buddyinfo to view buddy algorithm statistics.
 - Added the new configuration option FREE_PAGES_RATIO (with a default value of
-  5), is the minimum percentage of free memory pages before calling the swapper
+  5), as the minimum percentage of free memory pages before calling the swapper
   to reclaim memory from the buffer cache.
+- Added the buffer-dirty-flush kernel daemon 'kbdflushd'. This also includes the
+  new configuration option BUFFER_DIRTY_RATIO to limit the percentage of dirty
+  buffers.
+- Added support for the Bochs Graphics Adapter with the configuration option
+  CONFIG_BGA, and introducing the new kernel parameter 'bga=' to set the screen
+  resolution (width x height x bpp). Refer to 'docs/kernel-parameters.txt' to
+  know all the screen resolutions supported.
 - Added a check in psig() to terminate the process if it doesn't have the stack
   region in its vma table.
 - Added PCI BARs handling in the serial driver.
 - Added the files buffer_max and buffer_nr in /proc/sys/kernel.
+- Added more checks on data received during ATA drive identify to make sure it
+  makes sense.
 - Changed the vma table from static to dynamically allocated array and removed
   the option VMA_REGIONS.
 - Changed the mount table from static to dynamically allocated array.
@@ -28,6 +37,7 @@
 - Disabled interrupts in runnable() and not_runnable() to avoid race conditions.
 - Bar addresses of PCI devices are now discovered by the driver.
 - Reorganized _init() functions in start_kernel().
+- Disk drives now show the ATA major version number.
 - Fixed a bug in syscalls/wait4.c introduced in 9cfe372 that created malfunction
   in control jobs.
 - Fixed to call sleep_init(), buffer_init(), sched_init() and inode_init()
@@ -53,8 +63,23 @@
 - Fixed the hexadecimal values of /dev/tty10, /dev/tty11 and /dev/tty12 in
   kparms.h.
 - Fixed some possible race conditions in buffer cache.
-- Fixed a bug in mmap that prevented overlapped VMA regions not merging
+- Fixed a bug in mmap that prevented overlapped VMA regions from merging
   correctly. [#16]
+- Fixed to terminate properly a read or write request on hdd timeout.
+- Fixed a race condition in sys_nanosleep() when setting the processs sleeping
+  time.
+- Fixed merge_vma_regions() to free memory pages in overlapped segments. [#16]
+- Fixed memory mapped files not written to disk correctly. [#18]
+- Fixed sys_execve() to make sure arguments and environment do not exceed the
+  maximum length. [#20]
+- Fixed sys_mount() to use malloc_name() and free_name() to validate the
+  argument 'fstype'.
+- Fixed do_page_fault() to handle a page fault when trying to access a
+  non-existent user stack address in kernel mode when
+  CONFIG_LAZY_USER_ADDR_CHECK is enabled. [#22]
+- Fixed verify_address() to accept a possible non-existent user stack address
+  when CONFIG_LAZY_USER_ADDR_CHECK is disabled, since 'do_page_fault()' will do
+  the rest of the job. [#22]
 - Small fixes and cosmetic changes.
 
 
