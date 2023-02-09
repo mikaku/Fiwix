@@ -1,14 +1,14 @@
 /*
- * fiwix/drivers/block/ide.c
+ * fiwix/drivers/block/ata.c
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
 #include <fiwix/asm.h>
-#include <fiwix/ide.h>
-#include <fiwix/ide_hd.h>
-#include <fiwix/ide_cd.h>
+#include <fiwix/ata.h>
+#include <fiwix/ata_hd.h>
+#include <fiwix/atapi_cd.h>
 #include <fiwix/devices.h>
 #include <fiwix/sleep.h>
 #include <fiwix/timer.h>
@@ -22,15 +22,15 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct fs_operations ide_driver_fsop = {
+static struct fs_operations ata_driver_fsop = {
 	0,
 	0,
 
-	ide_open,
-	ide_close,
+	ata_open,
+	ata_close,
 	NULL,			/* read */
 	NULL,			/* write */
-	ide_ioctl,
+	ata_ioctl,
 	NULL,			/* lseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
@@ -50,8 +50,8 @@ static struct fs_operations ide_driver_fsop = {
 	NULL,			/* create */
 	NULL,			/* rename */
 
-	ide_read,
-	ide_write,
+	ata_read,
+	ata_write,
 
 	NULL,			/* read_inode */
 	NULL,			/* write_inode */
@@ -64,24 +64,19 @@ static struct fs_operations ide_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-int ide0_need_reset = 0;
-int ide0_wait_interrupt = 0;
-int ide0_timeout = 0;
-int ide1_need_reset = 0;
-int ide1_wait_interrupt = 0;
-int ide1_timeout = 0;
+struct ide *ide_table;
 
-struct ide ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, IDE0_IRQ, { 0, 0 },
+struct ide default_ide_table[NR_IDE_CTRLS] = {
+	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, 0, IDE0_IRQ, 0, 0, &ide0_timer, { 0 , 0 },
 		{
-			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
+			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} }
 		}
 	},
-	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, IDE1_IRQ, { 0, 0 },
+	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, 0, IDE1_IRQ, 0, 0, &ide1_timer, { 0 , 0 },
 		{
-			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, { 0 }, {{ 0 }} }
+			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} }
 		}
 	}
 };
@@ -96,17 +91,16 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		0,
 		&ide0_sizes,
-		&ide_driver_fsop,
+		&ata_driver_fsop,
 		NULL
 	},
-
 	{
 		"ide1",
 		IDE1_MAJOR,
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		0,
 		&ide1_sizes,
-		&ide_driver_fsop,
+		&ata_driver_fsop,
 		NULL
 	}
 };
@@ -117,85 +111,86 @@ static struct interrupt irq_config_ide[NR_IDE_CTRLS] = {
 };
 
 
-static int ide_identify(struct ide *ide, struct ide_drv *drive)
+static int ata_identify_device(struct ide *ide, struct ata_drv *drive)
 {
-	short int status, *buffer;
-	struct callout_req creq;
+	int cmd, status;
 
-	if((status = ide_drvsel(ide, drive->num, IDE_CHS_MODE, 0))) {
+	if((status = ata_select_drv(ide, drive->num, ATA_CHS_MODE, 0))) {
 		/* some controllers return 0xFF to indicate a non-drive condition */
 		if(status == 0xFF) {
-			return status;
+			return 1;
 		}
 		printk("WARNING: %s(): error on device '%s'.\n", __FUNCTION__, drive->dev_name);
-		ide_error(ide, status);
-		return status;
+		ata_error(ide, status);
 	}
 
-	if(ide->channel == IDE_PRIMARY) {
-		ide0_wait_interrupt = ide->base;
-		creq.fn = ide0_timer;
-		creq.arg = 0;
-		add_callout(&creq, WAIT_FOR_IDE);
-		outport_b(ide->base + IDE_COMMAND, (drive->flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
-		if(ide0_wait_interrupt) {
-			sleep(&irq_ide0, PROC_UNINTERRUPTIBLE);
-		}
-		if(ide0_timeout) {
-			status = inport_b(ide->base + IDE_STATUS);
-			if((status & (IDE_STAT_RDY | IDE_STAT_DRQ)) != (IDE_STAT_RDY | IDE_STAT_DRQ)) {
-				return 1;
-			}
-		}
-		del_callout(&creq);
-	}
-	if(ide->channel == IDE_SECONDARY) {
-		ide1_wait_interrupt = ide->base;
-		creq.fn = ide1_timer;
-		creq.arg = 0;
-		add_callout(&creq, WAIT_FOR_IDE);
-		outport_b(ide->base + IDE_COMMAND, (drive->flags & DEVICE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY);
-		if(ide1_wait_interrupt) {
-			sleep(&irq_ide1, PROC_UNINTERRUPTIBLE);
-		}
-		if(ide1_timeout) {
-			status = inport_b(ide->base + IDE_STATUS);
-			if((status & (IDE_STAT_RDY | IDE_STAT_DRQ)) != (IDE_STAT_RDY | IDE_STAT_DRQ)) {
-				return 1;
-			}
-		}
-		del_callout(&creq);
-	}
+	cmd = (drive->flags & DRIVE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY;
 
-	status = inport_b(ide->base + IDE_STATUS);
-	if((status & (IDE_STAT_RDY | IDE_STAT_DRQ)) != (IDE_STAT_RDY | IDE_STAT_DRQ)) {
+	outport_b(ide->base + ATA_FEATURES, 0);
+	outport_b(ide->base + ATA_SECCNT, 0);
+	outport_b(ide->base + ATA_SECTOR, 0);
+	outport_b(ide->base + ATA_LCYL, 0);
+	outport_b(ide->base + ATA_HCYL, 0);
+	ata_wait_irq(ide, WAIT_FOR_DISK, cmd);
+	return 0;
+}
+
+static int identify_drive(struct ide *ide, struct ata_drv *drive)
+{
+	short int status;
+	unsigned char *buffer, *buffer2;
+	int n;
+
+	/* read device identification using a 16bit transfer */
+	ata_identify_device(ide, drive);
+	status = inport_b(ide->base + ATA_STATUS);
+	if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
 		return 1;
 	}
-
-	if(!(buffer = (void *)kmalloc())) {
+	if(!(buffer = (void *)kmalloc2(ATA_HD_SECTSIZE))) {
 		return 1;
 	}
+	inport_sw(ide->base + ATA_DATA, (void *)buffer, ATA_HD_SECTSIZE / sizeof(short int));
 
-	inport_sw(ide->base + IDE_DATA, (void *)buffer, IDE_HD_SECTSIZE / sizeof(short int));
-	memcpy_b(&drive->ident, (void *)buffer, sizeof(struct ide_drv_ident));
-	kfree((unsigned int)buffer);
+	/* re-read again using a 32bit transfer */
+	ata_identify_device(ide, drive);
+	status = inport_b(ide->base + ATA_STATUS);
+	if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
+		kfree2((unsigned int)buffer);
+		return 1;
+	}
+	if(!(buffer2 = (void *)kmalloc2(ATA_HD_SECTSIZE))) {
+		kfree2((unsigned int)buffer);
+		return 1;
+	}
+	inport_sl(ide->base + ATA_DATA, (void *)buffer2, ATA_HD_SECTSIZE / sizeof(unsigned int));
+
+	/* now compare results */
+	drive->flags |= DRIVE_HAS_DATA32;
+	for(n = 0; n < ATA_HD_SECTSIZE; n++) {
+		if(buffer[n] != buffer2[n]) {
+			/* not good, fall back to 16bits */
+			drive->flags &= ~DRIVE_HAS_DATA32;
+			break;
+		}
+	}
+	kfree2((unsigned int)buffer2);
+	memcpy_b(&drive->ident, (void *)buffer, sizeof(struct ata_drv_ident));
+	kfree2((unsigned int)buffer);
+
 
 	/* some basic checks to make sure that data received makes sense */
-	if(drive->ident.logic_cyls > 0xF000 &&
-	   drive->ident.logic_heads > 0xF000 &&
-	   drive->ident.logic_spt > 0xF000 &&
-	   drive->ident.buffer_cache > 0xF000) {
-		memset_b(&drive->ident, 0, sizeof(struct ide_drv_ident));
+	if(drive->ident.logic_cyls > 0x7F00 &&
+	   drive->ident.logic_heads > 0x7F00 &&
+	   drive->ident.logic_spt > 0x7F00 &&
+	   drive->ident.buffer_cache > 0x7F00) {
+		memset_b(&drive->ident, 0, sizeof(struct ata_drv_ident));
 		return 1;
 	}
 
-	if(drive->ident.gen_config == IDE_SUPPORTS_CFA) {
-		drive->flags |= DEVICE_IS_CFA;
-	}
-
-	if(drive->flags & DEVICE_IS_ATAPI) {
+	if(drive->flags & DRIVE_IS_ATAPI) {
 		if(((drive->ident.gen_config >> 8) & 0x1F) == ATAPI_IS_CDROM) {
-			drive->flags |= DEVICE_IS_CDROM;
+			drive->flags |= DRIVE_IS_CDROM;
 		}
 		if(drive->ident.gen_config & 0x3) {
 			printk("WARNING: %s(): packet size must be 16 bytes!\n");
@@ -203,22 +198,20 @@ static int ide_identify(struct ide *ide, struct ide_drv *drive)
 	}
 
 	/* more checks */
-	if(!(drive->flags & DEVICE_IS_CDROM) &&
+	if(!(drive->flags & DRIVE_IS_CDROM) &&
 	   (!drive->ident.logic_cyls ||
 	   !drive->ident.logic_heads ||
 	   !drive->ident.logic_spt)) {
-		memset_b(&drive->ident, 0, sizeof(struct ide_drv_ident));
+		memset_b(&drive->ident, 0, sizeof(struct ata_drv_ident));
 		return 1;
 	}
 
-	/* only bits 0-7 are relevant */
-	drive->ident.rw_multiple &= 0xFF;
 	return 0;
 }
 
-static void get_device_size(struct ide_drv *drive)
+static void get_device_size(struct ata_drv *drive)
 {
-	if(drive->ident.capabilities & IDE_HAS_LBA) {
+	if(drive->ident.capabilities & ATA_HAS_LBA) {
 		drive->lba_cyls = drive->ident.logic_cyls;
 		drive->lba_heads = drive->ident.logic_heads;
 		drive->lba_factor = 0;
@@ -236,7 +229,7 @@ static void get_device_size(struct ide_drv *drive)
 	}
 
 	/* some old disk drives (ATA or ATA2) don't specify total sectors */
-	if(!(drive->ident.capabilities & IDE_HAS_LBA)) {
+	if(!(drive->ident.capabilities & ATA_HAS_LBA)) {
 		if(drive->nr_sects == 0) {
 			drive->nr_sects = drive->ident.logic_cyls * drive->ident.logic_heads * drive->ident.logic_spt;
 		}
@@ -244,11 +237,47 @@ static void get_device_size(struct ide_drv *drive)
 
 }
 
-static int get_udma(struct ide_drv *drive)
+static int get_piomode(struct ata_drv *drive)
+{
+	int piomode;
+
+	piomode = 0;
+
+	if(drive->ident.fields_validity & ATA_HAS_ADVANCED_PIO) {
+		if(drive->ident.adv_pio_modes & 1) {
+			piomode = 3;
+		}
+		if(drive->ident.adv_pio_modes & 2) {
+			piomode = 4;
+		}
+	}
+
+	return piomode;
+}
+
+static int get_dma(struct ata_drv *drive)
+{
+	int dma;
+
+	dma = 0;
+
+	if(drive->ident.multiword_dma & 7) {
+		if(drive->ident.multiword_dma & 2) {
+			dma = 1;
+		}
+		if(drive->ident.multiword_dma & 4) {
+			dma = 2;
+		}
+	}
+
+	return dma;
+}
+
+static int get_udma(struct ata_drv *drive)
 {
 	int udma;
 
-	if(drive->ident.fields_validity & IDE_HAS_UDMA) {
+	if(drive->ident.fields_validity & ATA_HAS_UDMA) {
 		if((drive->ident.ultradma >> 13) & 1) {
 			udma = 5;
 		} else if((drive->ident.ultradma >> 12) & 1) {
@@ -268,25 +297,7 @@ static int get_udma(struct ide_drv *drive)
 	return udma;
 }
 
-static int get_piomode(struct ide_drv *drive)
-{
-	int piomode;
-
-	piomode = 0;
-
-	if(drive->ident.fields_validity & IDE_HAS_ADVANCED_PIO) {
-		if(drive->ident.adv_pio_modes & 1) {
-			piomode = 3;
-		}
-		if(drive->ident.adv_pio_modes & 2) {
-			piomode = 4;
-		}
-	}
-
-	return piomode;
-}
-
-static int get_ata(struct ide_drv *drive)
+static int get_ata(struct ata_drv *drive)
 {
 	int ata;
 
@@ -305,32 +316,26 @@ static int get_ata(struct ide_drv *drive)
 	return ata;
 }
 
-static void ide_results(struct ide *ide, struct ide_drv *drive)
+static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 {
 	unsigned int cyl, hds, sect;
 	__loff_t size;
-	int ksize;
-	int udma, piomode;
-	int udma_speed[] = { 16, 25, 33, 44, 66, 100 };
+	int ksize, nrsectors;
+	int udma, udma_speed[] = { 16, 25, 33, 44, 66, 100 };
 
 	cyl = drive->ident.logic_cyls;
 	hds = drive->ident.logic_heads;
 	sect = drive->ident.logic_spt;
 
-	if(drive->ident.fields_validity & IDE_HAS_CURR_VALUES) {
+	if(drive->ident.fields_validity & ATA_HAS_CURR_VALUES) {
 		cyl = drive->ident.cur_log_cyls;
 		hds = drive->ident.cur_log_heads;
 		sect = drive->ident.cur_log_spt;
 	}
 
-	udma = get_udma(drive);
-	piomode = get_piomode(drive);
-
-	/*
-	 * After knowing if the device is UDMA capable we could choose between
-	 * the PIO transfer mode or the UDMA transfer mode.
-	 * FIXME: Currently only PIO mode is supported.
-	 */
+	drive->pio_mode = get_piomode(drive);
+	drive->dma_mode = get_dma(drive);
+/*	udma = get_udma(drive);*/
 
 	size = (__loff_t)drive->nr_sects * BPS;
 	size = size / 1024;
@@ -343,41 +348,51 @@ static void ide_results(struct ide *ide, struct ide_drv *drive)
 		ksize = 0;
 	}
 
-	printk("%s       0x%04x-0x%04x    %d\t", drive->dev_name, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
+	printk("%s\t\t\t\t", drive->dev_name);
 	swap_asc_word(drive->ident.model_number, 40);
 	printk("%s %s ", ide->name, drive->name);
 
-	if(!(drive->flags & DEVICE_IS_ATAPI)) {
+	if(!(drive->flags & DRIVE_IS_ATAPI)) {
 		printk("ATA");
 		printk("%d", get_ata(drive));
 	} else {
 		printk("ATAPI");
 	}
 
-	if(drive->flags & DEVICE_IS_CFA) {
+	if(drive->ident.gen_config == ATA_SUPPORTS_CFA) {
+		drive->flags |= DRIVE_IS_CFA;
 		printk(" CFA");
 	}
 
-	if(drive->flags & DEVICE_IS_DISK) {
+	if(drive->flags & DRIVE_IS_DISK) {
 		if(ksize) {
-			printk(" DISK drive %dKB\n", ksize);
+			printk(" disk drive %dKB\n", ksize);
 		} else {
-			printk(" DISK drive %dMB\n", (unsigned int)size);
+			printk(" disk drive %dMB\n", (unsigned int)size);
 		}
 		printk("                                model=%s\n", drive->ident.model_number);
-		if(drive->nr_sects < IDE_MIN_LBA) {
+		if(drive->nr_sects < ATA_MIN_LBA) {
 			printk("\t\t\t\tCHS=%d/%d/%d", cyl, hds, sect);
 		} else {
-			drive->flags |= DEVICE_REQUIRES_LBA;
+			drive->flags |= DRIVE_REQUIRES_LBA;
 			printk("\t\t\t\tsectors=%d", drive->nr_sects);
 		}
-		printk(" cache=%dKB", drive->ident.buffer_cache >> 1);
+		printk(" cache=%dKB\n", drive->ident.buffer_cache >> 1);
+
+		drive->multi = 1;
+
+		/* default values for 'xfer' */
+		drive->xfer.read_fn = inport_sw;
+		drive->xfer.read_cmd = ATA_READ_PIO;
+		drive->xfer.write_fn = outport_sw;
+		drive->xfer.write_cmd = ATA_WRITE_PIO;
+		drive->xfer.copy_raw_factor = 2;	/* 16bit */
 	}
 
-	if(drive->flags & DEVICE_IS_CDROM) {
+	if(drive->flags & DRIVE_IS_CDROM) {
 		printk(" CDROM drive\n");
 		printk("\t\t\t\tmodel=%s\n", drive->ident.model_number);
-		printk("\t\t\t\tcache=%dKB", drive->ident.buffer_cache >> 1);
+		printk("\t\t\t\tcache=%dKB\n", drive->ident.buffer_cache >> 1);
 	}
 
 	/*
@@ -385,30 +400,49 @@ static void ide_results(struct ide *ide, struct ide_drv *drive)
 		printk(" UDMA%d(%d)", udma, udma_speed[udma]);
 	}
 	*/
-	printk(" PIO mode=%d", piomode);
+	printk("\t\t\t\tPIO %d", drive->pio_mode);
 
-	if(drive->ident.capabilities & IDE_HAS_LBA) {
-		drive->flags |= DEVICE_REQUIRES_LBA;
-		printk(" LBA");
+	if(drive->ident.capabilities & ATA_HAS_DMA) {
+		drive->flags |= DRIVE_HAS_DMA;
+		printk(", DMA %d", drive->dma_mode);
 	}
 
-	printk("\n");
-
-	if(drive->ident.rw_multiple > 1) {
+	if((drive->ident.rw_multiple & 0xFF) > 1) {
 		/*
 		 * Some very old controllers report a value of 16 here but they
 		 * don't support read or write multiple in PIO mode. So far,
 		 * I can detect these old controlers because they report a zero
 		 * in the Advanced PIO Data Transfer Supported Field (word 64).
 		 */
-		if(piomode > 0) {
-			drive->flags |= DEVICE_HAS_RW_MULTIPLE;
+		if(drive->pio_mode > 0) {
+			drive->flags |= DRIVE_HAS_RW_MULTIPLE;
+			drive->xfer.read_cmd = ATA_READ_MULTIPLE_PIO;
+			drive->xfer.write_cmd = ATA_WRITE_MULTIPLE_PIO;
+			drive->multi = drive->ident.rw_multiple & 0xFF;
+			nrsectors = PAGE_SIZE / ATA_HD_SECTSIZE;
+			drive->multi = drive->multi > nrsectors ? nrsectors : drive->multi;
 		}
 	}
+	if(drive->flags & DRIVE_HAS_DATA32) {
+		printk(", 32bit");
+		drive->xfer.read_fn = inport_sl;
+		drive->xfer.write_fn = outport_sl;
+		drive->xfer.copy_raw_factor = 4;
+	} else {
+		printk(", 16bit");
+	}
+	printk(", %d sectors/blk", drive->multi);
+
+	if(drive->ident.capabilities & ATA_HAS_LBA) {
+		drive->flags |= DRIVE_REQUIRES_LBA;
+		printk(", LBA");
+	}
+
+	printk("\n");
 
 	/*
 	printk("\n");
-	printk("%s -> %s\n", drive->dev_name, drive->flags & DEVICE_IS_ATAPI ? "ATAPI" : "ATA");
+	printk("%s -> %s\n", drive->dev_name, drive->flags & DRIVE_IS_ATAPI ? "ATAPI" : "ATA");
 	printk("general conf  = %d (%b) (0x%x)\n", drive->ident.gen_config, drive->ident.gen_config, drive->ident.gen_config);
 	printk("logic_cyls    = %d (%b)\n", drive->ident.logic_cyls, drive->ident.logic_cyls);
 	printk("reserved2     = %d (%b)\n", drive->ident.reserved2, drive->ident.reserved2);
@@ -476,101 +510,240 @@ static int ide_get_status(struct ide *ide)
 	int n, retries, status;
 
 	status = 0;
-	SET_IDE_RDY_RETR(retries);
+	SET_ATA_RDY_RETR(retries);
 
 	for(n = 0; n < retries; n++) {
-		status = inport_b(ide->ctrl + IDE_ALT_STATUS);
-		if(!(status & IDE_STAT_BSY)) {
+		status = inport_b(ide->ctrl + ATA_ALT_STATUS);
+		if(!(status & ATA_STAT_BSY)) {
 			return 0;
 		}
-		ide_delay();
+		ata_delay();
 	}
 
-	inport_b(ide->base + IDE_STATUS);	/* clear any pending interrupt */
+	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
 	return status;
+}
+
+static int ata_softreset(struct ide *ide)
+{
+	int error;
+	unsigned short int dev_type;
+
+	error = 0;
+
+	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
+	ata_delay();
+
+	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_SRST | ATA_DEVCTR_NIEN);
+	ata_delay();
+	outport_b(ide->ctrl + ATA_DEV_CTRL, 0);
+	ata_delay();
+
+	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
+	ata_delay();
+	ata_wait_irq(ide, WAIT_FOR_DISK, 0);
+
+	if(ide_get_status(ide)) {
+		printk("WARNING: %s(): reset error on ide%d(0).\n", __FUNCTION__, ide->channel);
+		error = 1;
+	} else {
+		/* find out the device type */
+		if(inport_b(ide->base + ATA_SECCNT) == 1 && inport_b(ide->base + ATA_SECTOR) == 1) {
+			dev_type = (inport_b(ide->base + ATA_HCYL) << 8) | inport_b(ide->base + ATA_LCYL);
+			switch(dev_type) {
+				case 0xEB14:
+					ide->drive[IDE_MASTER].flags |= DRIVE_IS_ATAPI;
+					break;
+				case 0x0:
+				default:
+					ide->drive[IDE_MASTER].flags |= DRIVE_IS_DISK;
+			}
+		}
+	}
+
+	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE + (1 << 4));
+	ata_delay();
+
+	if(ide_get_status(ide)) {
+		printk("WARNING: %s(): reset error on ide%d(1).\n", __FUNCTION__, ide->channel);
+		outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
+		ata_delay();
+		ide_get_status(ide);
+		error |= (1 << 4);
+	}
+
+	outport_b(ide->ctrl + ATA_DEV_CTRL, 0);
+	ata_delay();
+	if(error > 1) {
+		return error;
+	}
+
+	/* find out the device type */
+	if(inport_b(ide->base + ATA_SECCNT) == 1 && inport_b(ide->base + ATA_SECTOR) == 1) {
+		dev_type = (inport_b(ide->base + ATA_HCYL) << 8) | inport_b(ide->base + ATA_LCYL);
+		switch(dev_type) {
+			case 0xEB14:
+				ide->drive[IDE_SLAVE].flags |= DRIVE_IS_ATAPI;
+				break;
+			case 0x0:
+			default:
+				ide->drive[IDE_SLAVE].flags |= DRIVE_IS_DISK;
+		}
+	}
+
+	return error;
+}
+
+static int ide_channel_init(struct ide *ide)
+{
+	int drv_num;
+	int devices, errno;
+	struct ata_drv *drive;
+
+	if(!register_irq(ide->irq, &irq_config_ide[ide->channel])) {
+		enable_irq(ide->irq);
+	}
+
+	errno = ata_softreset(ide);
+	devices = 0;
+	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
+		/*
+		 * ata_softreset() returns error in the low nibble
+		 * for master devices, and in the high nibble for
+		 * slave devices.
+		 */
+		if(!(errno & (1 << (drv_num * 4)))) {
+			drive = &ide->drive[drv_num];
+			if(!(identify_drive(ide, drive))) {
+				get_device_size(drive);
+				show_capabilities(ide, drive);
+				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
+				if(!devices) {
+					register_device(BLK_DEV, &ide_device[ide->channel]);
+				}
+				if(drive->flags & DRIVE_IS_DISK) {
+					if(!ata_hd_init(ide, drive)) {
+						devices++;
+					}
+				}
+				if(drive->flags & DRIVE_IS_CDROM) {
+					if(!ata_cd_init(ide, drive)) {
+						devices++;
+					}
+				}
+			}
+		}
+	}
+
+	if(!devices) {
+		disable_irq(ide->irq);
+		unregister_irq(ide->irq, &irq_config_ide[ide->channel]);
+	}
+
+	return devices;
+}
+
+static void sector2chs(__off_t offset, int *cyl, int *head, int *sector, struct ata_drv_ident *ident)
+{
+	int r;
+
+	*cyl = offset / (ident->logic_spt * ident->logic_heads);
+	r = offset % (ident->logic_spt * ident->logic_heads);
+	*head = r / ident->logic_spt;
+	*sector = (r % ident->logic_spt) + 1;
 }
 
 void irq_ide0(int num, struct sigcontext *sc)
 {
-	if(!ide0_wait_interrupt) {
+	struct ide *ide;
+
+	ide = &ide_table[IDE_PRIMARY];
+	if(!ide->wait_interrupt) {
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
-		ide0_need_reset = 1;
 	} else {
-		ide0_timeout = ide0_wait_interrupt = 0;
+		ide->irq_timeout = ide->wait_interrupt = 0;
 		wakeup(&irq_ide0);
 	}
 }
 
 void irq_ide1(int num, struct sigcontext *sc)
 {
-	if(!ide1_wait_interrupt) {
+	struct ide *ide;
+
+	ide = &ide_table[IDE_SECONDARY];
+	if(!ide->wait_interrupt) {
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
-		ide1_need_reset = 1;
 	} else {
-		ide1_timeout = ide1_wait_interrupt = 0;
+		ide->irq_timeout = ide->wait_interrupt = 0;
 		wakeup(&irq_ide1);
 	}
 }
 
 void ide0_timer(unsigned int arg)
 {
-	ide0_timeout = 1;
-	ide0_wait_interrupt = 0;
+	struct ide *ide;
+
+	ide = &ide_table[IDE_PRIMARY];
+	ide->irq_timeout = 1;
+	ide->wait_interrupt = 0;
 	wakeup(&irq_ide0);
 }
 
 void ide1_timer(unsigned int arg)
 {
-	ide1_timeout = 1;
-	ide1_wait_interrupt = 0;
+	struct ide *ide;
+
+	ide = &ide_table[IDE_SECONDARY];
+	ide->irq_timeout = 1;
+	ide->wait_interrupt = 0;
 	wakeup(&irq_ide1);
 }
 
-void ide_error(struct ide *ide, int status)
+void ata_error(struct ide *ide, int status)
 {
 	int error;
 
-	if(status & IDE_STAT_ERR) {
-		error = inport_b(ide->base + IDE_ERROR);
+	if(status & ATA_STAT_ERR) {
+		error = inport_b(ide->base + ATA_ERROR);
 		if(error) {
 			printk("error=0x%x [", error);
-			if(error & IDE_ERR_AMNF) {
+			if(error & ATA_ERR_AMNF) {
 				printk("address mark not found, ");
 			}
-			if(error & IDE_ERR_TK0NF) {
+			if(error & ATA_ERR_TK0NF) {
 				printk("track 0 not found (no media) or media error, ");
 			}
-			if(error & IDE_ERR_ABRT) {
+			if(error & ATA_ERR_ABRT) {
 				printk("command aborted, ");
 			}
-			if(error & IDE_ERR_MCR) {
+			if(error & ATA_ERR_MCR) {
 				printk("media change requested, ");
 			}
-			if(error & IDE_ERR_IDNF) {
+			if(error & ATA_ERR_IDNF) {
 				printk("id mark not found, ");
 			}
-			if(error & IDE_ERR_MC) {
+			if(error & ATA_ERR_MC) {
 				printk("media changer, ");
 			}
-			if(error & IDE_ERR_UNC) {
+			if(error & ATA_ERR_UNC) {
 				printk("uncorrectable data, ");
 			}
-			if(error & IDE_ERR_BBK) {
+			if(error & ATA_ERR_BBK) {
 				printk("bad block, ");
 			}
 			printk("]");
 		}
 	}
-	if(status & IDE_STAT_DWF) {
+	if(status & ATA_STAT_DWF) {
 		printk("device fault, ");
 	}
-	if(status & IDE_STAT_BSY) {
+	if(status & ATA_STAT_BSY) {
 		printk("device busy, ");
 	}
 	printk("\n");
 }
 
-void ide_delay(void)
+void ata_delay(void)
 {
 	int n;
 
@@ -579,17 +752,79 @@ void ide_delay(void)
 	}
 }
 
-void ide_wait400ns(struct ide *ide)
+void ata_wait400ns(struct ide *ide)
 {
 	int n;
 
 	/* wait 400ns */
 	for(n = 0; n < 4; n++) {
-		inport_b(ide->ctrl + IDE_ALT_STATUS);
+		inport_b(ide->ctrl + ATA_ALT_STATUS);
 	}
 }
 
-int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
+int ata_io(struct ide *ide, struct ata_drv *drive, __off_t offset)
+{
+	int mode, nrsectors;
+	int cyl, sector, head;
+	int lba_head;
+
+	/* FIXME */
+	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
+		nrsectors = 2;
+	} else {
+		nrsectors = 1;
+	}
+
+	outport_b(ide->base + ATA_FEATURES, 0);
+	outport_b(ide->base + ATA_SECCNT, nrsectors);
+	if(drive->flags & DRIVE_REQUIRES_LBA) {
+		outport_b(ide->base + ATA_LOWLBA, offset & 0xFF);
+		outport_b(ide->base + ATA_MIDLBA, (offset >> 8) & 0xFF);
+		outport_b(ide->base + ATA_HIGHLBA, (offset >> 16) & 0xFF);
+		mode = ATA_LBA_MODE;
+		lba_head = (offset >> 24) & 0x0F;
+	} else {
+		sector2chs(offset, &cyl, &head, &sector, &drive->ident);
+		outport_b(ide->base + ATA_SECTOR, sector);
+		outport_b(ide->base + ATA_LCYL, cyl);
+		outport_b(ide->base + ATA_HCYL, (cyl >> 8));
+		mode = ATA_CHS_MODE;
+		lba_head = head;
+	}
+	if(ata_select_drv(ide, drive->num, mode, lba_head)) {
+		printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
+		return -EIO;
+	}
+	return 0;
+}
+
+int ata_wait_irq(struct ide *ide, int timeout, int cmd)
+{
+	int status;
+	struct callout_req creq;
+
+	ide->wait_interrupt = ide->base;
+	creq.fn = ide->timer_fn;
+	creq.arg = 0;
+	add_callout(&creq, timeout);
+
+	if(cmd) {
+		outport_b(ide->base + ATA_COMMAND, cmd);
+	}
+	if(ide->wait_interrupt) {
+		sleep(irq_config_ide[ide->channel].handler, PROC_UNINTERRUPTIBLE);
+	}
+	if(ide->irq_timeout) {
+		status = inport_b(ide->base + ATA_STATUS);
+		if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
+			return 1;
+		}
+	}
+	del_callout(&creq);
+	return 0;
+}
+
+int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_head)
 {
 	int n, status;
 
@@ -605,8 +840,9 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 		return status;
 	}
 
-	outport_b(ide->base + IDE_DRVHD, (mode + (drive << 4)) | lba24_head);
-	ide_wait400ns(ide);
+	/* 0x80 and 0x20 are for the obsolete bits #7 and #5 respectively */
+	outport_b(ide->base + ATA_DRVHD, 0x80 | 0x20 | (mode + (drive << 4)) | lba28_head);
+	ata_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
 		if((status = ide_get_status(ide))) {
@@ -615,73 +851,6 @@ int ide_drvsel(struct ide *ide, int drive, int mode, unsigned char lba24_head)
 		break;
 	}
 	return status;
-}
-
-int ide_softreset(struct ide *ide)
-{
-	int error;
-	unsigned short int dev_type;
-
-	error = 0;
-
-	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
-	ide_delay();
-
-	outport_b(ide->ctrl + IDE_DEV_CTRL, IDE_DEVCTR_SRST | IDE_DEVCTR_NIEN);
-	ide_delay();
-	outport_b(ide->ctrl + IDE_DEV_CTRL, 0);
-	ide_delay();
-
-	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
-	ide_delay();
-	if(ide_get_status(ide)) {
-		printk("WARNING: %s(): reset error on IDE(%d:0).\n", __FUNCTION__, ide->channel);
-		error = 1;
-	} else {
-		/* find out the device type */
-		if(inport_b(ide->base + IDE_SECCNT) == 1 && inport_b(ide->base + IDE_SECNUM) == 1) {
-			dev_type = (inport_b(ide->base + IDE_HCYL) << 8) | inport_b(ide->base + IDE_LCYL);
-			switch(dev_type) {
-				case 0xEB14:
-					ide->drive[IDE_MASTER].flags |= DEVICE_IS_ATAPI;
-					break;
-				case 0x0:
-				default:
-					ide->drive[IDE_MASTER].flags |= DEVICE_IS_DISK;
-			}
-		}
-	}
-
-	outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE + (1 << 4));
-	ide_delay();
-	if(ide_get_status(ide)) {
-		printk("WARNING: %s(): reset error on IDE(%d:1).\n", __FUNCTION__, ide->channel);
-		outport_b(ide->base + IDE_DRVHD, IDE_CHS_MODE);
-		ide_delay();
-		ide_get_status(ide);
-		error |= (1 << 4);
-	}
-
-	outport_b(ide->ctrl + IDE_DEV_CTRL, 0);
-	ide_delay();
-	if(error > 1) {
-		return error;
-	}
-
-	/* find out the device type */
-	if(inport_b(ide->base + IDE_SECCNT) == 1 && inport_b(ide->base + IDE_SECNUM) == 1) {
-		dev_type = (inport_b(ide->base + IDE_HCYL) << 8) | inport_b(ide->base + IDE_LCYL);
-		switch(dev_type) {
-			case 0xEB14:
-				ide->drive[IDE_SLAVE].flags |= DEVICE_IS_ATAPI;
-				break;
-			case 0x0:
-			default:
-				ide->drive[IDE_SLAVE].flags |= DEVICE_IS_DISK;
-		}
-	}
-
-	return error;
 }
 
 struct ide *get_ide_controller(__dev_t dev)
@@ -700,10 +869,10 @@ struct ide *get_ide_controller(__dev_t dev)
 	return &ide_table[controller];
 }
 
-int ide_open(struct inode *i, struct fd *fd_table)
+int ata_open(struct inode *i, struct fd *fd_table)
 {
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -713,17 +882,17 @@ int ide_open(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 
-	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
 	if(drive->fsop && drive->fsop->open) {
 		return drive->fsop->open(i, fd_table);
 	}
 	return -EINVAL;
 }
 
-int ide_close(struct inode *i, struct fd *fd_table)
+int ata_close(struct inode *i, struct fd *fd_table)
 {
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -733,17 +902,17 @@ int ide_close(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 
-	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
 	if(drive->fsop && drive->fsop->close) {
 		return drive->fsop->close(i, fd_table);
 	}
 	return -EINVAL;
 }
 
-int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
+int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
@@ -754,7 +923,7 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -ENXIO;
 	}
 
-	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	drive = &ide->drive[GET_DRIVE_NUM(dev)];
 	if(drive->fsop && drive->fsop->read_block) {
 		return drive->fsop->read_block(dev, block, buffer, blksize);
 	}
@@ -762,10 +931,10 @@ int ide_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return -EINVAL;
 }
 
-int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
+int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	if(!(ide = get_ide_controller(dev))) {
 		printk("%s(): no ide controller!\n", __FUNCTION__);
@@ -776,7 +945,7 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		return -ENXIO;
 	}
 
-	drive = &ide->drive[GET_IDE_DRIVE(dev)];
+	drive = &ide->drive[GET_DRIVE_NUM(dev)];
 	if(drive->fsop && drive->fsop->write_block) {
 		return drive->fsop->write_block(dev, block, buffer, blksize);
 	}
@@ -784,10 +953,10 @@ int ide_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return -EINVAL;
 }
 
-int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
@@ -797,59 +966,37 @@ int ide_ioctl(struct inode *i, int cmd, unsigned long int arg)
 		return -ENXIO;
 	}
 
-	drive = &ide->drive[GET_IDE_DRIVE(i->rdev)];
+	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
 	if(drive->fsop && drive->fsop->ioctl) {
 		return drive->fsop->ioctl(i, cmd, arg);
 	}
 	return -EINVAL;
 }
 
-void ide_init(void)
+void ata_init(void)
 {
-	int channel, drv_num;
-	int devices, errno;
+	int channel;
 	struct ide *ide;
-	struct ide_drv *drive;
 
-	for(channel = IDE_PRIMARY; channel <= IDE_SECONDARY; channel++) {
-		ide = &ide_table[channel];
-		if(!register_irq(ide->irq, &irq_config_ide[channel])) {
-			enable_irq(ide->irq);
-		}
+        ide_table = (struct ide *)kmalloc();
+	/* FIXME: this should be:
+        ide_table = (struct ide *)kmalloc2(sizeof(struct ide) * NR_IDE_CTRLS);
 
-		errno = ide_softreset(ide);
-		devices = 0;
-		for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
-			/*
-			 * ide_softreset() returns error in the low nibble
-			 * for master devices, and in the high nibble for
-			 * slave devices.
-			 */
-			if(!(errno & (1 << (drv_num * 4)))) {
-				drive = &ide->drive[drv_num];
-				if(!(ide_identify(ide, drive))) {
-					get_device_size(drive);
-					ide_results(ide, drive);
-					SET_MINOR(ide_device[channel].minors, drv_num << drive->minor_shift);
-					if(!devices) {
-						register_device(BLK_DEV, &ide_device[channel]);
-					}
-					if(drive->flags & DEVICE_IS_DISK) {
-						if(!ide_hd_init(ide, drive)) {
-							devices++;
-						}
-					}
-					if(drive->flags & DEVICE_IS_CDROM) {
-						if(!ide_cd_init(ide, drive)) {
-							devices++;
-						}
-					}
-				}
-			}
+	 * when kmalloc2() be merged with kmalloc() and accept sizes > 2048
+	 */
+	memset_b(ide_table, 0, PAGE_SIZE);
+	channel = 0;
+
+	channel = channel ? NR_IDE_CTRLS : IDE_PRIMARY;
+	ide = ide_table;
+	while(channel < NR_IDE_CTRLS) {
+		memcpy_b(ide, &default_ide_table[channel], sizeof(struct ide));
+		printk("ide%d	  0x%04x-0x%04x    %d\t", channel, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
+		printk("ISA IDE controller\n");
+		if(!ide_channel_init(ide)) {
+			printk("\t\t\t\tno drives detected\n");
 		}
-		if(!devices) {
-			disable_irq(ide->irq);
-			unregister_irq(ide->irq, &irq_config_ide[channel]);
-		}
+		channel++;
+		ide++;
 	}
 }

@@ -11,7 +11,7 @@
 #include <fiwix/process.h>
 #include <fiwix/cmos.h>
 #include <fiwix/dma.h>
-#include <fiwix/ide.h>
+#include <fiwix/ata.h>
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/devices.h>
@@ -289,19 +289,19 @@ int data_proc_partitions(char *buffer, __pid_t pid)
 	int minor, major;
 	unsigned int blocks;
 	struct ide *ide;
-	struct ide_drv *drive;
+	struct ata_drv *drive;
 
 	size = 0;
 	size += sprintk(buffer + size, "major minor  #blocks  name\n\n");
 
 	for(ctrl = 0; ctrl < NR_IDE_CTRLS; ctrl++) {
 		ide = &ide_table[ctrl];
-		for(drv = 0; drv < NR_IDE_DRVS; drv++) {
+		for(drv = 0; drv < NR_ATA_DRVS; drv++) {
 			drive = &ide->drive[drv];
 			if(!drive->nr_sects) {
 				continue;
 			}
-			if(drive->flags & DEVICE_IS_DISK) {
+			if(drive->flags & DRIVE_IS_DISK) {
 				major = (int)drive->major;
 				minor = (int)drive->minor_shift;
 				blocks = drive->nr_sects / 2;

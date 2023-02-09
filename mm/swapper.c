@@ -15,7 +15,7 @@
 #include <fiwix/lp.h>
 #include <fiwix/ramdisk.h>
 #include <fiwix/floppy.h>
-#include <fiwix/ide.h>
+#include <fiwix/ata.h>
 #include <fiwix/buffer.h>
 #include <fiwix/mm.h>
 #include <fiwix/fs.h>
@@ -35,7 +35,7 @@ int kswapd(void)
 	/* block devices */
 	ramdisk_init();
 	floppy_init();
-	ide_init();
+	ata_init();
 
 
 	/* starting system */

@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = dma.o floppy.o part.o ide.o ide_hd.o ide_cd.o ramdisk.o
+OBJS = dma.o floppy.o part.o ata.o ata_hd.o atapi.o atapi_cd.o ramdisk.o
 
 all:	$(OBJS)
 

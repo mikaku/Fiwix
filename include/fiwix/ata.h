@@ -1,12 +1,12 @@
 /*
- * fiwix/include/fiwix/ide.h
+ * fiwix/include/fiwix/ata.h
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
-#ifndef _FIWIX_IDE_H
-#define _FIWIX_IDE_H
+#ifndef _FIWIX_ATA_H
+#define _FIWIX_ATA_H
 
 #include <fiwix/fs.h>
 #include <fiwix/part.h>
@@ -26,12 +26,10 @@
 #define IDE_SECONDARY		1
 #define IDE_MASTER		0
 #define IDE_SLAVE		1
-#define IDE_ATA			0
-#define IDE_ATAPI		1
-#define GET_IDE_DRIVE(_dev_)	((MINOR(_dev_) & (1 <<IDE_SLAVE_MSF)) ? IDE_SLAVE : IDE_MASTER)
+#define GET_DRIVE_NUM(_dev_)	((MINOR(_dev_) & (1 <<IDE_SLAVE_MSF)) ? IDE_SLAVE : IDE_MASTER)
 
 #define NR_IDE_CTRLS		2	/* IDE controllers */
-#define NR_IDE_DRVS		2	/* max. drives per IDE controller */
+#define NR_ATA_DRVS		2	/* max. drives per IDE controller */
 
 /* controller addresses */
 #define IDE0_BASE		0x1F0	/* primary controller base addr */
@@ -41,63 +39,66 @@
 
 #define IDE_BASE_LEN		7	/* controller address length */
 
-#define IDE_RDY_RETR_LONG	50000	/* long delay for fast CPUs */
-#define IDE_RDY_RETR_SHORT	500	/* short delay for slow CPUs */
+#define ATA_RDY_RETR_LONG	50000	/* long delay for fast CPUs */
+#define ATA_RDY_RETR_SHORT	500	/* short delay for slow CPUs */
 #define MAX_IDE_ERR		10	/* number of retries */
 #define MAX_CD_ERR		5	/* number of retries in CDROMs */
 
-#define SET_IDE_RDY_RETR(retries)					\
+#define SET_ATA_RDY_RETR(retries)					\
 	if((cpu_table.hz / 1000000) <= 100) {				\
-		retries = IDE_RDY_RETR_SHORT;				\
+		retries = ATA_RDY_RETR_SHORT;				\
 	} else {							\
-		retries = IDE_RDY_RETR_LONG;				\
+		retries = ATA_RDY_RETR_LONG;				\
 	}
 
-#define WAIT_FOR_IDE	(1 * HZ)	/* timeout for hard disk */
+#define WAIT_FOR_DISK	(1 * HZ)	/* timeout for hard disk */
 #define WAIT_FOR_CD 	(3 * HZ)	/* timeout for cdrom */
 
 /* controller registers */
-#define IDE_DATA		0x0	/* Data Port Register (R/W) */
-#define IDE_ERROR		0x1	/* Error Register (R) */
-#define IDE_FEATURES		0x1	/* Features Register (W) */
-#define IDE_SECCNT		0x2	/* Sector Count Register (R/W) */
-#define IDE_SECNUM		0x3	/* Sector Number Register (R/W) */
-#define IDE_LCYL		0x4	/* Cylinder Low Register (R/W) */
-#define IDE_HCYL		0x5	/* Cylinder High Register (R/W) */
-#define IDE_DRVHD		0x6	/* Drive/Head Register (R/W) */
-#define IDE_STATUS		0x7	/* Status Register (R) */
-#define IDE_COMMAND		0x7	/* Command Register (W) */
+#define ATA_DATA		0x0	/* Data Port Register (R/W) */
+#define ATA_ERROR		0x1	/* Error Register (R) */
+#define ATA_FEATURES		0x1	/* Features Register (W) */
+#define ATA_SECCNT		0x2	/* Sector Count Register (R/W) */
+#define ATA_SECTOR		0x3	/* Sector Number Register (R/W) */
+#define ATA_LOWLBA		0x3	/* Low Byte of LBA Register (R/W) */
+#define ATA_LCYL		0x4	/* Cylinder Low Register (R/W) */
+#define ATA_MIDLBA		0x4	/* Mid Byte of LBA Register (R/W) */
+#define ATA_HCYL		0x5	/* Cylinder High Register (R/W) */
+#define ATA_HIGHLBA		0x5	/* High Byte of LBA Register (R/W) */
+#define ATA_DRVHD		0x6	/* Drive/Head Register (R/W) */
+#define ATA_STATUS		0x7	/* Status Register (R) */
+#define ATA_COMMAND		0x7	/* Command Register (W) */
 
-#define IDE_ALT_STATUS		0x2	/* Alternate Register (R) */
-#define IDE_DEV_CTRL		0x2	/* Device Control Register (W) */
+#define ATA_ALT_STATUS		0x2	/* Alternate Register (R) */
+#define ATA_DEV_CTRL		0x2	/* Device Control Register (W) */
 
 /* error register bits */
-#define IDE_ERR_AMNF		0x01	/* Address Mark Not Found */
-#define IDE_ERR_TK0NF		0x02	/* Track 0 Not Found */
-#define IDE_ERR_ABRT		0x04	/* Aborted Command */
-#define IDE_ERR_MCR		0x08	/* Media Change Registered */
-#define IDE_ERR_IDNF		0x10	/* Sector ID Field Not Found */
-#define IDE_ERR_MC		0x20	/* Media Changed */
-#define IDE_ERR_UNC		0x40	/* Uncorrectable Data Error */
-#define IDE_ERR_BBK		0x80	/* Bad Block */
+#define ATA_ERR_AMNF		0x01	/* Address Mark Not Found */
+#define ATA_ERR_TK0NF		0x02	/* Track 0 Not Found */
+#define ATA_ERR_ABRT		0x04	/* Aborted Command */
+#define ATA_ERR_MCR		0x08	/* Media Change Registered */
+#define ATA_ERR_IDNF		0x10	/* Sector ID Field Not Found */
+#define ATA_ERR_MC		0x20	/* Media Changed */
+#define ATA_ERR_UNC		0x40	/* Uncorrectable Data Error */
+#define ATA_ERR_BBK		0x80	/* Bad Block */
 
 /* status register bits */
-#define IDE_STAT_ERR		0x01	/* an error ocurred */
-#define IDE_STAT_SENS		0x02	/* sense data available */
-#define IDE_STAT_CORR		0x04	/* a correctable error ocurred */
-#define IDE_STAT_DRQ		0x08	/* device is ready to transfer */
-#define IDE_STAT_DSC		0x10	/* device requests service o intr. */
-#define IDE_STAT_DWF		0x20	/* drive write fault */
-#define IDE_STAT_RDY		0x40	/* drive is ready */
-#define IDE_STAT_BSY		0x80	/* drive is busy */
+#define ATA_STAT_ERR		0x01	/* an error ocurred */
+#define ATA_STAT_SENS		0x02	/* sense data available */
+#define ATA_STAT_CORR		0x04	/* a correctable error ocurred */
+#define ATA_STAT_DRQ		0x08	/* device is ready to transfer */
+#define ATA_STAT_DSC		0x10	/* device requests service o intr. */
+#define ATA_STAT_DWF		0x20	/* drive write fault */
+#define ATA_STAT_RDY		0x40	/* drive is ready */
+#define ATA_STAT_BSY		0x80	/* drive is busy */
 
-#define IDE_CHS_MODE		0xA0	/* select CHS mode */
-#define IDE_LBA_MODE		0xE0	/* select LBA mode */
+#define ATA_CHS_MODE		0xA0	/* select CHS mode */
+#define ATA_LBA_MODE		0xE0	/* select LBA mode */
 
 /* alternate & device control register bits */
-#define IDE_DEVCTR_DRQ		0x08	/* Data Request */
-#define IDE_DEVCTR_NIEN		0x02	/* Disable Interrupt */
-#define IDE_DEVCTR_SRST		0x04	/* Software Reset */
+#define ATA_DEVCTR_DRQ		0x08	/* Data Request */
+#define ATA_DEVCTR_NIEN		0x02	/* Disable Interrupt */
+#define ATA_DEVCTR_SRST		0x04	/* Software Reset */
 
 /* ATA commands */
 #define ATA_READ_PIO		0x20	/* read sector(s) with retries */
@@ -108,6 +109,10 @@
 #define ATA_PACKET		0xA0
 #define ATA_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
 #define ATA_IDENTIFY		0xEC	/* identify ATA device */
+#define ATA_SET_FEATURES	0xEF
+
+/* ATA_SET_FEATURES subcommands */
+#define ATA_SET_XFERMODE	0x03	/* set transfer mode */
 
 /* ATAPI commands */
 #define ATAPI_TEST_UNIT		0x00
@@ -126,16 +131,16 @@
 #define ASC_NO_MEDIUM		0x3A
 
 /* capabilities */
-#define IDE_SUPPORTS_CFA	0x848A
-#define IDE_HAS_DMA		0x100
-#define IDE_HAS_LBA		0x200
-#define IDE_MIN_LBA		16514064/* sectors limit for using CHS */
+#define ATA_SUPPORTS_CFA	0x848A
+#define ATA_HAS_DMA		0x100
+#define ATA_HAS_LBA		0x200
+#define ATA_MIN_LBA		16514064/* sectors limit for using CHS */
 
 /* general configuration bits */
-#define IDE_HAS_CURR_VALUES	0x01	/* current logical values are valid */
-#define IDE_HAS_ADVANCED_PIO	0x02	/* device supports PIO 3 or 4 */
-#define IDE_HAS_UDMA		0x04	/* device supports UDMA */
-#define IDE_REMOVABLE		0x80	/* removable media device */
+#define ATA_HAS_CURR_VALUES	0x01	/* current logical values are valid */
+#define ATA_HAS_ADVANCED_PIO	0x02	/* device supports PIO 3 or 4 */
+#define ATA_HAS_UDMA		0x04	/* device supports UDMA */
+#define ATA_REMOVABLE		0x80	/* removable media device */
 
 /* ATAPI types */
 #define ATAPI_IS_SEQ_ACCESS	0x01	/* sequential-access device */
@@ -145,16 +150,18 @@
 #define ATAPI_IS_CDROM		0x05
 #define ATAPI_IS_SCANNER	0x06
 
-/* IDE drive flags */
-#define DEVICE_IS_ATAPI		0x01
-#define DEVICE_IS_CFA		0x02
-#define DEVICE_IS_DISK		0x04
-#define DEVICE_IS_CDROM		0x08
-#define DEVICE_REQUIRES_LBA	0x10
-#define DEVICE_HAS_RW_MULTIPLE	0x20
+/* ATA drive flags */
+#define DRIVE_IS_ATAPI		0x01
+#define DRIVE_IS_CFA		0x02
+#define DRIVE_IS_DISK		0x04
+#define DRIVE_IS_CDROM		0x08
+#define DRIVE_REQUIRES_LBA	0x10
+#define DRIVE_HAS_RW_MULTIPLE	0x20
+#define DRIVE_HAS_DMA		0x40
+#define DRIVE_HAS_DATA32	0x80
 
 /* ATA/ATAPI-4 based */
-struct ide_drv_ident {
+struct ata_drv_ident {
 	unsigned short int gen_config;		/* general configuration bits */
 	unsigned short int logic_cyls;		/* logical cylinders */
 	unsigned short int reserved2;
@@ -223,7 +230,15 @@ struct ide_drv_ident {
 	unsigned short int reserved160_255[96];
 };
 
-struct ide_drv {
+struct ata_xfer {
+	void (*read_fn)(unsigned int, void *, unsigned int);
+	int read_cmd;
+	void (*write_fn)(unsigned int, void *, unsigned int);
+	int write_cmd;
+	char copy_raw_factor;		/* 2 for 16bit, 4 for 32bit */
+};
+
+struct ata_drv {
 	int num;			/* master or slave */
 	char *name;
 	char *dev_name;
@@ -234,8 +249,12 @@ struct ide_drv {
 	int lba_heads;
 	short int lba_factor;
 	unsigned int nr_sects;		/* total sectors (LBA) */
+	int pio_mode;
+	int dma_mode;
+	int multi;
 	struct fs_operations *fsop;
-	struct ide_drv_ident ident;
+	struct ata_drv_ident ident;
+	struct ata_xfer xfer;
 	struct partition part_table[NR_PARTITIONS];
 };
 
@@ -244,39 +263,35 @@ struct ide {
 	char *name;
 	int base;			/* base address */
 	int ctrl;			/* control port address */
+	int bm;				/* bus master */
 	short int irq;
+	int wait_interrupt;
+	int irq_timeout;
+	void *timer_fn;
 	struct resource resource;
-	struct ide_drv drive[NR_IDE_DRVS];
+	struct ata_drv drive[NR_ATA_DRVS];
 };
 
-extern struct ide ide_table[NR_IDE_CTRLS];
-
-extern int ide0_need_reset;
-extern int ide0_wait_interrupt;
-extern int ide0_timeout;
-extern int ide1_need_reset;
-extern int ide1_wait_interrupt;
-extern int ide1_timeout;
+extern struct ide *ide_table;
 
 void irq_ide0(int, struct sigcontext *);
 void ide0_timer(unsigned int);
 void irq_ide1(int, struct sigcontext *);
 void ide1_timer(unsigned int);
 
-void ide_error(struct ide *, int);
-void ide_delay(void);
-void ide_wait400ns(struct ide *);
-int ide_drvsel(struct ide *, int, int, unsigned char);
-int ide_softreset(struct ide *);
-
+void ata_error(struct ide *, int);
+void ata_delay(void);
+void ata_wait400ns(struct ide *);
+int ata_io(struct ide *, struct ata_drv *, __off_t);
+int ata_wait_irq(struct ide *, int, int);
+int ata_select_drv(struct ide *, int, int, unsigned char);
 struct ide *get_ide_controller(__dev_t);
 
-int ide_open(struct inode *, struct fd *);
-int ide_close(struct inode *, struct fd *);
-int ide_read(__dev_t, __blk_t, char *, int);
-int ide_write(__dev_t, __blk_t, char *, int);
-int ide_ioctl(struct inode *, int, unsigned long int);
+int ata_open(struct inode *, struct fd *);
+int ata_close(struct inode *, struct fd *);
+int ata_read(__dev_t, __blk_t, char *, int);
+int ata_write(__dev_t, __blk_t, char *, int);
+int ata_ioctl(struct inode *, int, unsigned long int);
+void ata_init(void);
 
-void ide_init(void);
-
-#endif /* _FIWIX_IDE_H */
+#endif /* _FIWIX_ATA_H */
