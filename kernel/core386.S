@@ -546,6 +546,26 @@ end_brand_str:
 	ret
 
 .align 4
+.globl inport_sl; inport_sl:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%edi
+	pushl	%ecx
+
+	cld
+	movl	0x8(%ebp), %edx		# port addr
+	movl	0xC(%ebp), %edi		# dest
+	movl	0x10(%ebp), %ecx	# count
+	rep	insl
+
+	popl	%ecx
+	popl	%edi
+	popl	%edx
+	popl	%ebp
+	ret
+
+.align 4
 .globl outport_b; outport_b:
 	pushl	%ebp
 	movl	%esp, %ebp
@@ -600,6 +620,26 @@ end_brand_str:
 	mov	0xC(%ebp), %esi		# src
 	mov	0x10(%ebp), %ecx	# count
 	rep	outsw
+
+	popl	%ecx
+	popl	%esi
+	popl	%edx
+	popl	%ebp
+	ret
+
+.align 4
+.globl outport_sl; outport_sl:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%esi
+	pushl	%ecx
+
+	cld
+	movl	0x8(%ebp), %edx		# port addr
+	movl	0xC(%ebp), %esi		# src
+	movl	0x10(%ebp), %ecx	# count
+	rep	outsl
 
 	popl	%ecx
 	popl	%esi

@@ -77,10 +77,12 @@ unsigned char inport_b(unsigned int);
 unsigned short int inport_w(unsigned int);
 unsigned int inport_l(unsigned int);
 void inport_sw(unsigned int, void *, unsigned int);
+void inport_sl(unsigned int, void *, unsigned int);
 void outport_b(unsigned int, unsigned char);
 void outport_w(unsigned int, unsigned short int);
 void outport_l(unsigned int, unsigned int);
 void outport_sw(unsigned int, void *, unsigned int);
+void outport_sl(unsigned int, void *, unsigned int);
 
 void load_gdt(unsigned int);
 void load_idt(unsigned int);
