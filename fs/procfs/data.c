@@ -458,6 +458,11 @@ int data_proc_version(char *buffer, __pid_t pid)
 	return sprintk(buffer, "%s\n", UTS_VERSION);
 }
 
+int data_proc_dirty_background_ratio(char *buffer, __pid_t pid)
+{
+	return sprintk(buffer, "%d\n", BUFFER_DIRTY_RATIO);
+}
+
 
 /*
  * PID directory related functions

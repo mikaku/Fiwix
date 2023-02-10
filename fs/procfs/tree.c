@@ -72,6 +72,7 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 3,     DIR,  2, 3, 1,  ".",            NULL },
 	{ 1,     DIR,  2, 0, 2,  "..",           NULL },
 	{ 2001,  DIR,  2, 4, 6,  "kernel",       NULL },
+	{ 4001,  DIR,  2, 5, 2,  "vm",           NULL },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
    {	/* [4] /sys/kernel/ */
@@ -88,6 +89,12 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 3009,  REG,  1, 4, 9,  "osrelease",    data_proc_osrelease },
 	{ 3010,  REG,  1, 4, 6,  "ostype",       data_proc_ostype },
 	{ 3011,  REG,  1, 4, 7,  "version",      data_proc_version },
+	{ 0, 0, 0, 0, 0, NULL, NULL }
+   },
+   {	/* [5] /sys/vm/ */
+	{ 4001,  DIR,  2, 5, 1,  ".",            NULL },
+	{ 3,     DIR,  2, 3, 2,  "..",           NULL },
+	{ 5001,  REG,  1, 5, 22, "dirty_background_ratio",      data_proc_dirty_background_ratio },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    }
 };

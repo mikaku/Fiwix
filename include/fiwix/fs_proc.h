@@ -77,6 +77,7 @@ int data_proc_inodenr(char *, __pid_t);
 int data_proc_osrelease(char *, __pid_t);
 int data_proc_ostype(char *, __pid_t);
 int data_proc_version(char *, __pid_t);
+int data_proc_dirty_background_ratio(char *, __pid_t);
 
 /* PID related functions */
 int data_proc_pid_fd(char *, __pid_t);
