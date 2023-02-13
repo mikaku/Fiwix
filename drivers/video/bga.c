@@ -82,7 +82,7 @@ void bga_init(void)
 	/* enable I/O space and address space */
 	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
 
-	video.pcidev = pci_dev;
+	video.pci_dev = pci_dev;
 	video.address = (unsigned int *)pci_dev->bar[0];
 	video.port = 0;
 
