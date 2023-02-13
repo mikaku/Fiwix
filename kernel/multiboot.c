@@ -93,17 +93,26 @@ static int check_parm(struct kparms *parm, const char *value)
 static int parse_arg(const char *arg)
 {
 	int n;
+	const char *value;
 
 	/* '--' marks the beginning of the init arguments */
 	if(!strcmp(arg, "--")) {
 		return 1;
 	}
 
+	/* find out where the value starts (if it exists) */
+	value = arg;
+	while(*value && *value != '=') {
+		value++;
+	}
+	if(*value) {
+		value++;
+	}
+
 	for(n = 0; parm_table[n].name; n++) {
-		if(!strncmp(arg, parm_table[n].name, strlen(parm_table[n].name))) {
-			arg += strlen(parm_table[n].name);
-			if(check_parm(&parm_table[n], arg)) {
-				printk("WARNING: invalid value '%s' in the '%s' parameter.\n", arg, parm_table[n].name);
+		if(!strncmp(arg, parm_table[n].name, value ? value - arg : strlen(arg))) {
+			if(check_parm(&parm_table[n], value)) {
+				printk("WARNING: invalid value '%s' in the '%s' parameter.\n", value, parm_table[n].name);
 			}
 			return 0;
 		}
