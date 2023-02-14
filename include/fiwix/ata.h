@@ -105,6 +105,8 @@
 #define ATA_READ_MULTIPLE_PIO	0xC4	/* read multiple sectors */
 #define ATA_WRITE_PIO		0x30	/* write sector(s) with retries */
 #define ATA_WRITE_MULTIPLE_PIO	0xC5	/* write multiple sectors */
+#define ATA_READ_DMA		0xC8	/* read data using DMA */
+#define ATA_WRITE_DMA		0xCA	/* write data using DMA */
 #define ATA_SET_MULTIPLE_MODE	0xC6
 #define ATA_PACKET		0xA0
 #define ATA_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
@@ -132,7 +134,7 @@
 
 /* capabilities */
 #define ATA_SUPPORTS_CFA	0x848A
-#define ATA_HAS_DMA		0x100
+#define ATA_HAS_DMA		0x100	/* device supports Multi-word DMA */
 #define ATA_HAS_LBA		0x200
 #define ATA_MIN_LBA		16514064/* sectors limit for using CHS */
 
@@ -159,6 +161,8 @@
 #define DRIVE_HAS_RW_MULTIPLE	0x20
 #define DRIVE_HAS_DMA		0x40
 #define DRIVE_HAS_DATA32	0x80
+
+#define PRDT_MARK_END		0x8000
 
 /* ATA/ATAPI-4 based */
 struct ata_drv_ident {
@@ -230,12 +234,22 @@ struct ata_drv_ident {
 	unsigned short int reserved160_255[96];
 };
 
+struct prd {
+	unsigned int addr;		/* physical address of buffer */
+	unsigned short int size;	/* transfer size */
+	unsigned short int eot;		/* End-Of-Table mark */
+};
+
 struct ata_xfer {
 	void (*read_fn)(unsigned int, void *, unsigned int);
 	int read_cmd;
 	void (*write_fn)(unsigned int, void *, unsigned int);
 	int write_cmd;
 	char copy_raw_factor;		/* 2 for 16bit, 4 for 32bit */
+	struct prd prd_table;		/* Physical Region Descriptor table */
+	unsigned char bm_command;	/* bus master command register */
+	unsigned char bm_status;	/* bus master status register */
+	unsigned char bm_prd_addr;	/* bus master PRD table address */
 };
 
 struct ata_drv {
@@ -268,6 +282,7 @@ struct ide {
 	int wait_interrupt;
 	int irq_timeout;
 	void *timer_fn;
+	struct pci_device *pci_dev;
 	struct resource resource;
 	struct ata_drv drive[NR_ATA_DRVS];
 };
@@ -282,8 +297,11 @@ void ide1_timer(unsigned int);
 void ata_error(struct ide *, int);
 void ata_delay(void);
 void ata_wait400ns(struct ide *);
-int ata_io(struct ide *, struct ata_drv *, __off_t);
+int ata_io(struct ide *, struct ata_drv *, __off_t, int);
 int ata_wait_irq(struct ide *, int, int);
+void ata_setup_dma(struct ide *, struct ata_drv *, char *, int);
+void ata_start_dma(struct ide *, struct ata_drv *, int);
+void ata_stop_dma(struct ide *, struct ata_drv *);
 int ata_select_drv(struct ide *, int, int, unsigned char);
 struct ide *get_ide_controller(__dev_t);
 

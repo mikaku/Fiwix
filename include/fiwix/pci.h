@@ -12,6 +12,8 @@
 
 #include <fiwix/pci_ids.h>
 
+#define NR_PCI_DEVICES	10	/* maximum number of PCI devices */
+
 #define PCI_ADDRESS	0x0CF8
 #define PCI_DATA	0x0CFC
 
@@ -30,7 +32,8 @@
 #define PCI_STATUS		0x06	/* 16 bits */
 #define PCI_REVISION_ID		0x08	/*  8 bits */
 #define PCI_PROG_IF		0x09	/*  8 bits */
-#define PCI_CLASS_DEVICE        0x0A    /* 16 bits (class + subclass) */
+#define PCI_CLASS_DEVICE	0x0A	/* 16 bits (class + subclass) */
+#define PCI_LATENCY_TIMER	0x0D	/*  8 bits */
 #define PCI_HEADER_TYPE		0x0E	/*  8 bits */
 #define PCI_BASE_ADDRESS_0	0x10	/* 32 bits */
 #define PCI_BASE_ADDRESS_1	0x14	/* 32 bits (header 0 and 1 only) */
@@ -45,7 +48,21 @@
 #define PCI_BASE_ADDR_SPACE_MEM	0x00
 #define PCI_BASE_ADDR_SPACE_IO	0x01
 
-#define NR_PCI_DEVICES	10	/* maximum number of PCI devices */
+/* bus mastering */
+#define BM_COMMAND		0x00	/* command register primary */
+#define BM_STATUS		0x02	/* status register primary */
+#define BM_PRD_ADDRESS		0x04	/* PRD table address primary */
+
+#define BM_COMMAND_START	0x01	/* start */
+#define BM_COMMAND_READ		0x08	/* read from disk and write to memory */
+#define BM_COMMAND_WRITE	0x00	/* read from memory and write to disk */
+
+#define BM_STATUS_ACTIVE	0x01	/* active */
+#define BM_STATUS_ERROR		0x02	/* error */
+#define BM_STATUS_INTR		0x04	/* IDE interrupt */
+#define BM_STATUS_DRV0DMA	0x20	/* drive 0 is DMA capable */
+#define BM_STATUS_DRV1DMA	0x40	/* drive 1 is DMA capable */
+#define BM_STATUS_SIMPLEX	0x80	/* simplex only */
 
 struct pci_supported_devices {
 	unsigned short vendor_id;

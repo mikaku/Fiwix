@@ -35,10 +35,14 @@
 #define PCI_CLASS_SERIAL_USB		0x0c03
 
 
+/* supported vendor and device ids */
 #define PCI_VENDOR_ID_BOCHS		0x1234
 #define PCI_DEVICE_ID_BGA		0x1111
 
 #define PCI_VENDOR_ID_REDHAT		0x1b36
 #define PCI_DEVICE_ID_QEMU_16550A	0x0002
+
+#define PCI_VENDOR_ID_INTEL		0x8086
+#define PCI_DEVICE_ID_INTEL_82371SB_1	0x7010
 
 #endif /* _FIWIX_PCI_IDS_H */

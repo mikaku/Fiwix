@@ -15,6 +15,7 @@
 #include <fiwix/cpu.h>
 #include <fiwix/part.h>
 #include <fiwix/mm.h>
+#include <fiwix/pci.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
@@ -139,32 +140,47 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	offset = block2sector(block, blksize, part, minor);
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		datalen = (ATA_HD_SECTSIZE * sectors_to_read) / drive->xfer.copy_raw_factor;
+		datalen = ATA_HD_SECTSIZE * sectors_to_read;
 	} else {
-		datalen = ATA_HD_SECTSIZE / drive->xfer.copy_raw_factor;
+		datalen = ATA_HD_SECTSIZE;
 	}
 
 	CLI();
 	lock_resource(&ide->resource);
 
 	for(n = 0; n < sectors_to_read; n++) {
-		if(ata_io(ide, drive, offset)) {
+		if(ata_io(ide, drive, offset, drive->multi)) {
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
+
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_setup_dma(ide, drive, buffer, datalen);
+			ata_start_dma(ide, drive, BM_COMMAND_READ);
+		}
+#endif /* CONFIG_PCI */
+
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, drive->xfer.read_cmd)) {
+			ata_stop_dma(ide, drive);
 			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
 
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_stop_dma(ide, drive);
+		}
+#endif /* CONFIG_PCI */
 		for(r = 0; r < retries; r++) {
 			status = inport_b(ide->base + ATA_STATUS);
-			if(!(status & ATA_STAT_BSY) && (status & ATA_STAT_DRQ)) {
+			if(!(status & ATA_STAT_BSY)) {
 				break;
 			}
 			ata_delay();
 		}
+		status = inport_b(ide->base + ATA_STATUS);
 		if(status & ATA_STAT_ERR) {
 			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);
@@ -175,7 +191,9 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			return -EIO;
 		}
 
-		drive->xfer.read_fn(ide->base + ATA_DATA, (void *)buffer, datalen);
+		if(!(drive->flags & DRIVE_HAS_DMA)) {
+			drive->xfer.read_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
+		}
 		if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
 			break;
 		}
@@ -216,28 +234,36 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	offset = block2sector(block, blksize, part, minor);
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		datalen = (ATA_HD_SECTSIZE * sectors_to_write) / drive->xfer.copy_raw_factor;
+		datalen = ATA_HD_SECTSIZE * sectors_to_write;
 	} else {
-		datalen = ATA_HD_SECTSIZE / drive->xfer.copy_raw_factor;
+		datalen = ATA_HD_SECTSIZE;
 	}
 
 	CLI();
 	lock_resource(&ide->resource);
 
 	for(n = 0; n < sectors_to_write; n++) {
-		if(ata_io(ide, drive, offset)) {
+		if(ata_io(ide, drive, offset, drive->multi)) {
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
+
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_setup_dma(ide, drive, buffer, datalen);
+			ata_start_dma(ide, drive, BM_COMMAND_WRITE);
+		}
+#endif /* CONFIG_PCI */
 		outport_b(ide->base + ATA_COMMAND, drive->xfer.write_cmd);
 
 		for(r = 0; r < retries; r++) {
 			status = inport_b(ide->base + ATA_STATUS);
-			if(!(status & ATA_STAT_BSY) && (status & ATA_STAT_DRQ)) {
+			if(!(status & ATA_STAT_BSY)) {
 				break;
 			}
 			ata_delay();
 		}
+		status = inport_b(ide->base + ATA_STATUS);
 		if(status & ATA_STAT_ERR) {
 			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);
@@ -248,13 +274,19 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			return -EIO;
 		}
 
-		drive->xfer.write_fn(ide->base + ATA_DATA, (void *)buffer, datalen);
+		if(!(drive->flags & DRIVE_HAS_DMA)) {
+			drive->xfer.write_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
+		}
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, 0)) {
-			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
+			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
-
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_stop_dma(ide, drive);
+		}
+#endif /* CONFIG_PCI */
 		if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
 			break;
 		}
@@ -367,7 +399,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	/* setup the transfer mode */
 	for(;;) {
 		status = inport_b(ide->base + ATA_STATUS);
-		if(!(status & (ATA_STAT_BSY | ATA_STAT_DRQ))) {
+		if(!(status & ATA_STAT_BSY)) {
 			break;
 		}
 		ata_delay();
@@ -375,20 +407,27 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	if(ata_select_drv(ide, drive->num, 0, 0)) {
 		printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
 	}
-	outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
-	outport_b(ide->base + ATA_SECCNT, 0x08 | 4);	/* FIXME drive->piomode, ... */
-	outport_b(ide->base + ATA_SECTOR, 0);
-	outport_b(ide->base + ATA_LCYL, 0);
-	outport_b(ide->base + ATA_HCYL, 0);
-	ata_wait_irq(ide, WAIT_FOR_DISK, ATA_SET_FEATURES);
-	while(!(inport_b(ide->base + ATA_STATUS) & ATA_STAT_RDY));
-	ata_wait400ns(ide);
-	status = inport_b(ide->base + ATA_STATUS);
-	if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
-		printk("WARNING: %s(): error while setting transfer mode.\n", __FUNCTION__);
-		printk("\t");
-		ata_error(ide, status);
-		printk("\n");
+
+	if(drive->flags & DRIVE_HAS_DMA || drive->pio_mode > 2) {
+		outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
+		if(drive->flags & DRIVE_HAS_DMA) {
+			outport_b(ide->base + ATA_SECCNT, 0x20 | drive->dma_mode);
+		} else {
+			outport_b(ide->base + ATA_SECCNT, 0x08 | drive->pio_mode);
+		}
+		outport_b(ide->base + ATA_SECTOR, 0);
+		outport_b(ide->base + ATA_LCYL, 0);
+		outport_b(ide->base + ATA_HCYL, 0);
+		ata_wait_irq(ide, WAIT_FOR_DISK, ATA_SET_FEATURES);
+		while(!(inport_b(ide->base + ATA_STATUS) & ATA_STAT_RDY));
+		ata_wait400ns(ide);
+		status = inport_b(ide->base + ATA_STATUS);
+		if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
+			printk("WARNING: %s(): error while setting transfer mode.\n", __FUNCTION__);
+			printk("\t");
+			ata_error(ide, status);
+			printk("\n");
+		}
 	}
 
 	/* show disk partition summary */
