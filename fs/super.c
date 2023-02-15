@@ -238,7 +238,9 @@ int mount_root(void)
 		PANIC("unable to get a free mount point.\n");
 	}
 
-	mp->sb.flags = MS_RDONLY;
+	if(_ro) {
+		mp->sb.flags = MS_RDONLY;
+	}
 	if(fs->fsop && fs->fsop->read_superblock) {
 		if(fs->fsop->read_superblock(_rootdev, &mp->sb)) {
 			PANIC("unable to mount root filesystem on %s.\n", _rootdevname);
@@ -257,6 +259,10 @@ int mount_root(void)
 	current->pwd->count++;
 	iput(mp->sb.root);
 
-	printk("mounted root device (%s filesystem) in readonly mode.\n", fs->name);
+	printk("mounted root device (%s filesystem)", fs->name);
+	if(mp->sb.flags & MS_RDONLY) {
+		printk(" in readonly mode");
+	}
+	printk(".\n");
 	return 0;
 }

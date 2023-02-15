@@ -14,6 +14,8 @@ initrd=		Optional ramdisk image file which will be loaded by GRUB.
 
 ramdisksize=	Enable the RAM disk drive and configure its size (in KiB).
 
+ro		Mount root device as read-only on boot.
+
 root=		Root device name.
 		Options: /dev/fd0, /dev/hda1, ...
 

@@ -67,6 +67,10 @@ static int check_parm(struct kparms *parm, const char *value)
 		}
 		return 0;
 	}
+	if(!strcmp(parm->name, "ro")) {
+		_ro = 1;
+		return 0;
+	}
 	if(!strcmp(parm->name, "root=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {

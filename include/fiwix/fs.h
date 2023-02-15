@@ -45,8 +45,8 @@ struct fd {
 #define MKDEV(major, minor)	(((major) << 8) | (minor))
 
 /* filesystem independent mount-flags */
-#define MS_RDONLY		1	/* mount read-only */
-#define MS_REMOUNT		32	/* alter flags of a mounted FS */
+#define MS_RDONLY		0x01	/* mount read-only */
+#define MS_REMOUNT		0x20	/* alter flags of a mounted FS */
 
 /* old magic mount flag and mask */
 #define MS_MGC_VAL		0xC0ED0000
