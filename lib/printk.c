@@ -15,6 +15,7 @@
 #define LOG_BUF_LEN	4096
 #define MAX_BUF		1024	/* printk() and sprintk() size limit */
 
+static char buf[MAX_BUF];
 static char log_buf[LOG_BUF_LEN];
 static unsigned int log_count;
 
@@ -346,11 +347,10 @@ void register_console(void (*fn)(char *, unsigned int))
 void printk(const char *format, ...)
 {
 	va_list args;
-	char buffer[MAX_BUF];
 
 	va_start(args, format);
-	do_printk(buffer, format, args);
-	puts(buffer);
+	do_printk(buf, format, args);
+	puts(buf);
 	va_end(args);
 }
 
