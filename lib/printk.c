@@ -34,14 +34,15 @@ static void puts(char *buffer)
 #endif /* CONFIG_QEMU_DEBUGCON */
 		if(!tty) {
 			if(log_count < LOG_BUF_LEN) {
-				log_buf[log_count++] = *(buffer++);
+				log_buf[log_count++] = *buffer;
 			}
 		} else {
-			tty_queue_putchar(tty, &tty->write_q, *(buffer++));
+			tty_queue_putchar(tty, &tty->write_q, *buffer);
 
 			/* kernel messages must be shown immediately */
 			tty->output(tty);
 		}
+		buffer++;
 	}
 }
 
