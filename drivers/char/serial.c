@@ -692,7 +692,7 @@ void serial_init(void)
 		if(register_device(CHR_DEV, &serial_device)) {
 			printk("WARNING: %s(): unable to register serial device.\n", __FUNCTION__);
 		}
-		if(is_serial(_syscondev)) {
+		if(is_serial(kparm_syscondev)) {
 			register_console(console_flush_log_buf);
 		}
 	}

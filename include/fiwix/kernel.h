@@ -36,16 +36,16 @@ extern char *init_args;
 extern Elf32_Shdr *symtab, *strtab;
 extern unsigned int _last_data_addr;
 
-extern int _memsize;
-extern int _extmemsize;
-extern int _rootdev;
-extern int _ramdisksize;
-extern char _rootfstype[10];
-extern char _rootdevname[DEVNAME_MAX + 1];
-extern char _initrd[DEVNAME_MAX + 1];
-extern int _syscondev;
-extern char _bgaresolution[15];
-extern int _ro;
+extern int kparm_memsize;
+extern int kparm_extmemsize;
+extern int kparm_rootdev;
+extern int kparm_ramdisksize;
+extern char kparm_rootfstype[10];
+extern char kparm_rootdevname[DEVNAME_MAX + 1];
+extern char kparm_initrd[DEVNAME_MAX + 1];
+extern int kparm_syscondev;
+extern char kparm_bgaresolution[15];
+extern int kparm_ro;
 
 extern int _cputype;
 extern int _cpusignature;

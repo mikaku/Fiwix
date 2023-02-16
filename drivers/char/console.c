@@ -975,9 +975,9 @@ void console_flush_log_buf(char *buffer, unsigned int count)
 {
 	struct tty *tty;
 
-	if(!(tty = get_tty(_syscondev))) {
-		_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
-		tty = get_tty(_syscondev);
+	if(!(tty = get_tty(kparm_syscondev))) {
+		kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
+		tty = get_tty(kparm_syscondev);
 	}
 
 	while(count) {
@@ -1056,7 +1056,7 @@ void console_init(void)
 	register_device(CHR_DEV, &console_device);
 	register_device(CHR_DEV, &tty_device);
 
-	if(is_vconsole(_syscondev)) {
+	if(is_vconsole(kparm_syscondev)) {
 		register_console(console_flush_log_buf);
 	}
 }

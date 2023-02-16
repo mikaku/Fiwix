@@ -31,17 +31,18 @@
 #include <fiwix/mm.h>
 #include <fiwix/ipc.h>
 
+int kparm_memsize;
+int kparm_extmemsize;
+int kparm_rootdev;
+int kparm_ramdisksize;
+char kparm_rootfstype[10];
+char kparm_rootdevname[DEVNAME_MAX + 1];
+char kparm_initrd[DEVNAME_MAX + 1];
+int kparm_syscondev;
+char kparm_bgaresolution[15];
+int kparm_ro;
+
 unsigned int _last_data_addr;
-int _memsize;
-int _extmemsize;
-int _rootdev;
-int _ramdisksize;
-char _rootfstype[10];
-char _rootdevname[DEVNAME_MAX + 1];
-char _initrd[DEVNAME_MAX + 1];
-int _syscondev;
-char _bgaresolution[15];
-int _ro;
 char *init_args;
 
 char cmdline[NAME_MAX + 1];
@@ -65,8 +66,8 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	memset_b(&kstat, 0, sizeof(kstat));
 
 	/* default kernel values */
-	strcpy(_rootfstype, "ext2");		/* filesystem is ext2 */
-	_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
+	strcpy(kparm_rootfstype, "ext2");		/* filesystem is ext2 */
+	kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
 
 #ifdef CONFIG_QEMU_DEBUGCON
 	if(inport_b(QEMU_DEBUG_PORT) == QEMU_DEBUG_PORT) {

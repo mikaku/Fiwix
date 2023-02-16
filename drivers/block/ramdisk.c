@@ -182,12 +182,12 @@ void ramdisk_init(void)
 	int n;
 	struct ramdisk *ramdisk;
 
-	if(_ramdisksize > 0) {
+	if(kparm_ramdisksize > 0) {
 		for(n = 0; n < RAMDISK_MINORS; n++) {
 			SET_MINOR(ramdisk_device.minors, n);
-			rd_sizes[n] = _ramdisksize;
+			rd_sizes[n] = kparm_ramdisksize;
 			ramdisk = get_ramdisk(n);
-			printk("ram%d      0x%08x-0x%08x %d RAMdisk(s) of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (_ramdisksize * 1024), RAMDISK_MINORS, _ramdisksize, BLKSIZE_1K / 1024);
+			printk("ram%d      0x%08x-0x%08x %d RAMdisk(s) of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (kparm_ramdisksize * 1024), RAMDISK_MINORS, kparm_ramdisksize, BLKSIZE_1K / 1024);
 		}
 		register_device(BLK_DEV, &ramdisk_device);
 	}

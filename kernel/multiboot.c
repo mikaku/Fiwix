@@ -31,8 +31,8 @@ static int check_parm(struct kparms *parm, const char *value)
 	if(!strcmp(parm->name, "bga=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
-				strncpy(_bgaresolution, value, 14);
-				_bgaresolution[14] = '\0';
+				strncpy(kparm_bgaresolution, value, 14);
+				kparm_bgaresolution[14] = '\0';
 				return 0;
 			}
 		}
@@ -43,7 +43,7 @@ static int check_parm(struct kparms *parm, const char *value)
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
 				if(parm->sysval[n]) {
-					_syscondev = parm->sysval[n];
+					kparm_syscondev = parm->sysval[n];
 					return 0;
 				}
 				printk("WARNING: device name for '%s' is not defined!\n", parm->name);
@@ -53,7 +53,7 @@ static int check_parm(struct kparms *parm, const char *value)
 	}
 	if(!strcmp(parm->name, "initrd=")) {
 		if(value[0]) {
-			strncpy(_initrd, value, DEVNAME_MAX);
+			strncpy(kparm_initrd, value, DEVNAME_MAX);
 			return 0;
 		}
 	}
@@ -61,21 +61,21 @@ static int check_parm(struct kparms *parm, const char *value)
 		int size = atoi(value);
 		if(!size || size > RAMDISK_MAXSIZE) {
 			printk("WARNING: 'ramdisksize' value is out of limits, defaulting to 4096KB.\n");
-			_ramdisksize = 0;
+			kparm_ramdisksize = 0;
 		} else {
-			_ramdisksize = size;
+			kparm_ramdisksize = size;
 		}
 		return 0;
 	}
 	if(!strcmp(parm->name, "ro")) {
-		_ro = 1;
+		kparm_ro = 1;
 		return 0;
 	}
 	if(!strcmp(parm->name, "root=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
-				_rootdev = parm->sysval[n];
-				strncpy(_rootdevname, value, DEVNAME_MAX);
+				kparm_rootdev = parm->sysval[n];
+				strncpy(kparm_rootdevname, value, DEVNAME_MAX);
 				return 0;
 			}
 		}
@@ -84,7 +84,7 @@ static int check_parm(struct kparms *parm, const char *value)
 	if(!strcmp(parm->name, "rootfstype=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
-				strncpy(_rootfstype, value, sizeof(_rootfstype));
+				strncpy(kparm_rootfstype, value, sizeof(kparm_rootfstype));
 				return 0;
 			}
 		}
@@ -174,8 +174,8 @@ static void parse_bgaresolution(void)
 	n = 0;
 	for(;;) {
 		p = &str[0];
-		while(_bgaresolution[n] && _bgaresolution[n] != 'x') {
-			*p = _bgaresolution[n];
+		while(kparm_bgaresolution[n] && kparm_bgaresolution[n] != 'x') {
+			*p = kparm_bgaresolution[n];
 			p++;
 			n++;
 		}
@@ -257,8 +257,8 @@ void multiboot(unsigned long magic, unsigned long info)
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", (unsigned long int)magic);
 		memset_b(&mbi, 0, sizeof(struct multiboot_info));
-		_memsize = 640;
-		_extmemsize = 3072;
+		kparm_memsize = 640;
+		kparm_extmemsize = 3072;
 		bios_map_init(NULL, 0);
 		video.columns = 80;
 		video.lines = 25;
@@ -276,8 +276,8 @@ void multiboot(unsigned long magic, unsigned long info)
 	if(!(mbi.flags & MULTIBOOT_INFO_MEMORY)) {
 		printk("WARNING: values in mem_lower and mem_upper are not valid!\n");
 	}
-	_memsize = (unsigned int)mbi.mem_lower;
-	_extmemsize = (unsigned int)mbi.mem_upper;
+	kparm_memsize = (unsigned int)mbi.mem_lower;
+	kparm_extmemsize = (unsigned int)mbi.mem_upper;
 
 
 	if(mbi.flags & MULTIBOOT_INFO_CMDLINE) {
@@ -308,7 +308,7 @@ void multiboot(unsigned long magic, unsigned long info)
 
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;
 		for(n = 0; n < mbi.mods_count; n++, mod++) {
-			if(!strcmp((char *)mod->cmdline, _initrd)) {
+			if(!strcmp((char *)mod->cmdline, kparm_initrd)) {
 				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
 				ramdisk_table[0].addr = (char *)mod->mod_start;
 			}
@@ -359,7 +359,7 @@ void multiboot(unsigned long magic, unsigned long info)
 	}
 
 #ifdef CONFIG_BGA
-	if(*_bgaresolution) {
+	if(*kparm_bgaresolution) {
 		video.flags = VPF_VESAFB;
 		parse_bgaresolution();
 		video.fb_char_width = 8;

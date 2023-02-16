@@ -44,7 +44,7 @@ void bga_init(void)
 	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
 		return;
 	}
-	if(!(*_bgaresolution)) {
+	if(!(*kparm_bgaresolution)) {
 		return;
 	}
 

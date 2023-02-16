@@ -223,27 +223,27 @@ int mount_root(void)
 	 * check if '_rootdev' is a device successfully registered.
 	 */
 
-	if(!_rootdev) {
+	if(!kparm_rootdev) {
 		PANIC("root device not defined.\n");
 	}
 
-	if(!(fs = get_filesystem(_rootfstype))) {
-		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'minix'.\n", __FUNCTION__, _rootfstype);
+	if(!(fs = get_filesystem(kparm_rootfstype))) {
+		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'minix'.\n", __FUNCTION__, kparm_rootfstype);
 		if(!(fs = get_filesystem("minix"))) {
 			PANIC("minix filesystem is not registered!\n");
 		}
 	}
 
-	if(!(mp = add_mount_point(_rootdev, "/dev/root", "/"))) {
+	if(!(mp = add_mount_point(kparm_rootdev, "/dev/root", "/"))) {
 		PANIC("unable to get a free mount point.\n");
 	}
 
-	if(_ro) {
+	if(kparm_ro) {
 		mp->sb.flags = MS_RDONLY;
 	}
 	if(fs->fsop && fs->fsop->read_superblock) {
-		if(fs->fsop->read_superblock(_rootdev, &mp->sb)) {
-			PANIC("unable to mount root filesystem on %s.\n", _rootdevname);
+		if(fs->fsop->read_superblock(kparm_rootdev, &mp->sb)) {
+			PANIC("unable to mount root filesystem on %s.\n", kparm_rootdevname);
 		}
 	}
 

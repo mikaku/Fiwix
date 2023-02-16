@@ -208,7 +208,7 @@ struct tty *get_tty(__dev_t dev)
 
 	/* /dev/console = system console */
 	if(dev == MKDEV(SYSCON_MAJOR, 1)) {
-		dev = (__dev_t)_syscondev;
+		dev = (__dev_t)kparm_syscondev;
 	}
 
 	/* /dev/tty0 = current virtual console */
@@ -436,7 +436,7 @@ int tty_open(struct inode *i, struct fd *fd_table)
 
 	if(!(tty = get_tty(i->rdev))) {
 		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		printk("_syscondev = %x\n", _syscondev);
+		printk("_syscondev = %x\n", kparm_syscondev);
 		return -ENXIO;
 	}
 

@@ -140,12 +140,12 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 	} else {
 		printk("WARNING: your BIOS has not provided a memory map.\n");
 		bios_mem_map[0].from = 0;
-		bios_mem_map[0].to = _memsize * 1024;
+		bios_mem_map[0].to = kparm_memsize * 1024;
 		bios_mem_map[0].type = MULTIBOOT_MEMORY_AVAILABLE;
 		bios_mem_map[1].from = 0x00100000;
-		bios_mem_map[1].to = (_extmemsize + 1024) * 1024;
+		bios_mem_map[1].to = (kparm_extmemsize + 1024) * 1024;
 		bios_mem_map[1].type = MULTIBOOT_MEMORY_AVAILABLE;
-		kstat.physical_pages = (_extmemsize + 1024) >> 2;
+		kstat.physical_pages = (kparm_extmemsize + 1024) >> 2;
 	}
 
 	/*
