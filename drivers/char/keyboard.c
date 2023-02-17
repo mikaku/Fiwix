@@ -692,6 +692,9 @@ void irq_keyboard(int num, struct sigcontext *sc)
 						case 'l':
 							sysrq_op = SYSRQ_STACK;
 							break;
+						case 'm':
+							sysrq_op = SYSRQ_MEMORY;
+							break;
 						case 't':
 							sysrq_op = SYSRQ_TASKS;
 							break;

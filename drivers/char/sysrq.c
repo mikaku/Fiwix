@@ -23,6 +23,20 @@ static const char *pstate[] = {
 	"D"
 };
 
+static void memory(void)
+{
+	char *buf;
+
+	buf = (char *)kmalloc();
+	data_proc_meminfo(buf, 0);
+	printk("%s", buf);
+	printk("\n");
+	data_proc_buddyinfo(buf, 0);
+	printk("%s", buf);
+	printk("\n");
+	kfree((unsigned int)buf);
+}
+
 static void process_list(void)
 {
 	struct proc *p;
@@ -39,7 +53,7 @@ static void process_list(void)
 			if(p->state == PROC_SLEEPING) {
 				printk("0x%08x ", p->sleep_address);
 			} else {
-				printk("           ", p->sleep_address);
+				printk("           ");
 			}
 			printk("%s\n", p->argv0);
 		}
@@ -60,6 +74,10 @@ void do_sysrq(int op)
 		case SYSRQ_STACK:
 			printk("sysrq: Stack backtrace.\n");
 			stack_backtrace();
+			break;
+		case SYSRQ_MEMORY:
+			printk("sysrq: Memory information.\n");
+			memory();
 			break;
 		case SYSRQ_TASKS:
 			printk("sysrq: Task list.\n");
