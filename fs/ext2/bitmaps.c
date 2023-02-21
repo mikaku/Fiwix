@@ -11,6 +11,7 @@
 #include <fiwix/filesystems.h>
 #include <fiwix/fs_ext2.h>
 #include <fiwix/buffer.h>
+#include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/stat.h>
 #include <fiwix/stdio.h>
