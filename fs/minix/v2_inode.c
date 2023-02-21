@@ -15,6 +15,7 @@
 #include <fiwix/stat.h>
 #include <fiwix/sched.h>
 #include <fiwix/buffer.h>
+#include <fiwix/mm.h>
 #include <fiwix/process.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
@@ -220,6 +221,7 @@ void v2_minix_ifree(struct inode *i)
 	int errno;
 	struct superblock *sb;
 
+	invalidate_inode_pages(i);
 	minix_truncate(i, 0);
 
 	sb = i->sb;
