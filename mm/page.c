@@ -264,6 +264,19 @@ int is_valid_page(int page)
 	return (page >= 0 && page < NR_PAGES);
 }
 
+void invalidate_inode_pages(struct inode *i)
+{
+	struct page *pg;
+	__off_t offset;
+
+	for(offset = 0; offset < i->i_size; offset += PAGE_SIZE) {
+		if((pg = search_page_hash(i, offset))) {
+			release_page(pg->page);
+			remove_from_hash(pg);
+		}
+	}
+}
+
 void update_page_cache(struct inode *i, __off_t offset, const char *buf, int count)
 {
 	__off_t poffset;

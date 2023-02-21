@@ -164,6 +164,7 @@ void ext2_ifree(struct inode *i)
 	}
 
 	if(i->i_blocks) {
+		invalidate_inode_pages(i);
 		ext2_truncate(i, 0);
 	}
 
