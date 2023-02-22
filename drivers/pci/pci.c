@@ -10,10 +10,11 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/pci.h>
+#include <fiwix/mm.h>
 
 #ifdef CONFIG_PCI
 
-struct pci_device pci_device_table[NR_PCI_DEVICES];
+struct pci_device *pci_device_table = NULL;
 
 /* supported device classes only */
 static const char *pci_get_strclass(unsigned short int class)
@@ -79,26 +80,33 @@ static int is_mechanism_1_supported(void)
 	return 0;
 }
 
-static void pci_add_device(int bus, int dev, int func, struct pci_device *pci_dev)
+static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_dev)
 {
-	int n;
+	unsigned long int flags;
+	struct pci_device *pdt;
 
-	for(n = 0; n < NR_PCI_DEVICES; n++) {
-		if(!pci_device_table[n].vendor_id) {
-
-			/* fill in the rest of fields */
-			pci_dev->command = pci_read_short(bus, dev, func, PCI_COMMAND);
-			pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
-			pci_dev->rev = pci_read_char(bus, dev, func, PCI_REVISION_ID);
-			pci_dev->prog_if = pci_read_char(bus, dev, func, PCI_PROG_IF);
-			/* BARs are special, they must be handled by the driver */
-			pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
-			pci_device_table[n] = *pci_dev;
-			return;
-		}
+	if(!(pdt = (struct pci_device *)kmalloc2(sizeof(struct pci_device)))) {
+		return;
 	}
+	memset_b(pdt, 0, sizeof(struct pci_device));
 
-	printk("WARNING: %s() no more PCI slots free.\n", __FUNCTION__);
+	pci_dev->command = pci_read_short(bus, dev, func, PCI_COMMAND);
+	pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
+	pci_dev->rev = pci_read_char(bus, dev, func, PCI_REVISION_ID);
+	pci_dev->prog_if = pci_read_char(bus, dev, func, PCI_PROG_IF);
+	/* BARs are special, they must be handled by the driver */
+	pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
+	*pdt = *pci_dev;
+
+	SAVE_FLAGS(flags); CLI();
+	if(!pci_device_table) {
+		pci_device_table = pdt;
+	} else {
+		pdt->prev = pci_device_table->prev;
+		pci_device_table->prev->next = pdt;
+	}
+	pci_device_table->prev = pdt;
+	RESTORE_FLAGS(flags);
 }
 
 static void scan_bus(void)
@@ -144,7 +152,7 @@ static void scan_bus(void)
 					pci_dev.class = class;
 					pci_dev.header = header;
 					pci_dev.irq = irq;
-					pci_add_device(b, d, f, &pci_dev);
+					add_pci_device(b, d, f, &pci_dev);
 				}
 				if(!f && !(header & 0x80)) {
 					break;	/* no more functions in this device */
@@ -230,13 +238,15 @@ void pci_show_desc(struct pci_device *pci_dev)
 
 struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short int device_id)
 {
-	int n;
+	struct pci_device *pdt;
 
-	for(n = 0; n < NR_PCI_DEVICES; n++) {
-		if(pci_device_table[n].vendor_id == vendor_id &&
-		   pci_device_table[n].device_id == device_id) {
-			return &pci_device_table[n];
+	pdt = pci_device_table;
+
+	while(pdt) {
+		if(pdt->vendor_id == vendor_id && pdt->device_id == device_id) {
+			return pdt;
 		}
+		pdt = pdt->next;
 	}
 
 	return NULL;
@@ -250,8 +260,6 @@ void pci_init(void)
 
 	printk("pci       0x%04x-0x%04x", PCI_ADDRESS, PCI_DATA + sizeof(unsigned int) - 1);
 	printk("     -\tscanning %d buses, configuration type=1\n", PCI_MAX_BUS);
-
-	memset_b(pci_device_table, 0, sizeof(pci_device_table));
 	scan_bus();
 }
 

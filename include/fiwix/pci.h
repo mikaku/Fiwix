@@ -12,8 +12,6 @@
 
 #include <fiwix/pci_ids.h>
 
-#define NR_PCI_DEVICES	10	/* maximum number of PCI devices */
-
 #define PCI_ADDRESS	0x0CF8
 #define PCI_DATA	0x0CFC
 
@@ -74,7 +72,6 @@ struct pci_device {
 	unsigned char bus;
 	unsigned char dev;
 	unsigned char func;
-
 	unsigned short int vendor_id;
 	unsigned short int device_id;
 	unsigned short int command;
@@ -86,10 +83,11 @@ struct pci_device {
 	unsigned int bar[6];
 	unsigned char irq;
 	unsigned char pin;
-
 	unsigned int size[6];
+	struct pci_device *prev;
+	struct pci_device *next;
 };
-extern struct pci_device pci_device_table[NR_PCI_DEVICES];
+extern struct pci_device *pci_device_table;
 
 unsigned char pci_read_char(int, int, int, int);
 unsigned short int pci_read_short(int, int, int, int);
