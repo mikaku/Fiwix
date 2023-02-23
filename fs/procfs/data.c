@@ -216,17 +216,19 @@ int data_proc_loadavg(char *buffer, __pid_t pid)
 
 int data_proc_locks(char *buffer, __pid_t pid)
 {
-	int n, size;
 	struct flock_file *ff;
+	int n, size;
 
-	size = 0;
+	n = size = 0;
+	ff = flock_file_table;
 
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
+	while(ff) {
 		if(ff->inode) {
 			size += sprintk(buffer + size, "%d: FLOCK  ADVISORY  %s ", n + 1, ff->type & LOCK_SH ? "READ " : "WRITE");
 			size += sprintk(buffer + size, "%d %x:%d:%d 0 EOF\n", ff->proc->pid, MAJOR(ff->inode->dev), MINOR(ff->inode->dev), ff->inode->inode);
 		}
+		n++;
+		ff = ff->next;
 	}
 
 	return size;

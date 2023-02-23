@@ -93,6 +93,7 @@ struct kernel_stat {
 	int nr_dirty_buffers;		/* current dirty buffers */
 	unsigned long int random_seed;	/* next random seed */
 	int pages_reclaimed;		/* last pages reclaimed from buffer */
+	int nr_flocks;			/* current allocated file locks */
 
 	/* buddy_low algorithm statistics */
 	int buddy_low_count[BUDDY_MAX_LEVEL + 1];

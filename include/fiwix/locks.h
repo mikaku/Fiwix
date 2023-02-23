@@ -13,17 +13,17 @@
 #include <fiwix/fcntl.h>
 
 struct flock_file {
-	struct inode *inode;	/* file */
-	unsigned char type;	/* type of lock */
-	struct proc *proc;	/* owner */
+	struct inode *inode;		/* file */
+	unsigned char type;		/* type of lock */
+	struct proc *proc;		/* owner */
+	struct flock_file *prev;
+	struct flock_file *next;
 };
 
-extern struct flock_file flock_file_table[NR_FLOCKS];
+extern struct flock_file *flock_file_table;
 
 int posix_lock(int, int, struct flock *);
-
 void flock_release_inode(struct inode *);
 int flock_inode(struct inode *, int);
-void flock_init(void);
 
 #endif /* _FIWIX_LOCKS_H */

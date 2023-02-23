@@ -107,7 +107,6 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 	sched_init();
 	inode_init();
 	fd_init();
-	flock_init();
 
 #ifdef CONFIG_SYSVIPC
 	ipc_init();

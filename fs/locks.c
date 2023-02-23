@@ -5,62 +5,99 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
+#include <fiwix/kernel.h>
 #include <fiwix/errno.h>
 #include <fiwix/types.h>
 #include <fiwix/locks.h>
 #include <fiwix/fs.h>
+#include <fiwix/mm.h>
 #include <fiwix/sleep.h>
 #include <fiwix/sched.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct flock_file flock_file_table[NR_FLOCKS];
+struct flock_file *flock_file_table = NULL;
 
 static struct resource flock_resource = { 0, 0 };
 
 static struct flock_file *get_new_flock(struct inode *i)
 {
-	int n;
 	struct flock_file *ff;
+
+	if(kstat.nr_flocks + 1 > NR_FLOCKS) {
+		printk("WARNING: tried to exceed NR_FLOCKS (%d).\n", NR_FLOCKS);
+		return NULL;
+	}
+
+	if(!(ff = (struct flock_file *)kmalloc2(sizeof(struct flock_file)))) {
+		return NULL;
+	}
+	memset_b(ff, 0, sizeof(struct flock_file));
 
 	lock_resource(&flock_resource);
 
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
-		if(!ff->inode) {
-			ff->inode = i;	/* mark it as busy */
-			unlock_resource(&flock_resource);
-			return ff;
-		}
-	}
+	ff->inode = i;	/* mark it as busy */
 
-	printk("WARNING: %s(): no more free slots in flock file table.\n");
+	if(!flock_file_table) {
+		flock_file_table = ff;
+	} else {
+		ff->prev = flock_file_table->prev;
+		flock_file_table->prev->next = ff;
+	}
+	flock_file_table->prev = ff;
+
 	unlock_resource(&flock_resource);
-	return NULL;
+	kstat.nr_flocks++;
+
+	return ff;
 }
 
 static void release_flock(struct flock_file *ff)
 {
-	memset_b(ff, 0, sizeof(struct flock_file));
+	unsigned long int flags;
+	struct flock_file *tmp;
+
+	tmp = ff;
+
+	if(!ff->next && !ff->prev) {
+		printk("WARNING: %s(): trying to release an unexistent flock.\n", __FUNCTION__);
+		return;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if(ff->next) {
+		ff->next->prev = ff->prev;
+	}
+	if(ff->prev) {
+		if(ff != flock_file_table) {
+			ff->prev->next = ff->next;
+		}
+	}
+	if(!ff->next) {
+		flock_file_table->prev = ff->prev;
+	}
+	if(ff == flock_file_table) {
+		flock_file_table = ff->next;
+	}
+	RESTORE_FLAGS(flags);
+
+	kfree2((unsigned int)tmp);
+	kstat.nr_flocks--;
 }
 
 static struct flock_file *get_flock_file(struct inode *i, struct proc *p)
 {
-	int n;
 	struct flock_file *ff;
 
 	lock_resource(&flock_resource);
+	ff = flock_file_table;
 
-	ff = NULL;
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
-		if(ff->inode != i) {
-			continue;
+	while(ff) {
+		if(ff->inode == i && p && p == ff->proc) {
+			break;
 		}
-		if(p && p != ff->proc) {
-			continue;
-		}
-		break;
+		ff = ff->next;
 	}
 	unlock_resource(&flock_resource);
 	return ff;
@@ -68,23 +105,24 @@ static struct flock_file *get_flock_file(struct inode *i, struct proc *p)
 
 int posix_lock(int ufd, int cmd, struct flock *fl)
 {
-	int n;
 	struct flock_file *ff;
 	struct inode *i;
 	unsigned char type;
 
 	lock_resource(&flock_resource);
+	ff = flock_file_table;
 	i = fd_table[current->fd[ufd]].inode;
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
-		if(ff->inode != i) {
-			continue;
+
+	while(ff) {
+		if(ff->inode == i) {
+			break;;
 		}
-		break;
+		ff = ff->next;
 	}
 	unlock_resource(&flock_resource);
+
 	if(cmd == F_GETLK) {
-		if(ff->inode == i) {
+		if(ff && ff->inode == i) {
 			fl->l_type = (ff->type & LOCK_SH) ? F_RDLCK : F_WRLCK;
 			fl->l_whence = SEEK_SET;
 			fl->l_start = 0;
@@ -119,27 +157,23 @@ int posix_lock(int ufd, int cmd, struct flock *fl)
 
 void flock_release_inode(struct inode *i)
 {
-	int n;
 	struct flock_file *ff;
 
 	lock_resource(&flock_resource);
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
-		if(ff->inode != i) {
-			continue;
+	ff = flock_file_table;
+
+	while(ff) {
+		if(ff->inode == i && ff->proc == current) {
+			wakeup(ff);
+			release_flock(ff);
 		}
-		if(ff->proc != current) {
-			continue;
-		}
-		wakeup(ff);
-		release_flock(ff);
+		ff = ff->next;
 	}
 	unlock_resource(&flock_resource);
 }
 
 int flock_inode(struct inode *i, int op)
 {
-	int n;
 	struct flock_file *ff, *new;
 
 	if(op & LOCK_UN) {
@@ -152,18 +186,32 @@ int flock_inode(struct inode *i, int op)
 
 loop:
 	lock_resource(&flock_resource);
+	ff = flock_file_table;
 	new = NULL;
-	for(n = 0; n < NR_FLOCKS; n++) {
-		ff = &flock_file_table[n];
-		if(ff->inode != i) {
-			continue;
-		}
-		if(op & LOCK_SH) {
-			if(ff->type & LOCK_EX) {
+	while(ff) {
+		if(ff->inode == i) {
+			if(op & LOCK_SH) {
+				if(ff->type & LOCK_EX) {
+					if(ff->proc == current) {
+						new = ff;
+						wakeup(ff);
+						break;
+					}
+					unlock_resource(&flock_resource);
+					if(op & LOCK_NB) {
+						return -EWOULDBLOCK;
+					}
+					if(sleep(ff, PROC_INTERRUPTIBLE)) {
+						return -EINTR;
+					}
+					goto loop;
+				}
+			}
+			if(op & LOCK_EX) {
 				if(ff->proc == current) {
 					new = ff;
-					wakeup(ff);
-					break;
+					ff = ff->next;
+					continue;
 				}
 				unlock_resource(&flock_resource);
 				if(op & LOCK_NB) {
@@ -175,20 +223,7 @@ loop:
 				goto loop;
 			}
 		}
-		if(op & LOCK_EX) {
-			if(ff->proc == current) {
-				new = ff;
-				continue;
-			}
-			unlock_resource(&flock_resource);
-			if(op & LOCK_NB) {
-				return -EWOULDBLOCK;
-			}
-			if(sleep(ff, PROC_INTERRUPTIBLE)) {
-				return -EINTR;
-			}
-			goto loop;
-		}
+		ff = ff->next;
 	}
 	unlock_resource(&flock_resource);
 
@@ -202,9 +237,4 @@ loop:
 	new->proc = current;
 
 	return 0;
-}
-
-void flock_init(void)
-{
-	memset_b(flock_file_table, 0, sizeof(flock_file_table));
 }
