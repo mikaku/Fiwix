@@ -97,6 +97,7 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 	/* BARs are special, they must be handled by the driver */
 	pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
 	*pdt = *pci_dev;
+	pdt->next = NULL;
 
 	SAVE_FLAGS(flags); CLI();
 	if(!pci_device_table) {
