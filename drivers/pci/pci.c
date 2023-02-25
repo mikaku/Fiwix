@@ -88,7 +88,6 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 	if(!(pdt = (struct pci_device *)kmalloc2(sizeof(struct pci_device)))) {
 		return;
 	}
-	memset_b(pdt, 0, sizeof(struct pci_device));
 
 	pci_dev->command = pci_read_short(bus, dev, func, PCI_COMMAND);
 	pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
@@ -144,6 +143,7 @@ static void scan_bus(void)
 					printk(" - %s\n", "Unknown");
 				} else {
 					printk(" - %s\n", name);
+					memset_b(&pci_dev, 0, sizeof(struct pci_device));
 					pci_dev.bus = b;
 					pci_dev.dev = d;
 					pci_dev.func = f;
