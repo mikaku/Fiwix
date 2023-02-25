@@ -82,7 +82,6 @@ static int is_mechanism_1_supported(void)
 
 static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_dev)
 {
-	unsigned long int flags;
 	struct pci_device *pdt;
 
 	if(!(pdt = (struct pci_device *)kmalloc2(sizeof(struct pci_device)))) {
@@ -97,7 +96,6 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 	pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
 	*pdt = *pci_dev;
 
-	SAVE_FLAGS(flags); CLI();
 	if(!pci_device_table) {
 		pci_device_table = pdt;
 	} else {
@@ -105,7 +103,6 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 		pci_device_table->prev->next = pdt;
 	}
 	pci_device_table->prev = pdt;
-	RESTORE_FLAGS(flags);
 }
 
 static void scan_bus(void)
