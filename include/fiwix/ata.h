@@ -299,11 +299,10 @@ void ata_delay(void);
 void ata_wait400ns(struct ide *);
 int ata_io(struct ide *, struct ata_drv *, __off_t, int);
 int ata_wait_irq(struct ide *, int, int);
-void ata_setup_dma(struct ide *, struct ata_drv *, char *, int);
-void ata_start_dma(struct ide *, struct ata_drv *, int);
-void ata_stop_dma(struct ide *, struct ata_drv *);
 int ata_select_drv(struct ide *, int, int, unsigned char);
 struct ide *get_ide_controller(__dev_t);
+void ide_table_init(struct ide *, int);
+int ata_channel_init(struct ide *);
 
 int ata_open(struct inode *, struct fd *);
 int ata_close(struct inode *, struct fd *);

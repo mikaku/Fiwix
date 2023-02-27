@@ -7,6 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/ata.h>
+#include <fiwix/ata_pci.h>
 #include <fiwix/ata_hd.h>
 #include <fiwix/atapi_cd.h>
 #include <fiwix/devices.h>
@@ -67,14 +68,7 @@ static struct fs_operations ata_driver_fsop = {
 
 struct ide *ide_table;
 
-#ifdef CONFIG_PCI
-static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1, 5 },	/* 82371SB PIIX3 [Natoma/Triton II] */
-	{ 0, 0 }
-};
-#endif /* CONFIG_PCI */
-
-struct ide default_ide_table[NR_IDE_CTRLS] = {
+static struct ide default_ide_table[NR_IDE_CTRLS] = {
 	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, 0, IDE0_IRQ, 0, 0, &ide0_timer, 0, { 0, 0 },
 		{
 			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} },
@@ -453,7 +447,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	} else {
 		printk(", 16bit");
 	}
-	printk(", %d sectors/blk", drive->multi);
+	printk(", multi %d", drive->multi);
 
 	if(drive->ident.capabilities & ATA_HAS_LBA) {
 		drive->flags |= DRIVE_REQUIRES_LBA;
@@ -618,55 +612,6 @@ static int ata_softreset(struct ide *ide)
 	}
 
 	return error;
-}
-
-static int ide_channel_init(struct ide *ide)
-{
-	int drv_num;
-	int devices, errno;
-	struct ata_drv *drive;
-
-	if(!register_irq(ide->irq, &irq_config_ide[ide->channel])) {
-		enable_irq(ide->irq);
-	}
-
-	errno = ata_softreset(ide);
-	devices = 0;
-	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
-		/*
-		 * ata_softreset() returns error in the low nibble
-		 * for master devices, and in the high nibble for
-		 * slave devices.
-		 */
-		if(!(errno & (1 << (drv_num * 4)))) {
-			drive = &ide->drive[drv_num];
-			if(!(identify_drive(ide, drive))) {
-				get_device_size(drive);
-				show_capabilities(ide, drive);
-				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
-				if(!devices) {
-					register_device(BLK_DEV, &ide_device[ide->channel]);
-				}
-				if(drive->flags & DRIVE_IS_DISK) {
-					if(!ata_hd_init(ide, drive)) {
-						devices++;
-					}
-				}
-				if(drive->flags & DRIVE_IS_CDROM) {
-					if(!ata_cd_init(ide, drive)) {
-						devices++;
-					}
-				}
-			}
-		}
-	}
-
-	if(!devices) {
-		disable_irq(ide->irq);
-		unregister_irq(ide->irq, &irq_config_ide[ide->channel]);
-	}
-
-	return devices;
 }
 
 static void sector2chs(__off_t offset, int *cyl, int *head, int *sector, struct ata_drv_ident *ident)
@@ -843,35 +788,6 @@ int ata_wait_irq(struct ide *ide, int timeout, int cmd)
 	return 0;
 }
 
-#ifdef CONFIG_PCI
-void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int datalen)
-{
-	struct prd *prd_table = &drive->xfer.prd_table;
-
-	prd_table->addr = (unsigned int)V2P(buffer);
-	prd_table->size = datalen;
-	prd_table->eot = PRDT_MARK_END;
-	outport_l(ide->bm + drive->xfer.bm_prd_addr, V2P((unsigned int)prd_table));
-
-	/* clear Error and Interrupt bits */
-	outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_ERROR | BM_STATUS_INTR);
-}
-
-void ata_start_dma(struct ide *ide, struct ata_drv *drive, int mode)
-{
-	outport_b(ide->bm + drive->xfer.bm_command, BM_COMMAND_START | mode);
-}
-
-void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
-{
-	int status;
-
-	status = inport_b(ide->bm + drive->xfer.bm_status);
-	outport_b(ide->bm + drive->xfer.bm_command, 0);	/* stop bus master */
-	outport_b(ide->bm + drive->xfer.bm_status, status);
-}
-#endif /* CONFIG_PCI */
-
 int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_head)
 {
 	int n, status;
@@ -898,6 +814,7 @@ int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_hea
 		}
 		break;
 	}
+
 	return status;
 }
 
@@ -915,6 +832,61 @@ struct ide *get_ide_controller(__dev_t dev)
 		}
 	}
 	return &ide_table[controller];
+}
+
+/* set default values */
+void ide_table_init(struct ide *ide, int channel)
+{
+	memcpy_b(ide, &default_ide_table[channel], sizeof(struct ide));
+}
+
+int ata_channel_init(struct ide *ide)
+{
+	int drv_num;
+	int devices, errno;
+	struct ata_drv *drive;
+
+	if(!register_irq(ide->irq, &irq_config_ide[ide->channel])) {
+		enable_irq(ide->irq);
+	}
+
+	errno = ata_softreset(ide);
+	devices = 0;
+	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
+		/*
+		 * ata_softreset() returns error in the low nibble
+		 * for master devices, and in the high nibble for
+		 * slave devices.
+		 */
+		if(!(errno & (1 << (drv_num * 4)))) {
+			drive = &ide->drive[drv_num];
+			if(!(identify_drive(ide, drive))) {
+				get_device_size(drive);
+				show_capabilities(ide, drive);
+				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
+				if(!devices) {
+					register_device(BLK_DEV, &ide_device[ide->channel]);
+				}
+				if(drive->flags & DRIVE_IS_DISK) {
+					if(!ata_hd_init(ide, drive)) {
+						devices++;
+					}
+				}
+				if(drive->flags & DRIVE_IS_CDROM) {
+					if(!ata_cd_init(ide, drive)) {
+						devices++;
+					}
+				}
+			}
+		}
+	}
+
+	if(!devices) {
+		disable_irq(ide->irq);
+		unregister_irq(ide->irq, &irq_config_ide[ide->channel]);
+	}
+
+	return devices;
 }
 
 int ata_open(struct inode *i, struct fd *fd_table)
@@ -1021,107 +993,6 @@ int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return -EINVAL;
 }
 
-#ifdef CONFIG_PCI
-static int ide_pci(struct ide *ide)
-{
-	struct pci_device *pci_dev;
-	int bus, dev, func, bar;
-	int channel, found;
-	int size;
-
-	/* FIXME: this driver supports one PCI card only */
-	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
-		return 0;
-	}
-
-	bus = pci_dev->bus;
-	dev = pci_dev->dev;
-	func = pci_dev->func;
-
-	/* disable I/O space and address space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY));
-
-	for(bar = 0; bar < supported[0].bars; bar++) {
-		pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-		if(pci_dev->bar[bar]) {
-			pci_dev->size[bar] = pci_get_barsize(bus, dev, func, bar);
-		}
-	}
-
-	/* enable I/O space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
-
-	for(found = 0, channel = 0; channel < NR_IDE_CTRLS; channel++, ide++) {
-		bar = channel * 2;
-		printk("ide%d	  ", channel);
-		if(pci_dev->bar[bar]) {
-			if((pci_dev->bar[bar] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM ||
-			   (pci_dev->bar[bar + 1] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM ||
-			   (pci_dev->bar[4 + (channel * 8)] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
-				printk("MMIO-based BAR registers are not supported, channel discarded.\n");
-				continue;
-			}
-		}
-		found++;
-		memcpy_b(ide, &default_ide_table[channel], sizeof(struct ide));
-		size = IDE_BASE_LEN;
-		if(pci_dev->bar[bar]) {
-			if(pci_dev->prog_if & 0xF) {
-				ide->base = pci_dev->bar[bar] & 0xFFFC;
-				ide->ctrl = pci_dev->bar[bar + 1] & 0xFFFC;
-				ide->irq = pci_dev->irq;
-				size = pci_dev->size[bar];
-			}
-		}
-		printk("0x%04x-0x%04x    %d\t", ide->base, ide->base + size, ide->irq);
-		switch(pci_dev->prog_if & 0xF) {
-			case 0:
-				printk("ISA IDE controller in compatibility mode-only\n");
-				break;
-			/*
-			case 0x5:
-				printk("PCI IDE controller in native mode-only\n");
-				break;
-			*/
-			case 0xA:
-				printk("ISA IDE controller in compatibility mode,\n");
-				printk("\t\t\t\tsupports both channels switched to PCI native mode\n");
-				break;
-			/*
-			case 0xF:
-				printk("PCI IDE controller in native mode,\n");
-				printk("\t\t\t\tsupports both channels switched to ISA compatibility mode\n");
-				break;
-			*/
-		}
-		if(pci_dev->prog_if & 0x80) {
-			ide->bm = (pci_dev->bar[4] + (channel * 8)) & 0xFFFC;
-			printk("\t\t\t\tbus master at 0x%x\n", ide->bm);
-			/* enable bus master */
-			pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_MASTER);
-			ide->pci_dev = pci_dev;
-
-			/* set PCI Latency Timer and transfers timing */
-			switch(pci_dev->device_id) {
-				case PCI_DEVICE_ID_INTEL_82371SB_1:
-					pci_write_char(bus, dev, func, PCI_LATENCY_TIMER, 64);
-					/* from the book 'FYSOS: Media Storage Devices', Appendix F */
-					pci_write_short(bus, dev, func, 0x40, 0xA344);
-					pci_write_short(bus, dev, func, 0x42, 0xA344);
-					break;
-			}
-		}
-
-		pci_show_desc(pci_dev);
-		if(!ide_channel_init(ide)) {
-			printk("\t\t\t\tno drives detected\n");
-		}
-	}
-
-	return found;
-}
-#endif /* CONFIG_PCI */
-
 void ata_init(void)
 {
 	int channel;
@@ -1137,7 +1008,7 @@ void ata_init(void)
 	channel = 0;
 
 #ifdef CONFIG_PCI
-	channel = ide_pci(ide_table);
+	channel = ata_pci(ide_table);
 #endif /* CONFIG_PCI */
 
 	/* ISA addresses are discarded if ide_pci() found a controller */
@@ -1147,7 +1018,7 @@ void ata_init(void)
 		memcpy_b(ide, &default_ide_table[channel], sizeof(struct ide));
 		printk("ide%d	  0x%04x-0x%04x    %d\t", channel, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 		printk("ISA IDE controller\n");
-		if(!ide_channel_init(ide)) {
+		if(!ata_channel_init(ide)) {
 			printk("\t\t\t\tno drives detected\n");
 		}
 		channel++;

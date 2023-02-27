@@ -8,6 +8,7 @@
 #include <fiwix/asm.h>
 #include <fiwix/buffer.h>
 #include <fiwix/ata.h>
+#include <fiwix/ata_pci.h>
 #include <fiwix/ata_hd.h>
 #include <fiwix/ioctl.h>
 #include <fiwix/devices.h>
@@ -162,7 +163,9 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 #endif /* CONFIG_PCI */
 
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, drive->xfer.read_cmd)) {
+#ifdef CONFIG_PCI
 			ata_stop_dma(ide, drive);
+#endif /* CONFIG_PCI */
 			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			unlock_resource(&ide->resource);
 			return -EIO;
@@ -431,9 +434,9 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	}
 
 	/* show disk partition summary */
+	printk("\t\t\t\tpartition summary: ");
 	read_msdos_partition(rdev, part);
 	assign_minors(rdev, drive, part);
-	printk("\t\t\t\tpartition summary: ");
 	for(n = 0; n < NR_PARTITIONS; n++) {
 		/* status values other than 0x00 and 0x80 are invalid */
 		if(part[n].status && part[n].status != 0x80) {
