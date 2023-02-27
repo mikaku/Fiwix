@@ -63,8 +63,8 @@
 #define BM_STATUS_SIMPLEX	0x80	/* simplex only */
 
 struct pci_supported_devices {
-	unsigned short vendor_id;
-	unsigned short device_id;
+	unsigned short int vendor_id;
+	unsigned short int device_id;
 	int bars;
 };
 
@@ -95,7 +95,7 @@ unsigned int pci_read_long(int, int, int, int);
 void pci_write_char(int, int, int, int, unsigned char);
 void pci_write_short(int, int, int, int, unsigned short int);
 void pci_write_long(int, int, int, int, unsigned int);
-unsigned int pci_get_barsize(int, int, int, int);
+unsigned int pci_get_barsize(struct pci_device *, int);
 void pci_show_desc(struct pci_device *);
 struct pci_device *pci_get_device(unsigned short int, unsigned short int);
 void pci_init(void);

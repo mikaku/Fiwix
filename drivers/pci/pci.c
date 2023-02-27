@@ -204,19 +204,38 @@ void pci_write_long(int bus, int dev, int func, int offset, unsigned int buf)
 	outport_l(PCI_DATA, buf);
 }
 
-unsigned int pci_get_barsize(int bus, int dev, int func, int bar)
+unsigned int pci_get_barsize(struct pci_device *pci_dev, int bar)
 {
+	int bus, dev, func;
 	unsigned int tmp, retval;
+
+	bus = pci_dev->bus;
+	dev = pci_dev->dev;
+	func = pci_dev->func;
+
+	/* disable I/O space and address space */
+	pci_write_short(bus, dev, func, PCI_COMMAND, ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER));
 
 	/* backup original value */
 	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
 
 	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), ~0);
 	retval = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-	retval = (~retval) + 1;
 
 	/* restore original value */
 	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), tmp);
+
+	/* enable I/O space */
+	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
+
+	/* evaluate size */
+	if(tmp & 1) {
+		/* port I/O */
+		retval = (~(retval & ~0x1)) + 1;
+	} else {
+		/* memory mapped */
+		retval = (~(retval & ~0xF)) + 1;
+	}
 
 	return retval;
 }

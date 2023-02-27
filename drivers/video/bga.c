@@ -52,14 +52,11 @@ void bga_init(void)
 	dev = pci_dev->dev;
 	func = pci_dev->func;
 
-	/* disable I/O space and address space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY));
-
 	for(bar = 0; bar < supported[0].bars; bar++) {
 		pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar) & ~0xF;
 		if(pci_dev->bar[bar]) {
-			size = pci_get_barsize(bus, dev, func, bar);
-			pci_dev->size[bar] = (size >> 4) + 1;	/* FIXME: is this size correct? */
+			size = pci_get_barsize(pci_dev, bar);
+			pci_dev->size[bar] = size;
 		}
 	}
 
@@ -79,7 +76,7 @@ void bga_init(void)
 		return;
 	}
 
-	/* enable I/O space and address space */
+	/* enable I/O space and memory space */
 	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
 
 	video.pci_dev = pci_dev;
