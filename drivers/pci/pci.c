@@ -33,7 +33,7 @@ static const char *pci_get_strvendor_id(unsigned short int vendor_id)
 	switch(vendor_id) {
 		case PCI_VENDOR_ID_BOCHS:		return "QEMU";
 		case PCI_VENDOR_ID_REDHAT:		return "Red Hat, Inc.";
-		case PCI_VENDOR_ID_INTEL:		return "Intel Corporation";
+		case PCI_VENDOR_ID_INTEL:		return "Intel Corp.";
 	}
 #endif /* CONFIG_PCI_NAMES */
 	return NULL;
@@ -44,8 +44,8 @@ static const char *pci_get_strdevice_id(unsigned short int device_id)
 #ifdef CONFIG_PCI_NAMES
 	switch(device_id) {
 		case PCI_DEVICE_ID_BGA:			return "Bochs Graphics Adapter";
-		case PCI_DEVICE_ID_QEMU_16550A:		return "QEMU 16550A UART";
-		case PCI_DEVICE_ID_INTEL_82371SB_1:	return "82371SB PIIX3 IDE";
+		case PCI_DEVICE_ID_QEMU_16550A:		return "QEMU PCI 16550A";
+		case PCI_DEVICE_ID_INTEL_82371SB_1:	return "82371SB IDE PIIX3 [Natoma]";
 	}
 #endif /* CONFIG_PCI_NAMES */
 	return NULL;
@@ -225,7 +225,7 @@ void pci_show_desc(struct pci_device *pci_dev)
 {
 	const char *name;
 
-	printk("\t\t\t\tpci=%02x:%02x.%d rev=%02d\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
+	printk("\t\t\t\tpci=b:%02x d:%02x f:%d, rev=%02d\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
 	printk("\t\t\t\t");
 	name = pci_get_strdevice_id(pci_dev->device_id);
 	printk("desc=%s ", name);
