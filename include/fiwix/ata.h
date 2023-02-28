@@ -297,6 +297,7 @@ void ide1_timer(unsigned int);
 void ata_error(struct ide *, int);
 void ata_delay(void);
 void ata_wait400ns(struct ide *);
+int ata_wait_state(struct ide *, unsigned char);
 int ata_io(struct ide *, struct ata_drv *, __off_t, int);
 int ata_wait_irq(struct ide *, int, int);
 int ata_select_drv(struct ide *, int, int, unsigned char);

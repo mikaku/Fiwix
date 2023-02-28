@@ -164,7 +164,9 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, drive->xfer.read_cmd)) {
 #ifdef CONFIG_PCI
-			ata_stop_dma(ide, drive);
+			if(drive->flags & DRIVE_HAS_DMA) {
+				ata_stop_dma(ide, drive);
+			}
 #endif /* CONFIG_PCI */
 			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			unlock_resource(&ide->resource);
@@ -176,14 +178,8 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ata_stop_dma(ide, drive);
 		}
 #endif /* CONFIG_PCI */
-		for(r = 0; r < retries; r++) {
-			status = inport_b(ide->base + ATA_STATUS);
-			if(!(status & ATA_STAT_BSY)) {
-				break;
-			}
-			ata_delay();
-		}
-		status = inport_b(ide->base + ATA_STATUS);
+
+		status = ata_wait_state(ide, ATA_STAT_BSY);
 		if(status & ATA_STAT_ERR) {
 			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);

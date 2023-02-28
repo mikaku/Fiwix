@@ -521,25 +521,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	*/
 }
 
-static int ide_get_status(struct ide *ide)
-{
-	int n, retries, status;
-
-	status = 0;
-	SET_ATA_RDY_RETR(retries);
-
-	for(n = 0; n < retries; n++) {
-		status = inport_b(ide->ctrl + ATA_ALT_STATUS);
-		if(!(status & ATA_STAT_BSY)) {
-			return 0;
-		}
-		ata_delay();
-	}
-
-	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
-	return status;
-}
-
 static int ata_softreset(struct ide *ide)
 {
 	int error;
@@ -561,7 +542,7 @@ static int ata_softreset(struct ide *ide)
 	ata_delay();
 	ata_wait_irq(ide, WAIT_FOR_DISK, 0);
 
-	if(ide_get_status(ide)) {
+	if(ata_wait_state(ide, ATA_STAT_BSY)) {
 		printk("WARNING: %s(): reset error on ide%d(0).\n", __FUNCTION__, ide->channel);
 		error = 1;
 	} else {
@@ -583,12 +564,12 @@ static int ata_softreset(struct ide *ide)
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE + (1 << 4));
 	ata_delay();
 
-	if(ide_get_status(ide)) {
+	if(ata_wait_state(ide, ATA_STAT_BSY)) {
 		printk("WARNING: %s(): reset error on ide%d(1).\n", __FUNCTION__, ide->channel);
 		/* select drive 0 (don't care of ATA_STAT_BSY bit) */
 		outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
 		ata_delay();
-		ide_get_status(ide);
+		ata_wait_state(ide, ATA_STAT_BSY);
 		error |= (1 << 4);
 	}
 
@@ -733,33 +714,51 @@ void ata_wait400ns(struct ide *ide)
 	}
 }
 
+int ata_wait_state(struct ide *ide, unsigned char state)
+{
+	int n, retries, status;
+
+	status = 0;
+	SET_ATA_RDY_RETR(retries);
+
+	for(n = 0; n < retries; n++) {
+		status = inport_b(ide->base + ATA_STATUS);
+		if(!(status & state)) {
+			return 0;
+		}
+		ata_delay();
+	}
+
+	return status;
+}
+
 int ata_io(struct ide *ide, struct ata_drv *drive, __off_t offset, int nrsectors)
 {
-	int mode;
 	int cyl, sector, head;
-	int lba_head;
 
-	outport_b(ide->base + ATA_FEATURES, 0);
-	outport_b(ide->base + ATA_SECCNT, nrsectors);
 	if(drive->flags & DRIVE_REQUIRES_LBA) {
-		outport_b(ide->base + ATA_LOWLBA, offset & 0xFF);
-		outport_b(ide->base + ATA_MIDLBA, (offset >> 8) & 0xFF);
-		outport_b(ide->base + ATA_HIGHLBA, (offset >> 16) & 0xFF);
-		mode = ATA_LBA_MODE;
-		lba_head = (offset >> 24) & 0x0F;
+		if(!ata_select_drv(ide, drive->num, ATA_LBA_MODE, offset >> 24)) {
+			outport_b(ide->base + ATA_FEATURES, 0);
+			outport_b(ide->base + ATA_SECCNT, nrsectors);
+			outport_b(ide->base + ATA_LOWLBA, offset & 0xFF);
+			outport_b(ide->base + ATA_MIDLBA, (offset >> 8) & 0xFF);
+			outport_b(ide->base + ATA_HIGHLBA, (offset >> 16) & 0xFF);
+			return 0;
+		}
 	} else {
 		sector2chs(offset, &cyl, &head, &sector, &drive->ident);
-		outport_b(ide->base + ATA_SECTOR, sector);
-		outport_b(ide->base + ATA_LCYL, cyl);
-		outport_b(ide->base + ATA_HCYL, (cyl >> 8));
-		mode = ATA_CHS_MODE;
-		lba_head = head;
+		if(!ata_select_drv(ide, drive->num, ATA_CHS_MODE, head)) {
+			outport_b(ide->base + ATA_FEATURES, 0);
+			outport_b(ide->base + ATA_SECCNT, nrsectors);
+			outport_b(ide->base + ATA_SECTOR, sector);
+			outport_b(ide->base + ATA_LCYL, cyl);
+			outport_b(ide->base + ATA_HCYL, (cyl >> 8));
+			return 0;
+		}
 	}
-	if(ata_select_drv(ide, drive->num, mode, lba_head)) {
-		printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
-		return -EIO;
-	}
-	return 0;
+
+	printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
+	return -EIO;
 }
 
 int ata_wait_irq(struct ide *ide, int timeout, int cmd)
@@ -795,7 +794,7 @@ int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_hea
 	status = 0;
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ide_get_status(ide))) {
+		if((status = ata_wait_state(ide, ATA_STAT_BSY))) {
 			continue;
 		}
 		break;
@@ -809,7 +808,7 @@ int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_hea
 	ata_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ide_get_status(ide))) {
+		if((status = ata_wait_state(ide, ATA_STAT_BSY))) {
 			continue;
 		}
 		break;
