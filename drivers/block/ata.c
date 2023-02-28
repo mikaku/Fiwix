@@ -325,6 +325,10 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	int ksize, nrsectors;
 	int udma, udma_speed[] = { 16, 25, 33, 44, 66, 100 };
 
+	if(!(drive->flags & (DRIVE_IS_DISK | DRIVE_IS_CDROM))) {
+		return;
+	}
+
 	cyl = drive->ident.logic_cyls;
 	hds = drive->ident.logic_heads;
 	sect = drive->ident.logic_spt;
