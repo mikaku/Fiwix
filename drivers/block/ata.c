@@ -382,11 +382,8 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk(" cache=%dKB\n", drive->ident.buffer_cache >> 1);
 
 		/* default values for 'xfer' */
-		drive->xfer.read_fn = inport_sw;
 		drive->xfer.read_cmd = ATA_READ_PIO;
-		drive->xfer.write_fn = outport_sw;
 		drive->xfer.write_cmd = ATA_WRITE_PIO;
-		drive->xfer.copy_raw_factor = 2;	/* 16bit */
 	}
 
 	if(drive->flags & DRIVE_IS_CDROM) {
@@ -400,6 +397,11 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk(" UDMA%d(%d)", udma, udma_speed[udma]);
 	}
 	*/
+
+	/* default common values for 'xfer' */
+	drive->xfer.read_fn = inport_sw;
+	drive->xfer.write_fn = outport_sw;
+	drive->xfer.copy_raw_factor = 2;	/* 16bit */
 
 	drive->multi = 1;
 	printk("\t\t\t\tPIO%d", drive->pio_mode);
