@@ -404,7 +404,7 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 			return NULL;
 		}
 		if(d->fsop && d->fsop->read_block) {
-			if(d->fsop->read_block(dev, block, buf->data, size) >= 0) {
+			if(d->fsop->read_block(dev, block, buf->data, size) == size) {
 				buf->flags |= BUFFER_VALID;
 			}
 		}
