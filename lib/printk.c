@@ -24,7 +24,7 @@ static void puts(char *buffer)
 	struct tty *tty;
 	unsigned short int count;
 
-	tty = get_tty(kparm_syscondev);
+	tty = get_tty(kstat.syscondev);
 	count = strlen(buffer);
 
 	while(count--) {

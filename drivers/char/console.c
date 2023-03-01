@@ -980,6 +980,7 @@ void console_flush_log_buf(char *buffer, unsigned int count)
 		tty = get_tty(kparm_syscondev);
 	}
 
+	kstat.syscondev = kparm_syscondev;
 	while(count) {
 		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
 			tty->output(tty);
