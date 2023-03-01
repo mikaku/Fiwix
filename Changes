@@ -9,23 +9,30 @@
 - Added the buffer-dirty-flush kernel daemon 'kbdflushd'. This also includes the
   new configuration option BUFFER_DIRTY_RATIO to limit the percentage of dirty
   buffers.
+- Added the new file '/proc/sys/vm/dirty_background_ratio' to show the current
+  value of the option BUFFER_DIRTY_RATIO.
 - Added support for the Bochs Graphics Adapter with the configuration option
   CONFIG_BGA, and introducing the new kernel parameter 'bga=' to set the screen
   resolution (width x height x bpp). Refer to 'docs/kernel-parameters.txt' to
   know all the screen resolutions supported.
+- Added 32bit I/O transfers support to the ATA/ATAPI driver.
+- Added DMA (Multi-word) transfers support to the ATA disk driver.
+- Added overall improvements in the ATA disk driver.
 - Added a check in psig() to terminate the process if it doesn't have the stack
   region in its vma table.
 - Added PCI BARs handling in the serial driver.
 - Added the files buffer_max and buffer_nr in /proc/sys/kernel.
 - Added more checks on data received during ATA drive identify to make sure it
   makes sense.
+- Added the magic SysRq key 'm' to show current memory information.
+- Changed the mode how the kernel mounts the root filesystem. From now on, it
+  will be mounted in read/write mode by default. This introduces the new kernel
+  parameter 'ro' to force to mount it in read-only mode.
 - Changed the vma table from static to dynamically allocated array and removed
   the option VMA_REGIONS.
-- Changed the mount table from static to dynamically allocated array.
+- Changed lots of fixed-size arrays to dynamically allocated arrays.
 - Changed malloc_name() and free_name() to use the new memory allocator.
 - Changed do_namei() to use the new memory allocator.
-- Changed the inode table from static to dynamically allocated array.
-- Changed the buffer table from static to dynamically allocated array.
 - Modified the Makefile to disable compiling with PIE option enabled by some
   builds of GCC. [#6]
 - Reverted 40bf18b because some signals weren't caugth and created malfunction
@@ -80,6 +87,10 @@
 - Fixed verify_address() to accept a possible non-existent user stack address
   when CONFIG_LAZY_USER_ADDR_CHECK is disabled, since 'do_page_fault()' will do
   the rest of the job. [#22]
+- Fixed the logic in parse_arg() to support kernel parameters without arguments.
+- Fixed a long standing bug where after removing an inode there was not a call
+  to invalidate all its pages from the cache. [#24]
+- Fixed a missing initialization in the PCI structure during scan_bus(). [#25]
 - Small fixes and cosmetic changes.
 
 
