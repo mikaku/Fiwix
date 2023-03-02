@@ -137,9 +137,11 @@ void fb_init(void)
 		video.fb_bpp,
 		video.memsize / 1024 / 1024
 	);
+#ifdef CONFIG_PCI
 	if(video.pci_dev) {
 		pci_show_desc(video.pci_dev);
 	}
+#endif /* CONFIG_PCI */
 	if(register_device(CHR_DEV, &fb_device)) {
 		printk("ERROR: %s(): unable to register fb device.\n", __FUNCTION__);
 		return;
