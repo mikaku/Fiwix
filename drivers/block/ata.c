@@ -423,9 +423,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 			drive->multi = drive->ident.rw_multiple & 0xFF;
 			nrsectors = PAGE_SIZE / ATA_HD_SECTSIZE;
 			drive->multi = MIN(drive->multi, nrsectors);
-
-			/* FIXME: pending to rethink buffer cache */
-			drive->multi = 2;
 		}
 	}
 
@@ -454,6 +451,9 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk(", 16bit");
 	}
 	printk(", multi %d", drive->multi);
+	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
+		printk("(%d)", drive->ident.rw_multiple & 0xFF);
+	}
 
 	if(drive->ident.capabilities & ATA_HAS_LBA) {
 		drive->flags |= DRIVE_REQUIRES_LBA;

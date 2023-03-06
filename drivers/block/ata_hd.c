@@ -115,8 +115,8 @@ int ata_hd_close(struct inode *i, struct fd *fd_table)
 int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
-	int sectors_to_read, datalen;
-	int n, status, r, retries;
+	int sectors_to_read, datalen, nrsectors;
+	int n, status;
 	__off_t offset;
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -132,8 +132,6 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
-	SET_ATA_RDY_RETR(retries);
-
 	blksize = blksize ? blksize : BLKSIZE_1K;
 	sectors_to_read = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
 
@@ -142,15 +140,18 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
 		datalen = ATA_HD_SECTSIZE * sectors_to_read;
+		nrsectors = MIN(sectors_to_read, drive->multi);
 	} else {
 		datalen = ATA_HD_SECTSIZE;
+		nrsectors = 1;
 	}
 
 	CLI();
 	lock_resource(&ide->resource);
 
-	for(n = 0; n < sectors_to_read; n++) {
-		if(ata_io(ide, drive, offset, drive->multi)) {
+	n = 0;
+	while(n < sectors_to_read) {
+		if(ata_io(ide, drive, offset, nrsectors)) {
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
@@ -193,11 +194,9 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		if(!(drive->flags & DRIVE_HAS_DMA)) {
 			drive->xfer.read_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
 		}
-		if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-			break;
-		}
-		offset++;
-		buffer += ATA_HD_SECTSIZE;
+		n += nrsectors;
+		offset += nrsectors;
+		buffer += (ATA_HD_SECTSIZE * nrsectors);
 	}
 	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
 	unlock_resource(&ide->resource);
@@ -207,7 +206,7 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
-	int sectors_to_write, datalen;
+	int sectors_to_write, datalen, nrsectors;
 	int n, status, r, retries;
 	__off_t offset;
 	struct ide *ide;
@@ -234,15 +233,18 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
 		datalen = ATA_HD_SECTSIZE * sectors_to_write;
+		nrsectors = MIN(sectors_to_write, drive->multi);
 	} else {
 		datalen = ATA_HD_SECTSIZE;
+		nrsectors = 1;
 	}
 
 	CLI();
 	lock_resource(&ide->resource);
 
-	for(n = 0; n < sectors_to_write; n++) {
-		if(ata_io(ide, drive, offset, drive->multi)) {
+	n = 0;
+	while(n < sectors_to_write) {
+		if(ata_io(ide, drive, offset, nrsectors)) {
 			unlock_resource(&ide->resource);
 			return -EIO;
 		}
@@ -286,11 +288,9 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			ata_stop_dma(ide, drive);
 		}
 #endif /* CONFIG_PCI */
-		if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-			break;
-		}
-		offset++;
-		buffer += ATA_HD_SECTSIZE;
+		n += nrsectors;
+		offset += nrsectors;
+		buffer += (ATA_HD_SECTSIZE * nrsectors);
 	}
 	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
 	unlock_resource(&ide->resource);
