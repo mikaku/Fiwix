@@ -656,7 +656,7 @@ int mem_mmap(struct inode *i, struct vma *vma)
 	/* this breaks down the range in 4KB chunks */
 	for(addr = 0; addr < length; addr += PAGE_SIZE) {
 		/* map the page only if is NOT available in the BIOS map */
-		if(!addr_in_bios_map(vma->offset + addr)) {
+		if(!is_addr_in_bios_map(vma->offset + addr)) {
 			if(!map_page(current, (vma->start + addr) & PAGE_MASK, (vma->offset + addr) & PAGE_MASK, PROT_READ | PROT_WRITE)) {
 				return -ENOMEM;
 			}

@@ -301,7 +301,7 @@ void mem_init(void)
 
 	/* reserve memory space for proc_table[NR_PROCS] */
 	proc_table_size = PAGE_ALIGN(sizeof(struct proc) * NR_PROCS);
-	if(!addr_in_bios_map(V2P(_last_data_addr) + proc_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + proc_table_size)) {
 		PANIC("Not enough memory for proc_table.\n");
 	}
 	proc_table = (struct proc *)_last_data_addr;
@@ -321,7 +321,7 @@ void mem_init(void)
 	/* buffer_hash_table is an array of pointers */
 	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
 	buffer_hash_table_size = pages << PAGE_SHIFT;
-	if(!addr_in_bios_map(V2P(_last_data_addr) + buffer_hash_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + buffer_hash_table_size)) {
 		PANIC("Not enough memory for buffer_hash_table.\n");
 	}
 	buffer_hash_table = (struct buffer **)_last_data_addr;
@@ -341,7 +341,7 @@ void mem_init(void)
 	/* inode_hash_table is an array of pointers */
 	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
 	inode_hash_table_size = pages << PAGE_SHIFT;
-	if(!addr_in_bios_map(V2P(_last_data_addr) + inode_hash_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + inode_hash_table_size)) {
 		PANIC("Not enough memory for inode_hash_table.\n");
 	}
 	inode_hash_table = (struct inode **)_last_data_addr;
@@ -350,7 +350,7 @@ void mem_init(void)
 
 	/* reserve memory space for fd_table[NR_OPENS] */
 	fd_table_size = PAGE_ALIGN(sizeof(struct fd) * NR_OPENS);
-	if(!addr_in_bios_map(V2P(_last_data_addr) + fd_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + fd_table_size)) {
 		PANIC("Not enough memory for fd_table.\n");
 	}
 	fd_table = (struct fd *)_last_data_addr;
@@ -370,7 +370,7 @@ void mem_init(void)
 			n = 0;
 		}
 		for(; n < RAMDISK_MINORS; n++) {
-			if(!addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
+			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
 				printk("WARNING: RAMdisk device disabled (not enough physical memory).\n");
 				break;
 			}
@@ -398,14 +398,14 @@ void mem_init(void)
 
 	/* the last one must be the page_table structure */
 	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
-	if(!addr_in_bios_map(V2P(_last_data_addr) + page_hash_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + page_hash_table_size)) {
 		PANIC("Not enough memory for page_hash_table.\n");
 	}
 	page_hash_table = (struct page **)_last_data_addr;
 	_last_data_addr += page_hash_table_size;
 
 	page_table_size = PAGE_ALIGN(kstat.physical_pages * sizeof(struct page));
-	if(!addr_in_bios_map(V2P(_last_data_addr) + page_table_size)) {
+	if(!is_addr_in_bios_map(V2P(_last_data_addr) + page_table_size)) {
 		PANIC("Not enough memory for page_table.\n");
 	}
 	page_table = (struct page *)_last_data_addr;

@@ -433,7 +433,7 @@ void page_init(int pages)
 		 * 0xA0000 and 0xFFFFF and other addresses, mostly used by the
 		 * VGA graphics adapter and BIOS.
 		 */
-		if(!addr_in_bios_map(addr)) {
+		if(!is_addr_in_bios_map(addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.physical_reserved++;
 			continue;

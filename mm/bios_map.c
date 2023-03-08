@@ -24,7 +24,7 @@ static char *bios_mem_type[] = {
 };
 
 /* check if an specific address is available in the BIOS memory map */
-int addr_in_bios_map(unsigned int addr)
+int is_addr_in_bios_map(unsigned int addr)
 {
 	int n, retval;
 	struct bios_mem_map *bmm;
@@ -50,7 +50,7 @@ int addr_in_bios_map(unsigned int addr)
 		}
 	}
 
-	return retval;	/* not in BIOS map or not available (reserved, ...) */
+	return retval;
 }
 
 void bios_map_add(unsigned long int from, unsigned long int to, int from_type, int to_type)
@@ -91,7 +91,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 	struct multiboot_mmap_entry *bmmap;
 	unsigned int from_high, from_low, to_high, to_low;
 	unsigned long long to;
-	int n;
+	int n, type;
 
 	bmmap = bmmap_addr;
 	kstat.physical_pages = 0;
@@ -105,23 +105,24 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bm
 			to = (bmmap->addr + bmmap->len) - 1;
 			to_high = (unsigned int)(to >> 32);
 			to_low = (unsigned int)(to & 0xFFFFFFFF);
+			type = (int)bmmap->type;
 			printk("%s    0x%08x%08x-0x%08x%08x %s\n",
 				n ? "      " : "memory",
 				from_high,
 				from_low,
 				to_high,
 				to_low,
-				bios_mem_type[(int)bmmap->type]
+				bios_mem_type[type]
 			);
 			/* only memory addresses below 4GB are counted */
 			if(!from_high && !to_high) {
 				if(n < NR_BIOS_MM_ENT && bmmap->len) {
 					bios_mem_map[n].from = from_low;
 					bios_mem_map[n].to = to_low;
-					bios_mem_map[n].type = (int)bmmap->type;
-					if(bios_mem_map[n].type == MULTIBOOT_MEMORY_AVAILABLE) {
-						from_low = bios_mem_map[n].from & PAGE_MASK;
-						to_low = bios_mem_map[n].to & PAGE_MASK;
+					bios_mem_map[n].type = type;
+					if(type == MULTIBOOT_MEMORY_AVAILABLE) {
+						from_low &= PAGE_MASK;
+						to_low &= PAGE_MASK;
 
 						/* the first MB is not counted here */
 						if(from_low >= 0x100000) {
