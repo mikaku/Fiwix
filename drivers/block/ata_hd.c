@@ -207,7 +207,7 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int minor;
 	int sectors_to_write, datalen, nrsectors;
-	int n, status, r, retries;
+	int n, status;
 	__off_t offset;
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -222,8 +222,6 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	if(drive->num) {
 		minor &= ~(1 << IDE_SLAVE_MSF);
 	}
-
-	SET_ATA_RDY_RETR(retries);
 
 	blksize = blksize ? blksize : BLKSIZE_1K;
 	sectors_to_write = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
@@ -257,15 +255,13 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 #endif /* CONFIG_PCI */
 		outport_b(ide->base + ATA_COMMAND, drive->xfer.write_cmd);
 
-		for(r = 0; r < retries; r++) {
-			status = inport_b(ide->base + ATA_STATUS);
-			if(!(status & ATA_STAT_BSY)) {
-				break;
-			}
-			ata_delay();
-		}
-		status = inport_b(ide->base + ATA_STATUS);
+		status = ata_wait_state(ide, ATA_STAT_BSY);
 		if(status & ATA_STAT_ERR) {
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_stop_dma(ide, drive);
+		}
+#endif /* CONFIG_PCI */
 			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			printk("\tstatus=0x%x ", status);
 			ata_error(ide, status);
@@ -279,15 +275,22 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 			drive->xfer.write_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
 		}
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, 0)) {
-			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
 #ifdef CONFIG_PCI
 		if(drive->flags & DRIVE_HAS_DMA) {
 			ata_stop_dma(ide, drive);
 		}
 #endif /* CONFIG_PCI */
+			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+
+#ifdef CONFIG_PCI
+		if(drive->flags & DRIVE_HAS_DMA) {
+			ata_stop_dma(ide, drive);
+		}
+#endif /* CONFIG_PCI */
+
 		n += nrsectors;
 		offset += nrsectors;
 		buffer += (ATA_HD_SECTSIZE * nrsectors);
