@@ -53,6 +53,14 @@ int is_addr_in_bios_map(unsigned int addr)
 	return retval;
 }
 
+void bios_map_reserve(unsigned long int from, unsigned long int to)
+{
+	if(is_addr_in_bios_map(from)) {
+		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
+		reserve_pages(from, to);
+	}
+}
+
 void bios_map_add(unsigned long int from, unsigned long int to, int from_type, int to_type)
 {
 	int n;

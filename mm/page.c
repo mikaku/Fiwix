@@ -409,6 +409,25 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 	return total_read;
 }
 
+void reserve_pages(unsigned long int from, unsigned long int to)
+{
+	struct page *pg;
+
+	while(from < to) {
+		pg = &page_table[from >> PAGE_SHIFT];
+		pg->data = NULL;
+		pg->flags = PAGE_RESERVED;
+		kstat.physical_reserved++;
+		remove_from_hash(pg);
+		remove_from_free_list(pg);
+		from += PAGE_SIZE;
+	}
+
+	/* recalculate */
+	kstat.total_mem_pages = kstat.free_pages;
+	min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
+}
+
 void page_init(int pages)
 {
 	struct page *pg;
@@ -430,7 +449,7 @@ void page_init(int pages)
 
 		/*
 		 * Some memory addresses are reserved, like the memory between
-		 * 0xA0000 and 0xFFFFF and other addresses, mostly used by the
+		 * 0xA0000 and 0x100000 and other addresses, mostly used by the
 		 * VGA graphics adapter and BIOS.
 		 */
 		if(!is_addr_in_bios_map(addr)) {
@@ -442,9 +461,7 @@ void page_init(int pages)
 		pg->data = (char *)P2V(addr);
 		insert_on_free_list(pg);
 	}
-	kstat.total_mem_pages = kstat.free_pages;
-	kstat.kernel_reserved <<= 2;
-	kstat.physical_reserved <<= 2;
 
+	kstat.total_mem_pages = kstat.free_pages;
 	min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 }

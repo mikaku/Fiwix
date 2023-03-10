@@ -16,6 +16,7 @@
 #include <fiwix/fb.h>
 #include <fiwix/pci.h>
 #include <fiwix/mm.h>
+#include <fiwix/bios.h>
 
 static struct fs_operations fb_driver_fsop = {
 	0,
@@ -121,10 +122,18 @@ int fb_lseek(struct inode *i, __off_t offset)
 
 void fb_init(void)
 {
-	unsigned int limit;
+	unsigned int limit, from;
 
 	SET_MINOR(fb_device.minors, 0);
 	limit = (unsigned int)video.address + video.memsize - 1;
+
+	/*
+	 * Frame buffer memory must be marked as reserved because its memory
+	 * range (e.g: 0xFD000000-0xFDFFFFFF) might conflict with the physical
+	 * memory below 1GB (e.g: 0x3D000000-0x3DFFFFFF + PAGE_OFFSET).
+	 */
+	from = (unsigned long int)video.address - PAGE_OFFSET;
+	bios_map_reserve(from, from + video.memsize);
 
 	printk("fb0       0x%08x-0x%08x\ttype=%s %x.%x resolution=%dx%dx%d size=%dMB\n",
 		video.address,

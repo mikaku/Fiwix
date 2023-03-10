@@ -329,7 +329,6 @@ void multiboot(unsigned long magic, unsigned long info)
 	if(mbi.flags & MULTIBOOT_INFO_VBE_INFO) {
 		struct vbe_controller *vbec;
 		struct vbe_mode *vbem;
-		unsigned long int from, to;
 
 		vbec = (struct vbe_controller *)mbi.vbe_control_info;
 		vbem = (struct vbe_mode *)mbi.vbe_mode_info;
@@ -352,10 +351,6 @@ void multiboot(unsigned long magic, unsigned long info)
 		video.fb_linesize = video.fb_pitch * video.fb_char_height;
 		video.fb_size = vbem->x_resolution * vbem->y_resolution * video.fb_pixelwidth;
 		video.fb_vsize = video.lines * video.fb_pitch * video.fb_char_height;
-
-		from = (unsigned long int)video.address;
-		to = from + video.memsize;
-		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_AVAILABLE);
 	}
 
 #ifdef CONFIG_BGA

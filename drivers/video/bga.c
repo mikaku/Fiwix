@@ -12,7 +12,6 @@
 #include <fiwix/pci.h>
 #include <fiwix/console.h>
 #include <fiwix/mm.h>
-#include <fiwix/bios.h>
 #include <fiwix/string.h>
 #include <fiwix/stdio.h>
 
@@ -38,7 +37,7 @@ void bga_init(void)
 {
 	struct pci_device *pci_dev;
 	int bus, dev, func, bar;
-	unsigned int from, to, size;
+	unsigned int size;
 	int xres, yres, bpp;
 
 	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
@@ -101,9 +100,6 @@ void bga_init(void)
 	video.fb_size = video.fb_width * video.fb_height * video.fb_pixelwidth;
 	video.fb_vsize = video.lines * video.fb_pitch * video.fb_char_height;
 
-	from = (unsigned long int)video.address;
-	to = from + video.memsize;
-	bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_AVAILABLE);
 	map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, video.pgtbl_addr, PAGE_PRESENT | PAGE_RW);
 
 	bga_write_register(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED);
