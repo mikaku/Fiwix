@@ -58,7 +58,7 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 	struct mount *mp;
 
 	if(kstat.mount_points + 1 > NR_MOUNT_POINTS) {
-		printk("WARNING: tried to excedeed NR_MOUNT_POINTS (%d).\n", NR_MOUNT_POINTS);
+		printk("WARNING: tried to exceed NR_MOUNT_POINTS (%d).\n", NR_MOUNT_POINTS);
 		return NULL;
 	}
 
