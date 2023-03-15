@@ -276,9 +276,9 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		}
 		if(ata_wait_irq(ide, WAIT_FOR_DISK, 0)) {
 #ifdef CONFIG_PCI
-		if(drive->flags & DRIVE_HAS_DMA) {
-			ata_stop_dma(ide, drive);
-		}
+			if(drive->flags & DRIVE_HAS_DMA) {
+				ata_stop_dma(ide, drive);
+			}
 #endif /* CONFIG_PCI */
 			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
 			unlock_resource(&ide->resource);
