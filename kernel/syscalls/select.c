@@ -151,6 +151,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
 	if((errno = do_select(nfds, &rfds, &wfds, &efds, &res_rfds, &res_wfds, &res_efds)) < 0) {
 		return errno;
 	}
+	t = current->timeout;
 	current->timeout = 0;
 
 	if(readfds) {
@@ -161,6 +162,9 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
 	}
 	if(exceptfds) {
 		memcpy_b(exceptfds, &res_efds, sizeof(fd_set));
+	}
+	if(timeout) {
+		ticks2tv(t, timeout);
 	}
 	return errno;
 }
