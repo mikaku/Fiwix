@@ -795,9 +795,8 @@ int ata_channel_init(struct ide *ide)
 	devices = 0;
 	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
 		/*
-		 * ata_softreset() returns error in the low nibble
-		 * for master devices, and in the high nibble for
-		 * slave devices.
+		 * ata_softreset() returns error in the low nibble for master
+		 * devices, and in the high nibble for slave devices.
 		 */
 		if(!(errno & (1 << (drv_num * 4)))) {
 			drive = &ide->drive[drv_num];
@@ -946,7 +945,7 @@ void ata_init(void)
 	 * when kmalloc2() be merged with kmalloc() and accept sizes > 2048
 	 */
 	memset_b(ide_table, 0, PAGE_SIZE);
-	channel = 0;
+	channel = IDE_PRIMARY;
 
 #ifdef CONFIG_PCI
 	channel = ata_pci(ide_table);
