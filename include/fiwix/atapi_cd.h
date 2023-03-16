@@ -10,12 +10,12 @@
 
 #include <fiwix/fs.h>
 
-#define ATA_CD_SECTSIZE		BLKSIZE_2K	/* sector size (in bytes) */
+#define ATAPI_CD_SECTSIZE	BLKSIZE_2K	/* sector size (in bytes) */
 
-int ata_cd_open(struct inode *, struct fd *);
-int ata_cd_close(struct inode *, struct fd *);
-int ata_cd_read(__dev_t, __blk_t, char *, int);
-int ata_cd_ioctl(struct inode *, int, unsigned long int);
-int ata_cd_init(struct ide *, struct ata_drv *);
+int atapi_cd_open(struct inode *, struct fd *);
+int atapi_cd_close(struct inode *, struct fd *);
+int atapi_cd_read(__dev_t, __blk_t, char *, int);
+int atapi_cd_ioctl(struct inode *, int, unsigned long int);
+int atapi_cd_init(struct ide *, struct ata_drv *);
 
 #endif /* _FIWIX_ATAPI_CD_H */

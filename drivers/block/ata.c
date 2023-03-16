@@ -813,7 +813,7 @@ int ata_channel_init(struct ide *ide)
 					}
 				}
 				if(drive->flags & DRIVE_IS_CDROM) {
-					if(!ata_cd_init(ide, drive)) {
+					if(!atapi_cd_init(ide, drive)) {
 						devices++;
 					}
 				}

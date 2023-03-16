@@ -18,15 +18,15 @@
 /* default size of 1GB is enough to read a whole CDROM */
 #define CDROM_DEFAULT_SIZE	(1024 * 1024)	/* in KBs */
 
-static struct fs_operations ata_cd_driver_fsop = {
+static struct fs_operations atapi_cd_driver_fsop = {
 	0,
 	0,
 
-	ata_cd_open,
-	ata_cd_close,
+	atapi_cd_open,
+	atapi_cd_close,
 	NULL,			/* read */
 	NULL,			/* write */
-	ata_cd_ioctl,
+	atapi_cd_ioctl,
 	NULL,			/* lseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
@@ -46,7 +46,7 @@ static struct fs_operations ata_cd_driver_fsop = {
 	NULL,			/* create */
 	NULL,			/* rename */
 
-	ata_cd_read,
+	atapi_cd_read,
 	NULL,			/* write_block */
 
 	NULL,			/* read_inode */
@@ -60,7 +60,7 @@ static struct fs_operations ata_cd_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-int ata_cd_open(struct inode *i, struct fd *fd_table)
+int atapi_cd_open(struct inode *i, struct fd *fd_table)
 {
 	char *buffer;
 	int errcode;
@@ -131,7 +131,7 @@ int ata_cd_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int ata_cd_close(struct inode *i, struct fd *fd_table)
+int atapi_cd_close(struct inode *i, struct fd *fd_table)
 {
 	char *buffer;
 	struct ide *ide;
@@ -161,7 +161,7 @@ int ata_cd_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int ata_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
+int atapi_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
 	int sectors_to_read;
 	int n, retries;
@@ -175,7 +175,7 @@ int ata_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
 	blksize = BLKSIZE_2K;
-	sectors_to_read = blksize / ATA_CD_SECTSIZE;
+	sectors_to_read = blksize / ATAPI_CD_SECTSIZE;
 
 	pkt[0] = ATAPI_READ10;
 	pkt[1] = 0;
@@ -198,7 +198,7 @@ int ata_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 				unlock_resource(&ide->resource);
 				return -EIO;
 			}
-			if(atapi_read_data(dev, buffer, ide, drive, blksize, n * ATA_CD_SECTSIZE)) {
+			if(atapi_read_data(dev, buffer, ide, drive, blksize, n * ATAPI_CD_SECTSIZE)) {
 				int errcode;
 				int sense_key;
 				errcode = inport_b(ide->base + ATA_ERROR);
@@ -218,10 +218,10 @@ int ata_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 
 	}
 	unlock_resource(&ide->resource);
-	return sectors_to_read * ATA_CD_SECTSIZE;
+	return sectors_to_read * ATAPI_CD_SECTSIZE;
 }
 
-int ata_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int atapi_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 {
 	struct ide *ide;
 
@@ -238,12 +238,12 @@ int ata_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int ata_cd_init(struct ide *ide, struct ata_drv *drive)
+int atapi_cd_init(struct ide *ide, struct ata_drv *drive)
 {
 	struct device *d;
 	unsigned char minor;
 
-	drive->fsop = &ata_cd_driver_fsop;
+	drive->fsop = &atapi_cd_driver_fsop;
 
 	minor = !drive->minor_shift ? 0 : 1 << drive->minor_shift;
 

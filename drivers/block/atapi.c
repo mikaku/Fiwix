@@ -88,7 +88,7 @@ int atapi_read_data(__dev_t dev, char *data, struct ide *ide, struct ata_drv *dr
 			break;
 		}
 
-		bytes = MAX(bytes, ATA_CD_SECTSIZE);	/* read more than 2048 bytes is not supported */
+		bytes = MAX(bytes, ATAPI_CD_SECTSIZE);	/* read more than 2048 bytes is not supported */
 		buffer = data + offset;
 		drive->xfer.read_fn(ide->base + ATA_DATA, (void *)buffer, bytes / drive->xfer.copy_raw_factor);
 	}
