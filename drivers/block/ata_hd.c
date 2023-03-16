@@ -432,6 +432,11 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		}
 	}
 
+	/* set DMA Capable drive bit */
+	if(drive->flags & DRIVE_HAS_DMA) {
+		outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_DRVDMA << drive->num);
+	}
+
 	/* show disk partition summary */
 	printk("\t\t\t\tpartition summary: ");
 	read_msdos_partition(rdev, part);

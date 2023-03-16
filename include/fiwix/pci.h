@@ -58,8 +58,8 @@
 #define BM_STATUS_ACTIVE	0x01	/* active */
 #define BM_STATUS_ERROR		0x02	/* error */
 #define BM_STATUS_INTR		0x04	/* IDE interrupt */
-#define BM_STATUS_DRV0DMA	0x20	/* drive 0 is DMA capable */
-#define BM_STATUS_DRV1DMA	0x40	/* drive 1 is DMA capable */
+#define BM_STATUS_DRVDMA	0x20	/* drive 0 is DMA capable */
+					/* 0x40: drive 1 is DMA capable */
 #define BM_STATUS_SIMPLEX	0x80	/* simplex only */
 
 struct pci_supported_devices {
