@@ -40,6 +40,7 @@ void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
 {
 	int status;
 
+	inport_b(ide->bm + drive->xfer.bm_status);	/* extra read */
 	status = inport_b(ide->bm + drive->xfer.bm_status);
 	outport_b(ide->bm + drive->xfer.bm_command, 0);	/* stop bus master */
 	outport_b(ide->bm + drive->xfer.bm_status, status);
