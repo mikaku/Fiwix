@@ -395,9 +395,11 @@ static void keyboard_reset(void)
 
 static void putc(struct tty *tty, unsigned char ch)
 {
-	if(tty_queue_putchar(tty, &tty->read_q, ch) < 0) {
-		if(tty->termios.c_iflag & IMAXBEL) {
-			vconsole_beep();
+	if(tty->count) {
+		if(tty_queue_putchar(tty, &tty->read_q, ch) < 0) {
+			if(tty->termios.c_iflag & IMAXBEL) {
+				vconsole_beep();
+			}
 		}
 	}
 }
@@ -406,8 +408,10 @@ static void puts(struct tty *tty, char *seq)
 {
 	char ch;
 
-	while((ch = *(seq++))) {
-		putc(tty, ch);
+	if(tty->count) {
+		while((ch = *(seq++))) {
+			putc(tty, ch);
+		}
 	}
 }
 
@@ -609,113 +613,112 @@ void irq_keyboard(int num, struct sigcontext *sc)
 		reboot();
 	}
 
-	if(tty->count) {
-		type = key & 0xFF00;
-		c = key & 0xFF;
 
-		if(sysrq) {
-			/* treat 0-9 and a-z keys as normal */
-			type &= ~META_KEYS;
-		}
+	type = key & 0xFF00;
+	c = key & 0xFF;
 
-		switch(type) {
-			case FN_KEYS:
-				puts(tty, fn_seq[c]);
-				break;
-
-			case SPEC_KEYS:
-				switch(key) {
-					case CR:
-						putc(tty, C('M'));
-						break;
-					case SYSRQ:
-						sysrq = 1;
-						break;
-				}
-				break;
-
-			case PAD_KEYS:
-				if(!vc->numlock) {
-					puts(tty, pad_seq[c]);
-				} else {
-					putc(tty, pad_chars[c]);
-				}
-				break;
-
-			case DEAD_KEYS:
-				if(!deadkey) {
-					switch(c) {
-						case GRAVE ^ DEAD_KEYS:
-							deadkey = 1;
-							diacr = grave_table;
-							break;
-						case ACUTE ^ DEAD_KEYS:
-							deadkey = 2;
-							diacr = acute_table;
-							break;
-						case CIRCM ^ DEAD_KEYS:
-							deadkey = 3;
-							diacr = circm_table;
-							break;
-						case DIERE ^ DEAD_KEYS:
-							deadkey = 5;
-							diacr = diere_table;
-							break;
-					}
-					return;
-				}
-				c = diacr_chars[c];
-				deadkey = 0;
-				putc(tty, c);
-
-				break;
-
-			case META_KEYS:
-				putc(tty, '\033');
-				putc(tty, c);
-				break;
-
-			case LETTER_KEYS:
-				if(deadkey) {
-					for(n = 0; n < NR_DIACR; n++) {
-						if(diacr[n].letter == c) {
-							c = diacr[n].code;
-						}
-					}
-				}
-				putc(tty, c);
-				break;
-
-			default:
-				if(sysrq) {
-					switch(c) {
-						case 'l':
-							sysrq_op = SYSRQ_STACK;
-							break;
-						case 'm':
-							sysrq_op = SYSRQ_MEMORY;
-							break;
-						case 't':
-							sysrq_op = SYSRQ_TASKS;
-							break;
-						default:
-							sysrq_op = SYSRQ_UNDEF;
-							break;
-					}
-					if(sysrq_op) {
-						do_sysrq(sysrq_op);
-						sysrq_op = 0;
-					}
-
-					return;
-				}
-				if(deadkey && c == ' ') {
-					c = diacr_chars[deadkey - 1];
-				}
-				putc(tty, c);
-				break;
-		}
+	if(sysrq) {
+		/* treat 0-9 and a-z keys as normal */
+		type &= ~META_KEYS;
 	}
+
+	switch(type) {
+		case FN_KEYS:
+			puts(tty, fn_seq[c]);
+			break;
+
+		case SPEC_KEYS:
+			switch(key) {
+				case CR:
+					putc(tty, C('M'));
+					break;
+				case SYSRQ:
+					sysrq = 1;
+					break;
+			}
+			break;
+
+		case PAD_KEYS:
+			if(!vc->numlock) {
+				puts(tty, pad_seq[c]);
+			} else {
+				putc(tty, pad_chars[c]);
+			}
+			break;
+
+		case DEAD_KEYS:
+			if(!deadkey) {
+				switch(c) {
+					case GRAVE ^ DEAD_KEYS:
+						deadkey = 1;
+						diacr = grave_table;
+						break;
+					case ACUTE ^ DEAD_KEYS:
+						deadkey = 2;
+						diacr = acute_table;
+						break;
+					case CIRCM ^ DEAD_KEYS:
+						deadkey = 3;
+						diacr = circm_table;
+						break;
+					case DIERE ^ DEAD_KEYS:
+						deadkey = 5;
+						diacr = diere_table;
+						break;
+				}
+				return;
+			}
+			c = diacr_chars[c];
+			deadkey = 0;
+			putc(tty, c);
+
+			break;
+
+		case META_KEYS:
+			putc(tty, '\033');
+			putc(tty, c);
+			break;
+
+		case LETTER_KEYS:
+			if(deadkey) {
+				for(n = 0; n < NR_DIACR; n++) {
+					if(diacr[n].letter == c) {
+						c = diacr[n].code;
+					}
+				}
+			}
+			putc(tty, c);
+			break;
+
+		default:
+			if(sysrq) {
+				switch(c) {
+					case 'l':
+						sysrq_op = SYSRQ_STACK;
+						break;
+					case 'm':
+						sysrq_op = SYSRQ_MEMORY;
+						break;
+					case 't':
+						sysrq_op = SYSRQ_TASKS;
+						break;
+					default:
+						sysrq_op = SYSRQ_UNDEF;
+						break;
+				}
+				if(sysrq_op) {
+					do_sysrq(sysrq_op);
+					sysrq_op = 0;
+				}
+				break;
+			}
+			if(deadkey && c == ' ') {
+				c = diacr_chars[deadkey - 1];
+			}
+			putc(tty, c);
+			break;
+	}
+
 	deadkey = 0;
 	return;
 }
