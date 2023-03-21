@@ -307,7 +307,7 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	p->ppid = 0;
 	p->flags |= PF_KPROC;
 	p->priority = DEF_PRIORITY;
-	if(!(p->tss.esp0 = kmalloc())) {
+	if(!(p->tss.esp0 = kmalloc(PAGE_SIZE))) {
 		release_proc(p);
 		return NULL;
 	}

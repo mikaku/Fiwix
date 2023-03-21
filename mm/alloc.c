@@ -5,19 +5,36 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/kernel.h>
 #include <fiwix/mm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
 /*
- * The implementation of kernel memory allocation is extremely simple, it works
- * with a granularity of PAGE_SIZE (4096 bytes). There is indeed a lot of room
- * for improvements here.
+ * The kmalloc() function acts like a front-end for the two memory
+ * memory allocators currently supported:
+ *
+ * - buddy_low() for requests up to 2048KB.
+ * - get_free_page() rest of requests up to PAGE_SIZE.
  */
-unsigned int kmalloc(void)
+unsigned int kmalloc(__size_t size)
 {
 	struct page *pg;
+	int max_size;
 	unsigned int addr;
+
+	/* check if size can be managed by buddy_low */
+	max_size = bl_blocksize[BUDDY_MAX_LEVEL - 1];
+	if(size + sizeof(struct bl_head) <= max_size) {
+		size += sizeof(struct bl_head);
+		return bl_malloc(size);
+	}
+
+	/* FIXME: pending to implement buddy_high */
+	if(size > PAGE_SIZE) {
+		printk("WARNING: %s(): size (%d) is bigger than PAGE_SIZE!\n", __FUNCTION__, size);
+		return 0;
+	}
 
 	if((pg = get_free_page())) {
 		addr = pg->page << PAGE_SHIFT;
@@ -30,6 +47,15 @@ unsigned int kmalloc(void)
 
 void kfree(unsigned int addr)
 {
-	addr = V2P(addr);
-	release_page(addr >> PAGE_SHIFT);
+	struct page *pg;
+	unsigned paddr;
+
+	paddr = V2P(addr);
+	pg = &page_table[paddr >> PAGE_SHIFT];
+
+	if(pg->flags & PAGE_BUDDYLOW) {
+		bl_free(addr);
+	} else {
+		release_page(pg);
+	}
 }

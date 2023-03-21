@@ -140,7 +140,7 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	int len, lev;
 	char *buf;
 
-	if(!(buf = (void *)kmalloc())) {
+	if(!(buf = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 
@@ -201,7 +201,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 	char *buffer;
 	int lev;
 
-	if(!(buffer = (void *)kmalloc())) {
+	if(!(buffer = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

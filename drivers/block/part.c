@@ -18,7 +18,7 @@ int read_msdos_partition(__dev_t dev, struct partition *part)
 {
 	char *buffer;
 
-	if(!(buffer = (void *)kmalloc2(BLKSIZE_1K))) {
+	if(!(buffer = (void *)kmalloc(BLKSIZE_1K))) {
 		return -ENOMEM;
 	}
 
@@ -29,6 +29,6 @@ int read_msdos_partition(__dev_t dev, struct partition *part)
 	}
 
 	memcpy_b(part, (void *)(buffer + MBR_CODE_SIZE), sizeof(struct partition) * NR_PARTITIONS);
-	kfree2((unsigned int)buffer);
+	kfree((unsigned int)buffer);
 	return 0;
 }

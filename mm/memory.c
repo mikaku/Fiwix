@@ -136,7 +136,7 @@ int clone_pages(struct proc *child)
 			if(src_pgdir[pde] & PAGE_PRESENT) {
 				src_pgtbl = (unsigned int *)P2V((src_pgdir[pde] & PAGE_MASK));
 				if(!(dst_pgdir[pde] & PAGE_PRESENT)) {
-					if(!(c_addr = kmalloc())) {
+					if(!(c_addr = kmalloc(PAGE_SIZE))) {
 						printk("%s(): returning 0!\n", __FUNCTION__);
 						return 0;
 					}
@@ -198,7 +198,7 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 	pte = GET_PGTBL(vaddr);
 
 	if(!(pgdir[pde] & PAGE_PRESENT)) {	/* allocating page table */
-		if(!(newaddr = kmalloc())) {
+		if(!(newaddr = kmalloc(PAGE_SIZE))) {
 			return 0;
 		}
 		p->rss++;
@@ -208,7 +208,7 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
 	if(!(pgtbl[pte] & PAGE_PRESENT)) {	/* allocating page */
 		if(!addr) {
-			if(!(addr = kmalloc())) {
+			if(!(addr = kmalloc(PAGE_SIZE))) {
 				return 0;
 			}
 			addr = V2P(addr);

@@ -35,7 +35,7 @@ struct shmid_ds *shm_get_new_seg(void)
 	for(n = 0; n < SHMMNI; n++) {
 		if(shmseg_pool[n].shm_ctime == 0) {
 			shmseg_pool[n].shm_ctime = 1;
-			if(!(shmseg_pool[n].shm_pages = (unsigned int *)kmalloc())) {
+			if(!(shmseg_pool[n].shm_pages = (unsigned int *)kmalloc(PAGE_SIZE))) {
 				return NULL;
 			}
 			memset_b(shmseg_pool[n].shm_pages, 0, PAGE_SIZE);
@@ -81,7 +81,7 @@ struct vma *shm_get_new_attach(struct shmid_ds *seg)
 	int n;
 
 	if(!seg->shm_attaches) {
-		if(!(seg->shm_attaches = (void *)kmalloc())) {
+		if(!(seg->shm_attaches = (void *)kmalloc(PAGE_SIZE))) {
 			return NULL;
 		}
 		memset_b(seg->shm_attaches, 0, PAGE_SIZE);

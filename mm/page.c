@@ -217,16 +217,13 @@ struct page *search_page_hash(struct inode *inode, __off_t offset)
 	return NULL;
 }
 
-void release_page(int page)
+void release_page(struct page *pg)
 {
 	unsigned long int flags;
-	struct page *pg;
 
-	if(!is_valid_page(page)) {
-		PANIC("Unexpected inconsistency in hash_table. Missing page %d (0x%x).\n", page, page);
+	if(!is_valid_page(pg->page)) {
+		PANIC("Unexpected inconsistency in hash_table. Missing page %d (0x%x).\n", pg->page, pg->page);
 	}
-
-	pg = &page_table[page];
 
 	if(!pg->count) {
 		printk("WARNING: %s(): trying to free an already freed page (%d)!\n", __FUNCTION__, pg->page);
@@ -240,6 +237,9 @@ void release_page(int page)
 	SAVE_FLAGS(flags); CLI();
 
 	insert_on_free_list(pg);
+
+	/* remove all flags except PAGE_RESERVED */
+	pg->flags &= PAGE_RESERVED;
 
 	/* if page is not cached then place it at the head of the free list */
 	if(!pg->inode) {
@@ -271,7 +271,7 @@ void invalidate_inode_pages(struct inode *i)
 
 	for(offset = 0; offset < i->i_size; offset += PAGE_SIZE) {
 		if((pg = search_page_hash(i, offset))) {
-			release_page(pg->page);
+			release_page(pg);
 			remove_from_hash(pg);
 		}
 	}
@@ -293,7 +293,7 @@ void update_page_cache(struct inode *i, __off_t offset, const char *buf, int cou
 			page_lock(pg);
 			memcpy_b(pg->data + poffset, buf, bytes);
 			page_unlock(pg);
-			release_page(pg->page);
+			release_page(pg);
 		}
 	}
 }
@@ -378,7 +378,7 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 
 		poffset = fd_table->offset % PAGE_SIZE;
 		if(!(pg = search_page_hash(i, fd_table->offset & PAGE_MASK))) {
-			if(!(addr = kmalloc())) {
+			if(!(addr = kmalloc(PAGE_SIZE))) {
 				inode_unlock(i);
 				printk("%s(): returning -ENOMEM\n", __FUNCTION__);
 				return -ENOMEM;

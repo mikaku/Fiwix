@@ -35,7 +35,7 @@ static int read_pathtable(struct inode *i)
 		return -EINVAL;
 	}
 
-	if(!(sbi->pathtable_raw = (void *)kmalloc())) {
+	if(!(sbi->pathtable_raw = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 	offset = 0;
@@ -51,7 +51,7 @@ static int read_pathtable(struct inode *i)
 
 	/* allocate and count the number of records in the Path Table */
 	offset = n = 0;
-	if(!(sbi->pathtable = (struct iso9660_pathtable_record **)kmalloc())) {
+	if(!(sbi->pathtable = (struct iso9660_pathtable_record **)kmalloc(PAGE_SIZE))) {
 		kfree((unsigned int)sbi->pathtable_raw);
 		return -ENOMEM;
 	}

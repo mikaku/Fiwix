@@ -97,7 +97,7 @@ int malloc_name(const char *string, char **name)
 		return errno;
 	}
 
-	if(!(b = (char *)kmalloc())) {
+	if(!(b = (char *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 	*name = b;

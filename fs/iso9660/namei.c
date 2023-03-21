@@ -60,7 +60,7 @@ int iso9660_lookup(const char *name, struct inode *dir, struct inode **i_res)
 						}
 					}
 				}
-				if(!(nm_name = (char *)kmalloc())) {
+				if(!(nm_name = (char *)kmalloc(PAGE_SIZE))) {
 					return -ENOMEM;
 				}
 				nm_len = 0;

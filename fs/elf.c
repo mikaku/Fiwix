@@ -321,7 +321,7 @@ static int elf_load_interpreter(struct inode *ii)
 	 * make sure that it won't conflict while zeroing the BSS fractional
 	 * page, in case that the same block is requested during the page fault.
 	 */
-	if(!(data = (void *)kmalloc())) {
+	if(!(data = (void *)kmalloc(PAGE_SIZE))) {
 		brelse(buf);
 		return -ENOMEM;
 	}

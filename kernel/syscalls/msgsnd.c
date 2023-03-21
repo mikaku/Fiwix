@@ -74,7 +74,7 @@ int sys_msgsnd(int msqid, const void *msgp, __size_t msgsz, int msgflg)
 	}
 	m->msg_next = NULL;
 	m->msg_type = mb->mtype;
-	if(!(m->msg_spot = (void *)kmalloc())) {
+	if(!(m->msg_spot = (void *)kmalloc(PAGE_SIZE))) {
 		msg_release_md(m);
 		return -ENOMEM;
 	}

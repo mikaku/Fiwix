@@ -58,7 +58,7 @@ int sys_getcwd(char *buf, __size_t size)
 		buf[1] = '\0';
 		return 2;
 	}
-	if(!(dirent_buf = (void *)kmalloc())) {
+	if(!(dirent_buf = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

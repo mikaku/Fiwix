@@ -85,7 +85,7 @@ int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 	if(!d->data_fn) {
 		return -EINVAL;
 	}
-	if(!(buf = (void *)kmalloc())) {
+	if(!(buf = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

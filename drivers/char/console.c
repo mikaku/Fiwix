@@ -1016,7 +1016,7 @@ void console_init(void)
 			tty->output = vconsole_write;
 			vc[n].tty = tty;
 			if(video.flags & VPF_VGA) {
-				vc[n].screen = (short int *)kmalloc();
+				vc[n].screen = (short int *)kmalloc(PAGE_SIZE);
 			}
 			if(video.flags & VPF_VESAFB) {
 				vc[n].screen = vc_screen[n];

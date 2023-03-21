@@ -84,7 +84,7 @@ int pipefs_ialloc(struct inode *i, int mode)
 	i->fsop = &pipefs_fsop;
 	i->inode = i_counter;
 	i->count = 2;
-	if(!(i->u.pipefs.i_data = (void *)kmalloc())) {
+	if(!(i->u.pipefs.i_data = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 	i->u.pipefs.i_readoff = 0;

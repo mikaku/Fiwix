@@ -15,36 +15,20 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static const unsigned int blocksize[] = {
-	32,
-	64,
-	128,
-	256,
-	512,
-	1024,
-	2048,
-	4096
-};
+static struct bl_head *freelist[BUDDY_MAX_LEVEL + 1];
 
-struct head {
-	unsigned char level;	/* size class (exponent of the power of 2) */
-	struct head *prev;
-	struct head *next;
-};
-
-static struct head *freelist[BUDDY_MAX_LEVEL + 1];
-
-static struct head *get_buddy(struct head *block)
+static struct bl_head *get_buddy(struct bl_head *block)
 {
 	int mask;
 
 	mask = 1 << (block->level + 5);
-	return (struct head *)((unsigned int)block ^ mask);
+	return (struct bl_head *)((unsigned int)block ^ mask);
 }
 
-static void deallocate(struct head *block)
+static void deallocate(struct bl_head *block)
 {
-	struct head **h, *buddy, *p;
+	struct bl_head **h, *buddy, *p;
+	struct page *pg;
 	unsigned int addr;
 	int level;
 
@@ -84,7 +68,8 @@ static void deallocate(struct head *block)
 		if(level == BUDDY_MAX_LEVEL - 1) {
 			addr = (unsigned int)block;
 			addr = V2P(addr);
-			release_page(addr >> PAGE_SHIFT);
+			pg = &page_table[addr >> PAGE_SHIFT];
+			release_page(pg);
 			kstat.buddy_low_num_pages--;
 		}
 	} else {
@@ -103,19 +88,20 @@ static void deallocate(struct head *block)
 	}
 }
 
-static struct head *allocate(int size)
+static struct bl_head *allocate(int size)
 {
-	struct head *block, *buddy;
+	struct bl_head *block, *buddy;
 	struct page *pg;
 	unsigned int addr;
 	int level;
 
-	for(level = 0; blocksize[level] < size; level++);
+	for(level = 0; bl_blocksize[level] < size; level++);
 
 	if(level == BUDDY_MAX_LEVEL) {
 		if((pg = get_free_page())) {
+			pg->flags |= PAGE_BUDDYLOW;
 			addr = pg->page << PAGE_SHIFT;
-			block = (struct head *)P2V(addr);
+			block = (struct bl_head *)P2V(addr);
 		} else {
 			printk("WARNING: %s(): not enough memory!\n", __FUNCTION__);
 			return NULL;
@@ -139,7 +125,7 @@ static struct head *allocate(int size)
 		}
 	} else {
 		/* split a bigger block */
-		block = allocate(blocksize[level + 1]);
+		block = allocate(bl_blocksize[level + 1]);
 
 		if(block != NULL) {
 			/* put the buddy on the free list */
@@ -154,36 +140,29 @@ static struct head *allocate(int size)
 	return block;
 }
 
-unsigned int kmalloc2(__size_t size)
+unsigned int bl_malloc(__size_t size)
 {
-	struct head *block;
+	struct bl_head *block;
 	int level;
 
-	size += sizeof(struct head);
-
-	if(size > blocksize[BUDDY_MAX_LEVEL - 1]) {
-		printk("WARNING: size > %d!\n", blocksize[BUDDY_MAX_LEVEL - 1]);
-		return 0;
-	}
-
-	for(level = 0; blocksize[level] < size; level++);
+	for(level = 0; bl_blocksize[level] < size; level++);
 
 	kstat.buddy_low_count[level]++;
-	kstat.buddy_low_mem_requested += blocksize[level];
+	kstat.buddy_low_mem_requested += bl_blocksize[level];
 	block = allocate(size);
 	return block ? (unsigned int)(block + 1) : 0;
 }
 
-void kfree2(unsigned int addr)
+void bl_free(unsigned int addr)
 {
-	struct head *block;
+	struct bl_head *block;
 	int level;
 
-	block = (struct head *)addr;
+	block = (struct bl_head *)addr;
 	block--;
 	level = block->level;
 	kstat.buddy_low_count[level]--;
-	kstat.buddy_low_mem_requested -= blocksize[level];
+	kstat.buddy_low_mem_requested -= bl_blocksize[level];
 	deallocate(block);
 }
 

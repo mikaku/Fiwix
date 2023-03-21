@@ -26,7 +26,7 @@ static void free_vma_table(struct proc *p)
 	while(vma) {
 		tmp = vma;
 		vma = vma->next;
-		kfree2((unsigned int)tmp);
+		kfree((unsigned int)tmp);
 	}
 }
 
@@ -78,7 +78,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->pid = pid;
 	sprintk(child->pidstr, "%d", child->pid);
 
-	if(!(child_pgdir = (void *)kmalloc())) {
+	if(!(child_pgdir = (void *)kmalloc(PAGE_SIZE))) {
 		release_proc(child);
 		return -ENOMEM;
 	}
@@ -96,7 +96,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	vma = current->vma_table;
 	child->vma_table = NULL;
 	while(vma) {
-		if(!(child_vma = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+		if(!(child_vma = (struct vma *)kmalloc(sizeof(struct vma)))) {
 			kfree((unsigned int)child_pgdir);
 			free_vma_table(child);
 			release_proc(child);
@@ -133,7 +133,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 #endif /* CONFIG_SYSVIPC */
 
 
-	if(!(child->tss.esp0 = kmalloc())) {
+	if(!(child->tss.esp0 = kmalloc(PAGE_SIZE))) {
 		kfree((unsigned int)child_pgdir);
 		free_vma_table(child);
 		release_proc(child);

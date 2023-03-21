@@ -21,7 +21,7 @@ int fifo_open(struct inode *i, struct fd *fd_table)
 {
 	/* first open */
 	if(i->count == 1) {
-		if(!(i->u.pipefs.i_data = (void *)kmalloc())) {
+		if(!(i->u.pipefs.i_data = (void *)kmalloc(PAGE_SIZE))) {
 			return -ENOMEM;
 		}
 		i->u.pipefs.i_readoff = 0;

@@ -18,6 +18,11 @@
 #define TSS		0x28	/* TSS segment */
 
 
+/* flags for memory pages */
+#define PAGE_PRESENT	0x001	/* Present */
+#define PAGE_RW		0x002	/* Read/Write */
+#define PAGE_USER	0x004	/* User */
+
 #ifndef ASM_FILE
 
 #include <fiwix/types.h>

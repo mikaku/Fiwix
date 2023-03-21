@@ -77,7 +77,7 @@ int atapi_cd_open(struct inode *i, struct fd *fd_table)
 
 	lock_resource(&ide->resource);
 
-	if(!(buffer = (void *)kmalloc())) {
+	if(!(buffer = (void *)kmalloc(PAGE_SIZE))) {
 		unlock_resource(&ide->resource);
 		return -ENOMEM;
 	}
@@ -141,7 +141,7 @@ int atapi_cd_close(struct inode *i, struct fd *fd_table)
 		return -EINVAL;
 	}
 
-	if(!(buffer = (void *)kmalloc())) {
+	if(!(buffer = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

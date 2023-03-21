@@ -163,7 +163,7 @@ static void del_vma_region(struct vma *vma)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree2((unsigned int)tmp);
+	kfree((unsigned int)tmp);
 }
 
 static int can_be_merged(struct vma *a, struct vma *b)
@@ -188,7 +188,7 @@ static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length
 	struct vma *new;
 
 	if(start + length < vma->end) {
-		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+		if(!(new = (struct vma *)kmalloc(sizeof(struct vma)))) {
 			return -ENOMEM;
 		}
 		memset_b(new, 0, sizeof(struct vma));
@@ -234,7 +234,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 	}
 
 	if((b->start < a->end)) {
-		if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+		if(!(new = (struct vma *)kmalloc(sizeof(struct vma)))) {
 			return;
 		}
 		new->start = b->end;
@@ -252,7 +252,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 			del_vma_region(a);
 		}
 		if(new->start >= new->end) {
-			kfree2((unsigned int)new);
+			kfree((unsigned int)new);
 		} else {
 			insert_vma_region(new);
 		}
@@ -489,7 +489,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 		}
 	}
 
-	if(!(vma = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+	if(!(vma = (struct vma *)kmalloc(sizeof(struct vma)))) {
                 return -ENOMEM;
         }
         memset_b(vma, 0, sizeof(struct vma));
@@ -510,10 +510,10 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 			int errno2;
 
 			if((errno2 = free_vma_region(vma, start, length))) {
-				kfree2((unsigned int)vma);
+				kfree((unsigned int)vma);
 				return errno2;
 			}
-			kfree2((unsigned int)vma);
+			kfree((unsigned int)vma);
 			return errno;
 		}
 	}
@@ -556,7 +556,7 @@ int do_mprotect(struct vma *vma, unsigned int addr, __size_t length, int prot)
 {
 	struct vma *new;
 
-	if(!(new = (struct vma *)kmalloc2(sizeof(struct vma)))) {
+	if(!(new = (struct vma *)kmalloc(sizeof(struct vma)))) {
                 return -ENOMEM;
         }
         memset_b(new, 0, sizeof(struct vma));

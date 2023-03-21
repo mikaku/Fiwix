@@ -43,7 +43,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		}
 
 		/* extracts the next component of the path */
-		if(!(name = (char *)kmalloc2(NAME_MAX + 1))) {
+		if(!(name = (char *)kmalloc(NAME_MAX + 1))) {
 			return -ENOMEM;
 		}
 		ptr_name = name;
@@ -77,7 +77,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 			break;
 		}
 
-		kfree2((unsigned int)name);
+		kfree((unsigned int)name);
 		if(*path == '/') {
 			if(!S_ISDIR(i->i_mode) && !S_ISLNK(i->i_mode)) {
 				iput(dir);
@@ -113,7 +113,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		*i_res = i;
 	}
 
-	kfree2((unsigned int)name);
+	kfree((unsigned int)name);
 	if(d_res) {
 		if(*d_res) {
 			iput(*d_res);

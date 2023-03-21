@@ -52,7 +52,7 @@ static struct buffer *add_buffer(void)
 	unsigned long int flags;
 	struct buffer *buf;
 
-	if(!(buf = (struct buffer *)kmalloc2(sizeof(struct buffer)))) {
+	if(!(buf = (struct buffer *)kmalloc(sizeof(struct buffer)))) {
 		return NULL;
 	}
 	memset_b(buf, 0, sizeof(struct buffer));
@@ -368,7 +368,7 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 			remove_from_dirty_list(buf);
 		} else {
 			if(!buf->data) {
-				if(!(buf->data = (char *)kmalloc())) {
+				if(!(buf->data = (char *)kmalloc(PAGE_SIZE))) {
 					brelse(buf);
 					printk("%s(): returning NULL\n", __FUNCTION__);
 					return NULL;

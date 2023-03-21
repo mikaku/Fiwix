@@ -49,7 +49,7 @@ static struct inode *add_inode(void)
 	unsigned long int flags;
 	struct inode *i;
 
-	if(!(i = (struct inode *)kmalloc2(sizeof(struct inode)))) {
+	if(!(i = (struct inode *)kmalloc(sizeof(struct inode)))) {
 		return NULL;
 	}
 	memset_b(i, 0, sizeof(struct inode));

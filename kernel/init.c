@@ -56,7 +56,7 @@ void init_init(void)
 	init = &proc_table[INIT];
 
 	/* INIT process starts with the current (kernel) Page Directory */
-	if(!(pgdir = (void *)kmalloc())) {
+	if(!(pgdir = (void *)kmalloc(PAGE_SIZE))) {
 		goto init_init__die;
 	}
 	init->rss++;
@@ -98,7 +98,7 @@ void init_init(void)
 	init->umask = 0022;
 
 	/* setup the stack */
-	if(!(init->tss.esp0 = kmalloc())) {
+	if(!(init->tss.esp0 = kmalloc(PAGE_SIZE))) {
 		goto init_init__die;
 	}
 	init->tss.esp0 += PAGE_SIZE - 4;

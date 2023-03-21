@@ -84,7 +84,7 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 {
 	struct pci_device *pdt;
 
-	if(!(pdt = (struct pci_device *)kmalloc2(sizeof(struct pci_device)))) {
+	if(!(pdt = (struct pci_device *)kmalloc(sizeof(struct pci_device)))) {
 		return;
 	}
 

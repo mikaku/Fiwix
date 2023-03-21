@@ -30,7 +30,7 @@ static struct flock_file *get_new_flock(struct inode *i)
 		return NULL;
 	}
 
-	if(!(ff = (struct flock_file *)kmalloc2(sizeof(struct flock_file)))) {
+	if(!(ff = (struct flock_file *)kmalloc(sizeof(struct flock_file)))) {
 		return NULL;
 	}
 	memset_b(ff, 0, sizeof(struct flock_file));
@@ -82,7 +82,7 @@ static void release_flock(struct flock_file *ff)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree2((unsigned int)tmp);
+	kfree((unsigned int)tmp);
 	kstat.nr_flocks--;
 }
 

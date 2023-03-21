@@ -63,7 +63,7 @@ int iso9660_readlink(struct inode *i, char *buffer, __size_t count)
 	__off_t size_read;
 	char *name;
 
-	if(!(name = (char *)kmalloc())) {
+	if(!(name = (char *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 
@@ -91,7 +91,7 @@ int iso9660_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		return 0;
 	}
 
-	if(!(name = (char *)kmalloc())) {
+	if(!(name = (char *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

@@ -62,18 +62,18 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 		return NULL;
 	}
 
-	if(!(mp = (struct mount *)kmalloc2(sizeof(struct mount)))) {
+	if(!(mp = (struct mount *)kmalloc(sizeof(struct mount)))) {
 		return NULL;
 	}
 	memset_b(mp, 0, sizeof(struct mount));
 
-	if(!(mp->devname = (char *)kmalloc2(strlen(devname) + 1))) {
-		kfree2((unsigned int)mp);
+	if(!(mp->devname = (char *)kmalloc(strlen(devname) + 1))) {
+		kfree((unsigned int)mp);
 		return NULL;
 	}
-	if(!(mp->dirname = (char *)kmalloc2(strlen(dirname) + 1))) {
-		kfree2((unsigned int)mp->devname);
-		kfree2((unsigned int)mp);
+	if(!(mp->dirname = (char *)kmalloc(strlen(dirname) + 1))) {
+		kfree((unsigned int)mp->devname);
+		kfree((unsigned int)mp);
 		return NULL;
 	}
 
@@ -123,9 +123,9 @@ void del_mount_point(struct mount *mp)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree2((unsigned int)tmp->devname);
-	kfree2((unsigned int)tmp->dirname);
-	kfree2((unsigned int)tmp);
+	kfree((unsigned int)tmp->devname);
+	kfree((unsigned int)tmp->dirname);
+	kfree((unsigned int)tmp);
 	kstat.mount_points--;
 }
 

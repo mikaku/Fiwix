@@ -149,7 +149,7 @@ static int identify_drive(struct ide *ide, struct ata_drv *drive)
 	if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
 		return 1;
 	}
-	if(!(buffer = (void *)kmalloc2(ATA_HD_SECTSIZE))) {
+	if(!(buffer = (void *)kmalloc(ATA_HD_SECTSIZE))) {
 		return 1;
 	}
 	inport_sw(ide->base + ATA_DATA, (void *)buffer, ATA_HD_SECTSIZE / sizeof(short int));
@@ -158,11 +158,11 @@ static int identify_drive(struct ide *ide, struct ata_drv *drive)
 	ata_identify_device(ide, drive);
 	status = inport_b(ide->base + ATA_STATUS);
 	if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
-		kfree2((unsigned int)buffer);
+		kfree((unsigned int)buffer);
 		return 1;
 	}
-	if(!(buffer2 = (void *)kmalloc2(ATA_HD_SECTSIZE))) {
-		kfree2((unsigned int)buffer);
+	if(!(buffer2 = (void *)kmalloc(ATA_HD_SECTSIZE))) {
+		kfree((unsigned int)buffer);
 		return 1;
 	}
 	inport_sl(ide->base + ATA_DATA, (void *)buffer2, ATA_HD_SECTSIZE / sizeof(unsigned int));
@@ -176,9 +176,9 @@ static int identify_drive(struct ide *ide, struct ata_drv *drive)
 			break;
 		}
 	}
-	kfree2((unsigned int)buffer2);
+	kfree((unsigned int)buffer2);
 	memcpy_b(&drive->ident, (void *)buffer, sizeof(struct ata_drv_ident));
-	kfree2((unsigned int)buffer);
+	kfree((unsigned int)buffer);
 
 
 	/* some basic checks to make sure that data received makes sense */
@@ -940,7 +940,7 @@ void ata_init(void)
 	int channel;
 	struct ide *ide;
 
-        ide_table = (struct ide *)kmalloc();
+        ide_table = (struct ide *)kmalloc(PAGE_SIZE);
 	/* FIXME: this should be:
         ide_table = (struct ide *)kmalloc2(sizeof(struct ide) * NR_IDE_CTRLS);
 

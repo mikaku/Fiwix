@@ -72,7 +72,7 @@ int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 		return -EINVAL;
 	}
 
-	if(!(buf = (char *)kmalloc())) {
+	if(!(buf = (char *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 

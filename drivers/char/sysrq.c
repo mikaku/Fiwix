@@ -27,7 +27,7 @@ static void memory(void)
 {
 	char *buf;
 
-	buf = (char *)kmalloc();
+	buf = (char *)kmalloc(PAGE_SIZE);
 	data_proc_meminfo(buf, 0);
 	printk("%s", buf);
 	printk("\n");

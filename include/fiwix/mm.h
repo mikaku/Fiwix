@@ -27,11 +27,8 @@
 #define PT_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
 #define PD_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
 
-#define PAGE_PRESENT		0x001	/* Present */
-#define PAGE_RW			0x002	/* Read/Write */
-#define PAGE_USER		0x004	/* User */
-
 #define PAGE_LOCKED		0x001
+#define PAGE_BUDDYLOW		0x010	/* page belongs to buddy_low */
 #define PAGE_RESERVED		0x100	/* kernel, BIOS address, ... */
 #define PAGE_COW		0x200	/* marked for Copy-On-Write */
 
@@ -65,13 +62,31 @@ extern unsigned int page_hash_table_size;	/* size in bytes */
 
 extern unsigned int *kpage_dir;
 
+
 /* buddy_low.c */
-unsigned int kmalloc2(__size_t);
-void kfree2(unsigned int);
+static const unsigned int bl_blocksize[] = {
+	32,
+	64,
+	128,
+	256,
+	512,
+	1024,
+	2048,
+	4096
+};
+
+struct bl_head {
+	unsigned char level;	/* size class (exponent of the power of 2) */
+	struct bl_head *prev;
+	struct bl_head *next;
+};
+
+unsigned int bl_malloc(__size_t);
+void bl_free(unsigned int);
 void buddy_low_init(void);
 
 /* alloc.c */
-unsigned int kmalloc(void);
+unsigned int kmalloc(__size_t);
 void kfree(unsigned int);
 
 /* page.c */
@@ -79,7 +94,7 @@ void page_lock(struct page *);
 void page_unlock(struct page *);
 struct page *get_free_page(void);
 struct page *search_page_hash(struct inode *, __off_t);
-void release_page(int);
+void release_page(struct page *);
 int is_valid_page(int);
 void invalidate_inode_pages(struct inode *);
 void update_page_cache(struct inode *, __off_t, const char *, int);

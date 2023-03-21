@@ -18,7 +18,7 @@ void swap_asc_word(char *str, int len)
 	short int *ptr;
 	char *buf;
 
-	if(!(buf = (void *)kmalloc())) {
+	if(!(buf = (void *)kmalloc(PAGE_SIZE))) {
 		return;
 	}
 
