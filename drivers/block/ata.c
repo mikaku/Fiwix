@@ -678,6 +678,8 @@ int ata_io(struct ide *ide, struct ata_drv *drive, __off_t offset, int nrsectors
 {
 	int cyl, sector, head;
 
+	CLI();
+
 	if(drive->flags & DRIVE_REQUIRES_LBA) {
 		if(!ata_select_drv(ide, drive->num, ATA_LBA_MODE, offset >> 24)) {
 			outport_b(ide->base + ATA_FEATURES, 0);
