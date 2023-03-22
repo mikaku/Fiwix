@@ -940,7 +940,7 @@ void ata_init(void)
 	int channel;
 	struct ide *ide;
 
-        ide_table = (struct ide *)kmalloc(sizeof(struct ide) * NR_IDE_CTRLS);
+	ide_table = (struct ide *)kmalloc(sizeof(struct ide) * NR_IDE_CTRLS);
 	memset_b(ide_table, 0, PAGE_SIZE);
 	channel = IDE_PRIMARY;
 
