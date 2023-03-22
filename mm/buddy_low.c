@@ -29,7 +29,7 @@ static void deallocate(struct bl_head *block)
 {
 	struct bl_head **h, *buddy, *p;
 	struct page *pg;
-	unsigned int addr;
+	unsigned int addr, paddr;
 	int level;
 
 	level = block->level;
@@ -67,9 +67,10 @@ static void deallocate(struct bl_head *block)
 
 		if(level == BUDDY_MAX_LEVEL - 1) {
 			addr = (unsigned int)block;
-			addr = V2P(addr);
-			pg = &page_table[addr >> PAGE_SHIFT];
-			release_page(pg);
+			paddr = V2P(addr);
+			pg = &page_table[paddr >> PAGE_SHIFT];
+			pg->flags &= ~PAGE_BUDDYLOW;
+			kfree(addr);
 			kstat.buddy_low_num_pages--;
 		}
 	} else {
@@ -92,16 +93,17 @@ static struct bl_head *allocate(int size)
 {
 	struct bl_head *block, *buddy;
 	struct page *pg;
-	unsigned int addr;
+	unsigned int addr, paddr;
 	int level;
 
 	for(level = 0; bl_blocksize[level] < size; level++);
 
 	if(level == BUDDY_MAX_LEVEL) {
-		if((pg = get_free_page())) {
+		if((addr = kmalloc(PAGE_SIZE))) {
+			paddr = V2P(addr);
+			pg = &page_table[paddr >> PAGE_SHIFT];
 			pg->flags |= PAGE_BUDDYLOW;
-			addr = pg->page << PAGE_SHIFT;
-			block = (struct bl_head *)P2V(addr);
+			block = (struct bl_head *)addr;
 		} else {
 			printk("WARNING: %s(): not enough memory!\n", __FUNCTION__);
 			return NULL;
