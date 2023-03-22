@@ -940,12 +940,7 @@ void ata_init(void)
 	int channel;
 	struct ide *ide;
 
-        ide_table = (struct ide *)kmalloc(PAGE_SIZE);
-	/* FIXME: this should be:
-        ide_table = (struct ide *)kmalloc2(sizeof(struct ide) * NR_IDE_CTRLS);
-
-	 * when kmalloc2() be merged with kmalloc() and accept sizes > 2048
-	 */
+        ide_table = (struct ide *)kmalloc(sizeof(struct ide) * NR_IDE_CTRLS);
 	memset_b(ide_table, 0, PAGE_SIZE);
 	channel = IDE_PRIMARY;
 
