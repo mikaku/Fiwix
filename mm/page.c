@@ -161,7 +161,7 @@ struct page *get_free_page(void)
 	struct page *pg;
 
 	/* if the number of pages is low then reclaim some buffers */
-	if(kstat.free_pages < min_free_pages) {
+	if(kstat.free_pages <= min_free_pages) {
 		/* reclaim memory from buffer cache */
 		wakeup(&kswapd);
 		if(!kstat.free_pages) {
@@ -172,6 +172,16 @@ struct page *get_free_page(void)
 				printk("WARNING: %s(): out of memory and swapping is not implemented yet, sorry.\n", __FUNCTION__);
 				printk("%s(): pid %d ran out of memory. OOM killer needed!\n", __FUNCTION__, current->pid);
 				return NULL;
+			}
+		}
+		/* this reduces the number of iterations */
+		min_free_pages -= NR_BUF_RECLAIM;
+		min_free_pages = min_free_pages < 0 ? 0 : min_free_pages;
+	} else {
+		/* recalculate if free memory is back to normal levels */
+		if(!min_free_pages) {
+			if(kstat.free_pages > NR_BUF_RECLAIM) {
+				min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 			}
 		}
 	}
