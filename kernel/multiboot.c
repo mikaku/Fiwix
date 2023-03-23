@@ -299,7 +299,7 @@ void multiboot(unsigned long magic, unsigned long info)
 	} else {
 		printk("WARNING: no cmdline detected!\n");
 	}
-	printk("kernel    0x%08x        -\tcmdline='%s'\n", KERNEL_ENTRY_ADDR, cmdline);
+	printk("kernel    0x%08x        -\tcmdline='%s'\n", KERNEL_ADDR, cmdline);
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {

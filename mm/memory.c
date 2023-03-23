@@ -17,7 +17,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define KERNEL_TEXT_SIZE	((int)_etext - (PAGE_OFFSET + KERNEL_ENTRY_ADDR))
+#define KERNEL_TEXT_SIZE	((int)_etext - (PAGE_OFFSET + KERNEL_ADDR))
 #define KERNEL_DATA_SIZE	((int)_edata - (int)_etext)
 #define KERNEL_BSS_SIZE		((int)_end - (int)_edata)
 
@@ -292,7 +292,7 @@ void mem_init(void)
 		_last_data_addr += (PAGE_SIZE * 4);
 	}
 
-	_last_data_addr = map_kaddr(KERNEL_ENTRY_ADDR, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr(KERNEL_ADDR, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
 	/* since Page Directory is now activated we can use virtual addresses */

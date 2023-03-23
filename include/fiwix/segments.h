@@ -9,7 +9,7 @@
 #define _FIWIX_SEGMENTS_H
 
 #define PAGE_OFFSET	0xC0000000
-#define KERNEL_ENTRY_ADDR	0x100000
+#define KERNEL_ADDR	0x100000
 
 #define KERNEL_CS	0x08	/* kernel code segment */
 #define KERNEL_DS	0x10	/* kernel data segment */

@@ -451,7 +451,7 @@ void page_init(int pages)
 		pg->page = n;
 
 		addr = n << PAGE_SHIFT;
-		if(addr >= KERNEL_ENTRY_ADDR && addr < V2P(_last_data_addr)) {
+		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.kernel_reserved++;
 			continue;
