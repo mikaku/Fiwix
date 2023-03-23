@@ -17,7 +17,7 @@
 
 int send_packet_command(unsigned char *pkt, struct ide *ide, struct ata_drv *drive, int blksize)
 {
-	int n, retries, status;
+	int status;
 
 	outport_b(ide->ctrl + ATA_DEV_CTRL, 0);
 	ata_delay();
@@ -44,17 +44,9 @@ int send_packet_command(unsigned char *pkt, struct ide *ide, struct ata_drv *dri
 	 * determine if an interrupt will occur.
 	 */
 
-	SET_ATA_RDY_RETR(retries);
-
-	for(n = 0; n < retries; n++) {
-		status = inport_b(ide->base + ATA_STATUS);
-		if((status & (ATA_STAT_DRQ | ATA_STAT_BSY)) == ATA_STAT_DRQ) {
-			break;
-		}
-		ata_delay();
-	}
-	if(n >= retries) {
-		printk("WARNING: %s(): %s: drive not ready to receive command packet (retries = %d).\n", __FUNCTION__, drive->dev_name, n);
+	status = ata_wait_state(ide, ATA_STAT_BSY);
+	if(status) {
+		printk("WARNING: %s(): %s: drive not ready to receive PACKET command.\n", __FUNCTION__, drive->dev_name);
 		return 1;
 	}
 
