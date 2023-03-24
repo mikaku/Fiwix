@@ -39,6 +39,9 @@
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define NR_BUF_HASH	(buffer_hash_table_size / sizeof(unsigned int))
 
+#define NO_GROW		0
+#define	GROW_IF_NEEDED	1
+
 struct buffer *buffer_table;		/* buffer pool */
 struct buffer *buffer_head;		/* head of free list */
 struct buffer *buffer_dirty_head;	/* head of dirty list */
@@ -46,8 +49,7 @@ struct buffer **buffer_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
 
-/* append a new buffer into the buffer pool */
-static struct buffer *add_buffer(void)
+static struct buffer *add_buffer_to_pool(void)
 {
 	unsigned long int flags;
 	struct buffer *buf;
@@ -66,8 +68,42 @@ static struct buffer *add_buffer(void)
 	}
 	buffer_table->prev = buf;
 	RESTORE_FLAGS(flags);
+
 	kstat.nr_buffers++;
 	return buf;
+}
+
+static void del_buffer_from_pool(struct buffer *buf)
+{
+	unsigned long int flags;
+	struct buffer *tmp;
+
+	tmp = buf;
+
+	if(!buf->next && !buf->prev) {
+		printk("WARNING: %s(): trying to delete an unexistent buffer (block %d).\n", __FUNCTION__, buf->block);
+		return;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if(buf->next) {
+		buf->next->prev = buf->prev;
+	}
+	if(buf->prev) {
+		if(buf != buffer_table) {
+			buf->prev->next = buf->next;
+		}
+	}
+	if(!buf->next) {
+		buffer_table->prev = buf->prev;
+	}
+	if(buf == buffer_table) {
+		buffer_table = buf->next;
+	}
+	RESTORE_FLAGS(flags);
+
+	kfree((unsigned int)tmp);
+	kstat.nr_buffers--;
 }
 
 static void insert_to_hash(struct buffer *buf)
@@ -223,17 +259,19 @@ static void buffer_wait(struct buffer *buf)
 	RESTORE_FLAGS(flags);
 }
 
-static struct buffer *get_free_buffer(void)
+static struct buffer *get_free_buffer(int mode)
 {
 	unsigned long int flags;
 	struct buffer *buf;
 
-	if(kstat.nr_buffers < kstat.max_buffers) {
-		if(!(buf = add_buffer())) {
-			return NULL;
+	if(mode == GROW_IF_NEEDED) {
+		if(kstat.nr_buffers < kstat.max_buffers) {
+			if(!(buf = add_buffer_to_pool())) {
+				return NULL;
+			}
+			buf->flags |= BUFFER_LOCKED;
+			return buf;
 		}
-		buf->flags |= BUFFER_LOCKED;
-		return buf;
 	}
 
 	/* no more buffers on free list */
@@ -357,7 +395,7 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 			return buf;
 		}
 
-		if(!(buf = get_free_buffer())) {
+		if(!(buf = get_free_buffer(GROW_IF_NEEDED))) {
 			printk("WARNING: %s(): no more buffers on free list!\n", __FUNCTION__);
 			sleep(&get_free_buffer, PROC_UNINTERRUPTIBLE);
 			continue;
@@ -508,47 +546,29 @@ void invalidate_buffers(__dev_t dev)
  */
 int reclaim_buffers(void)
 {
-	struct buffer *buf, *first;
+	struct buffer *buf;
 	int reclaimed;
 
 	reclaimed = 0;
-	first = NULL;
 
-	for(;;) {
-		if(!(buf = get_free_buffer())) {
-			printk("WARNING: %s(): no more buffers on free list!\n", __FUNCTION__);
-			sleep(&get_free_buffer, PROC_UNINTERRUPTIBLE);
-			continue;
-		}
-
-		if(buf->flags & BUFFER_DIRTY) {
-			sync_one_buffer(buf);
-			remove_from_dirty_list(buf);
-		}
-
-		/* this ensures the buffer will go to the tail */
-		buf->flags |= BUFFER_VALID;
-
-		if(first) {
-			if(first == buf) {
-				brelse(buf);
-				break;
-			}
-		} else {
-			first = buf;
-		}
+	while((buf = get_free_buffer(NO_GROW))) {
 		if(buf->data) {
+			remove_from_hash(buf);
+
+			if(buf->flags & BUFFER_DIRTY) {
+				sync_one_buffer(buf);
+				remove_from_dirty_list(buf);
+			}
+
 			kfree((unsigned int)buf->data);
 			buf->data = NULL;
-			remove_from_hash(buf);
 			kstat.buffers -= (PAGE_SIZE / 1024);
 			reclaimed++;
-			if(reclaimed == NR_BUF_RECLAIM) {
-				brelse(buf);
-				break;
-			}
 		}
-		brelse(buf);
+		del_buffer_from_pool(buf);
+		if(reclaimed == NR_BUF_RECLAIM) {
+			break;
+		}
 	}
 
 	wakeup(&buffer_wait);
