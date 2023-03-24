@@ -31,8 +31,8 @@
 #define NR_IDT_ENTRIES	256	/* entries in IDT descriptor */
 
 /* low flags of Segment Descriptors */
-#define SD_DATA		0x02	/* DATA Read/Write */
 #define SD_CODE		0x0A	/* CODE Exec/Read */
+#define SD_DATA		0x02	/* DATA Read/Write */
 
 #define SD_32INTRGATE	0x0E	/* 32-bit Interrupt Gate (0D110) */
 #define SD_32TRAPGATE	0x0F	/* 32-bit Trap Gate (0D111) */
@@ -61,7 +61,7 @@ struct desc_r {
 
 struct seg_desc {
 	unsigned sd_lolimit : 16;	/* segment limit 0-15 bits */
-	unsigned sd_lobase  : 24;	/* base address  0-23 bits */
+	unsigned sd_lobase  : 24;	/* base address 0-23 bits */
 	unsigned sd_loflags :  8;	/* flags (P, DPL, S and TYPE) */
 	unsigned sd_hilimit :  4;	/* segment limit 16-19 bits */
 	unsigned sd_hiflags :  4;	/* flags (G, DB, 0 and AVL) */
