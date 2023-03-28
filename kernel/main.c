@@ -141,7 +141,7 @@ void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
 
 void stop_kernel(void)
 {
-	struct proc *p;
+	struct proc *p, *next;
 	int n;
 
 	/* stop and disable all interrupts! */
@@ -158,9 +158,10 @@ void stop_kernel(void)
 
 	/* put all processes to sleep and reset all pending signals */
 	FOR_EACH_PROCESS_RUNNING(p) {
+		next = p->next;
 		not_runnable(p, PROC_SLEEPING);
 		p->sigpending = 0;
-		p = p->next_run;
+		p = next;
 	}
 
 	/* enable keyboard only */
