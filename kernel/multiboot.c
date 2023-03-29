@@ -248,7 +248,7 @@ unsigned int get_last_boot_addr(unsigned int info)
 	return P2V(addr);
 }
 
-void multiboot(unsigned long magic, unsigned long info)
+void multiboot(unsigned int magic, unsigned int info)
 {
 	struct multiboot_info mbi;
 

@@ -58,7 +58,7 @@ struct new_utsname sys_utsname = {
 
 struct kernel_stat kstat;
 
-void start_kernel(unsigned long magic, unsigned long info, unsigned int stack)
+void start_kernel(unsigned int magic, unsigned int info, unsigned int stack)
 {
 	struct proc *init;
 
