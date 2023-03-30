@@ -25,6 +25,10 @@
 - Added more checks on data received during ATA drive identify to make sure it
   makes sense.
 - Added the magic SysRq key 'm' to show current memory information.
+- Added the Multiboot magic value as a new parameter in get_last_boot_addr() to
+  avoid a kernel panics when it is booted without the Multiboot structure.
+- Added a check if flag MULTIBOOT_INFO_ELF_SHDR is set before reading the ELF
+  section header table to avoid possible kernel panics.
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -33,6 +37,8 @@
 - Changed lots of fixed-size arrays to dynamically allocated arrays.
 - Changed malloc_name() and free_name() to use the new memory allocator.
 - Changed do_namei() to use the new memory allocator.
+- Rewritten reclaim_buffers() to be more efficient and also to free up unused
+  buffers and shrink the buffer table.
 - Modified the Makefile to disable compiling with PIE option enabled by some
   builds of GCC. [#6]
 - Reverted 40bf18b because some signals weren't caugth and created malfunction
@@ -91,6 +97,18 @@
 - Fixed a long standing bug where after removing an inode there was not a call
   to invalidate all its pages from the cache. [#24]
 - Fixed a missing initialization in the PCI structure during scan_bus(). [#25]
+- Fixed bread() to check if the bytes read matches with what was requested.
+- Fixed premature output of information from the serial driver when acting as
+  the remote console.
+- Fixed frame buffer memory spaces to be marked as reserved if they conflict
+  with available memory.
+- Fixed sys_select() to return in the timeout argument the amount of time not
+  slept. This is Linux specific but POSIX permits this behavior.
+- Fixed Magic SysRq key 't' to also list zombie processes.
+- Fixed Magic SysRq keys to work even when the tty has not been opened yet.
+- Fixed get_free_page() to reduce the excessive number of iterations with
+  reclaim_buffers() when running out of memory pages.
+- Fixed the mechanism to sleep all processes in stop_kernel().
 - Small fixes and cosmetic changes.
 
 
