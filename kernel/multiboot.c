@@ -217,20 +217,23 @@ unsigned int get_last_boot_addr(unsigned int magic, unsigned int info)
 		return P2V(addr);
 	}
 
-	symtab = strtab = NULL;
 	mbi = (struct multiboot_info *)info;
-	hdr = &(mbi->u.elf_sec);
-	for(n = 0; n < hdr->num; n++) {
-		shdr = (Elf32_Shdr *)(hdr->addr + (n * hdr->size));
-		if(shdr->sh_type == SHT_SYMTAB) {
-			symtab = shdr;
-		}
-		if(shdr->sh_type == SHT_STRTAB) {
-			strtab = shdr;
-		}
-	}
 
-	addr = strtab->sh_addr + strtab->sh_size;
+	if(mbi->flags & MULTIBOOT_INFO_ELF_SHDR) {
+		symtab = strtab = NULL;
+		hdr = &(mbi->u.elf_sec);
+		for(n = 0; n < hdr->num; n++) {
+			shdr = (Elf32_Shdr *)(hdr->addr + (n * hdr->size));
+			if(shdr->sh_type == SHT_SYMTAB) {
+				symtab = shdr;
+			}
+			if(shdr->sh_type == SHT_STRTAB) {
+				strtab = shdr;
+			}
+		}
+
+		addr = strtab->sh_addr + strtab->sh_size;
+	}
 
 	/* no ELF header tables */
 	if(!(mbi->flags & MULTIBOOT_INFO_ELF_SHDR)) {
