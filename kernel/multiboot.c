@@ -219,6 +219,7 @@ unsigned int get_last_boot_addr(unsigned int magic, unsigned int info)
 
 	mbi = (struct multiboot_info *)info;
 
+	/* ELF header tables */
 	if(mbi->flags & MULTIBOOT_INFO_ELF_SHDR) {
 		symtab = strtab = NULL;
 		hdr = &(mbi->u.elf_sec);
@@ -233,10 +234,7 @@ unsigned int get_last_boot_addr(unsigned int magic, unsigned int info)
 		}
 
 		addr = strtab->sh_addr + strtab->sh_size;
-	}
-
-	/* no ELF header tables */
-	if(!(mbi->flags & MULTIBOOT_INFO_ELF_SHDR)) {
+	} else {
 		addr = (unsigned int)_end + PAGE_SIZE;
 	}
 
