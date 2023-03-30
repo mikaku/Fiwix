@@ -105,7 +105,7 @@ struct kernel_stat {
 };
 extern struct kernel_stat kstat;
 
-unsigned int get_last_boot_addr(unsigned int);
+unsigned int get_last_boot_addr(unsigned int, unsigned int);
 void multiboot(unsigned int, unsigned int);
 void start_kernel(unsigned int, unsigned int, unsigned int);
 void stop_kernel(void);
