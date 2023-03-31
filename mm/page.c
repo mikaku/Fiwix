@@ -136,7 +136,7 @@ void page_lock(struct page *pg)
 		SAVE_FLAGS(flags); CLI();
 		if(pg->flags & PAGE_LOCKED) {
 			RESTORE_FLAGS(flags);
-			sleep(&pg, PROC_UNINTERRUPTIBLE);
+			sleep(pg, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
