@@ -59,7 +59,7 @@ extern unsigned int _tlbinfo_ecx;
 extern unsigned int _tlbinfo_edx;
 extern char _etext[], _edata[], _end[];
 
-extern char cmdline[NAME_MAX + 1];
+extern char kernel_cmdline[NAME_MAX + 1];
 
 struct kernel_stat {
 	int flags;			/* kernel flags */

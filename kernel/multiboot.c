@@ -300,12 +300,12 @@ void multiboot(unsigned int magic, unsigned int info)
 				break;
 			}
 		}
-		strcpy(cmdline, p);
-		init_args = parse_cmdline(cmdline);
+		strcpy(kernel_cmdline, p);
+		init_args = parse_cmdline(kernel_cmdline);
 	} else {
 		printk("WARNING: no cmdline detected!\n");
 	}
-	printk("kernel    0x%08x        -\tcmdline='%s'\n", KERNEL_ADDR, cmdline);
+	printk("kernel    0x%08x        -\tcmdline='%s'\n", KERNEL_ADDR, kernel_cmdline);
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {

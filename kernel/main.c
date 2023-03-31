@@ -45,7 +45,7 @@ int kparm_ro;
 unsigned int _last_data_addr;
 char *init_args;
 
-char cmdline[NAME_MAX + 1];
+char kernel_cmdline[NAME_MAX + 1];
 
 struct new_utsname sys_utsname = {
 	UTS_SYSNAME,

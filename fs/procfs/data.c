@@ -73,7 +73,7 @@ int data_proc_buddyinfo(char *buffer, __pid_t pid)
 
 int data_proc_cmdline(char *buffer, __pid_t pid)
 {
-	return sprintk(buffer, "%s\n", cmdline);
+	return sprintk(buffer, "%s\n", kernel_cmdline);
 }
 
 int data_proc_cpuinfo(char *buffer, __pid_t pid)
