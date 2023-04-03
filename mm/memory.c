@@ -260,8 +260,10 @@ void mem_init(void)
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);	/* in bytes */
 
-	/* Page Directory will be aligned to the next page */
+	/* align _last_data_addr to the next page */
 	_last_data_addr = PAGE_ALIGN(_last_data_addr);
+
+	/* Page Directory */
 	kpage_dir = (unsigned int *)_last_data_addr;
 	memset_b(kpage_dir, 0, PAGE_SIZE);
 	_last_data_addr += PAGE_SIZE;
