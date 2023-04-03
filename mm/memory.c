@@ -373,6 +373,7 @@ void mem_init(void)
 		}
 		for(; n < RAMDISK_MINORS; n++) {
 			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
+				kparm_ramdisksize = 0;
 				printk("WARNING: RAMdisk device disabled (not enough physical memory).\n");
 				break;
 			}
