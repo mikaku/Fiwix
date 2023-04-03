@@ -624,6 +624,10 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 	switch(type) {
 		case FN_KEYS:
+			if(c > sizeof(fn_seq) / sizeof(char *)) {
+				printk("WARNING: %s(): unrecognized function key.\n", __FUNCTION__);
+				break;
+			}
 			puts(tty, fn_seq[c]);
 			break;
 
