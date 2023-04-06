@@ -191,7 +191,7 @@ int iso9660_read_superblock(__dev_t dev, struct superblock *sb)
 	sb->flags = MS_RDONLY;
 	sb->s_blocksize = isonum_723(pvd->logical_block_size);
 	sb->u.iso9660.rrip = 0;
-	if(!(sb->u.iso9660.sb = (void *)kmalloc(PAGE_SIZE))) {
+	if(!(sb->u.iso9660.sb = (struct iso9660_super_block *)kmalloc(sizeof(struct iso9660_super_block)))) {
 		superblock_unlock(sb);
 		brelse(buf);
 		return -ENOMEM;
