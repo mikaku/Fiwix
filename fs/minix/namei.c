@@ -565,7 +565,7 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 	return 0;
 }
 
-int minix_create(struct inode *dir, char *name, __mode_t mode, struct inode **i_res)
+int minix_create(struct inode *dir, char *name, int flags, __mode_t mode, struct inode **i_res)
 {
 	struct buffer *buf;
 	struct inode *i;

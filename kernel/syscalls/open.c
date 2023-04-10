@@ -74,7 +74,7 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 		}
 		if(errno) {	/* assumes -ENOENT */
 			if(dir->fsop && dir->fsop->create) {
-				errno = dir->fsop->create(dir, basename, mode, &i);
+				errno = dir->fsop->create(dir, basename, flags, mode, &i);
 				if(errno) {
 					iput(dir);
 					free_name(tmp_name);

@@ -13,12 +13,13 @@
 #include <fiwix/buffer.h>
 #include <fiwix/mm.h>
 #include <fiwix/errno.h>
+#include <fiwix/fcntl.h>
 #include <fiwix/stat.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-/* finds the entry 'name' with (optionally) inode 'i' in the directory 'dir' */
-static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct ext2_dir_entry_2 **d_res, char *name)
+/* finds a new entry to fit 'name' in the directory 'dir' */
+static struct buffer *find_first_free_dir_entry(struct inode *dir, struct ext2_dir_entry_2 **d_res, char *name)
 {
 	__blk_t block;
 	unsigned int blksize;
@@ -30,7 +31,74 @@ static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct 
 	blksize = dir->sb->s_blocksize;
 	offset = 0;
 
-	/* nlen is the length of the new entry, used when searching for the first usable entry */
+	/*
+	 * nlen is the length of the new entry to be used when searching for
+	 * the first usable entry.
+	 */
+	nlen = basesize + strlen(name) + 3;
+	nlen &= ~3;
+
+	while(offset < dir->i_size) {
+		if((block = bmap(dir, offset, FOR_READING)) < 0) {
+			break;
+		}
+		if(block) {
+			if(!(buf = bread(dir->dev, block, blksize))) {
+				break;
+			}
+			doffset = 0;
+			do {
+				*d_res = (struct ext2_dir_entry_2 *)(buf->data + doffset);
+				/* calculates the real length of the current entry */
+				rlen = basesize + strlen((*d_res)->name) + 3;
+				rlen &= ~3;
+				/* returns the first entry where name can fit in */
+				if(!(*d_res)->inode) {
+					if(nlen <= (*d_res)->rec_len) {
+						return buf;
+					}
+				} else {
+					if(rlen + nlen <= (*d_res)->rec_len) {
+						int nrec_len;
+
+						nrec_len = (*d_res)->rec_len - rlen;
+						(*d_res)->rec_len = rlen;
+						doffset += (*d_res)->rec_len;
+						*d_res = (struct ext2_dir_entry_2 *)(buf->data + doffset);
+						(*d_res)->rec_len = nrec_len;
+						return buf;
+					}
+				}
+				doffset += (*d_res)->rec_len;
+			} while(doffset < blksize);
+			brelse(buf);
+			offset += blksize;
+		} else {
+			break;
+		}
+	}
+
+	*d_res = NULL;
+	return NULL;
+}
+
+/* finds an entry in 'dir' based on the 'name' and/or on the inode 'i' */
+static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct ext2_dir_entry_2 **d_res, char *name)
+{
+	__blk_t block;
+	unsigned int blksize;
+	unsigned int offset, doffset;
+	struct buffer *buf;
+	int basesize, nlen;
+
+	basesize = sizeof((*d_res)->inode) + sizeof((*d_res)->rec_len) + sizeof((*d_res)->name_len) + sizeof((*d_res)->file_type);
+	blksize = dir->sb->s_blocksize;
+	offset = 0;
+
+	/*
+	 * nlen is the length of the new entry to be used when searching for
+	 * the first usable entry.
+	 */
 	nlen = basesize + strlen(name) + 3;
 	nlen &= ~3;
 
@@ -46,27 +114,14 @@ static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct 
 			do {
 				*d_res = (struct ext2_dir_entry_2 *)(buf->data + doffset);
 				if(!i) {
-					/* calculates the real length of the current entry */
-					rlen = basesize + strlen((*d_res)->name) + 3;
-					rlen &= ~3;
-					/* returns the first entry where *name can fit in */
-					if(!(*d_res)->inode) {
-						if(nlen <= (*d_res)->rec_len) {
-							return buf;
-						}
-					} else {
-						if(rlen + nlen <= (*d_res)->rec_len) {
-							int nrec_len;
-
-							nrec_len = (*d_res)->rec_len - rlen;
-							(*d_res)->rec_len = rlen;
-							doffset += (*d_res)->rec_len;
-							*d_res = (struct ext2_dir_entry_2 *)(buf->data + doffset);
-							(*d_res)->rec_len = nrec_len;
-							return buf;
+					if((*d_res)->inode) {
+						/* returns the first matching name */
+						if((*d_res)->name_len == strlen(name)) {
+							if(!strncmp((*d_res)->name, name, (*d_res)->name_len)) {
+								return buf;
+							}
 						}
 					}
-					doffset += (*d_res)->rec_len;
 				} else {
 					if((*d_res)->inode == i->inode) {
 						/* returns the first matching inode */
@@ -80,8 +135,8 @@ static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct 
 							}
 						}
 					}
-					doffset += (*d_res)->rec_len;
 				}
+				doffset += (*d_res)->rec_len;
 			} while(doffset < blksize);
 			brelse(buf);
 			offset += blksize;
@@ -99,7 +154,7 @@ static struct buffer *add_dir_entry(struct inode *dir, struct ext2_dir_entry_2 *
 	__blk_t block;
 	struct buffer *buf;
 
-	if(!(buf = find_dir_entry(dir, NULL, d_res, name))) {
+	if(!(buf = find_first_free_dir_entry(dir, d_res, name))) {
 		if((block = bmap(dir, dir->i_size, FOR_WRITING)) < 0) {
 			return NULL;
 		}
@@ -378,6 +433,13 @@ int ext2_symlink(struct inode *dir, char *name, char *oldname)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, S_IFLNK))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -471,6 +533,13 @@ int ext2_mkdir(struct inode *dir, char *name, __mode_t mode)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, S_IFDIR))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -562,6 +631,13 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, mode & S_IFMT))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -625,7 +701,7 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 	return 0;
 }
 
-int ext2_create(struct inode *dir, char *name, __mode_t mode, struct inode **i_res)
+int ext2_create(struct inode *dir, char *name, int flags, __mode_t mode, struct inode **i_res)
 {
 	struct buffer *buf;
 	struct inode *i;
@@ -638,6 +714,15 @@ int ext2_create(struct inode *dir, char *name, __mode_t mode, struct inode **i_r
 	}
 
 	inode_lock(dir);
+
+	if(flags & O_CREAT) {
+		/* check again to know if this filename already exists */
+		if((buf = find_dir_entry(dir, NULL, &d, name))) {
+			brelse(buf);
+			inode_unlock(dir);
+			return -EEXIST;
+		}
+	}
 
 	if(!(i = ialloc(dir->sb, S_IFREG))) {
 		inode_unlock(dir);

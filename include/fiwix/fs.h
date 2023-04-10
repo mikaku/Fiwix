@@ -162,7 +162,7 @@ struct fs_operations {
 	int (*mkdir)(struct inode *, char *, __mode_t);
 	int (*mknod)(struct inode *, char *, __mode_t, __dev_t);
 	int (*truncate)(struct inode *, __off_t);
-	int (*create)(struct inode *, char *, __mode_t, struct inode **);
+	int (*create)(struct inode *, char *, int, __mode_t, struct inode **);
 	int (*rename)(struct inode *, struct inode *, struct inode *, struct inode *, char *, char *);
 
 /* block device I/O operations */
