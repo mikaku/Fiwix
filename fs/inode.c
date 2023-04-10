@@ -212,7 +212,6 @@ static int write_inode(struct inode *i)
 {
 	int errno;
 
-	inode_lock(i);
 	if(i->sb && i->sb->fsop && i->sb->fsop->write_inode) {
 		errno = i->sb->fsop->write_inode(i);
 	} else {
@@ -220,7 +219,6 @@ static int write_inode(struct inode *i)
 		i->dirty = 0;
 		errno = 0;
 	}
-	inode_unlock(i);
 
 	return errno;
 }
@@ -241,6 +239,17 @@ static struct inode *search_inode_hash(__dev_t dev, __ino_t inode)
 	}
 
 	return NULL;
+}
+
+static void wait_on_inode(struct inode *i)
+{
+	for(;;) {
+		if(i->locked) {
+			sleep(i, PROC_UNINTERRUPTIBLE);
+		} else {
+			break;
+		}
+	}
 }
 
 void inode_lock(struct inode *i)
@@ -312,6 +321,12 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 
 	for(;;) {
 		if((i = search_inode_hash(sb->dev, inode))) {
+			SAVE_FLAGS(flags); CLI();
+			if(i->locked) {
+				sleep(i, PROC_UNINTERRUPTIBLE);
+				RESTORE_FLAGS(flags);
+				continue;
+			}
 			inode_lock(i);
 
 			if(i->mount_point) {
@@ -324,6 +339,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 			}
 			i->count++;
 			inode_unlock(i);
+			RESTORE_FLAGS(flags);
 			return i;
 		}
 
@@ -385,6 +401,8 @@ void iput(struct inode *i)
 		return;
 	}
 
+	wait_on_inode(i);
+
 	if(!i->count) {
 		printk("WARNING: %s(): trying to free an already freed inode (%d)!\n", __FUNCTION__, i->inode);
 		return;
@@ -394,20 +412,25 @@ void iput(struct inode *i)
 		return;
 	}
 
+	inode_lock(i);
 	if(!i->i_nlink) {
 		if(i->sb && i->sb->fsop && i->sb->fsop->ifree) {
-			inode_lock(i);
 			i->sb->fsop->ifree(i);
-			inode_unlock(i);
 		}
-		remove_from_hash(i);
 	}
 	if(i->dirty) {
 		if(write_inode(i)) {
 			printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
+			if(!i->i_nlink) {
+				remove_from_hash(i);
+			}
+			i->count++;
+			inode_unlock(i);
 			return;
 		}
 	}
+	remove_from_hash(i);
+	inode_unlock(i);
 
 	SAVE_FLAGS(flags); CLI();
 	insert_on_free_list(i);
@@ -424,9 +447,11 @@ void sync_inodes(__dev_t dev)
 	while(i) {
 		if(i->dirty) {
 			if(!dev || i->dev == dev) {
+				inode_lock(i);
 				if(write_inode(i)) {
 					printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
 				}
+				inode_unlock(i);
 			}
 		}
 		i = i->next;
