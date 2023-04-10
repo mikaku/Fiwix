@@ -325,21 +325,21 @@ static struct buffer *get_dirty_buffer(void)
 	return buf;
 }
 
-static void sync_one_buffer(struct buffer *buf)
+static int sync_one_buffer(struct buffer *buf)
 {
 	struct device *d;
 	int errno;
 
 	if(!(d = get_device(BLK_DEV, buf->dev))) {
 		printk("WARNING: %s(): block device %d,%d not registered!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
-		return;
+		return 1;
 	}
 
 	/* this shouldn't happen */
 	if(!buf->data) {
 		printk("WARNING: %s(): buffer (dev=%x, block=%d, size=%d) has no data!\n", __FUNCTION__, buf->dev, buf->block, buf->size);
 		buf->flags &= ~BUFFER_DIRTY;
-		return;
+		return 0;
 	}
 
 	if(d->fsop && d->fsop->write_block) {
@@ -350,12 +350,13 @@ static void sync_one_buffer(struct buffer *buf)
 			} else {
 				printk("WARNING: %s(): I/O error on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
 			}
-			return;
+			return 1;
 		}
 		buf->flags &= ~BUFFER_DIRTY;
 	} else {
 		printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
 	}
+	return 0;
 }
 
 static struct buffer *search_buffer_hash(__dev_t dev, __blk_t block, int size)
@@ -402,8 +403,11 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 		}
 
 		if(buf->flags & BUFFER_DIRTY) {
-			sync_one_buffer(buf);
-			remove_from_dirty_list(buf);
+			if(!sync_one_buffer(buf)) {
+				remove_from_dirty_list(buf);
+			}
+			brelse(buf);
+			continue;
 		} else {
 			if(!buf->data) {
 				if(!(buf->data = (char *)kmalloc(PAGE_SIZE))) {
@@ -504,7 +508,11 @@ void sync_buffers(__dev_t dev)
 			first = buf;
 		}
 		if(!dev || buf->dev == dev) {
-			sync_one_buffer(buf);
+			if(sync_one_buffer(buf)) {
+				insert_on_dirty_list(buf);
+				buf->flags &= ~BUFFER_LOCKED;
+				continue;
+			}
 			synced = 1;
 		} else {
 			insert_on_dirty_list(buf);
@@ -556,8 +564,11 @@ int reclaim_buffers(void)
 			remove_from_hash(buf);
 
 			if(buf->flags & BUFFER_DIRTY) {
-				sync_one_buffer(buf);
-				remove_from_dirty_list(buf);
+				if(!sync_one_buffer(buf)) {
+					remove_from_dirty_list(buf);
+				}
+				brelse(buf);
+				continue;
 			}
 
 			kfree((unsigned int)buf->data);
@@ -615,7 +626,11 @@ int kbdflushd(void)
 				first = buf;
 			}
 
-			sync_one_buffer(buf);
+			if(sync_one_buffer(buf)) {
+				insert_on_dirty_list(buf);
+				buf->flags &= ~BUFFER_LOCKED;
+				continue;
+			}
 			buf->flags &= ~BUFFER_LOCKED;
 			flushed++;
 
