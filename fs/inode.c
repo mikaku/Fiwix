@@ -417,6 +417,7 @@ void iput(struct inode *i)
 		if(i->sb && i->sb->fsop && i->sb->fsop->ifree) {
 			i->sb->fsop->ifree(i);
 		}
+		remove_from_hash(i);
 	}
 	if(i->dirty) {
 		if(write_inode(i)) {
@@ -429,7 +430,6 @@ void iput(struct inode *i)
 			return;
 		}
 	}
-	remove_from_hash(i);
 	inode_unlock(i);
 
 	SAVE_FLAGS(flags); CLI();
