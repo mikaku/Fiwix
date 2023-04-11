@@ -302,14 +302,13 @@ static struct buffer *get_dirty_buffer(void)
 	unsigned long int flags;
 	struct buffer *buf;
 
-	/* no buffers on dirty list */
-	if(!buffer_dirty_head) {
-		return NULL;
-	}
-
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		buf = buffer_dirty_head;
+		if(!(buf = buffer_dirty_head)) {
+			/* no buffers on dirty list */
+			RESTORE_FLAGS(flags);
+			return NULL;
+		}
 		if(buf->flags & BUFFER_LOCKED) {
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
