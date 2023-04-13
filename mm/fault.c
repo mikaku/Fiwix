@@ -122,7 +122,9 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 					printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 					return 1;
 				}
+				page_lock(pg);
 				addr = (unsigned int)pg->data;
+				page_unlock(pg);
 			}
 		}
 		if(!pg) {

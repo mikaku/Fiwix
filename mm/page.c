@@ -281,7 +281,9 @@ void invalidate_inode_pages(struct inode *i)
 
 	for(offset = 0; offset < i->i_size; offset += PAGE_SIZE) {
 		if((pg = search_page_hash(i, offset))) {
+			page_lock(pg);
 			release_page(pg);
+			page_unlock(pg);
 			remove_from_hash(pg);
 		}
 	}
@@ -332,19 +334,31 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 {
 	__blk_t block;
 	__off_t size_read;
-	int blksize;
+	int blksize, retval;
 	struct buffer *buf;
 
 	blksize = i->sb->s_blocksize;
-	size_read = 0;
+	retval = size_read = 0;
+
+	page_lock(pg);
+
+	/* cache any read-only or public (shared) pages */
+	if(!(prot & PROT_WRITE) || flags & MAP_SHARED) {
+		pg->inode = i->inode;
+		pg->offset = offset;
+		pg->dev = i->dev;
+		insert_to_hash(pg);
+	}
 
 	while(size_read < PAGE_SIZE) {
 		if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
-			return 1;
+			retval = 1;
+			break;
 		}
 		if(block) {
 			if(!(buf = bread(i->dev, block, blksize))) {
-				return 1;
+				retval = 1;
+				break;
 			}
 			memcpy_b(pg->data + size_read, buf->data, blksize);
 			brelse(buf);
@@ -355,15 +369,8 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		size_read += blksize;
 	}
 
-	/* cache any read-only or public (shared) pages */
-	if(!(prot & PROT_WRITE) || flags & MAP_SHARED) {
-		pg->inode = i->inode;
-		pg->offset = offset;
-		pg->dev = i->dev;
-		insert_to_hash(pg);
-	}
-
-	return 0;
+	page_unlock(pg);
+	return retval;
 }
 
 int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
