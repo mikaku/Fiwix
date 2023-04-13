@@ -40,7 +40,7 @@
 #define NR_BUF_HASH	(buffer_hash_table_size / sizeof(unsigned int))
 
 #define NO_GROW		0
-#define	GROW_IF_NEEDED	1
+#define GROW_IF_NEEDED	1
 
 struct buffer *buffer_table;		/* buffer pool */
 struct buffer *buffer_head;		/* head of free list */
@@ -487,9 +487,7 @@ void brelse(struct buffer *buf)
 void sync_buffers(__dev_t dev)
 {
 	struct buffer *buf, *first;
-	int synced;
 
-	synced = 0;
 	first = NULL;
 
 	lock_resource(&sync_resource);
@@ -501,6 +499,7 @@ void sync_buffers(__dev_t dev)
 			if(first == buf) {
 				insert_on_dirty_list(buf);
 				buf->flags &= ~BUFFER_LOCKED;
+				wakeup(&buffer_wait);
 				break;
 			}
 		} else {
@@ -509,20 +508,14 @@ void sync_buffers(__dev_t dev)
 		if(!dev || buf->dev == dev) {
 			if(sync_one_buffer(buf)) {
 				insert_on_dirty_list(buf);
-				buf->flags &= ~BUFFER_LOCKED;
-				continue;
 			}
-			synced = 1;
 		} else {
 			insert_on_dirty_list(buf);
 		}
 		buf->flags &= ~BUFFER_LOCKED;
-	}
-	unlock_resource(&sync_resource);
-
-	if(synced) {
 		wakeup(&buffer_wait);
 	}
+	unlock_resource(&sync_resource);
 }
 
 void invalidate_buffers(__dev_t dev)
@@ -619,6 +612,7 @@ int kbdflushd(void)
 				if(first == buf) {
 					insert_on_dirty_list(buf);
 					buf->flags &= ~BUFFER_LOCKED;
+					wakeup(&buffer_wait);
 					break;
 				}
 			} else {
@@ -628,9 +622,11 @@ int kbdflushd(void)
 			if(sync_one_buffer(buf)) {
 				insert_on_dirty_list(buf);
 				buf->flags &= ~BUFFER_LOCKED;
+				wakeup(&buffer_wait);
 				continue;
 			}
 			buf->flags &= ~BUFFER_LOCKED;
+			wakeup(&buffer_wait);
 			flushed++;
 
 			if(flushed == NR_BUF_RECLAIM) {
@@ -642,7 +638,6 @@ int kbdflushd(void)
 			}
 		}
 		unlock_resource(&sync_resource);
-		wakeup(&buffer_wait);
 	}
 }
 
