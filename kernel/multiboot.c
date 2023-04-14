@@ -60,7 +60,7 @@ static int check_parm(struct kparms *parm, const char *value)
 	if(!strcmp(parm->name, "ramdisksize=")) {
 		int size = atoi(value);
 		if(!size || size > RAMDISK_MAXSIZE) {
-			printk("WARNING: 'ramdisksize' value is out of limits, defaulting to 4096KB.\n");
+			printk("WARNING: 'ramdisksize=' value is out of limits.\n");
 			kparm_ramdisksize = 0;
 		} else {
 			kparm_ramdisksize = size;
