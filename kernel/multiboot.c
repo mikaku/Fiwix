@@ -130,11 +130,21 @@ static char *parse_cmdline(const char *str)
 	char *from, *to;
 	char arg[CMDL_ARG_LEN];
 	char c;
+	int open, close, incomplete;
 
 	from = to = (char *)str;
+	open = close = 0;
 	for(;;) {
 		c = *(str++);
-		if(c == ' ' || !c) {
+		if(c == '"') {
+			if(open) {
+				close = 1;
+			}
+			open = 1;
+		}
+		incomplete = open - close;
+
+		if((c == ' ' || !c) && !incomplete) {
 			if(to - from < CMDL_ARG_LEN) {
 				memcpy_b(arg, from, to - from);
 				arg[to - from] = 0;
