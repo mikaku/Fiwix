@@ -12,9 +12,126 @@
 #include <fiwix/fs_minix.h>
 #include <fiwix/buffer.h>
 #include <fiwix/errno.h>
+#include <fiwix/fcntl.h>
 #include <fiwix/stat.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+
+/* finds a new entry to fit 'name' in the directory 'dir' */
+static struct buffer *find_first_free_dir_entry(struct inode *dir, struct minix_dir_entry **d_res, char *name)
+{
+	__blk_t block;
+	unsigned int blksize;
+	unsigned int offset, doffset;
+	struct buffer *buf;
+
+	blksize = dir->sb->s_blocksize;
+	offset = 0;
+
+	while(offset < dir->i_size) {
+		if((block = bmap(dir, offset, FOR_READING)) < 0) {
+			break;
+		}
+		if(block) {
+			if(!(buf = bread(dir->dev, block, blksize))) {
+				break;
+			}
+			doffset = 0;
+			do {
+				*d_res = (struct minix_dir_entry *)(buf->data + doffset);
+				/* returns the first empty entry */
+				if(!(*d_res)->inode || (doffset + offset >= dir->i_size)) {
+					/* the directory grows by directory entry size */
+					if(doffset + offset >= dir->i_size) {
+						dir->i_size += dir->sb->u.minix.dirsize;
+					}
+					return buf;
+				}
+				doffset += dir->sb->u.minix.dirsize;
+			} while(doffset < blksize);
+			brelse(buf);
+			offset += blksize;
+		} else {
+			break;
+		}
+	}
+
+	*d_res = NULL;
+	return NULL;
+}
+
+/* finds an entry in 'dir' based on the 'name' and/or on the inode 'i' */
+static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct minix_dir_entry **d_res, char *name)
+{
+	__blk_t block;
+	unsigned int blksize;
+	unsigned int offset, doffset;
+	struct buffer *buf;
+
+	blksize = dir->sb->s_blocksize;
+	offset = 0;
+
+	while(offset < dir->i_size) {
+		if((block = bmap(dir, offset, FOR_READING)) < 0) {
+			break;
+		}
+		if(block) {
+			if(!(buf = bread(dir->dev, block, blksize))) {
+				break;
+			}
+			doffset = 0;
+			do {
+				*d_res = (struct minix_dir_entry *)(buf->data + doffset);
+				if(!i) {
+					if((*d_res)->inode) {
+						/* returns the first matching name */
+						if(!strcmp((*d_res)->name, name)) {
+							return buf;
+						}
+					}
+				} else {
+					if((*d_res)->inode == i->inode) {
+						/* returns the first matching inode */
+						if(!name) {
+							return buf;
+						}
+						/* returns the matching inode and name */
+						if(!strcmp((*d_res)->name, name)) {
+							return buf;
+						}
+					}
+				}
+				doffset += dir->sb->u.minix.dirsize;
+			} while(doffset < blksize);
+			brelse(buf);
+			offset += blksize;
+		} else {
+			break;
+		}
+	}
+
+	*d_res = NULL;
+	return NULL;
+}
+
+static struct buffer *add_dir_entry(struct inode *dir, struct minix_dir_entry **d_res)
+{
+	__blk_t block;
+	struct buffer *buf;
+
+	if(!(buf = find_first_free_dir_entry(dir, d_res, NULL))) {
+		if((block = bmap(dir, dir->i_size, FOR_WRITING)) < 0) {
+			return NULL;
+		}
+		if(!(buf = bread(dir->dev, block, dir->sb->s_blocksize))) {
+			return NULL;
+		}
+		*d_res = (struct minix_dir_entry *)buf->data;
+		dir->i_size += dir->sb->u.minix.dirsize;
+	}
+
+	return buf;
+}
 
 static int is_dir_empty(struct inode *dir)
 {
@@ -56,81 +173,6 @@ static int is_dir_empty(struct inode *dir)
 	}
 
 	return 1;
-}
-
-/* finds the entry 'name' with inode 'i' in the directory 'dir' */
-static struct buffer *find_dir_entry(struct inode *dir, struct inode *i, struct minix_dir_entry **d_res, char *name)
-{
-	__blk_t block;
-	unsigned int blksize;
-	unsigned int offset, doffset;
-	struct buffer *buf;
-
-	blksize = dir->sb->s_blocksize;
-	offset = 0;
-
-	while(offset < dir->i_size) {
-		if((block = bmap(dir, offset, FOR_READING)) < 0) {
-			break;
-		}
-		if(block) {
-			if(!(buf = bread(dir->dev, block, blksize))) {
-				break;
-			}
-			doffset = 0;
-			do {
-				*d_res = (struct minix_dir_entry *)(buf->data + doffset);
-				if(!i) {
-					/* returns the first empty entry */
-					if(!(*d_res)->inode || (doffset + offset >= dir->i_size)) {
-						/* the directory grows by directory entry size */
-						if(doffset + offset >= dir->i_size) {
-							dir->i_size += dir->sb->u.minix.dirsize;
-						}
-						return buf;
-					}
-				} else {
-					if((*d_res)->inode == i->inode) {
-						/* returns the first matching inode */
-						if(!name) {
-							return buf;
-						}
-						/* returns the matching inode and name */
-						if(!strcmp((*d_res)->name, name)) {
-							return buf;
-						}
-					}
-				}
-				doffset += dir->sb->u.minix.dirsize;
-			} while(doffset < blksize);
-			brelse(buf);
-			offset += blksize;
-		} else {
-			break;
-		}
-	}
-
-	*d_res = NULL;
-	return NULL;
-}
-
-static struct buffer *add_dir_entry(struct inode *dir, struct minix_dir_entry **d_res)
-{
-	__blk_t block;
-	struct buffer *buf;
-
-	if(!(buf = find_dir_entry(dir, NULL, d_res, NULL))) {
-		if((block = bmap(dir, dir->i_size, FOR_WRITING)) < 0) {
-			return NULL;
-		}
-		if(!(buf = bread(dir->dev, block, dir->sb->s_blocksize))) {
-			return NULL;
-		}
-		*d_res = (struct minix_dir_entry *)buf->data;
-		dir->i_size += dir->sb->u.minix.dirsize;
-	}
-
-	return buf;
 }
 
 static int is_subdir(struct inode *dir_new, struct inode *i_old)
@@ -331,6 +373,13 @@ int minix_symlink(struct inode *dir, char *name, char *oldname)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, S_IFLNK))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -421,6 +470,13 @@ int minix_mkdir(struct inode *dir, char *name, __mode_t mode)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, S_IFDIR))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -505,6 +561,13 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	inode_lock(dir);
 
+	/* check again to know if this filename already exists */
+	if((buf = find_dir_entry(dir, NULL, &d, name))) {
+		brelse(buf);
+		inode_unlock(dir);
+		return -EEXIST;
+	}
+
 	if(!(i = ialloc(dir->sb, mode & S_IFMT))) {
 		inode_unlock(dir);
 		return -ENOSPC;
@@ -577,6 +640,15 @@ int minix_create(struct inode *dir, char *name, int flags, __mode_t mode, struct
 	}
 
 	inode_lock(dir);
+
+	if(flags & O_CREAT) {
+		/* check again to know if this filename already exists */
+		if((buf = find_dir_entry(dir, NULL, &d, name))) {
+			brelse(buf);
+			inode_unlock(dir);
+			return -EEXIST;
+		}
+	}
 
 	if(!(i = ialloc(dir->sb, S_IFREG))) {
 		inode_unlock(dir);
