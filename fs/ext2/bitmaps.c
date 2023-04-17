@@ -111,17 +111,21 @@ int ext2_ialloc(struct inode *i, int mode)
 		}
 		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_inodes_count) {
-			if((inode = find_first_zero(sb, gd->bg_inode_bitmap))) {
+			if((errno = find_first_zero(sb, gd->bg_inode_bitmap))) {
 				break;
 			}
 		}
 	}
-	if(!inode) {
+	if(!errno) {
+		errno = -ENOSPC;
+	}
+	if(errno < 0) {
 		brelse(buf);
 		superblock_unlock(sb);
-		return -ENOSPC;
+		return errno;
 	}
 
+	inode = errno;
 	errno = change_bit(SET_BIT, sb, gd->bg_inode_bitmap, inode - 1);
 	if(errno) {
 		if(errno < 0) {
@@ -236,17 +240,21 @@ int ext2_balloc(struct superblock *sb)
 		}
 		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_blocks_count) {
-			if((block = find_first_zero(sb, gd->bg_block_bitmap))) {
+			if((errno = find_first_zero(sb, gd->bg_block_bitmap))) {
 				break;
 			}
 		}
 	}
-	if(!block) {
+	if(!errno) {
+		errno = -ENOSPC;
+	}
+	if(errno < 0) {
 		brelse(buf);
 		superblock_unlock(sb);
-		return -ENOSPC;
+		return errno;
 	}
 
+	block = errno;
 	errno = change_bit(SET_BIT, sb, gd->bg_block_bitmap, block - 1);
 	if(errno) {
 		if(errno < 0) {
