@@ -276,4 +276,7 @@ extern Elf32_Dyn _DYNAMIC [];
 #define elf_phdr	elf32_phdr
 #define elf_note	elf32_note
 
+
+int check_elf(struct elf32_hdr *);
+
 #endif /* _FIWIX_ELF_H */

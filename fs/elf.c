@@ -22,42 +22,29 @@
 
 #define AT_ITEMS	12	/* ELF Auxiliary Vectors */
 
-static int check_elf(struct elf32_hdr *elf32_h)
-{
-	if(elf32_h->e_ident[EI_MAG0] != ELFMAG0 ||
-		elf32_h->e_ident[EI_MAG1] != ELFMAG1 ||
-		elf32_h->e_ident[EI_MAG2] != ELFMAG2 ||
-		elf32_h->e_ident[EI_MAG3] != ELFMAG3 ||
-		(elf32_h->e_type != ET_EXEC && elf32_h->e_type != ET_DYN) ||
-		elf32_h->e_machine != EM_386) {
-		return -EINVAL;
-	}
-	return 0;
-}
-
 /*
  * Setup the initial process stack (UNIX System V ABI for i386)
- * ----------------------------------------------------------------------------
+ * ------------------------------------------------------------
  * 0xBFFFFFFF
- * 	+---------------+	\
- * 	| envp[] str    |	|
- * 	+---------------+	|
- * 	| argv[] str    |	|
- * 	+---------------+	|
- * 	| NULL          |	|
- * 	+---------------+	|
- * 	| ELF Aux.Vect. |	|
- * 	+---------------+	|
- * 	| NULL          |	| elf_create_stack() setups this section
- * 	+---------------+	|
- * 	| envp[] ptr    |	|
- * 	+---------------+	|
- * 	| NULL          |	|
- * 	+---------------+	|
- * 	| argv[] ptr    |	|
- * 	+---------------+	|
- * 	| argc          |	|
- * 	+---------------+ 	/
+ * 	+---------------+ \
+ * 	| envp[] str    | |
+ * 	+---------------+ |
+ * 	| argv[] str    | |
+ * 	+---------------+ |
+ * 	| NULL          | |
+ * 	+---------------+ |
+ * 	| ELF Aux.Vect. | |
+ * 	+---------------+ |
+ * 	| NULL          | | elf_create_stack() setups this section
+ * 	+---------------+ |
+ * 	| envp[] ptr    | |
+ * 	+---------------+ |
+ * 	| NULL          | |
+ * 	+---------------+ |
+ * 	| argv[] ptr    | |
+ * 	+---------------+ |
+ * 	| argc          | |
+ * 	+---------------+ /
  * 	| stack pointer | grows toward lower addresses
  * 	+---------------+ ||
  * 	|...............| \/
@@ -400,6 +387,19 @@ static int elf_load_interpreter(struct inode *ii)
 	}
 	kfree((unsigned int)data);
 	return elf32_h->e_entry + MMAP_START;
+}
+
+int check_elf(struct elf32_hdr *elf32_h)
+{
+	if(elf32_h->e_ident[EI_MAG0] != ELFMAG0 ||
+		elf32_h->e_ident[EI_MAG1] != ELFMAG1 ||
+		elf32_h->e_ident[EI_MAG2] != ELFMAG2 ||
+		elf32_h->e_ident[EI_MAG3] != ELFMAG3 ||
+		(elf32_h->e_type != ET_EXEC && elf32_h->e_type != ET_DYN) ||
+		elf32_h->e_machine != EM_386) {
+		return -EINVAL;
+	}
+	return 0;
 }
 
 int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char *data)
