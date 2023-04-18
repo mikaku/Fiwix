@@ -1,4 +1,5 @@
-			FIWIX ALLOCATED DEVICES
+Fiwix allocated devices
+=======================
 
 Character
 
@@ -40,8 +41,11 @@ Block
 
 Major | Minor | Device name   | Description
 ------+-------+---------------+------------------------------------------------
-1				RAMdisk devices
-	0	ram0		first RAM disk
+1				RAMdisk drives
+	0	ram0		first RAMdisk drive
+	1	ram1		second RAMdisk drive
+	...	...
+	9	ram9		10th RAMdisk drive
 
 2				Floppy disks (controller 0)
 	0	fd0		floppy disk drive 0

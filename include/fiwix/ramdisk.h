@@ -11,15 +11,18 @@
 #include <fiwix/fs.h>
 
 #define RAMDISK_MAJOR	1	/* ramdisk device major number */
-#define RAMDISK_MINORS	1	/* number of minors */
-#define RAMDISK_SIZE	4096	/* default ramdisk size in KBs */
-#define RAMDISK_MAXSIZE	131072	/* maximum ramdisk size in KBs */
+#define RAMDISK_MAXSIZE	131072	/* maximum ramdisk size (in KB) */
+#define RAMDISK_TOTAL	10	/* total number of ramdisk drives */
+
+#define RAMDISK_DRIVES	1	/* number of all-purpose ramdisk drives */
 
 struct ramdisk {
 	char *addr;		/* ramdisk memory address */
+	int size;		/* in KB */
 };
 
-extern struct ramdisk ramdisk_table[RAMDISK_MINORS];
+extern int ramdisk_minors;	/* initrd + RAMDISK_DRIVES + kexec */
+extern struct ramdisk ramdisk_table[RAMDISK_TOTAL];
 
 int ramdisk_open(struct inode *, struct fd *);
 int ramdisk_close(struct inode *, struct fd *);

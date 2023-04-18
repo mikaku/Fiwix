@@ -64,6 +64,7 @@ static int check_parm(struct kparms *parm, const char *value)
 			kparm_ramdisksize = 0;
 		} else {
 			kparm_ramdisksize = size;
+			ramdisk_minors = RAMDISK_DRIVES;
 		}
 		return 0;
 	}
@@ -269,6 +270,8 @@ void multiboot(unsigned int magic, unsigned int info)
 	struct multiboot_info mbi;
 
 	memset_b(&video, 0, sizeof(struct video_parms));
+	memset_b(&ramdisk_table, 0, sizeof(ramdisk_table));
+	ramdisk_minors = 0;
 
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", (unsigned long int)magic);
@@ -327,6 +330,8 @@ void multiboot(unsigned int magic, unsigned int info)
 			if(!strcmp((char *)mod->cmdline, kparm_initrd)) {
 				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
 				ramdisk_table[0].addr = (char *)mod->mod_start;
+				ramdisk_table[0].size = kparm_ramdisksize;
+				ramdisk_minors++;
 			}
 		}
 	}

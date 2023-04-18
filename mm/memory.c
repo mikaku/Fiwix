@@ -249,6 +249,11 @@ int unmap_page(unsigned int vaddr)
 	return 0;
 }
 
+/*
+ * This function initializes and setups the kernel page directory and page
+ * tables. It also reserves areas of contiguous memory spaces for internal
+ * structures and for the RAMdisk drives.
+ */
 void mem_init(void)
 {
 	unsigned int sizek;
@@ -359,25 +364,25 @@ void mem_init(void)
 	_last_data_addr += fd_table_size;
 
 
-	/* reserve memory space for RAMdisk(s) */
+	/* reserve memory space for RAMdisk drives */
+	n = 0;
 	if(kparm_ramdisksize > 0) {
 		/*
 		 * If the 'initrd=' parameter was supplied, then the first
-		 * ramdisk device was already assigned to the initial ramdisk
-		 * image.
+		 * RAMdisk drive was already assigned to the initrd image.
 		 */
 		if(ramdisk_table[0].addr) {
 			n = 1;
-		} else {
-			n = 0;
 		}
-		for(; n < RAMDISK_MINORS; n++) {
+		for(; n < ramdisk_minors; n++) {
 			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
 				kparm_ramdisksize = 0;
-				printk("WARNING: RAMdisk device disabled (not enough physical memory).\n");
+				ramdisk_minors -= RAMDISK_DRIVES;
+				printk("WARNING: RAMdisk drive disabled (not enough physical memory).\n");
 				break;
 			}
 			ramdisk_table[n].addr = (char *)_last_data_addr;
+			ramdisk_table[n].size = kparm_ramdisksize;
 			_last_data_addr += kparm_ramdisksize * 1024;
 		}
 	}

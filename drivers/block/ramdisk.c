@@ -16,7 +16,8 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct ramdisk ramdisk_table[RAMDISK_MINORS];
+int ramdisk_minors;
+struct ramdisk ramdisk_table[RAMDISK_TOTAL];
 static unsigned int rd_sizes[256];
 
 static struct fs_operations ramdisk_driver_fsop = {
@@ -182,12 +183,12 @@ void ramdisk_init(void)
 	int n;
 	struct ramdisk *ramdisk;
 
-	if(kparm_ramdisksize > 0) {
-		for(n = 0; n < RAMDISK_MINORS; n++) {
+	if(ramdisk_minors) {
+		for(n = 0; n < ramdisk_minors; n++) {
 			SET_MINOR(ramdisk_device.minors, n);
-			rd_sizes[n] = kparm_ramdisksize;
 			ramdisk = get_ramdisk(n);
-			printk("ram%d      0x%08x-0x%08x %d RAMdisk(s) of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (kparm_ramdisksize * 1024), RAMDISK_MINORS, kparm_ramdisksize, BLKSIZE_1K / 1024);
+			rd_sizes[n] = ramdisk->size;
+			printk("ram%d      0x%08x-0x%08x RAMdisk of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (ramdisk->size * 1024), ramdisk->size, BLKSIZE_1K / 1024);
 		}
 		register_device(BLK_DEV, &ramdisk_device);
 	}
