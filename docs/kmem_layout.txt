@@ -1,5 +1,5 @@
-	Fiwix kernel memory address space on i386 architecture
-	======================================================
+Fiwix kernel memory address space on the i386 architecture
+==========================================================
 
 0x00000000
 ...
@@ -19,7 +19,7 @@
 	+-------------------+
 ...
 	+-------------------+
-	| initrd (optional) |
+	| initrd (optional) | allocated by GRUB
 	+-------------------+
 + PAGE_SIZE
 	+-------------------+ this page prevents stack reaching .bss section
@@ -31,31 +31,34 @@
 	+-------------------+ kernel has only 4KB space for its own stack
 + PAGE_SIZE
 	+-------------------+
-	| kpage_dir         |
+	| kpage_dir         | kernel Page Directory
 	+-------------------+
 + PAGE_SIZE
 	+-------------------+
-	| kpage_table       |
+	| kpage_table       | kernel Page Tables
 	+-------------------+
-	+-------------------+
-	| proc_table        |
-	+-------------------+
-	+-------------------+
-	| buffer_hash_table |
-	+-------------------+
-	+-------------------+
-	| inode_hash_table  |
-	+-------------------+
-	+-------------------+
-	| fd_table          |
-	+-------------------+
-	+-------------------+
-	| RAMdisk           |
-	+-------------------+
-	+-------------------+
-	| page_hash_table   |
-	+-------------------+
-	+-------------------+
-	| page_table        |
-	+-------------------+
+	+-------------------+ \
+	| proc_table        | |
+	+-------------------+ |
+	+-------------------+ |
+	| buffer_hash_table | |
+	+-------------------+ |
+	+-------------------+ | different
+	| inode_hash_table  | |
+	+-------------------+ | preallocated
+	+-------------------+ |
+	| fd_table          | | areas
+	+-------------------+ |
+	+-------------------+ | of
+	| RAMdisk drives:   | |
+	|   - initrd        | | contiguous
+	|   - all-purpose   | |
+	|   - kexec         | | memory
+	+-------------------+ |
+	+-------------------+ | spaces
+	| page_hash_table   | |
+	+-------------------+ |
+	+-------------------+ |
+	| page_table        | |
+	+-------------------+ /
 

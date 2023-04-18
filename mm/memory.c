@@ -386,6 +386,22 @@ void mem_init(void)
 			_last_data_addr += kparm_ramdisksize * 1024;
 		}
 	}
+#ifdef CONFIG_KEXEC
+	if(kexec_size > 0) {
+		ramdisk_minors++;
+		if(n < ramdisk_minors) {
+			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kexec_size * 1024))) {
+				kexec_size = 0;
+				ramdisk_minors--;
+				printk("WARNING: RAMdisk drive for kexec disabled (not enough physical memory).\n");
+			} else {
+				ramdisk_table[n].addr = (char *)_last_data_addr;
+				ramdisk_table[n].size = kexec_size;
+				_last_data_addr += kexec_size * 1024;
+			}
+		}
+	}
+#endif /* CONFIG_KEXEC */
 
 	/*
 	 * FIXME: this is ugly!

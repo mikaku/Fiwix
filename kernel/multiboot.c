@@ -14,6 +14,7 @@
 #include <fiwix/kparms.h>
 #include <fiwix/i386elf.h>
 #include <fiwix/ramdisk.h>
+#include <fiwix/kexec.h>
 #include <fiwix/mm.h>
 #include <fiwix/bios.h>
 #include <fiwix/vgacon.h>
@@ -57,6 +58,35 @@ static int check_parm(struct kparms *parm, const char *value)
 			return 0;
 		}
 	}
+#ifdef CONFIG_KEXEC
+	if(!strcmp(parm->name, "kexec_proto=")) {
+		for(n = 0; parm->value[n]; n++) {
+			if(!strcmp(parm->value[n], value)) {
+				if(parm->sysval[n]) {
+					kexec_proto = parm->sysval[n];
+					return 0;
+				}
+				printk("WARNING: kexec protocol '%s' is not defined!\n", parm->name);
+			}
+		}
+		return 1;
+	}
+	if(!strcmp(parm->name, "kexec_size=")) {
+		if(value[0]) {
+			kexec_size = atoi(value);
+			return 0;
+		}
+		return 1;
+	}
+	if(!strcmp(parm->name, "kexec_cmdline=")) {
+		if(value[0]) {
+			/* copy the provided cmdline and also remove quotes */
+			strncpy(kexec_cmdline, value + 1, MIN(strlen(value) - 2, NAME_MAX));
+			return 0;
+		}
+		return 1;
+	}
+#endif /* CONFIG_KEXEC */
 	if(!strcmp(parm->name, "ramdisksize=")) {
 		int size = atoi(value);
 		if(!size || size > RAMDISK_MAXSIZE) {

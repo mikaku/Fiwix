@@ -19,6 +19,7 @@
 	printk("\nPANIC: in %s()", __FUNCTION__);			\
 	printk("\n");							\
 	printk(format, ## args);					\
+	kstat.flags |= KF_HAS_PANICKED;					\
 	stop_kernel();							\
 }
 
@@ -27,6 +28,7 @@
 #define INIT_PROGRAM	"/sbin/init"
 
 /* kernel flags */
+#define KF_HAS_PANICKED		0x01	/* the kernel has panic'ed */
 #define KF_HAS_DEBUGCON		0x02	/* QEMU debug console support */
 
 extern char *init_argv[];
@@ -46,6 +48,9 @@ extern char kparm_initrd[DEVNAME_MAX + 1];
 extern int kparm_syscondev;
 extern char kparm_bgaresolution[15];
 extern int kparm_ro;
+extern int kexec_proto;
+extern int kexec_size;
+extern char kexec_cmdline[NAME_MAX + 1];
 
 extern int _cputype;
 extern int _cpusignature;

@@ -30,6 +30,7 @@
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
 #include <fiwix/ipc.h>
+#include <fiwix/kexec.h>
 
 int kparm_memsize;
 int kparm_extmemsize;
@@ -150,12 +151,6 @@ void stop_kernel(void)
 		disable_irq(n);
 	}
 
-	printk("\n");
-	printk("**    Safe to Power Off    **\n");
-	printk("            -or-\n");
-	printk("** Press Any Key to Reboot **\n");
-	any_key_to_reboot = 1;
-
 	/* put all processes to sleep and reset all pending signals */
 	FOR_EACH_PROCESS_RUNNING(p) {
 		next = p->next;
@@ -164,14 +159,33 @@ void stop_kernel(void)
 		p = next;
 	}
 
-	/* enable keyboard only */
-	STI();
-	enable_irq(KEYBOARD_IRQ);
-
-	/* switch to IDLE process */
-	if(current) {
-		do_sched();
+#ifdef CONFIG_KEXEC
+	/*
+	 * Example values:
+	 *   kexec_proto = multiboot1
+	 *   kexec_size = 2000 (in KB)
+	 *   kexec_cmdline = "ro root=/dev/hda2"
+	 */
+	if(!(kstat.flags & KF_HAS_PANICKED)) {
+		if(kexec_size > 0) {
+			switch(kexec_proto) {
+				case KEXEC_MULTIBOOT1:
+					kexec_multiboot1();
+					break;
+			}
+		}
 	}
+#endif /* CONFIG_KEXEC */
+
+	printk("\n");
+	printk("**    Safe to Power Off    **\n");
+	printk("            -or-\n");
+	printk("** Press Any Key to Reboot **\n");
+	any_key_to_reboot = 1;
+
+	/* enable keyboard only */
+	enable_irq(KEYBOARD_IRQ);
+	STI();
 
 	cpu_idle();
 }

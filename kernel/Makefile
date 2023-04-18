@@ -9,9 +9,9 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o core386.o main.o init.o gdt.o idt.o syscalls.o pic.o pit.o \
-       irq.o traps.o cpu.o cmos.o timer.o sched.o sleep.o signal.o process.o \
-       multiboot.o
+OBJS = boot.o core386.o main.o init.o gdt.o idt.o kexec.o syscalls.o pic.o \
+       pit.o irq.o traps.o cpu.o cmos.o timer.o sched.o sleep.o signal.o \
+       process.o multiboot.o
 
 all:	$(OBJS)
 

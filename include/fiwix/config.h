@@ -35,13 +35,13 @@
 
 
 /* toggle configuration options */
-
 #define CONFIG_PCI
 #define CONFIG_PCI_NAMES
 #undef CONFIG_SYSCALL_6TH_ARG
 #define CONFIG_SYSVIPC
 #define CONFIG_LAZY_USER_ADDR_CHECK
 #define CONFIG_BGA
+#define CONFIG_KEXEC
 
 
 /* configuration options to help debug or to test new features */
