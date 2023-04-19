@@ -12,6 +12,8 @@
 
 #define KEXEC_MULTIBOOT1	0x01
 
+#define KEXEC_BOOT_ADDR		0x9E000
+
 void kexec_multiboot1(void);
 
 #endif /* _FIWIX_KEXEC_H */

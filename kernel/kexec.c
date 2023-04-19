@@ -165,7 +165,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 
 void kexec_multiboot1(void)
 {
-	unsigned int *esp, kexec_boot_addr, ramdisk_addr;
+	unsigned int *esp, ramdisk_addr;
 	struct proc *idle, *prev;
 	struct multiboot_info *info;
 	struct multiboot_mmap_entry *map, *map_orig;
@@ -188,15 +188,14 @@ void kexec_multiboot1(void)
 	 * trampoline code. In the future, with a better memory management
 	 * this could change.
 	 */
-	kexec_boot_addr = KERNEL_ADDR - PAGE_SIZE;
-	memcpy_b((void *)kexec_boot_addr, multiboot1_trampoline, PAGE_SIZE);
+	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
 
 	/* the IDLE process will do the job */
 	idle = &proc_table[IDLE];
-	idle->tss.eip = (unsigned int)kexec_boot_addr;
+	idle->tss.eip = (unsigned int)KEXEC_BOOT_ADDR;
 
 	/* stack starts at the end of the page */
-	esp = (unsigned int *)(kexec_boot_addr + PAGE_SIZE - 4);
+	esp = (unsigned int *)(KEXEC_BOOT_ADDR + PAGE_SIZE - 4);
 
 	/* space reserved for the cmdline string (256 bytes) */
 	esp -= 256 / sizeof(unsigned int);

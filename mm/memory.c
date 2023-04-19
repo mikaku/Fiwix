@@ -14,6 +14,7 @@
 #include <fiwix/process.h>
 #include <fiwix/buffer.h>
 #include <fiwix/fs.h>
+#include <fiwix/kexec.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -285,6 +286,11 @@ void mem_init(void)
 			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&pgtbl[n] | PAGE_PRESENT | PAGE_RW;
 		}
 	}
+
+#ifdef CONFIG_KEXEC
+	bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE);
+	_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+#endif /* CONFIG_KEXEC */
 
 	_last_data_addr = map_kaddr(0xA0000, 0xA0000 + video.memsize, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 
