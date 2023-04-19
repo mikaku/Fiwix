@@ -26,9 +26,13 @@
   makes sense.
 - Added the magic SysRq key 'm' to show current memory information.
 - Added the Multiboot magic value as a new parameter in get_last_boot_addr() to
-  avoid a kernel panics when it is booted without the Multiboot structure.
+  avoid a kernel panic when it is booted without the Multiboot structure.
 - Added a check if flag MULTIBOOT_INFO_ELF_SHDR is set before reading the ELF
   section header table to avoid possible kernel panics.
+- Added support in parse_cmdline() to recognize values enclosed in double
+  quotes.
+- Added support for multiple RAMdisk drives.
+- Added kexec implementation.
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -109,6 +113,19 @@
 - Fixed get_free_page() to reduce the excessive number of iterations with
   reclaim_buffers() when running out of memory pages.
 - Fixed the mechanism to sleep all processes in stop_kernel().
+- Fixed the sleep address in page_lock() to match with page_unlock().
+- Fixed a kernel panic if irq_keyboard() receives an unrecognized function key.
+- Fixed to correctly disable the RAMdisk device if there is not enough physical
+  memory.
+- Fixed an inode-related race condition in iget() and iput().
+- Fixed to not use the buffer after failed to be synced in sync_one_buffer().
+- Fixed in ext2_symlink(), ext2_mkdir(), ext2_mknod() and ext2_create() to make
+  sure the inode doesn't exist.
+- Fixed in minix_symlink(), minix_mkdir(), minix_mknod() and minix_create() to
+  make sure the inode doesn't exist.
+- Fixed a deadlock between getblk() and kbdflushd(). [#27]
+- Fixed a missing lock that led to a possible memory page corruption bug in
+  bread_page(). [#27]
 - Small fixes and cosmetic changes.
 
 
