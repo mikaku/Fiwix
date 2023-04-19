@@ -160,12 +160,6 @@ void stop_kernel(void)
 	}
 
 #ifdef CONFIG_KEXEC
-	/*
-	 * Example values:
-	 *   kexec_proto = multiboot1
-	 *   kexec_size = 2000 (in KB)
-	 *   kexec_cmdline = "ro root=/dev/hda2"
-	 */
 	if(!(kstat.flags & KF_HAS_PANICKED)) {
 		if(kexec_size > 0) {
 			switch(kexec_proto) {

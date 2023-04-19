@@ -183,11 +183,6 @@ void kexec_multiboot1(void)
 		return;
 	}
 
-	/*
-	 * By now, it's safe enough to use the last VGA page for the kexec
-	 * trampoline code. In the future, with a better memory management
-	 * this could change.
-	 */
 	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
 
 	/* the IDLE process will do the job */
