@@ -115,10 +115,10 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	);
 
 	/*
-	 * Clear memory. This is intended to avoid unexpected results with
-	 * uninitialized variables.
+	 * Clear memory. This is intended to avoid unexpected results if the
+	 * new kernel guesses its uninitialized variables are zeroed.
 	 */
-	_memset_b(0x0, 0, KEXEC_BOOT_ADDR - PAGE_SIZE);
+	_memset_b(0x0, 0, KEXEC_BOOT_ADDR);
 
 	/* install the kernel previously stored in RAMdisk by the user */
 	elf32_h = (struct elf32_hdr *)ramdisk_addr;
