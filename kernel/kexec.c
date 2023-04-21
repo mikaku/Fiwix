@@ -119,6 +119,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	 * new kernel guesses its uninitialized variables are zeroed.
 	 */
 	_memset_b(0x0, 0, KEXEC_BOOT_ADDR);
+	_memset_b(0x100000, 0, ramdisk_addr - 0x100000);
 
 	/* install the kernel previously stored in RAMdisk by the user */
 	elf32_h = (struct elf32_hdr *)ramdisk_addr;
