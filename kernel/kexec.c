@@ -76,7 +76,11 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 
 	/* invalidate IDT */
 	_memset_b(&idt, 0, sizeof(idt));
-	__asm__ __volatile__ ("lidt %0" : : "m"(idtr));
+	__asm__ __volatile__ (
+		"lidt %0\n\t"
+		: /* no output */
+		: "m"(idtr)
+	);
 
 	/* configure a new flat GDT */
 	gdt[0].sd_lolimit = 0;
@@ -99,19 +103,27 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	gdt[2].sd_hilimit = (0xFFFFFFFF >> 16) & 0x0F;
 	gdt[2].sd_hiflags = SD_OPSIZE32 | SD_PAGE4KB;
 	gdt[2].sd_hibase = (0x00000000 >> 24) & 0xFF;
-	__asm__ __volatile__ ("lgdt %0" : : "m"(gdtr));
+	__asm__ __volatile__ (
+		"lgdt %0\n\t"
+		: /* no output */
+		: "m"(gdtr)
+	);
 
 	/* disable paging and others */
 	cr0 = 0x11;	/* preserve ET & PE */
 	__asm__ __volatile__(
-		"mov	%0, %%cr0" : : "r"(cr0)
+		"mov	%0, %%cr0"
+		: /* no output */
+		: "r"(cr0)
 	);
 
 	/* flush TLB (needed?) */
 	__asm__ __volatile__(
 		"xorl	%%eax, %%eax\n\t"
 		"movl	%%eax, %%cr3\n\t"
-		: :
+		: /* no output */
+		: /* no input */
+		: "%eax"	/* clobbered list */
 	);
 
 	/*
@@ -119,7 +131,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	 * new kernel guesses its uninitialized variables are zeroed.
 	 */
 	_memset_b(0x0, 0, KEXEC_BOOT_ADDR);
-	_memset_b(0x100000, 0, ramdisk_addr - 0x100000);
+	_memset_b((void *)0x100000, 0, ramdisk_addr - 0x100000);
 
 	/* install the kernel previously stored in RAMdisk by the user */
 	elf32_h = (struct elf32_hdr *)ramdisk_addr;
@@ -139,7 +151,9 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	__asm__ __volatile__(
 		"xorl	%%eax, %%eax\n\t"
 		"movl	%%eax, %%cr3\n\t"
-		: :
+		: /* no output */
+		: /* no input */
+		: "%eax"	/* clobbered list */
 	);
 
 	/* load all the segment registers with the kernel data segment value */
@@ -150,7 +164,9 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movw	%%ax, %%fs\n\t"
 		"movw	%%ax, %%gs\n\t"
 		"movw	%%ax, %%ss\n\t"
-		: :
+		: /* no output */
+		: /* no input */
+		: "%eax"	/* clobbered list */
 	);
 
 	/* Multiboot 1 */
@@ -164,7 +180,9 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	/* jump to the kernel entry address */
 	cs = 0x08;
 	__asm__ __volatile__(
-		"ljmp	%0, $0x00100050" : : "i"(cs)	/* FIXME: should use 'entry_addr' */
+		"ljmp	%0, $0x00100050"
+		: /* no output */
+		: "i"(cs)	/* FIXME: should use 'entry_addr' */
 	);
 
 	/* not reached */
