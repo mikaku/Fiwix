@@ -288,8 +288,10 @@ void mem_init(void)
 	}
 
 #ifdef CONFIG_KEXEC
-	bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE);
-	_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	if(kexec_size > 0) {
+		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE);
+		_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	}
 #endif /* CONFIG_KEXEC */
 
 	_last_data_addr = map_kaddr(0xA0000, 0xA0000 + video.memsize, _last_data_addr, PAGE_PRESENT | PAGE_RW);
@@ -424,7 +426,6 @@ void mem_init(void)
 	 */
 	vcbuf = (short int *)_last_data_addr;
 	_last_data_addr += (video.columns * video.lines * SCREENS_LOG * 2 * sizeof(short int));
-
 
 	/* the last one must be the page_table structure */
 	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
