@@ -69,7 +69,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		(unsigned int)&gdt
 	};
 
-	int n, cr0, cs;
+	int n, cr0;
 
 
 	CLI();
@@ -123,7 +123,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movl	%%eax, %%cr3\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered list */
+		: "%eax"	/* clobbered registers */
 	);
 
 	/*
@@ -153,7 +153,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movl	%%eax, %%cr3\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered list */
+		: "%eax"	/* clobbered registers */
 	);
 
 	/* load all the segment registers with the kernel data segment value */
@@ -166,7 +166,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movw	%%ax, %%ss\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered list */
+		: "%eax"	/* clobbered registers */
 	);
 
 	/* Multiboot 1 */
@@ -177,12 +177,17 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		: "eax"(MULTIBOOT_BOOTLOADER_MAGIC), "ebx"((unsigned int)info)
 	);
 
-	/* jump to the kernel entry address */
-	cs = 0x08;
+	/*
+	 * This jumps to the kernel entry address.
+	 *
+	 * Formerly: ljmp $0x08, $entry_addr
+	 */
 	__asm__ __volatile__(
-		"ljmp	%0, $0x00100050"
+		"pushw	$0x08\n\t"
+		"pushl	%0\n\t"
+		"ljmp	*(%%esp)\n\t"
 		: /* no output */
-		: "i"(cs)	/* FIXME: should use 'entry_addr' */
+		: "c"(entry_addr)
 	);
 
 	/* not reached */
