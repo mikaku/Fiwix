@@ -51,8 +51,6 @@ tmp_gdt:
 	.byte	0x40		/* base address 31-24 */
 
 
-.text
-
 .align 4
 multiboot_header:			/* multiboot header */
 	.long	MULTIBOOT_HEADER_MAGIC	/* magic */
@@ -78,6 +76,7 @@ multiboot_header:			/* multiboot header */
  * registers, since they are holding the Multiboot values 'magic' and 'info'
  * respectively.
  */
+.align 4
 .globl start; start:
 	cli
 	lgdt	tmp_gdtr		/* load GDTR with the temporary GDT */
@@ -87,9 +86,7 @@ multiboot_header:			/* multiboot header */
 	movw	%cx, %fs
 	movw	%cx, %gs
 	movw	%cx, %ss
-	ljmp	$KERNEL_CS, $1f
-1:
-
+	ljmp	$KERNEL_CS, $setup_kernel
 
 /*
  * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING !!!
@@ -113,6 +110,10 @@ multiboot_header:			/* multiboot header */
  *                                      check this value --> ^^^^^^^
  *   ...
  */
+.text
+
+.align 4
+.globl setup_kernel; setup_kernel:
 	movl	$0xC0010000, %esp	/* default stack address */
 	pushl	$0			/* reset EFLAGS */
 	popf
