@@ -261,7 +261,7 @@ void mem_init(void)
 	unsigned int physical_page_tables;
 	unsigned int physical_memory;
 	unsigned int *pgtbl;
-	int n, pages;
+	int n, pages, last_ramdisk;
 
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);	/* in bytes */
@@ -394,22 +394,7 @@ void mem_init(void)
 			_last_data_addr += kparm_ramdisksize * 1024;
 		}
 	}
-#ifdef CONFIG_KEXEC
-	if(kexec_size > 0) {
-		ramdisk_minors++;
-		if(n < ramdisk_minors) {
-			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kexec_size * 1024))) {
-				kexec_size = 0;
-				ramdisk_minors--;
-				printk("WARNING: RAMdisk drive for kexec disabled (not enough physical memory).\n");
-			} else {
-				ramdisk_table[n].addr = (char *)_last_data_addr;
-				ramdisk_table[n].size = kexec_size;
-				_last_data_addr += kexec_size * 1024;
-			}
-		}
-	}
-#endif /* CONFIG_KEXEC */
+	last_ramdisk = n;
 
 	/*
 	 * FIXME: this is ugly!
@@ -426,6 +411,23 @@ void mem_init(void)
 	 */
 	vcbuf = (short int *)_last_data_addr;
 	_last_data_addr += (video.columns * video.lines * SCREENS_LOG * 2 * sizeof(short int));
+
+#ifdef CONFIG_KEXEC
+	if(kexec_size > 0) {
+		ramdisk_minors++;
+		if(last_ramdisk < ramdisk_minors) {
+			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kexec_size * 1024))) {
+				kexec_size = 0;
+				ramdisk_minors--;
+				printk("WARNING: RAMdisk drive for kexec disabled (not enough physical memory).\n");
+			} else {
+				ramdisk_table[last_ramdisk].addr = (char *)_last_data_addr;
+				ramdisk_table[last_ramdisk].size = kexec_size;
+				_last_data_addr += kexec_size * 1024;
+			}
+		}
+	}
+#endif /* CONFIG_KEXEC */
 
 	/* the last one must be the page_table structure */
 	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
