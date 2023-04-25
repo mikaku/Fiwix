@@ -495,21 +495,20 @@ void sync_buffers(__dev_t dev)
 		if(!(buf = get_dirty_buffer())) {
 			break;
 		}
-		if(first) {
-			if(first == buf) {
-				insert_on_dirty_list(buf);
-				buf->flags &= ~BUFFER_LOCKED;
-				wakeup(&buffer_wait);
-				break;
-			}
-		} else {
-			first = buf;
+		if(first == buf) {
+			insert_on_dirty_list(buf);
+			buf->flags &= ~BUFFER_LOCKED;
+			wakeup(&buffer_wait);
+			break;
 		}
 		if(!dev || buf->dev == dev) {
 			if(sync_one_buffer(buf)) {
 				insert_on_dirty_list(buf);
 			}
 		} else {
+			if(!first) {
+				first = buf;
+			}
 			insert_on_dirty_list(buf);
 		}
 		buf->flags &= ~BUFFER_LOCKED;
