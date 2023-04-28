@@ -278,9 +278,9 @@ void kexec_multiboot1(void)
 	idle->tss.esp = (unsigned int)esp;
 
 	printk("%s(): jumping to multiboot1_trampoline() ...\n", __FUNCTION__);
-        prev = current;
-        set_tss(idle);
-        do_switch(&prev->tss.esp, &prev->tss.eip, idle->tss.esp, idle->tss.eip, idle->tss.cr3, TSS);
+	prev = current;
+	set_tss(idle);
+	do_switch(&prev->tss.esp, &prev->tss.eip, idle->tss.esp, idle->tss.eip, idle->tss.cr3, TSS);
 }
 
 #endif /* CONFIG_KEXEC */
