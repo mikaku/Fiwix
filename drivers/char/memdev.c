@@ -637,10 +637,7 @@ int memdev_open(struct inode *i, struct fd *fd_table)
 		default:
 			return -ENXIO;
 	}
-	if(i->fsop->open) {
-		return i->fsop->open(i, fd_table);
-	}
-	return 0;
+	return i->fsop->open(i, fd_table);
 }
 
 /*
