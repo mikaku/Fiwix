@@ -444,10 +444,8 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 			return NULL;
 		}
-		if(d->fsop && d->fsop->read_block) {
-			if(d->fsop->read_block(dev, block, buf->data, size) == size) {
-				buf->flags |= BUFFER_VALID;
-			}
+		if(d->fsop->read_block(dev, block, buf->data, size) == size) {
+			buf->flags |= BUFFER_VALID;
 		}
 		if(buf->flags & BUFFER_VALID) {
 			return buf;
