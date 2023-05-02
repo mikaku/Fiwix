@@ -202,10 +202,7 @@ int chr_dev_open(struct inode *i, struct fd *fd_table)
 
 	if((d = get_device(CHR_DEV, i->rdev))) {
 		i->fsop = d->fsop;
-		if(i->fsop && i->fsop->open) {
-			return i->fsop->open(i, fd_table);
-		}
-		return -EINVAL;
+		return i->fsop->open(i, fd_table);
 	}
 
 	return -ENXIO;
@@ -216,10 +213,7 @@ int blk_dev_open(struct inode *i, struct fd *fd_table)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		if(d->fsop && d->fsop->open) {
-			return d->fsop->open(i, fd_table);
-		}
-		return -EINVAL;
+		return d->fsop->open(i, fd_table);
 	}
 
 	return -ENXIO;
@@ -230,11 +224,7 @@ int blk_dev_close(struct inode *i, struct fd *fd_table)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		if(d->fsop && d->fsop->close) {
-			return d->fsop->close(i, fd_table);
-		}
-		printk("WARNING: %s(): block device %d,%d does not have the close() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
-		return -EINVAL;
+		return d->fsop->close(i, fd_table);
 	}
 
 	return -ENXIO;
@@ -335,11 +325,7 @@ int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		if(d->fsop && d->fsop->ioctl) {
-			return d->fsop->ioctl(i, cmd, arg);
-		}
-		printk("WARNING: %s(): block device %d,%d does not have the ioctl() method.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
-		return -EINVAL;
+		return d->fsop->ioctl(i, cmd, arg);
 	}
 
 	return -ENXIO;
