@@ -845,10 +845,7 @@ int ata_open(struct inode *i, struct fd *fd_table)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	if(drive->fsop && drive->fsop->open) {
-		return drive->fsop->open(i, fd_table);
-	}
-	return -EINVAL;
+	return drive->fsop->open(i, fd_table);
 }
 
 int ata_close(struct inode *i, struct fd *fd_table)
@@ -865,10 +862,7 @@ int ata_close(struct inode *i, struct fd *fd_table)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	if(drive->fsop && drive->fsop->close) {
-		return drive->fsop->close(i, fd_table);
-	}
-	return -EINVAL;
+	return drive->fsop->close(i, fd_table);
 }
 
 int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
@@ -886,11 +880,7 @@ int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	if(drive->fsop && drive->fsop->read_block) {
-		return drive->fsop->read_block(dev, block, buffer, blksize);
-	}
-	printk("WARNING: %s(): device %d,%d does not have the read_block() method!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-	return -EINVAL;
+	return drive->fsop->read_block(dev, block, buffer, blksize);
 }
 
 int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
@@ -908,11 +898,7 @@ int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	if(drive->fsop && drive->fsop->write_block) {
-		return drive->fsop->write_block(dev, block, buffer, blksize);
-	}
-	printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-	return -EINVAL;
+	return drive->fsop->write_block(dev, block, buffer, blksize);
 }
 
 int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
@@ -929,10 +915,7 @@ int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	if(drive->fsop && drive->fsop->ioctl) {
-		return drive->fsop->ioctl(i, cmd, arg);
-	}
-	return -EINVAL;
+	return drive->fsop->ioctl(i, cmd, arg);
 }
 
 void ata_init(void)
