@@ -199,13 +199,8 @@ static int read_inode(struct inode *i)
 	int errno;
 
 	inode_lock(i);
-	if(i->sb && i->sb->fsop && i->sb->fsop->read_inode) {
-		errno = i->sb->fsop->read_inode(i);
-		inode_unlock(i);
-		return errno;
-	}
+	errno = i->sb->fsop->read_inode(i);
 	inode_unlock(i);
-	return -EINVAL;
 }
 
 static int write_inode(struct inode *i)
@@ -287,16 +282,7 @@ struct inode *ialloc(struct superblock *sb, int mode)
 	if((i = get_free_inode())) {
 		i->sb = sb;
 		i->rdev = sb->dev;
-		if(i->sb && i->sb->fsop && i->sb->fsop->ialloc) {
-			errno = i->sb->fsop->ialloc(i, mode);
-		} else {
-			printk("WARNING: this filesystem does not have the ialloc() method!\n");
-			i->count = 1;
-			i->sb = NULL;
-			iput(i);
-			return NULL;
-		}
-		if(errno) {
+		if((errno = i->sb->fsop->ialloc(i, mode))) {
 			i->count = 1;
 			i->sb = NULL;
 			iput(i);
@@ -365,10 +351,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 
 int bmap(struct inode *i, __off_t offset, int mode)
 {
-	if(i->fsop && i->fsop->bmap) {
-		return i->fsop->bmap(i, offset, mode);
-	}
-	return -EPERM;
+	return i->fsop->bmap(i, offset, mode);
 }
 
 int check_fs_busy(__dev_t dev, struct inode *root)
