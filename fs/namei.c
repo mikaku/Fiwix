@@ -17,14 +17,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static int namei_lookup(char *name, struct inode *dir, struct inode **i_res)
-{
-	if(dir->fsop && dir->fsop->lookup) {
-		return dir->fsop->lookup(name, dir, i_res);
-	}
-	return -EACCES;
-}
-
 static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct inode **d_res, int follow_links)
 {
 	char *name, *ptr_name;
@@ -73,7 +65,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		}
 
 		dir->count++;
-		if((errno = namei_lookup(name, dir, &i))) {
+		if((errno = dir->fsop->lookup(name, dir, &i))) {
 			break;
 		}
 
@@ -85,7 +77,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 				return -ENOTDIR;
 			}
 			if(S_ISLNK(i->i_mode)) {
-				if(i->fsop && i->fsop->followlink) {
+				if(i->fsop->followlink) {
 					if((errno = i->fsop->followlink(dir, i, &i))) {
 						iput(dir);
 						return errno;
@@ -93,7 +85,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 				}
 			}
 		} else {
-			if((i->fsop && i->fsop->followlink) && follow_links) {
+			if(i->fsop->followlink && follow_links) {
 				if((errno = i->fsop->followlink(dir, i, &i))) {
 					iput(dir);
 					return errno;
@@ -126,7 +118,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 			*d_res = dir;
 			dir->count++;
 		} else {
-			/* that's an non-existent directory */
+			/* that's a non-existent directory */
 			*d_res = NULL;
 			errno = -ENOENT;
 		}
