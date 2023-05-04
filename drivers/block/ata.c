@@ -33,7 +33,7 @@ static struct fs_operations ata_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	ata_ioctl,
-	NULL,			/* lseek */
+	ata_lseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -916,6 +916,23 @@ int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
 	return drive->fsop->ioctl(i, cmd, arg);
+}
+
+int ata_lseek(struct inode *i, __off_t offset)
+{
+	struct ide *ide;
+	struct ata_drv *drive;
+
+	if(!(ide = get_ide_controller(i->rdev))) {
+		return -EINVAL;
+	}
+
+	if(!get_device(BLK_DEV, i->rdev)) {
+		return -ENXIO;
+	}
+
+	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
+	return drive->fsop->lseek(i, offset);
 }
 
 void ata_init(void)

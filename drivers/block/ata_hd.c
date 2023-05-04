@@ -30,7 +30,7 @@ static struct fs_operations ata_hd_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	ata_hd_ioctl,
-	NULL,			/* lseek */
+	ata_hd_lseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -404,6 +404,11 @@ int ata_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	}
 
 	return 0;
+}
+
+int ata_hd_lseek(struct inode *i, __off_t offset)
+{
+	return offset;
 }
 
 int ata_hd_init(struct ide *ide, struct ata_drv *drive)

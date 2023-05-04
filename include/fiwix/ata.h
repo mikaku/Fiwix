@@ -310,6 +310,7 @@ int ata_close(struct inode *, struct fd *);
 int ata_read(__dev_t, __blk_t, char *, int);
 int ata_write(__dev_t, __blk_t, char *, int);
 int ata_ioctl(struct inode *, int, unsigned long int);
+int ata_lseek(struct inode *, __off_t);
 void ata_init(void);
 
 #endif /* _FIWIX_ATA_H */
