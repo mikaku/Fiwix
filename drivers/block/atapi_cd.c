@@ -27,7 +27,7 @@ static struct fs_operations atapi_cd_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	atapi_cd_ioctl,
-	NULL,			/* lseek */
+	atapi_cd_lseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -236,6 +236,11 @@ int atapi_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	}
 
 	return 0;
+}
+
+int atapi_cd_lseek(struct inode *i, __off_t offset)
+{
+	return offset;
 }
 
 int atapi_cd_init(struct ide *ide, struct ata_drv *drive)
