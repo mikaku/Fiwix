@@ -336,12 +336,10 @@ int blk_dev_lseek(struct inode *i, __off_t offset)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		if(d->fsop && d->fsop->lseek) {
-			return d->fsop->lseek(i, offset);
-		}
+		return d->fsop->lseek(i, offset);
 	}
 
-	return offset;
+	return -ENXIO;
 }
 
 void dev_init(void)
