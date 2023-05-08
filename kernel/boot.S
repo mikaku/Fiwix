@@ -100,13 +100,13 @@ multiboot_header:			/* multiboot header */
  *
  * $ readelf -l fiwix
  *   Elf file type is EXEC (Executable file)
- *   Entry point 0xc0100050
+ *   Entry point 0x100050
  *   There are 2 program headers, starting at offset 52
  *
  *   Program Headers:
  *     Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
- *     LOAD           0x000074 0x00100000 0x00100000 0x00020 0x00020 R   0x4
- *     LOAD           0x0000a0 0xc0100020 0x00100020 0x3996c 0x41cc0 RWE 0x20
+ *     LOAD           0x000074 0x00100000 0x00100000 0x0006d 0x0006d R   0x4
+ *     LOAD           0x0000f0 0xc0100070 0x00100070 0x40540 0x5a6b0 RWE 0x20
  *                                      check this value --> ^^^^^^^
  *   ...
  */
