@@ -35,13 +35,13 @@ int sys_statfs(const char *filename, struct statfs *statfsbuf)
 		free_name(tmp_name);
 		return errno;
 	}
+	free_name(tmp_name);
+
 	if(i->sb && i->sb->fsop && i->sb->fsop->statfs) {
 		i->sb->fsop->statfs(i->sb, statfsbuf);
 		iput(i);
-		free_name(tmp_name);
 		return 0;
 	}
 	iput(i);
-	free_name(tmp_name);
 	return -ENOSYS;
 }

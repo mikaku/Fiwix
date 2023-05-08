@@ -34,34 +34,31 @@ int sys_rmdir(const char *dirname)
 		free_name(tmp_dirname);
 		return errno;
 	}
+	free_name(tmp_dirname);
+
 	if(!S_ISDIR(i->i_mode)) {
 		iput(i);
 		iput(dir);
-		free_name(tmp_dirname);
 		return -ENOTDIR;
 	}
 	if(i == current->root || i->mount_point || i->count > 1) {
 		iput(i);
 		iput(dir);
-		free_name(tmp_dirname);
 		return -EBUSY;
 	}
 	if(IS_RDONLY_FS(i)) {
 		iput(i);
 		iput(dir);
-		free_name(tmp_dirname);
 		return -EROFS;
 	}
 	if(i == dir) {
 		iput(i);
 		iput(dir);
-		free_name(tmp_dirname);
 		return -EPERM;
 	}
 	if(check_permission(TO_EXEC | TO_WRITE, dir) < 0) {
 		iput(i);
 		iput(dir);
-		free_name(tmp_dirname);
 		return -EACCES;
 	}
 
@@ -70,7 +67,6 @@ int sys_rmdir(const char *dirname)
 		if(check_user_permission(i)) {
 			iput(i);
 			iput(dir);
-			free_name(tmp_dirname);
 			return -EPERM;
 		}
 	}
@@ -82,6 +78,5 @@ int sys_rmdir(const char *dirname)
 	}
 	iput(i);
 	iput(dir);
-	free_name(tmp_dirname);
 	return errno;
 }

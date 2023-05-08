@@ -33,34 +33,32 @@ int sys_truncate(const char *path, __off_t length)
 		free_name(tmp_name);
 		return errno;
 	}
+	free_name(tmp_name);
+
 	if(S_ISDIR(i->i_mode)) {
 		iput(i);
-		free_name(tmp_name);
 		return -EISDIR;
 	}
 	if(IS_RDONLY_FS(i)) {
 		iput(i);
-		free_name(tmp_name);
 		return -EROFS;
 	}
 	if(check_permission(TO_WRITE, i) < 0) {
 		iput(i);
-		free_name(tmp_name);
 		return -EACCES;
 	}
 	if(length == i->i_size) {
 		iput(i);
-		free_name(tmp_name);
 		return 0;
 	}
 
-	errno = 0;
 	if(i->fsop && i->fsop->truncate) {
 		inode_lock(i);
 		errno = i->fsop->truncate(i, length);
 		inode_unlock(i);
+		iput(i);
+		return errno;
 	}
 	iput(i);
-	free_name(tmp_name);
-	return errno;
+	return -EINVAL;
 }

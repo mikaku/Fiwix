@@ -39,19 +39,18 @@ int sys_readlink(const char *filename, char *buffer, __size_t bufsize)
 		free_name(tmp_name);
 		return errno;
 	}
+	free_name(tmp_name);
+
 	if(!S_ISLNK(i->i_mode)) {
 		iput(i);
-		free_name(tmp_name);
 		return -EINVAL;
 	}
 
 	if(i->fsop && i->fsop->readlink) {
 		errno = i->fsop->readlink(i, buffer, bufsize);
 		iput(i);
-		free_name(tmp_name);
 		return errno;
 	}
 	iput(i);
-	free_name(tmp_name);
 	return -EINVAL;
 }
