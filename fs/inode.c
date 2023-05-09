@@ -201,6 +201,7 @@ static int read_inode(struct inode *i)
 	inode_lock(i);
 	errno = i->sb->fsop->read_inode(i);
 	inode_unlock(i);
+	return errno;
 }
 
 static int write_inode(struct inode *i)
