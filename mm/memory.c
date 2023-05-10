@@ -373,28 +373,27 @@ void mem_init(void)
 
 
 	/* reserve memory space for RAMdisk drives */
-	n = 0;
+	last_ramdisk = 0;
 	if(kparm_ramdisksize > 0) {
 		/*
 		 * If the 'initrd=' parameter was supplied, then the first
 		 * RAMdisk drive was already assigned to the initrd image.
 		 */
 		if(ramdisk_table[0].addr) {
-			n = 1;
+			last_ramdisk = 1;
 		}
-		for(; n < ramdisk_minors; n++) {
+		for(; last_ramdisk < ramdisk_minors; last_ramdisk++) {
 			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
 				kparm_ramdisksize = 0;
 				ramdisk_minors -= RAMDISK_DRIVES;
 				printk("WARNING: RAMdisk drive disabled (not enough physical memory).\n");
 				break;
 			}
-			ramdisk_table[n].addr = (char *)_last_data_addr;
-			ramdisk_table[n].size = kparm_ramdisksize;
+			ramdisk_table[last_ramdisk].addr = (char *)_last_data_addr;
+			ramdisk_table[last_ramdisk].size = kparm_ramdisksize;
 			_last_data_addr += kparm_ramdisksize * 1024;
 		}
 	}
-	last_ramdisk = n;
 
 	/*
 	 * FIXME: this is ugly!
