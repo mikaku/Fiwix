@@ -177,7 +177,7 @@ void sync_superblocks(__dev_t dev)
 
 	lock_resource(&sync_resource);
 	while(mp) {
-		if(mp->dev == dev) {
+		if(!dev || mp->dev == dev) {
 			sb = &mp->sb;
 			if(sb->dirty && !(sb->flags & MS_RDONLY)) {
 				if((errno = sb->fsop->write_superblock(sb))) {
