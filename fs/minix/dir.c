@@ -25,7 +25,7 @@ struct fs_operations minix_dir_fsop = {
 	minix_dir_read,
 	minix_dir_write,
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	minix_dir_readdir,
 	NULL,			/* mmap */
 	NULL,			/* select */

@@ -17,7 +17,7 @@ int ata_hd_close(struct inode *, struct fd *);
 int ata_hd_read(__dev_t, __blk_t, char *, int);
 int ata_hd_write(__dev_t, __blk_t, char *, int);
 int ata_hd_ioctl(struct inode *, int, unsigned long int);
-int ata_hd_lseek(struct inode *, __off_t);
+int ata_hd_llseek(struct inode *, __off_t);
 int ata_hd_init(struct ide *, struct ata_drv *);
 
 #endif /* _FIWIX_ATA_HD_H */

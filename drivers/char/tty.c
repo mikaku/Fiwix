@@ -991,7 +991,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int tty_lseek(struct inode *i, __off_t offset)
+int tty_llseek(struct inode *i, __off_t offset)
 {
 	return -ESPIPE;
 }

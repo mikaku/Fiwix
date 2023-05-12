@@ -26,7 +26,7 @@ struct fs_operations minix_file_fsop = {
 	file_read,
 	minix_file_write,
 	NULL,			/* ioctl */
-	minix_file_lseek,
+	minix_file_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -125,7 +125,7 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 	return total_written;
 }
 
-int minix_file_lseek(struct inode *i, __off_t offset)
+int minix_file_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

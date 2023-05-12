@@ -25,7 +25,7 @@ struct fs_operations ext2_dir_fsop = {
 	ext2_dir_read,
 	ext2_dir_write,
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	ext2_dir_readdir,
 	NULL,			/* mmap */
 	NULL,			/* select */

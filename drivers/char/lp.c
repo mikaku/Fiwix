@@ -24,7 +24,7 @@ static struct fs_operations lp_driver_fsop = {
 	NULL,			/* read */
 	lp_write,
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */

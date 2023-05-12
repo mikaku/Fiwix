@@ -25,7 +25,7 @@ struct fs_operations iso9660_file_fsop = {
 	file_read,
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	iso9660_file_lseek,
+	iso9660_file_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -72,7 +72,7 @@ int iso9660_file_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int iso9660_file_lseek(struct inode *i, __off_t offset)
+int iso9660_file_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

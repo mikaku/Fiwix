@@ -43,9 +43,9 @@ int sys_lseek(unsigned int ufd, __off_t offset, unsigned int whence)
 	if((int)new_offset < 0) {
 		return -EINVAL;
 	}
-	if(i->fsop && i->fsop->lseek) {
+	if(i->fsop && i->fsop->llseek) {
 		fd_table[current->fd[ufd]].offset = new_offset;
-		new_offset = i->fsop->lseek(i, new_offset);
+		new_offset = i->fsop->llseek(i, new_offset);
 	} else {
 		return -EPERM;
 	}

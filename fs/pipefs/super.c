@@ -27,7 +27,7 @@ struct fs_operations pipefs_fsop = {
 	pipefs_read,
 	pipefs_write,
 	pipefs_ioctl,
-	pipefs_lseek,
+	pipefs_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	pipefs_select,

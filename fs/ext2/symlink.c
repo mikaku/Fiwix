@@ -24,7 +24,7 @@ struct fs_operations ext2_symlink_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */

@@ -25,7 +25,7 @@ struct fs_operations procfs_dir_fsop = {
 	procfs_dir_read,
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	procfs_dir_readdir,
 	NULL,			/* mmap */
 	NULL,			/* select */

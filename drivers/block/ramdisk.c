@@ -29,7 +29,7 @@ static struct fs_operations ramdisk_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	ramdisk_ioctl,
-	ramdisk_lseek,
+	ramdisk_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -173,7 +173,7 @@ int ramdisk_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int ramdisk_lseek(struct inode *i, __off_t offset)
+int ramdisk_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

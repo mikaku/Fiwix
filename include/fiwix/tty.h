@@ -86,7 +86,7 @@ int tty_close(struct inode *, struct fd *);
 int tty_read(struct inode *, struct fd *, char *, __size_t);
 int tty_write(struct inode *, struct fd *, const char *, __size_t);
 int tty_ioctl(struct inode *, int cmd, unsigned long int);
-int tty_lseek(struct inode *, __off_t);
+int tty_llseek(struct inode *, __off_t);
 int tty_select(struct inode *, int);
 void tty_init(void);
 

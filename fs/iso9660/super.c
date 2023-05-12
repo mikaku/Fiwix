@@ -26,7 +26,7 @@ struct fs_operations iso9660_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */

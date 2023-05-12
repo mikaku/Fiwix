@@ -26,7 +26,7 @@ static struct fs_operations mem_driver_fsop = {
 	mem_read,
 	mem_write,
 	NULL,			/* ioctl */
-	mem_lseek,
+	mem_llseek,
 	NULL,			/* readdir */
 	mem_mmap,
 	NULL,			/* select */
@@ -68,7 +68,7 @@ static struct fs_operations kmem_driver_fsop = {
 	kmem_read,
 	kmem_write,
 	NULL,			/* ioctl */
-	kmem_lseek,
+	kmem_llseek,
 	NULL,			/* readdir */
 	mem_mmap,
 	NULL,			/* select */
@@ -110,7 +110,7 @@ static struct fs_operations null_driver_fsop = {
 	null_read,
 	null_write,
 	NULL,			/* ioctl */
-	null_lseek,
+	null_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -152,7 +152,7 @@ static struct fs_operations port_driver_fsop = {
 	port_read,
 	port_write,
 	NULL,			/* ioctl */
-	port_lseek,
+	port_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -194,7 +194,7 @@ static struct fs_operations zero_driver_fsop = {
 	zero_read,
 	zero_write,
 	NULL,			/* ioctl */
-	zero_lseek,
+	zero_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -236,7 +236,7 @@ static struct fs_operations full_driver_fsop = {
 	full_read,
 	full_write,
 	NULL,			/* ioctl */
-	full_lseek,
+	full_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -278,7 +278,7 @@ static struct fs_operations urandom_driver_fsop = {
 	urandom_read,
 	urandom_write,
 	NULL,			/* ioctl */
-	urandom_lseek,
+	urandom_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -320,7 +320,7 @@ static struct fs_operations memdev_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -401,7 +401,7 @@ int mem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 	return count;
 }
 
-int mem_lseek(struct inode *i, __off_t offset)
+int mem_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }
@@ -444,7 +444,7 @@ int kmem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int kmem_lseek(struct inode *i, __off_t offset)
+int kmem_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }
@@ -469,7 +469,7 @@ int null_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int null_lseek(struct inode *i, __off_t offset)
+int null_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }
@@ -514,7 +514,7 @@ int port_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int port_lseek(struct inode *i, __off_t offset)
+int port_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }
@@ -540,7 +540,7 @@ int zero_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int zero_lseek(struct inode *i, __off_t offset)
+int zero_llseek(struct inode *i, __off_t offset)
 
 {
 	return offset;
@@ -567,7 +567,7 @@ int full_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return -ENOSPC;
 }
 
-int full_lseek(struct inode *i, __off_t offset)
+int full_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }
@@ -599,7 +599,7 @@ int urandom_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	return count;
 }
 
-int urandom_lseek(struct inode *i, __off_t offset)
+int urandom_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

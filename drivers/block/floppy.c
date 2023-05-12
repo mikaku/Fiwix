@@ -83,7 +83,7 @@ static struct fs_operations fdc_driver_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	fdc_ioctl,
-	fdc_lseek,
+	fdc_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -788,7 +788,7 @@ int fdc_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int fdc_lseek(struct inode *i, __off_t offset)
+int fdc_llseek(struct inode *i, __off_t offset)
 {
 	unsigned char minor;
 

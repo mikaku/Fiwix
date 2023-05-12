@@ -25,7 +25,7 @@ struct fs_operations procfs_symlink_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */

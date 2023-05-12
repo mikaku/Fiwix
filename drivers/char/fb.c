@@ -27,7 +27,7 @@ static struct fs_operations fb_driver_fsop = {
 	fb_read,
 	fb_write,
 	fb_ioctl,
-	fb_lseek,
+	fb_llseek,
 	NULL,			/* readdir */
 	NULL,
 	NULL,			/* select */
@@ -115,7 +115,7 @@ int fb_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return -EINVAL;
 }
 
-int fb_lseek(struct inode *i, __off_t offset)
+int fb_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

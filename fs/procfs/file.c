@@ -24,7 +24,7 @@ struct fs_operations procfs_file_fsop = {
 	procfs_file_read,
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	procfs_file_lseek,
+	procfs_file_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -116,7 +116,7 @@ int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 	return total_read;
 }
 
-int procfs_file_lseek(struct inode *i, __off_t offset)
+int procfs_file_llseek(struct inode *i, __off_t offset)
 {
 	return offset;
 }

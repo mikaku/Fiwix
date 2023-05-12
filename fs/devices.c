@@ -27,7 +27,7 @@ struct fs_operations def_chr_fsop = {
 	NULL,			/* read */
 	NULL,			/* write */
 	NULL,			/* ioctl */
-	NULL,			/* lseek */
+	NULL,			/* llseek */
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -69,7 +69,7 @@ struct fs_operations def_blk_fsop = {
 	blk_dev_read,
 	blk_dev_write,
 	blk_dev_ioctl,
-	blk_dev_lseek,
+	blk_dev_llseek,
 	NULL,			/* readdir */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -331,12 +331,12 @@ int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return -ENXIO;
 }
 
-int blk_dev_lseek(struct inode *i, __off_t offset)
+int blk_dev_llseek(struct inode *i, __off_t offset)
 {
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->lseek(i, offset);
+		return d->fsop->llseek(i, offset);
 	}
 
 	return -ENXIO;

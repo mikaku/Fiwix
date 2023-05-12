@@ -186,7 +186,7 @@ int pipefs_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int pipefs_lseek(struct inode *i, __off_t offset)
+int pipefs_llseek(struct inode *i, __off_t offset)
 {
 	return -ESPIPE;
 }
