@@ -42,6 +42,9 @@ int procfs_read_inode(struct inode *i)
 	i->i_mode = mode;
 	i->i_uid = 0;
 	i->i_size = 0;
+	if(S_ISLNK(i->i_mode)) {
+		i->i_size = 64;
+	}
 	i->i_atime = CURRENT_TIME;
 	i->i_ctime = CURRENT_TIME;
 	i->i_mtime = CURRENT_TIME;
