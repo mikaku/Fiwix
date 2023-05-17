@@ -21,6 +21,17 @@ void pit_beep_off(unsigned int unused)
 	outport_b(PS2_SYSCTRL_B, inport_b(PS2_SYSCTRL_B) & ~(ENABLE_SDATA | ENABLE_TMR2G));
 }
 
+int pit_getcounter0(void)
+{
+	int count;
+
+	/* latch counter 0 and read its value */
+	outport_b(MODEREG, SEL_CHAN0);
+	count = inport_b(CHANNEL0);
+	count |= inport_b(CHANNEL0) << 8;
+	return count;
+}
+
 void pit_init(unsigned short int hertz)
 {
 	outport_b(MODEREG, SEL_CHAN0 | LSB_MSB | RATE_GEN | BINARY_CTR);

@@ -45,6 +45,7 @@ void irq_timer_bh(void);
 void do_callouts_bh(void);
 void get_system_time(void);
 void set_system_time(__time_t);
+int gettimeoffset(void);
 void timer_init(void);
 
 #endif /* _FIWIX_TIMER_H */

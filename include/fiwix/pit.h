@@ -14,7 +14,6 @@
 
 #define MODEREG		0x43	/* mode/command register (w) */
 #define CHANNEL0	0x40	/* channel 0 data port (rw) */
-#define CHANNEL1	0x41	/* channel 1 data port (rw) */
 #define CHANNEL2	0x42	/* channel 2 data port (rw) */
 
 #define BINARY_CTR	0x00	/* 16bit binary mode counter */
@@ -46,6 +45,7 @@
 
 void pit_beep_on(void);
 void pit_beep_off(unsigned int);
+int pit_getcounter0(void);
 void pit_init(unsigned short int);
 
 #endif /* _FIWIX_PIT_H */

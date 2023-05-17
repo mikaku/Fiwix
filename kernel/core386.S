@@ -492,6 +492,7 @@ end_brand_str:
 	movl	%esp, %ebp
 
 	movw	0x08(%ebp), %dx		# port addr
+	xorl	%eax, %eax		# initialize %eax
 	inb	%dx, %al
 
 	jmp	1f			# recovery time

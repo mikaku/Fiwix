@@ -34,6 +34,8 @@
  *  (callout)    (callout)         (callout)
  */
 
+#define LATCH	(OSCIL / HZ)
+
 struct callout callout_pool[NR_CALLOUTS];
 struct callout *callout_pool_head;
 struct callout *callout_head;
@@ -421,6 +423,17 @@ void set_system_time(__time_t t)
 	cmos_write_date(CMOS_CENTURY, (y - (y % 100)) / 100);
 
 	CURRENT_TIME = t;
+}
+
+int gettimeoffset(void)
+{
+	int count;
+
+	count = pit_getcounter0();
+	count = (LATCH - count) * TICK;
+	count /= LATCH;
+
+	return count;
 }
 
 void timer_init(void)
