@@ -342,7 +342,10 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 		i->count = 1;
 		RESTORE_FLAGS(flags);
 		if(read_inode(i)) {
-			iput(i);
+			SAVE_FLAGS(flags); CLI();
+			i->count = 0;
+			insert_on_free_list(i);
+			RESTORE_FLAGS(flags);
 			return NULL;
 		}
 		insert_to_hash(i);
