@@ -21,7 +21,7 @@
 - Added a check in psig() to terminate the process if it doesn't have the stack
   region in its vma table.
 - Added PCI BARs handling in the serial driver.
-- Added the files buffer_max and buffer_nr in /proc/sys/kernel.
+- Added the files 'buffer_max' and 'buffer_nr' in '/proc/sys/kernel/'.
 - Added more checks on data received during ATA drive identify to make sure it
   makes sense.
 - Added the magic SysRq key 'm' to show current memory information.
@@ -32,7 +32,9 @@
 - Added support in parse_cmdline() to recognize values enclosed in double
   quotes.
 - Added support for multiple RAMdisk drives.
-- Added kexec implementation.
+- Added kexec implementation which includes new kernel parameters and the new
+  configuration option CONFIG_KEXEC (disabled by default).
+- Added microsecond resolution to sys_gettimeofday().
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -95,7 +97,7 @@
   non-existent user stack address in kernel mode when
   CONFIG_LAZY_USER_ADDR_CHECK is enabled. [#22]
 - Fixed verify_address() to accept a possible non-existent user stack address
-  when CONFIG_LAZY_USER_ADDR_CHECK is disabled, since 'do_page_fault()' will do
+  when CONFIG_LAZY_USER_ADDR_CHECK is disabled, since do_page_fault() will do
   the rest of the job. [#22]
 - Fixed the logic in parse_arg() to support kernel parameters without arguments.
 - Fixed a long standing bug where after removing an inode there was not a call
@@ -126,6 +128,11 @@
 - Fixed a deadlock between getblk() and kbdflushd(). [#27]
 - Fixed a missing lock that led to a possible memory page corruption bug in
   bread_page(). [#27]
+- Fixed atapi_cd_init() to setup the correct block size in the device structure.
+- Fixed sys_ftruncate() to return EINVAL if its method does not exist.
+- Fixed sync_superblocks() to sync all superblocks if argument is zero.
+- Fixed the size on every symlink in procfs to 64 bytes.
+- Fixed iget() to avoid locking when read_inode() returns an error.
 - Small fixes and cosmetic changes.
 
 
