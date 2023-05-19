@@ -64,6 +64,20 @@ int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 	struct procfs_dir_entry *d;
 	char *buf;
 
+	if((i->inode & 0xF0000000) == PROC_FD_INO) {
+		if(!(buf = (char *)kmalloc(PAGE_SIZE))) {
+			return -ENOMEM;
+		}
+		if((size_read = data_proc_pid_fd(buf, (i->inode >> 12) & 0xFFFF, i->inode))) {
+			if(size_read > count) {
+				size_read = count;
+			}
+			memcpy_b(buffer, buf, size_read);
+		}
+		kfree((unsigned int)buf);
+		return size_read;
+	}
+
 	if(!(d = get_procfs_by_inode(i))) {
 		return -EINVAL;
 	}
@@ -91,6 +105,7 @@ int procfs_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	__ino_t errno;
 	__pid_t pid;
 	struct proc *p;
+	int ufd;
 
 	if(!i) {
 		return -ENOENT;
@@ -107,11 +122,12 @@ int procfs_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		}
 	}
 
-	/* FIXME!
-	if(p && p->root) {
-		printk("(pid %d) p->root->inode = %d (count = %d)\n", p->pid, p->root->inode, p->root->count);
+	if((i->inode & 0xF0000000) == PROC_FD_INO) {
+		ufd = i->inode & 0xFFF;
+		*i_res = fd_table[p->fd[ufd]].inode;
+		fd_table[p->fd[ufd]].inode->count++;
+		return 0;
 	}
-	*/
 
 	switch(i->inode & 0xF0000FFF) {
 		case PROC_PID_CWD:

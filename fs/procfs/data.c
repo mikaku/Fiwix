@@ -470,6 +470,21 @@ int data_proc_dirty_background_ratio(char *buffer, __pid_t pid)
  * PID directory related functions
  * -------------------------------
  */
+int data_proc_pid_fd(char *buffer, __pid_t pid, __ino_t inode)
+{
+	int size, ufd;
+	struct proc *p;
+	struct inode *i;
+
+	size = 0;
+	ufd = inode & 0xFFF;
+	if((p = get_proc_by_pid(pid))) {
+		i = fd_table[p->fd[ufd]].inode;
+		size = sprintk(buffer, "[%02d%02d]:%d", MAJOR(i->dev), MINOR(i->dev), i->inode);
+	}
+	return size;
+}
+
 int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 {
 	int n, size;

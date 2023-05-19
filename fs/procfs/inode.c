@@ -31,12 +31,18 @@ int procfs_read_inode(struct inode *i)
 		nlink = 3;
 		lev = PROC_PID_LEV;
 	} else {
-		if(!(d = get_procfs_by_inode(i))) {
-			return -ENOENT;
+		if((i->inode & 0xF0000000) == PROC_FD_INO) {	/* dynamic FD symlink */
+			mode = S_IFLNK | S_IRWXU;
+			nlink = 1;
+			lev = PROC_FD_LEV;
+		} else {
+			if(!(d = get_procfs_by_inode(i))) {
+				return -ENOENT;
+			}
+			mode = d->mode;
+			nlink = d->nlink;
+			lev = d->lev;
 		}
-		mode = d->mode;
-		nlink = d->nlink;
-		lev = d->lev;
 	}
 
 	i->i_mode = mode;

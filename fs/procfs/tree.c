@@ -15,6 +15,7 @@
 
 #define DIR	S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | \
 		S_IXOTH					/* dr-xr-xr-x */
+#define DIRFD	S_IFDIR | S_IRUSR | S_IXUSR		/* dr-x------ */
 #define REG	S_IFREG | S_IRUSR | S_IRGRP | S_IROTH	/* -r--r--r-- */
 #define REGUSR	S_IFREG | S_IRUSR			/* -r-------- */
 #define LNK	S_IFLNK | S_IRWXU | S_IRWXG | S_IRWXO	/* lrwxrwxrwx */
@@ -51,7 +52,7 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
    {	/* [1] /PID/ */
 	{ 1000,  DIR,  2, 1, 1,  ".",            NULL },
 	{ 1,     DIR,  2, 0, 2,  "..",           NULL },
-/*	{ PROC_PID_FD,      DIR,    2, 2, 2,  "fd",       data_proc_pid_fd },*/
+	{ PROC_PID_FD,      DIRFD,  2, 2, 2,  "fd",       NULL },
 	{ PROC_PID_CMDLINE, REG,    1, 1, 7,  "cmdline",  data_proc_pid_cmdline },
 	{ PROC_PID_CWD,     LNKPID, 1, 1, 3,  "cwd",      data_proc_pid_cwd },
 	{ PROC_PID_ENVIRON, REGUSR, 1, 1, 7,  "environ",  data_proc_pid_environ },
@@ -65,7 +66,10 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
 
-   {
+   {	/* [2] /PID/fd/ */
+	{ 2000,  DIRFD,  2, 2, 1,  ".",          NULL },
+	{ 1000,  DIR,    2, 2, 2,  "..",         NULL },
+	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
 
    {	/* [3] /sys/ */

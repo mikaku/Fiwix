@@ -15,7 +15,10 @@
 #define PROC_SUPER_MAGIC	0x9FA0	/* same as in Linux */
 
 #define PROC_PID_INO		0x40000000	/* base for PID inodes */
-#define PROC_PID_LEV		1	/* array level for PID */
+#define PROC_PID_LEV		1	/* array level for PIDs */
+
+#define PROC_FD_INO		0x50000000	/* base for FD inodes */
+#define PROC_FD_LEV		2	/* array level for FDs */
 
 #define PROC_ARRAY_ENTRIES	21
 
@@ -80,7 +83,7 @@ int data_proc_version(char *, __pid_t);
 int data_proc_dirty_background_ratio(char *, __pid_t);
 
 /* PID related functions */
-int data_proc_pid_fd(char *, __pid_t);
+int data_proc_pid_fd(char *, __pid_t, __ino_t);
 int data_proc_pid_cmdline(char *, __pid_t);
 int data_proc_pid_cwd(char *, __pid_t);
 int data_proc_pid_environ(char *, __pid_t);

@@ -58,6 +58,16 @@ struct fs_operations procfs_dir_fsop = {
 	NULL			/* release_superblock */
 };
 
+static void free_all_fdstr(struct procfs_dir_entry *d)
+{
+	while(d) {
+		if((d->inode & 0xF0000000) == PROC_FD_INO) {
+			kfree((unsigned int)d->name);
+		}
+		d++;
+	}
+}
+
 static int proc_listdir(char *buffer, int count)
 {
 	int n;
@@ -96,13 +106,13 @@ static int proc_listdir(char *buffer, int count)
 	return size;
 }
 
-/*
 static int proc_listfd(struct inode *i, char *buffer, int count)
 {
 	int n;
 	struct proc *p;
 	struct procfs_dir_entry *pd;
 	struct procfs_dir_entry d;
+	char *fdstr;
 	int size;
 
 	size = 0;
@@ -111,11 +121,15 @@ static int proc_listfd(struct inode *i, char *buffer, int count)
 	p = get_proc_by_pid((i->inode >> 12) & 0xFFFF);
 	for(n = 0; n < OPEN_MAX; n++) {
 		if(p->fd[n]) {
-			d.inode = PROC_PID_INO + (p->pid << 12) + n;
-			d.mode = S_IFREG | S_IRWXU;
+			d.inode = PROC_FD_INO + (p->pid << 12) + n;
+			d.mode = S_IFLNK | S_IRWXU;
 			d.nlink = 1;
 			d.lev = -1;
-			d.name_len = sprintk(d.name, "%d", n);
+			if(!(fdstr = (char *)kmalloc(4 + 1))) {
+				break;
+			}
+			d.name_len = sprintk(fdstr, "%d", n);
+			d.name = fdstr;
 			d.data_fn = NULL;
 
 			if(size + sizeof(struct procfs_dir_entry) > (count - 1)) {
@@ -128,10 +142,9 @@ static int proc_listfd(struct inode *i, char *buffer, int count)
 			pd++;
 		}
 	}
-	memset_b((void *)pd + size, NULL, sizeof(struct procfs_dir_entry));
+	memset_b((void *)pd + size, 0, sizeof(struct procfs_dir_entry));
 	return size;
 }
-*/
 
 static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
@@ -143,6 +156,7 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	if(!(buf = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
+	memset_b(buf, 0, PAGE_SIZE);
 
 	/* create the list of directories for each process */
 	len = 0;
@@ -150,20 +164,20 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 		len = proc_listdir(buf, count);
 	}
 
-	/* TODO: create the list of fds used for each process
+	/* create the list of fds used for each process */
 	if((i->inode & 0xF0000FFF) == PROC_PID_FD) {
 		len = proc_listfd(i, buf, count);
 	}
-	*/
 
 	/* add the rest of static files in the main directory */
 	lev = i->u.procfs.i_lev;
 
-	/* assigns the size of the level without the last entry (NULL) */
+	/* calculate the size of the level without the last entry (NULL) */
 	bytes = sizeof(procfs_array[lev]) - sizeof(struct procfs_dir_entry);
 
 	if((len + bytes) > (count - 1)) {
 		printk("WARNING: %s(): len (%d) > count (%d).\n", __FUNCTION__, len, count);
+		free_all_fdstr((struct procfs_dir_entry *)buf);
 		kfree((unsigned int)buf);
 		return 0;
 	}
@@ -199,13 +213,11 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 	struct procfs_dir_entry *d;
 	int base_dirent_len;
 	char *buffer;
-	int lev;
 
 	if(!(buffer = (void *)kmalloc(PAGE_SIZE))) {
 		return -ENOMEM;
 	}
 
-	lev = i->u.procfs.i_lev;
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 
 	offset = fd_table->offset;
@@ -239,6 +251,9 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 			dirent_offset += dirent_len;
 		} else {
 			break;
+		}
+		if((d->inode & 0xF0000000) == PROC_FD_INO) {
+			kfree((unsigned int)d->name);
 		}
 	}
 	fd_table->offset = boffset;

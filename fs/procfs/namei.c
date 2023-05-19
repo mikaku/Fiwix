@@ -18,7 +18,7 @@
 
 int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 {
-	int len, lev;
+	int len, lev, ufd;
 	__ino_t inode;
 	__pid_t pid;
 	struct proc *p;
@@ -31,6 +31,41 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 	}
 
 	lev = bmap(dir, 0, FOR_READING);
+
+	/* <PID>/fd directory */
+	if(lev == 2) {
+		if(name[0] == '[') {
+			return -ENOENT;
+		}
+		pid = (dir->inode >> 12) & 0xFFFF;
+		if(!(p = get_proc_by_pid(pid))) {
+			return -ENOENT;
+		}
+
+		if(name[0] == '.' && name[1] == '\0') {
+			*i_res = dir;
+			return 0;
+		}
+		if(name[0] == '.' && name[1] == '.') {
+			inode = PROC_PID_INO + (p->pid << 12);
+			if(!(*i_res = iget(dir->sb, inode))) {
+				return -EACCES;
+			}
+			iput(dir);
+			return 0;
+		}
+
+		ufd = atoi(name);
+		if(p->fd[ufd]) {
+			inode = (PROC_FD_INO + (pid << 12)) + ufd;
+			if(!(*i_res = iget(dir->sb, inode))) {
+				return -EACCES;
+			}
+			iput(dir);
+			return 0;
+		}
+	}
+
 	pdirent = procfs_array[lev];
 	while(pdirent->inode && !inode) {
 		if(len == pdirent->name_len) {
