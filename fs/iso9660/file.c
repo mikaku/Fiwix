@@ -72,7 +72,7 @@ int iso9660_file_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int iso9660_file_llseek(struct inode *i, __off_t offset)
+__loff_t iso9660_file_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

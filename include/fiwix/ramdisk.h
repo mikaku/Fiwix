@@ -29,7 +29,7 @@ int ramdisk_close(struct inode *, struct fd *);
 int ramdisk_read(__dev_t, __blk_t, char *, int);
 int ramdisk_write(__dev_t, __blk_t, char *, int);
 int ramdisk_ioctl(struct inode *, int, unsigned long int);
-int ramdisk_llseek(struct inode *, __off_t);
+__loff_t ramdisk_llseek(struct inode *, __loff_t);
 
 void ramdisk_init(void);
 

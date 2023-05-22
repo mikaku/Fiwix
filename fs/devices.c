@@ -331,7 +331,7 @@ int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return -ENXIO;
 }
 
-int blk_dev_llseek(struct inode *i, __off_t offset)
+__loff_t blk_dev_llseek(struct inode *i, __loff_t offset)
 {
 	struct device *d;
 

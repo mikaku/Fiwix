@@ -18,8 +18,7 @@
 int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long int offset_low, __loff_t *result, unsigned int whence)
 {
 	struct inode *i;
-	__loff_t offset;
-	__loff_t new_offset;
+	__loff_t offset, new_offset;
 	int errno;
 
 #ifdef __DEBUG__
@@ -31,7 +30,7 @@ int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long in
 		return errno;
 	}
 	i = fd_table[current->fd[ufd]].inode;
-	offset = (__loff_t) (((__loff_t)offset_high << 32) | offset_low);
+	offset = (__loff_t)(((__loff_t)offset_high << 32) | offset_low);
 	switch(whence) {
 		case SEEK_SET:
 			new_offset = offset;
@@ -45,12 +44,18 @@ int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long in
 		default:
 			return -EINVAL;
 	}
-	fd_table[current->fd[ufd]].offset = new_offset;
-
+	if(i->fsop && i->fsop->llseek) {
+		fd_table[current->fd[ufd]].offset = new_offset;
+		if((new_offset = i->fsop->llseek(i, new_offset)) < 0) {
+			return (int)new_offset;
+		}
+	} else {
+		return -EPERM;
+	}
 	memcpy_b(result, &new_offset, sizeof(__loff_t));
 
 #ifdef __DEBUG__
-	printk(" -> returning %u\n", *result);
+	printk(" -> returning %lu\n", *result);
 #endif /*__DEBUG__ */
 
 	return 0;

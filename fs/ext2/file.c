@@ -125,7 +125,7 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 	return total_written;
 }
 
-int ext2_file_llseek(struct inode *i, __off_t offset)
+__loff_t ext2_file_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

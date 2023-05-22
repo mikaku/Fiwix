@@ -14,6 +14,8 @@ typedef __signed__ short int __s16;
 typedef unsigned short int __u16;
 typedef __signed__ int __s32;
 typedef unsigned int __u32;
+typedef __signed__ long long int __s64;
+typedef unsigned long long int __u64;
 
 typedef __u16 __uid_t;
 typedef __u16 __gid_t;
@@ -28,9 +30,9 @@ typedef unsigned long int __clock_t;
 typedef __u32 __time_t;
 typedef __u16 __dev_t;
 typedef __u16 __key_t;
-typedef __s32 __blk_t;		/* must be signed in order to return -EIO */
+typedef __s32 __blk_t;		/* must be signed in order to return error */
 typedef __s32 __daddr_t;
-typedef unsigned long long int __loff_t;
+typedef __s64 __loff_t;		/* must be signed in order to return error */
 
 /* number of descriptors that can fit in an 'fd_set' */
 /* WARNING: this value must be the same as in the C Library */

@@ -401,7 +401,7 @@ int mem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 	return count;
 }
 
-int mem_llseek(struct inode *i, __off_t offset)
+__loff_t mem_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
@@ -444,7 +444,7 @@ int kmem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int kmem_llseek(struct inode *i, __off_t offset)
+__loff_t kmem_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
@@ -469,7 +469,7 @@ int null_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int null_llseek(struct inode *i, __off_t offset)
+__loff_t null_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
@@ -514,7 +514,7 @@ int port_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int port_llseek(struct inode *i, __off_t offset)
+__loff_t port_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
@@ -540,7 +540,7 @@ int zero_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return count;
 }
 
-int zero_llseek(struct inode *i, __off_t offset)
+__loff_t zero_llseek(struct inode *i, __loff_t offset)
 
 {
 	return offset;
@@ -567,7 +567,7 @@ int full_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_
 	return -ENOSPC;
 }
 
-int full_llseek(struct inode *i, __off_t offset)
+__loff_t full_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
@@ -599,7 +599,7 @@ int urandom_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	return count;
 }
 
-int urandom_llseek(struct inode *i, __off_t offset)
+__loff_t urandom_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

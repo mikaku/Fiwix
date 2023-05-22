@@ -25,43 +25,43 @@ int mem_open(struct inode *, struct fd *);
 int mem_close(struct inode *, struct fd *);
 int mem_read(struct inode *, struct fd *, char *, __size_t);
 int mem_write(struct inode *, struct fd *, const char *, __size_t);
-int mem_llseek(struct inode *, __off_t);
+__loff_t mem_llseek(struct inode *, __loff_t);
 
 int kmem_open(struct inode *, struct fd *);
 int kmem_close(struct inode *, struct fd *);
 int kmem_read(struct inode *, struct fd *, char *, __size_t);
 int kmem_write(struct inode *, struct fd *, const char *, __size_t);
-int kmem_llseek(struct inode *, __off_t);
+__loff_t kmem_llseek(struct inode *, __loff_t);
 
 int null_open(struct inode *, struct fd *);
 int null_close(struct inode *, struct fd *);
 int null_read(struct inode *, struct fd *, char *, __size_t);
 int null_write(struct inode *, struct fd *, const char *, __size_t);
-int null_llseek(struct inode *, __off_t);
+__loff_t null_llseek(struct inode *, __loff_t);
 
 int port_open(struct inode *, struct fd *);
 int port_close(struct inode *, struct fd *);
 int port_read(struct inode *, struct fd *, char *, __size_t);
 int port_write(struct inode *, struct fd *, const char *, __size_t);
-int port_llseek(struct inode *, __off_t);
+__loff_t port_llseek(struct inode *, __loff_t);
 
 int zero_open(struct inode *, struct fd *);
 int zero_close(struct inode *, struct fd *);
 int zero_read(struct inode *, struct fd *, char *, __size_t);
 int zero_write(struct inode *, struct fd *, const char *, __size_t);
-int zero_llseek(struct inode *, __off_t);
+__loff_t zero_llseek(struct inode *, __loff_t);
 
 int full_open(struct inode *, struct fd *);
 int full_close(struct inode *, struct fd *);
 int full_read(struct inode *, struct fd *, char *, __size_t);
 int full_write(struct inode *, struct fd *, const char *, __size_t);
-int full_llseek(struct inode *, __off_t);
+__loff_t full_llseek(struct inode *, __loff_t);
 
 int urandom_open(struct inode *, struct fd *);
 int urandom_close(struct inode *, struct fd *);
 int urandom_read(struct inode *, struct fd *, char *, __size_t);
 int urandom_write(struct inode *, struct fd *, const char *, __size_t);
-int urandom_llseek(struct inode *, __off_t);
+__loff_t urandom_llseek(struct inode *, __loff_t);
 
 int memdev_open(struct inode *, struct fd *);
 int mem_mmap(struct inode *, struct vma *);

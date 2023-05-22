@@ -918,7 +918,7 @@ int ata_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return drive->fsop->ioctl(i, cmd, arg);
 }
 
-int ata_llseek(struct inode *i, __off_t offset)
+__loff_t ata_llseek(struct inode *i, __loff_t offset)
 {
 	struct ide *ide;
 	struct ata_drv *drive;

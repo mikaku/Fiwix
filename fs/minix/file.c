@@ -125,7 +125,7 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 	return total_written;
 }
 
-int minix_file_llseek(struct inode *i, __off_t offset)
+__loff_t minix_file_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

@@ -116,7 +116,7 @@ int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 	return total_read;
 }
 
-int procfs_file_llseek(struct inode *i, __off_t offset)
+__loff_t procfs_file_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

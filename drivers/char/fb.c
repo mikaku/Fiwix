@@ -115,7 +115,7 @@ int fb_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return -EINVAL;
 }
 
-int fb_llseek(struct inode *i, __off_t offset)
+__loff_t fb_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

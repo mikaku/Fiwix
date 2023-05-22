@@ -173,7 +173,7 @@ int ramdisk_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int ramdisk_llseek(struct inode *i, __off_t offset)
+__loff_t ramdisk_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

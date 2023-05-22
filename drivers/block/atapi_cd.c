@@ -238,7 +238,7 @@ int atapi_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int atapi_cd_llseek(struct inode *i, __off_t offset)
+__loff_t atapi_cd_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }

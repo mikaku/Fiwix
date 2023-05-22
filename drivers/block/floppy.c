@@ -788,7 +788,7 @@ int fdc_ioctl(struct inode *i, int cmd, unsigned long int arg)
 	return 0;
 }
 
-int fdc_llseek(struct inode *i, __off_t offset)
+__loff_t fdc_llseek(struct inode *i, __loff_t offset)
 {
 	unsigned char minor;
 
