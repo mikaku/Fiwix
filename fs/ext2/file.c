@@ -81,7 +81,7 @@ int ext2_file_close(struct inode *i, struct fd *fd_table)
 int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
 	__blk_t block;
-	__off_t total_written;
+	__size_t total_written;
 	unsigned int boffset, bytes;
 	int blksize;
 	struct buffer *buf;

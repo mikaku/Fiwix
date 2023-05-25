@@ -73,7 +73,7 @@ int procfs_file_close(struct inode *i, struct fd *fd_table)
 
 int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	__off_t total_read;
+	__size_t total_read;
 	unsigned int boffset, bytes, size;
 	int blksize;
 	struct procfs_dir_entry *d;

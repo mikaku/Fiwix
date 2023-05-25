@@ -233,8 +233,8 @@ int blk_dev_close(struct inode *i, struct fd *fd_table)
 int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	__blk_t block;
-	__off_t total_read;
-	unsigned long long int device_size;
+	__size_t total_read;
+	__loff_t device_size;
 	int blksize;
 	unsigned int boffset, bytes;
 	struct buffer *buf;
@@ -278,8 +278,8 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
 	__blk_t block;
-	__off_t total_written;
-	unsigned long long int device_size;
+	__size_t total_written;
+	__loff_t device_size;
 	int blksize;
 	unsigned int boffset, bytes;
 	struct buffer *buf;

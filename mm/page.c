@@ -375,7 +375,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 
 int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	__off_t total_read;
+	__size_t total_read;
 	unsigned int addr, poffset, bytes;
 	struct page *pg;
 

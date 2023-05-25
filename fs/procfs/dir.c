@@ -148,7 +148,7 @@ static int proc_listfd(struct inode *i, char *buffer, int count)
 
 static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	__off_t total_read;
+	__size_t total_read;
 	unsigned int bytes;
 	int len, lev;
 	char *buf;
@@ -209,7 +209,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 {
 	unsigned int offset, boffset, dirent_offset, doffset;
 	int dirent_len;
-	unsigned int total_read;
+	__size_t total_read;
 	struct procfs_dir_entry *d;
 	int base_dirent_len;
 	char *buffer;

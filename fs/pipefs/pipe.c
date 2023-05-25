@@ -49,7 +49,7 @@ int pipefs_close(struct inode *i, struct fd *fd_table)
 
 int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
-	__off_t bytes_read;
+	__size_t bytes_read;
 	__size_t n, limit;
 	char *data;
 
@@ -108,7 +108,7 @@ int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t cou
 
 int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
-	__off_t bytes_written;
+	__size_t bytes_written;
 	__size_t n;
 	char *data;
 	int limit;
