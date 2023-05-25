@@ -146,7 +146,7 @@ struct fs_operations {
 	int (*write)(struct inode *, struct fd *, const char *, __size_t);
 	int (*ioctl)(struct inode *, int, unsigned long int);
 	__loff_t (*llseek)(struct inode *, __loff_t);
-	int (*readdir)(struct inode *, struct fd *, struct dirent *, unsigned int);
+	int (*readdir)(struct inode *, struct fd *, struct dirent *, __size_t);
 	int (*mmap)(struct inode *, struct vma *);
 	int (*select)(struct inode *, int);
 

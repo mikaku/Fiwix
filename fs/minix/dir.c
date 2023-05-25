@@ -79,7 +79,7 @@ int minix_dir_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 	return -EBADF;
 }
 
-int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, unsigned int count)
+int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

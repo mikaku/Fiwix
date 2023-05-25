@@ -73,7 +73,7 @@ int iso9660_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 	return -EISDIR;
 }
 
-int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, unsigned int count)
+int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

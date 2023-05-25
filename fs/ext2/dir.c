@@ -79,7 +79,7 @@ int ext2_dir_write(struct inode *i, struct fd *fd_table, const char *buffer, __s
 	return -EBADF;
 }
 
-int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, unsigned int count)
+int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
