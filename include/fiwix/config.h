@@ -9,7 +9,6 @@
 #define _FIWIX_CONFIG_H
 
 /* kernel tuning */
-
 #define NR_PROCS		64	/* max. number of processes */
 #define NR_CALLOUTS		NR_PROCS	/* max. active callouts */
 #define NR_MOUNT_POINTS		8	/* max. number of mounted filesystems */
@@ -42,11 +41,11 @@
 #define CONFIG_LAZY_USER_ADDR_CHECK
 #define CONFIG_BGA
 #undef CONFIG_KEXEC
+#define CONFIG_OFFSET64
 
 
-/* configuration options to help debug or to test new features */
+/* configuration options to help debugging */
 #define CONFIG_VERBOSE_SEGFAULTS
 #undef CONFIG_QEMU_DEBUGCON
-
 
 #endif /* _FIWIX_CONFIG_H */

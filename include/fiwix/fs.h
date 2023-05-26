@@ -22,7 +22,11 @@ struct fd {
 	struct inode *inode;		/* file inode */
 	unsigned short int flags;	/* flags */
 	unsigned short int count;	/* number of opened instances */
+#ifdef CONFIG_OFFSET64
+	__loff_t offset;		/* r/w pointer position */
+#else
 	__off_t offset;			/* r/w pointer position */
+#endif /* CONFIG_OFFSET64 */
 };
 
 #include <fiwix/statfs.h>
