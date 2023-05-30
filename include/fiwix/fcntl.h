@@ -20,6 +20,7 @@
 #define O_EXCL		   0200	/* exclusive use flag */
 #define O_NOCTTY	   0400	/* do not assign controlling terminal */
 #define O_TRUNC		  01000	/* truncate flag */
+#define O_DIRECTORY	0200000 /* only open if directory */
 #define O_NOFOLLOW	0400000	/* do not follow symbolic links */
 
 #define O_APPEND	  02000
