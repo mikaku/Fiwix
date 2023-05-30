@@ -51,6 +51,12 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 			free_name(tmp_name);
 			return -ELOOP;
 		}
+		if(!S_ISDIR(i->i_mode) && (flags & O_DIRECTORY)) {
+			iput(i);
+			iput(dir);
+			free_name(tmp_name);
+			return -ENOTDIR;
+		}
 	}
 
 	if(flags & O_CREAT) {
