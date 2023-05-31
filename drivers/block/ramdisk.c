@@ -11,6 +11,7 @@
 #include <fiwix/devices.h>
 #include <fiwix/part.h>
 #include <fiwix/fs.h>
+#include <fiwix/buffer.h>
 #include <fiwix/errno.h>
 #include <fiwix/mm.h>
 #include <fiwix/stdio.h>
@@ -93,6 +94,7 @@ int ramdisk_close(struct inode *i, struct fd *fd_table)
 	if(!get_ramdisk(MINOR(i->rdev))) {
 		return -ENXIO;
 	}
+	sync_buffers(i->rdev);
 	return 0;
 }
 

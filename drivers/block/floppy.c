@@ -515,6 +515,7 @@ int fdc_close(struct inode *i, struct fd *fd_table)
 		return -ENXIO;
 	}
 
+	sync_buffers(i->rdev);
 	lock_resource(&floppy_resource);
 	set_current_fdd_type(minor);
 	unlock_resource(&floppy_resource);
