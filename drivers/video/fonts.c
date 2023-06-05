@@ -8,8 +8,6 @@
 #include <fiwix/string.h>
 #include <fiwix/font.h>
 #include "font-lat9-8x8.c"
-#include "font-lat9-8x10.c"
-#include "font-lat9-8x12.c"
 #include "font-lat9-8x14.c"
 #include "font-lat9-8x16.c"
 
@@ -17,8 +15,6 @@
 
 static struct fbcon_font_desc *fbcon_fonts[] = {
 	&font_lat9_8x8,
-	&font_lat9_8x10,
-	&font_lat9_8x12,
 	&font_lat9_8x14,
 	&font_lat9_8x16
 };

@@ -17,8 +17,6 @@ struct fbcon_font_desc {
 };
 
 extern struct fbcon_font_desc font_vga_8x8;
-extern struct fbcon_font_desc font_vga_8x10;
-extern struct fbcon_font_desc font_vga_8x12;
 extern struct fbcon_font_desc font_vga_8x14;
 extern struct fbcon_font_desc font_vga_8x16;
 
