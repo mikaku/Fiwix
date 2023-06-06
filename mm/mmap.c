@@ -245,7 +245,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 		new->s_type = a->s_type;
 		new->inode = a->inode;
 		new->o_mode = a->o_mode;
-		free_vma_pages(a, b->start, a->end - b->start);
+		free_vma_pages(a, b->start, b->end - b->start);
 		invalidate_tlb();
 		a->end = b->start;
 		if(a->start == a->end) {
