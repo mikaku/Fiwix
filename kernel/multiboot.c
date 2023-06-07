@@ -88,14 +88,8 @@ static int check_parm(struct kparms *parm, const char *value)
 	}
 #endif /* CONFIG_KEXEC */
 	if(!strcmp(parm->name, "ramdisksize=")) {
-		int size = atoi(value);
-		if(!size || size > RAMDISK_MAXSIZE) {
-			printk("WARNING: 'ramdisksize=' value is out of limits.\n");
-			kparm_ramdisksize = 0;
-		} else {
-			kparm_ramdisksize = size;
-			ramdisk_minors = RAMDISK_DRIVES;
-		}
+		kparm_ramdisksize = atoi(value);
+		ramdisk_minors = RAMDISK_DRIVES;
 		return 0;
 	}
 	if(!strcmp(parm->name, "ro")) {
