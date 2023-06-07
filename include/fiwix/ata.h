@@ -309,7 +309,7 @@ int ata_open(struct inode *, struct fd *);
 int ata_close(struct inode *, struct fd *);
 int ata_read(__dev_t, __blk_t, char *, int);
 int ata_write(__dev_t, __blk_t, char *, int);
-int ata_ioctl(struct inode *, int, unsigned long int);
+int ata_ioctl(struct inode *, int, unsigned int);
 __loff_t ata_llseek(struct inode *, __loff_t);
 void ata_init(void);
 

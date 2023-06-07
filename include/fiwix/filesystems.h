@@ -116,7 +116,7 @@ int fifo_open(struct inode *, struct fd *);
 int pipefs_close(struct inode *, struct fd *);
 int pipefs_read(struct inode *, struct fd *, char *, __size_t);
 int pipefs_write(struct inode *, struct fd *, const char *, __size_t);
-int pipefs_ioctl(struct inode *, int, unsigned long int);
+int pipefs_ioctl(struct inode *, int, unsigned int);
 __loff_t pipefs_llseek(struct inode *, __loff_t);
 int pipefs_select(struct inode *, int);
 int pipefs_ialloc(struct inode *, int);

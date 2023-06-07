@@ -17,7 +17,7 @@
 
 int kbdmode = 0;
 
-int vt_ioctl(struct tty *tty, int cmd, unsigned long int arg)
+int vt_ioctl(struct tty *tty, int cmd, unsigned int arg)
 {
 	struct vconsole *vc;
 	int n, errno;

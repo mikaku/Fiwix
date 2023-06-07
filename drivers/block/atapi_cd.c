@@ -221,7 +221,7 @@ int atapi_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return sectors_to_read * ATAPI_CD_SECTSIZE;
 }
 
-int atapi_cd_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int atapi_cd_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	struct ide *ide;
 

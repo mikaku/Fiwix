@@ -699,7 +699,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 }
 
 /* FIXME: http://www.lafn.org/~dave/linux/termios.txt (doc/termios.txt) */
-int tty_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	struct proc *p;
 	struct tty *tty;

@@ -108,7 +108,7 @@ struct serial {
 
 int serial_open(struct tty *);
 int serial_close(struct tty *);
-int serial_ioctl(struct tty *, int, unsigned long int);
+int serial_ioctl(struct tty *, int, unsigned int);
 void serial_write(struct tty *);
 void irq_serial(int, struct sigcontext *);
 void irq_serial_bh(void);

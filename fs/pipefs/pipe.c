@@ -169,7 +169,7 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 	return bytes_written;
 }
 
-int pipefs_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int pipefs_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	int errno;
 

@@ -13,14 +13,14 @@
 #define NR_BIOS_MM_ENT		50	/* entries in BIOS memory map */
 
 struct bios_mem_map {
-	unsigned long int from;
-	unsigned long int to;
+	unsigned int from;
+	unsigned int to;
 	int type;
 };
 extern struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
 
 int is_addr_in_bios_map(unsigned int);
-void bios_map_reserve(unsigned long int, unsigned long int);
-void bios_map_init(struct multiboot_mmap_entry *, unsigned long int);
+void bios_map_reserve(unsigned int, unsigned int);
+void bios_map_init(struct multiboot_mmap_entry *, unsigned int);
 
 #endif /* _FIWIX_BIOS_H */

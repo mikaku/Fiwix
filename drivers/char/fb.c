@@ -110,7 +110,7 @@ int fb_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t 
 	return count;
 }
 
-int fb_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int fb_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	return -EINVAL;
 }
@@ -132,7 +132,7 @@ void fb_init(void)
 	 * range (e.g: 0xFD000000-0xFDFFFFFF) might conflict with the physical
 	 * memory below 1GB (e.g: 0x3D000000-0x3DFFFFFF + PAGE_OFFSET).
 	 */
-	from = (unsigned long int)video.address - PAGE_OFFSET;
+	from = (unsigned int)video.address - PAGE_OFFSET;
 	bios_map_reserve(from, from + video.memsize);
 
 	printk("fb0       0x%08x-0x%08x\ttype=%s %x.%x resolution=%dx%dx%d size=%dMB\n",

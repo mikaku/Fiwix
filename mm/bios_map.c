@@ -23,7 +23,7 @@ static char *bios_mem_type[] = {
 	"disabled"
 };
 
-static void bios_map_add(unsigned long int from, unsigned long int to, int from_type, int to_type)
+static void bios_map_add(unsigned int from, unsigned int to, int from_type, int to_type)
 {
 	int n;
 
@@ -86,7 +86,7 @@ int is_addr_in_bios_map(unsigned int addr)
 	return retval;
 }
 
-void bios_map_reserve(unsigned long int from, unsigned long int to)
+void bios_map_reserve(unsigned int from, unsigned int to)
 {
 	if(is_addr_in_bios_map(from)) {
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
@@ -94,7 +94,7 @@ void bios_map_reserve(unsigned long int from, unsigned long int to)
 	}
 }
 
-void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned long int bmmap_length)
+void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_length)
 {
 	struct multiboot_mmap_entry *bmmap;
 	unsigned int from_high, from_low, to_high, to_low;

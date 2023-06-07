@@ -12,7 +12,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_ioctl(unsigned int fd, int cmd, unsigned long int arg)
+int sys_ioctl(unsigned int fd, int cmd, unsigned int arg)
 {
 	int errno;
 	struct inode *i;

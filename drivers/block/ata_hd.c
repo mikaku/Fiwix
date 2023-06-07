@@ -345,7 +345,7 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return sectors_to_write * ATA_HD_SECTSIZE;
 }
 
-int ata_hd_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int ata_hd_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	int minor;
 	struct ide *ide;

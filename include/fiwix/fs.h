@@ -148,7 +148,7 @@ struct fs_operations {
 	int (*close)(struct inode *, struct fd *);
 	int (*read)(struct inode *, struct fd *, char *, __size_t);
 	int (*write)(struct inode *, struct fd *, const char *, __size_t);
-	int (*ioctl)(struct inode *, int, unsigned long int);
+	int (*ioctl)(struct inode *, int, unsigned int);
 	__loff_t (*llseek)(struct inode *, __loff_t);
 	int (*readdir)(struct inode *, struct fd *, struct dirent *, __size_t);
 	int (*mmap)(struct inode *, struct vma *);
@@ -220,7 +220,7 @@ extern int isonum_711(char *);
 extern int isonum_723(char *);
 extern int isonum_731(char *);
 extern int isonum_733(char *);
-extern unsigned long int isodate(const char *);
+extern unsigned int isodate(const char *);
 extern int iso9660_cleanfilename(char *, int);
 extern struct fs_operations iso9660_fsop;
 extern struct fs_operations iso9660_file_fsop;

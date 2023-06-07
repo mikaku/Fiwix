@@ -320,7 +320,7 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	return total_written;
 }
 
-int blk_dev_ioctl(struct inode *i, int cmd, unsigned long int arg)
+int blk_dev_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	struct device *d;
 

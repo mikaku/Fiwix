@@ -85,7 +85,7 @@ int tty_open(struct inode *, struct fd *);
 int tty_close(struct inode *, struct fd *);
 int tty_read(struct inode *, struct fd *, char *, __size_t);
 int tty_write(struct inode *, struct fd *, const char *, __size_t);
-int tty_ioctl(struct inode *, int cmd, unsigned long int);
+int tty_ioctl(struct inode *, int cmd, unsigned int);
 __loff_t tty_llseek(struct inode *, __loff_t);
 int tty_select(struct inode *, int);
 void tty_init(void);
@@ -97,6 +97,6 @@ void tty_queue_flush(struct clist *);
 int tty_queue_room(struct clist *q);
 void tty_queue_init(void);
 
-int vt_ioctl(struct tty *, int, unsigned long int);
+int vt_ioctl(struct tty *, int, unsigned int);
 
 #endif /* _FIWIX_TTY_H */
