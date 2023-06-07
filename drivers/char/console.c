@@ -395,7 +395,7 @@ static void vcbuf_refresh(struct vconsole *vc)
 static void echo_char(struct vconsole *vc, unsigned char *buf, unsigned int count)
 {
 	unsigned char ch;
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	if(vc->flags & CONSOLE_HAS_FOCUS) {

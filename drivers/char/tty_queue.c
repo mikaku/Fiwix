@@ -145,7 +145,7 @@ static void delete_cblock_from_tail(struct clist *q)
 
 int tty_queue_putchar(struct tty *tty, struct clist *q, unsigned char ch)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct cblock *cb;
 	int errno;
 
@@ -178,7 +178,7 @@ int tty_queue_putchar(struct tty *tty, struct clist *q, unsigned char ch)
 
 int tty_queue_unputchar(struct clist *q)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct cblock *cb;
 	unsigned char ch;
 
@@ -203,7 +203,7 @@ int tty_queue_unputchar(struct clist *q)
 
 unsigned char tty_queue_getchar(struct clist *q)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct cblock *cb;
 	unsigned char ch;
 
@@ -228,7 +228,7 @@ unsigned char tty_queue_getchar(struct clist *q)
 
 void tty_queue_flush(struct clist *q)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 

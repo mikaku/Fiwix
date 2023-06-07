@@ -51,7 +51,7 @@ static struct resource sync_resource = { 0, 0 };
 
 static struct buffer *add_buffer_to_pool(void)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *buf;
 
 	if(!(buf = (struct buffer *)kmalloc(sizeof(struct buffer)))) {
@@ -75,7 +75,7 @@ static struct buffer *add_buffer_to_pool(void)
 
 static void del_buffer_from_pool(struct buffer *buf)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *tmp;
 
 	tmp = buf;
@@ -244,7 +244,7 @@ static void remove_from_free_list(struct buffer *buf)
 
 static void buffer_wait(struct buffer *buf)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
@@ -261,7 +261,7 @@ static void buffer_wait(struct buffer *buf)
 
 static struct buffer *get_free_buffer(int mode)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *buf;
 
 	if(mode == GROW_IF_NEEDED) {
@@ -299,7 +299,7 @@ static struct buffer *get_free_buffer(int mode)
 
 static struct buffer *get_dirty_buffer(void)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *buf;
 
 	for(;;) {
@@ -378,7 +378,7 @@ static struct buffer *search_buffer_hash(__dev_t dev, __blk_t block, int size)
 
 static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *buf;
 
 	for(;;) {
@@ -465,7 +465,7 @@ void bwrite(struct buffer *buf)
 
 void brelse(struct buffer *buf)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 
@@ -517,7 +517,7 @@ void sync_buffers(__dev_t dev)
 
 void invalidate_buffers(__dev_t dev)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct buffer *buf;
 
 	buf = buffer_table;

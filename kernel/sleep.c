@@ -24,7 +24,7 @@ static unsigned int area = 0;
 
 void runnable(struct proc *p)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	if(p->state == PROC_RUNNING) {
 		printk("WARNING: %s(): process with pid '%d' is already running!\n", __FUNCTION__, p->pid);
@@ -43,7 +43,7 @@ void runnable(struct proc *p)
 
 void not_runnable(struct proc *p, int state)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	if(p->next_run) {
@@ -62,7 +62,7 @@ void not_runnable(struct proc *p, int state)
 
 int sleep(void *address, int state)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct proc **h;
 	int signum, i;
 
@@ -108,7 +108,7 @@ int sleep(void *address, int state)
 
 void wakeup(void *address)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct proc **h;
 	int i;
 
@@ -142,7 +142,7 @@ void wakeup(void *address)
 
 void wakeup_proc(struct proc *p)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct proc **h;
 	int i;
 
@@ -178,7 +178,7 @@ void wakeup_proc(struct proc *p)
 
 void lock_resource(struct resource *resource)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
@@ -196,7 +196,7 @@ void lock_resource(struct resource *resource)
 
 void unlock_resource(struct resource *resource)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	resource->locked = 0;
@@ -209,7 +209,7 @@ void unlock_resource(struct resource *resource)
 
 int lock_area(unsigned int type)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	int retval;
 
 	SAVE_FLAGS(flags); CLI();
@@ -222,7 +222,7 @@ int lock_area(unsigned int type)
 
 int unlock_area(unsigned int type)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	int retval;
 
 	SAVE_FLAGS(flags); CLI();

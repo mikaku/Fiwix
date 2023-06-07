@@ -55,7 +55,7 @@ static struct flock_file *get_new_flock(struct inode *i)
 
 static void release_flock(struct flock_file *ff)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct flock_file *tmp;
 
 	tmp = ff;

@@ -119,7 +119,7 @@ static void do_del_callout(struct callout *c)
 
 void add_callout(struct callout_req *creq, unsigned int ticks)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct callout *c, **tmp;
 
 	del_callout(creq);
@@ -157,7 +157,7 @@ void add_callout(struct callout_req *creq, unsigned int ticks)
 
 void del_callout(struct callout_req *creq)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct callout *c;
 
 	SAVE_FLAGS(flags); CLI();

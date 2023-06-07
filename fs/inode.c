@@ -46,7 +46,7 @@ static struct resource sync_resource = { 0, 0 };
 /* append a new inode into the inode pool */
 static struct inode *add_inode(void)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct inode *i;
 
 	if(!(i = (struct inode *)kmalloc(sizeof(struct inode)))) {
@@ -151,7 +151,7 @@ static void remove_from_free_list(struct inode *i)
 
 static struct inode *get_free_inode(void)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct inode *i;
 
 	if(kstat.nr_inodes < kstat.max_inodes) {
@@ -250,7 +250,7 @@ static void wait_on_inode(struct inode *i)
 
 void inode_lock(struct inode *i)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
@@ -267,7 +267,7 @@ void inode_lock(struct inode *i)
 
 void inode_unlock(struct inode *i)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	i->locked = 0;
@@ -299,7 +299,7 @@ struct inode *ialloc(struct superblock *sb, int mode)
 
 struct inode *iget(struct superblock *sb, __ino_t inode)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct inode *i;
 
 	if(!inode) {
@@ -381,7 +381,7 @@ int check_fs_busy(__dev_t dev, struct inode *root)
 
 void iput(struct inode *i)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	/* this solves the problem with rmdir('/') and iput(dir) which is NULL */
 	if(!i) {
@@ -448,7 +448,7 @@ void sync_inodes(__dev_t dev)
 
 void invalidate_inodes(__dev_t dev)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct inode *i;
 
 	i = inode_table;

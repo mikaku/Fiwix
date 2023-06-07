@@ -130,7 +130,7 @@ static void remove_from_free_list(struct page *pg)
 
 void page_lock(struct page *pg)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
@@ -147,7 +147,7 @@ void page_lock(struct page *pg)
 
 void page_unlock(struct page *pg)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	pg->flags &= ~PAGE_LOCKED;
@@ -157,7 +157,7 @@ void page_unlock(struct page *pg)
 
 struct page *get_free_page(void)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct page *pg;
 
 	/* if the number of pages is low then reclaim some buffers */
@@ -229,7 +229,7 @@ struct page *search_page_hash(struct inode *inode, __off_t offset)
 
 void release_page(struct page *pg)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	if(!is_valid_page(pg->page)) {
 		PANIC("Unexpected inconsistency in hash_table. Missing page %d (0x%x).\n", pg->page, pg->page);

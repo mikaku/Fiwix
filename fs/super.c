@@ -23,7 +23,7 @@ static struct resource sync_resource = { 0, 0 };
 
 void superblock_lock(struct superblock *sb)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
@@ -41,7 +41,7 @@ void superblock_lock(struct superblock *sb)
  
 void superblock_unlock(struct superblock *sb)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	sb->locked = 0;
@@ -54,7 +54,7 @@ void superblock_unlock(struct superblock *sb)
 
 struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirname)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct mount *mp;
 
 	if(kstat.mount_points + 1 > NR_MOUNT_POINTS) {
@@ -96,7 +96,7 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 
 void del_mount_point(struct mount *mp)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct mount *tmp;
 
 	tmp = mp;

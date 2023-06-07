@@ -37,7 +37,7 @@ void cmos_write_date(unsigned char addr, unsigned char value)
 
 unsigned char cmos_read(unsigned char addr)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	outport_b(CMOS_INDEX, addr);
@@ -48,7 +48,7 @@ unsigned char cmos_read(unsigned char addr)
 
 void cmos_write(unsigned char addr, unsigned char value)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	outport_b(CMOS_INDEX, addr);

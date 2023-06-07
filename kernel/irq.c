@@ -71,7 +71,7 @@ int unregister_irq(int num, const struct interrupt *old_irq)
 
 void add_bh(struct bh *new)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct bh **b;
 
 	SAVE_FLAGS(flags); CLI();

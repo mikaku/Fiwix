@@ -122,7 +122,7 @@ static void insert_vma_region(struct vma *vma)
 
 static void add_vma_region(struct vma *vma)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	if(!current->vma_table) {
@@ -136,7 +136,7 @@ static void add_vma_region(struct vma *vma)
 
 static void del_vma_region(struct vma *vma)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct vma *tmp;
 
 	tmp = vma;

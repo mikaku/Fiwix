@@ -435,7 +435,7 @@ void fbcon_restore_screen(struct vconsole *vc)
 
 void fbcon_screen_on(struct vconsole *vc)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct callout_req creq;
 
 	if(screen_is_off) {
@@ -457,7 +457,7 @@ void fbcon_screen_on(struct vconsole *vc)
 void fbcon_screen_off(unsigned int arg)
 {
 	struct vconsole *vc;
-	unsigned long int flags;
+	unsigned int flags;
 
 	vc = (struct vconsole *)arg;
 	screen_is_off = 1;

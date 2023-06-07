@@ -226,7 +226,7 @@ void vgacon_restore_screen(struct vconsole *vc)
 
 void vgacon_screen_on(struct vconsole *vc)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct callout_req creq;
 
 	if(screen_is_off) {
@@ -246,7 +246,7 @@ void vgacon_screen_on(struct vconsole *vc)
 
 void vgacon_screen_off(unsigned int arg)
 {
-	unsigned long int flags;
+	unsigned int flags;
 
 	screen_is_off = 1;
 	SAVE_FLAGS(flags); CLI();

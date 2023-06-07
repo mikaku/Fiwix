@@ -220,7 +220,7 @@ static void serial_setup(struct serial *s)
 static void serial_stop(struct tty *tty)
 {
 	struct serial *s;
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
@@ -232,7 +232,7 @@ static void serial_stop(struct tty *tty)
 static void serial_start(struct tty *tty)
 {
 	struct serial *s;
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
@@ -507,7 +507,7 @@ void serial_set_termios(struct tty *tty)
 void serial_write(struct tty *tty)
 {
 	struct serial *s;
-	unsigned long int flags;
+	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
 	s = (struct serial *)tty->driver_data;
