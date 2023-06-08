@@ -10,7 +10,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_personality(unsigned long int persona)
+int sys_personality(unsigned int persona)
 {
 #ifdef __DEBUG__
 	printk("(pid %d) sys_personality(%d) -> %d\n", current->pid, persona, persona);

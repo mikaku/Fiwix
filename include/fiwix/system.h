@@ -14,14 +14,14 @@
 #define UTS_DOMAINNAME	"(none)"
 
 struct sysinfo {
-	long int uptime;		/* seconds since boot */
-	unsigned long int loads[3];	/* load average (1, 5 and 15 minutes) */
-	unsigned long int totalram;	/* total usable main memory size */
-	unsigned long int freeram;	/* available memory size */
-	unsigned long int sharedram;	/* amount of shared memory */
-	unsigned long int bufferram;	/* amount of memory used by buffers */
-	unsigned long int totalswap;	/* total swap space size */
-	unsigned long int freeswap;	/* available swap space */
+	int uptime;			/* seconds since boot */
+	unsigned int loads[3];		/* load average (1, 5 and 15 minutes) */
+	unsigned int totalram;		/* total usable main memory size */
+	unsigned int freeram;		/* available memory size */
+	unsigned int sharedram;		/* amount of shared memory */
+	unsigned int bufferram;		/* amount of memory used by buffers */
+	unsigned int totalswap;		/* total swap space size */
+	unsigned int freeswap;		/* available swap space */
 	unsigned short int procs;	/* number of current processes */
 	char _f[22];			/* pads structure to 64 bytes */
 };

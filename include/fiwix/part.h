@@ -17,7 +17,7 @@ struct hd_geometry {
 	unsigned char heads;
 	unsigned char sectors;
 	unsigned short int cylinders;
-	unsigned long int start;
+	unsigned int start;
 };
 
 struct partition {

@@ -12,7 +12,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_socketcall(int call, unsigned long int *args)
+int sys_socketcall(int call, unsigned int *args)
 {
 #ifdef __DEBUG__
 	printk("(pid %d) sys_socketcall(%d, 0x%08x) -> ENOENT\n", current->pid, call, args);

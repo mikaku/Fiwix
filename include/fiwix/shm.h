@@ -66,11 +66,11 @@ struct shminfo {
 
 struct shm_info {
 	int used_ids;
-	unsigned long int shm_tot;	/* total allocated shm */
-	unsigned long int shm_rss;	/* total resident shm */
-	unsigned long int shm_swp;	/* total swapped shm */
-	unsigned long int swap_attempts;
-	unsigned long int swap_successes;
+	unsigned int shm_tot;		/* total allocated shm */
+	unsigned int shm_rss;		/* total resident shm */
+	unsigned int shm_swp;		/* total swapped shm */
+	unsigned int swap_attempts;
+	unsigned int swap_successes;
 };
 
 extern struct shmid_ds *shmseg[];
@@ -87,7 +87,7 @@ void free_seg(int);
 struct vma *shm_get_new_attach(struct shmid_ds *);
 void shm_release_attach(struct vma *);
 int shm_map_page(struct vma *, unsigned int);
-int sys_shmat(int, char *, int, unsigned long int *);
+int sys_shmat(int, char *, int, unsigned int *);
 int sys_shmdt(char *);
 int sys_shmget(key_t, __size_t, int);
 int sys_shmctl(int, int, struct shmid_ds *);

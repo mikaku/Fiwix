@@ -53,11 +53,11 @@ int shm_map_page(struct vma *vma, unsigned int cr2)
 	return 0;
 }
 
-int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned long int *raddr)
+int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned int *raddr)
 {
 	struct shmid_ds *seg;
 	struct vma *sega;
-	unsigned long int addr;
+	unsigned int addr;
 	int errno;
 
 #ifdef __DEBUG__
@@ -73,7 +73,7 @@ int sys_shmat(int shmid, char *shmaddr, int shmflg, unsigned long int *raddr)
 		return -EINVAL;
 	}
 
-	addr = (unsigned long int)shmaddr;
+	addr = (unsigned int)shmaddr;
 	if(addr) {
 		if(shmflg & SHM_RND) {
 			addr &= ~(SHMLBA - 1);

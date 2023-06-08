@@ -26,7 +26,7 @@ typedef __u32 __off_t;
 typedef __s32 __pid_t;
 typedef __s32 __ssize_t;
 typedef __u32 __size_t;
-typedef unsigned long int __clock_t;
+typedef __u32 __clock_t;
 typedef __u32 __time_t;
 typedef __u16 __dev_t;
 typedef __u16 __key_t;
@@ -38,13 +38,13 @@ typedef __s64 __loff_t;		/* must be signed in order to return error */
 /* WARNING: this value must be the same as in the C Library */
 #define __FD_SETSIZE	64
 
-#define __NFDBITS	(sizeof(unsigned long int) * 8)
+#define __NFDBITS	(sizeof(unsigned int) * 8)
 #define __FDELT(d)	((d) / __NFDBITS)
 #define __FDMASK(d)	(1 << ((d) % __NFDBITS))
 
 /* define the fd_set structure for select() */
 typedef struct {
-	unsigned long int fds_bits[__FD_SETSIZE / __NFDBITS];
+	unsigned int fds_bits[__FD_SETSIZE / __NFDBITS];
 } fd_set;
 
 #define __FD_ZERO(set)		(memset_b((void *) (set), 0, sizeof(fd_set)))

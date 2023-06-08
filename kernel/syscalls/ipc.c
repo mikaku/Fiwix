@@ -150,7 +150,7 @@ int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long
 			version = call >> 16;
 			switch(version) {
 				case 0:
-					if((errno = check_user_area(VERIFY_WRITE, (unsigned long int *)third, sizeof(unsigned long int)))) {
+					if((errno = check_user_area(VERIFY_WRITE, (unsigned int *)third, sizeof(unsigned int)))) {
 						return errno;
 					}
 					orig_args.arg3 = (int)&third;
@@ -191,11 +191,11 @@ int sys_ipc(unsigned int call, struct sysvipc_args *args)
 		case MSGCTL:
 			return sys_msgctl(args->arg1, args->arg2, args->ptr);
 		case SHMAT:
-			if((errno = sys_shmat(args->arg1, args->ptr, args->arg2, (unsigned long int *)&args->arg3))) {
+			if((errno = sys_shmat(args->arg1, args->ptr, args->arg2, (unsigned int *)&args->arg3))) {
 				return errno;
 			}
 #ifdef CONFIG_SYSCALL_6TH_ARG
-			memcpy_l((unsigned long int *)third, &args->arg3, 1);
+			memcpy_l((unsigned int *)third, &args->arg3, 1);
 			return 0;
 #else
 			return args->arg3;

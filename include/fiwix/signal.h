@@ -44,7 +44,7 @@
 #define SIGPWR		30	/* Power Fault */
 #define SIGUNUSED	31
 
-typedef unsigned long int __sigset_t;
+typedef unsigned int __sigset_t;
 typedef void (*__sighandler_t)(int);
 
 struct sigaction {

@@ -17,7 +17,7 @@
  * the I/O address space. That is, up to 65536 I/O ports can be specified using
  * this system call, which makes sys_iopl() not needed anymore.
  */
-int sys_ioperm(unsigned long int from, unsigned long int num, int turn_on)
+int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 {
 	unsigned int n;
 

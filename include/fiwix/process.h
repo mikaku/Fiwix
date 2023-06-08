@@ -145,12 +145,12 @@ struct proc {
 	unsigned int sp;		/* current process' stack frame */
 	struct rusage usage;		/* process resource usage */
 	struct rusage cusage;		/* children resource usage */
-	unsigned long int it_real_interval, it_real_value;
-	unsigned long int it_virt_interval, it_virt_value;
-	unsigned long int it_prof_interval, it_prof_value;
-	unsigned long int timeout;
+	unsigned int it_real_interval, it_real_value;
+	unsigned int it_virt_interval, it_virt_value;
+	unsigned int it_prof_interval, it_prof_value;
+	unsigned int timeout;
 	struct rlimit rlim[RLIM_NLIMITS];
-	unsigned long int rss;
+	unsigned int rss;
 	__mode_t umask;
 	unsigned char loopcnt;		/* nested symlinks counter */
 #ifdef CONFIG_SYSVIPC

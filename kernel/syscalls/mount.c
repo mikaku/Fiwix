@@ -18,7 +18,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_mount(const char *source, const char *target, const char *fstype, unsigned long int flags, const void *data)
+int sys_mount(const char *source, const char *target, const char *fstype, unsigned int flags, const void *data)
 {
 	struct inode *i_source, *i_target;
 	struct mount *mp;

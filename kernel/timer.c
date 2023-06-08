@@ -209,7 +209,7 @@ void irq_timer(int num, struct sigcontext *sc)
 	}
 }
 
-unsigned long int tv2ticks(const struct timeval *tv)
+unsigned int tv2ticks(const struct timeval *tv)
 {
 	return((tv->tv_sec * HZ) + tv->tv_usec * HZ / 1000000);
 }
@@ -254,10 +254,10 @@ int setitimer(int which, const struct itimerval *new_value, struct itimerval *ol
 	return 0;
 }
 
-unsigned long int mktime(struct mt *mt)
+unsigned int mktime(struct mt *mt)
 {
 	int n, total_days;
-	unsigned long int seconds;
+	unsigned int seconds;
 
 	total_days = 0;
 

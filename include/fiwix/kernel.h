@@ -97,7 +97,7 @@ struct kernel_stat {
 	int max_dirty_buffers;		/* max. number of dirty buffers */
 	int dirty_buffers;		/* dirty buffers (in KB) */
 	int nr_dirty_buffers;		/* current dirty buffers */
-	unsigned long int random_seed;	/* next random seed */
+	unsigned int random_seed;	/* next random seed */
 	int pages_reclaimed;		/* last pages reclaimed from buffer */
 	int nr_flocks;			/* current allocated file locks */
 

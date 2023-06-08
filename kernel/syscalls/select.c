@@ -18,7 +18,7 @@
 static int check_fds(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds)
 {
 	int n, bit;
-	unsigned long int set;
+	unsigned int set;
 
 	n = bit = 0;
 	while(bit < nfds) {
@@ -91,7 +91,7 @@ int do_select(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds, fd_set *res_rf
 
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
-	unsigned long int t;
+	unsigned int t;
 	fd_set rfds, wfds, efds;
 	fd_set res_rfds, res_wfds, res_efds;
 	int errno;

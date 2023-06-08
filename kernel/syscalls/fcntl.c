@@ -15,7 +15,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_fcntl(unsigned int ufd, int cmd, unsigned long int arg)
+int sys_fcntl(unsigned int ufd, int cmd, unsigned int arg)
 {
 	int new_ufd, errno;
 

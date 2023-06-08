@@ -15,7 +15,7 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_llseek(unsigned int ufd, unsigned long int offset_high, unsigned long int offset_low, __loff_t *result, unsigned int whence)
+int sys_llseek(unsigned int ufd, unsigned int offset_high, unsigned int offset_low, __loff_t *result, unsigned int whence)
 {
 	struct inode *i;
 	__loff_t offset, new_offset;

@@ -426,7 +426,7 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 	return total_read;
 }
 
-void reserve_pages(unsigned long int from, unsigned long int to)
+void reserve_pages(unsigned int from, unsigned int to)
 {
 	struct page *pg;
 

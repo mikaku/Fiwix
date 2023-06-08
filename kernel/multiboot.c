@@ -298,7 +298,7 @@ void multiboot(unsigned int magic, unsigned int info)
 	ramdisk_minors = 0;
 
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", (unsigned long int)magic);
+		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", magic);
 		memset_b(&mbi, 0, sizeof(struct multiboot_info));
 		kparm_memsize = 640;
 		kparm_extmemsize = 3072;

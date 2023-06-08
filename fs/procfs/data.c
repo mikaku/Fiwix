@@ -383,7 +383,7 @@ int data_proc_stat(char *buffer, __pid_t pid)
 int data_proc_uptime(char *buffer, __pid_t pid)
 {
 	struct proc *p;
-	unsigned long int idle;
+	unsigned int idle;
 
 	p = &proc_table[IDLE];
 	idle = tv2ticks(&p->usage.ru_utime);

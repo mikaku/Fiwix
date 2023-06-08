@@ -16,7 +16,7 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int old_select(unsigned long int *params)
+int old_select(unsigned int *params)
 {
 	int nfds;
 	fd_set *readfds;

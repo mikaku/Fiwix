@@ -43,7 +43,7 @@ static const char *cpu_flags[] = {
 	"HTT", "TM", "30", "PBE"
 };
 
-static unsigned long int detect_cpuspeed(void)
+static unsigned int detect_cpuspeed(void)
 {
 	unsigned long long int tsc1, tsc2;
 

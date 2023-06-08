@@ -49,7 +49,7 @@ struct cpu {
 	char model;
 	char *model_name;
 	char stepping;
-	unsigned long int hz;
+	unsigned int hz;
 	char *cache;
 	char has_cpuid;
 	char has_fpu;

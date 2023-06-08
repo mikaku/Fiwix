@@ -22,7 +22,7 @@ int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 {
 	int errno;
 	long int nsec;
-	unsigned long int timeout;
+	unsigned int timeout;
 	unsigned int flags;
 
 #ifdef __DEBUG__
