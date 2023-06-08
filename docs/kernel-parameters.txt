@@ -11,6 +11,8 @@ console=	Set the output console device.
 		Serial consoles have fixed settings: 9600,N,8,1
 
 initrd=		Optional ramdisk image file which will be loaded by GRUB.
+		The size of the initrd RAM disk is based on the size of
+		the image file, not the ramdisksize parameter.
 
 kexec_proto=	The boot method of the new kernel.
 		Options: multiboot1

@@ -23,6 +23,7 @@
 #define KERNEL_BSS_SIZE		((int)_end - (int)_edata)
 
 #define PGDIR_4MB_ADDR		0x50000
+#define PGDIR_INITIAL_4MB_UNITS	1
 
 unsigned int *kpage_dir;
 
@@ -38,6 +39,9 @@ unsigned int fd_table_size = 0;
 
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
+
+void setup_more_minmem(void);
+
 
 unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, int flags)
 {
@@ -77,7 +81,7 @@ unsigned int setup_minmem(void)
 	unsigned int *pgtbl;
 	short int pd, mb4;
 
-	mb4 = 1;	/* 4MB units */
+	mb4 = PGDIR_INITIAL_4MB_UNITS;
 	addr = PAGE_OFFSET + PGDIR_4MB_ADDR;
 
 	kpage_dir = (unsigned int *)addr;
@@ -96,6 +100,31 @@ unsigned int setup_minmem(void)
 		}
 	}
 	return (unsigned int)kpage_dir + 0x40000000;
+}
+
+void setup_more_minmem()
+{
+	int n;
+	unsigned int addr;
+	unsigned int * kpage_dir, * kpage_table;
+	short int pd, mb4;
+
+	addr = PAGE_OFFSET + PGDIR_4MB_ADDR;
+	kpage_dir = (unsigned int *)addr;
+
+	addr += PAGE_SIZE;
+	kpage_table = (unsigned int *)addr;
+
+	mb4 = ((_last_data_addr + MAX_PGTABLE_SIZE) / 0x400000) + 1;
+	for(n = 0; n < (1024 * mb4); n++) {
+		kpage_table[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
+		if(!(n % 1024)) {
+			pd = n / 1024;
+			kpage_dir[pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
+		}
+	}
+	return;
 }
 
 /* returns the mapped address of a virtual address */
@@ -268,6 +297,11 @@ void mem_init(void)
 
 	/* align _last_data_addr to the next page */
 	_last_data_addr = PAGE_ALIGN(_last_data_addr);
+
+	/* Map more low memory if necessary to hold page tables */
+	if (_last_data_addr + MAX_PGTABLE_SIZE > PGDIR_INITIAL_4MB_UNITS * 0x400000) {
+		setup_more_minmem();
+	}
 
 	/* Page Directory */
 	kpage_dir = (unsigned int *)_last_data_addr;

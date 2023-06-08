@@ -53,7 +53,8 @@ Let's see some examples to understand better these rules:
 Example 1:
 	- Kernel cmdline: "... ramdisksize=49152 initrd=/initrd.img"
 	- Resulting RAMdisk drives layout:
-		- /dev/ram0	-> initrd RAMdisk drive of 48MB (/ filesystem).
+		- /dev/ram0	-> initrd RAMdisk drive (/ filesystem).
+				   RAMdisk size is based on size of initrd.img
 		- if RAMDISK_DRIVES == 1
 			- /dev/ram1	-> all-purpose RAMdisk drive of 48MB.
 		- if RAMDISK_DRIVES == 2

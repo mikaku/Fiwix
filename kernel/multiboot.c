@@ -352,10 +352,23 @@ void multiboot(unsigned int magic, unsigned int info)
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;
 		for(n = 0; n < mbi.mods_count; n++, mod++) {
 			if(!strcmp((char *)mod->cmdline, kparm_initrd)) {
-				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
-				ramdisk_table[0].addr = (char *)mod->mod_start;
-				ramdisk_table[0].size = kparm_ramdisksize;
-				ramdisk_minors++;
+				/* By definition, mod_end is address of last byte plus one */
+				int initrdsize = mod->mod_end - mod->mod_start;
+				int excess = initrdsize % 1024;
+				/* If not a multiple of 1024 then round up */
+				if (excess) {
+					initrdsize += (1024 - excess);
+				}
+				initrdsize = initrdsize / 1024;
+				if (initrdsize > INITRD_MAXSIZE) {
+					printk("WARNING: initrd ignored. Size %dKB exceeds max %dKB.\n", initrdsize, INITRD_MAXSIZE);
+					initrdsize = 0;
+				} else {
+					printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, initrdsize);
+					ramdisk_table[0].addr = (char *)mod->mod_start;
+					ramdisk_table[0].size = initrdsize;
+					ramdisk_minors++;
+				}
 			}
 		}
 	}

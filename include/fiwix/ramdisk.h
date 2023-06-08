@@ -14,6 +14,7 @@
 #define RAMDISK_TOTAL	10	/* total number of ramdisk drives */
 
 #define RAMDISK_DRIVES	1	/* number of all-purpose ramdisk drives */
+#define INITRD_MAXSIZE	122880	/* maximum ramdisk size in KBs */
 
 struct ramdisk {
 	char *addr;		/* ramdisk memory address */

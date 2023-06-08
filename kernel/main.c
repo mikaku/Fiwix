@@ -59,11 +59,11 @@ struct new_utsname sys_utsname = {
 
 struct kernel_stat kstat;
 
-void start_kernel(unsigned int magic, unsigned int info, unsigned int stack)
+void start_kernel(unsigned int magic, unsigned int info, unsigned int boot_last_addr)
 {
 	struct proc *init;
 
-	_last_data_addr = stack - PAGE_OFFSET;
+	_last_data_addr = boot_last_addr - PAGE_OFFSET;
 	memset_b(&kstat, 0, sizeof(kstat));
 
 	/* default kernel values */

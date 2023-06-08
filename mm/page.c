@@ -458,6 +458,14 @@ void page_init(int pages)
 		pg->page = n;
 
 		addr = n << PAGE_SHIFT;
+
+		/* Reserve the kernel stack page */
+		if(addr == 0x0000F000) {
+			pg->flags = PAGE_RESERVED;
+			kstat.physical_reserved++;
+			continue;
+		}
+
 		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.kernel_reserved++;

@@ -27,6 +27,13 @@
 #define CURRENT_TICKS	(kstat.ticks)
 #define INIT_PROGRAM	"/sbin/init"
 
+/* Max memory for page tables:
+ * 0x101000 for page dir and 1GB physical
+ * 0x001000 for low memory page table
+ * 0x01E000 for 120MB ram drive page tables
+ */
+#define MAX_PGTABLE_SIZE 0x120000
+
 /* kernel flags */
 #define KF_HAS_PANICKED		0x01	/* the kernel has panic'ed */
 #define KF_HAS_DEBUGCON		0x02	/* QEMU debug console support */
