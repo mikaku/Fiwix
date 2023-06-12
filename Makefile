@@ -6,6 +6,7 @@
 
 TOPDIR := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
 INCLUDE = $(TOPDIR)/include
+TMPFILE := $(shell mktemp)
 
 ARCH = -m32
 CPU = -march=i386
@@ -13,6 +14,7 @@ LANG = -std=c89
 
 CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) $(LANG) -D__KERNEL__ #-D__DEBUG__
 LD = $(CROSS_COMPILE)ld
+CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 LIBGCC := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
@@ -48,7 +50,9 @@ export CC LD CFLAGS LDFLAGS INCLUDE
 all:
 	@echo "#define UTS_VERSION \"`date`\"" > include/fiwix/version.h
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
-	$(LD) -N -T fiwix.ld $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
+	$(CPP) fiwix.ld > $(TMPFILE)
+	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
+	rm -f $(TMPFILE)
 	nm fiwix | sort | gzip -9c > System.map.gz
 
 clean:

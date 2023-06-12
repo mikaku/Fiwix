@@ -1,15 +1,17 @@
 /*
- * Linker script for the Fiwix kernel (3GB user / 1GB kernel).
+ * Linker script for the Fiwix kernel.
  *
  * Copyright 2018, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/linker.h>
+
 OUTPUT_FORMAT("elf32-i386")
-OUTPUT_ARCH(i386)
-ENTRY(start)		/* entry point */
-vaddr = 0xC0000000;	/* virtual base address at 3GB */
-paddr = 0x100000;	/* physical address at 1MB */
+OUTPUT_ARCH("i386")
+ENTRY(start)			/* entry point */
+vaddr = PAGE_OFFSET;		/* virtual start address */
+paddr = KERNEL_ADDR;		/* physical address at 1MB */
 
 /* define output sections */
 SECTIONS

@@ -143,7 +143,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 			bmmap = (struct multiboot_mmap_entry *)((unsigned int)bmmap + bmmap->size + sizeof(bmmap->size));
 		}
 		kstat.physical_pages += (1024 >> 2);	/* add the first MB as a whole */
-		if(kstat.physical_pages > (0x40000000 >> PAGE_SHIFT)) {
+		if(kstat.physical_pages > (GDT_BASE >> PAGE_SHIFT)) {
 			printk("WARNING: detected a total of %dMB of available memory below 4GB.\n", (kstat.physical_pages << 2) / 1024);
 		}
 	} else {
@@ -161,8 +161,8 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 	 * This truncates to 1GB since it's the maximum physical memory
 	 * currently supported.
 	 */
-	if(kstat.physical_pages > (0x40000000 >> PAGE_SHIFT)) {
-		kstat.physical_pages = (0x40000000 >> PAGE_SHIFT);
-		printk("WARNING: only up to 1GB of physical memory will be used.\n");
+	if(kstat.physical_pages > (GDT_BASE >> PAGE_SHIFT)) {
+		kstat.physical_pages = (GDT_BASE >> PAGE_SHIFT);
+		printk("WARNING: only up to %dGB of physical memory will be used.\n", GDT_BASE >> 30);
 	}
 }

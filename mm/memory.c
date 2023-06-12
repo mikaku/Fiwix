@@ -91,11 +91,11 @@ unsigned int setup_minmem(void)
 		pgtbl[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
 			pd = n / 1024;
-			kpage_dir[pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
-			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + 0x40000000) | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + GDT_BASE) | PAGE_PRESENT | PAGE_RW;
+			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + GDT_BASE) | PAGE_PRESENT | PAGE_RW;
 		}
 	}
-	return (unsigned int)kpage_dir + 0x40000000;
+	return (unsigned int)kpage_dir + GDT_BASE;
 }
 
 /* returns the mapped address of a virtual address */

@@ -42,6 +42,7 @@
 #define CONFIG_BGA
 #undef CONFIG_KEXEC
 #define CONFIG_OFFSET64
+#undef CONFIG_VM_SPLIT22
 
 
 /* configuration options to help debugging */

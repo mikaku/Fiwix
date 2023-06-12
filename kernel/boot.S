@@ -40,7 +40,7 @@ tmp_gdt:
 	.byte	0x00		/* base address 23-16 */
 	.byte	0x9A		/* P=1 DPL=00 S=1 TYPE=1010 (exec/read) */
 	.byte	0xCF		/* G=1 DB=1 0=0 AVL=0 SEGLIM=1111 */
-	.byte	0x40		/* base address 31-24 */
+	.byte	GDT_BASE >> 24		/* base address 31-24 */
 
 	/* KERNEL DATA */
 	.word	0xFFFF		/* segment limit 15-00 */
@@ -48,7 +48,7 @@ tmp_gdt:
 	.byte	0x00		/* base address 23-16 */
 	.byte	0x92		/* P=1 DPL=00 S=1 TYPE=0010 (read/write) */
 	.byte	0xCF		/* G=1 DB=1 0=0 AVL=0 SEGLIM=1111 */
-	.byte	0x40		/* base address 31-24 */
+	.byte	GDT_BASE >> 24		/* base address 31-24 */
 
 
 .align 4
@@ -114,7 +114,7 @@ multiboot_header:			/* multiboot header */
 
 .align 4
 .globl setup_kernel; setup_kernel:
-	movl	$0xC0010000, %esp	/* default stack address */
+	movl	$PAGE_OFFSET + 0x10000, %esp	/* default stack address */
 	pushl	$0			/* reset EFLAGS */
 	popf
 
