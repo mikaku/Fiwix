@@ -62,7 +62,7 @@ extern unsigned int _tlbinfo_eax;
 extern unsigned int _tlbinfo_ebx;
 extern unsigned int _tlbinfo_ecx;
 extern unsigned int _tlbinfo_edx;
-extern char _etext[], _edata[], _end[];
+extern char _etext[], _edata[], _end[], _kstack[];
 
 extern char kernel_cmdline[NAME_MAX + 1];
 

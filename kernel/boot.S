@@ -132,20 +132,20 @@ multiboot_header:			/* multiboot header */
 	movl	%eax, %cr0
 
 	call	bss_init		/* initialize BSS segment */
+	pushl	%eax			/* save the returned value (stack addr) */
 	call	gdt_init		/* setup and load the definitive GDT */
 
+	popl	%eax			/* restore the stack address */
 	popl	%ecx			/* restore Multiboot magic value */
+	movl	%eax, %esp		/* set the kernel stack */
+
 	pushl	%ebx			/* save Multiboot info structure */
 	pushl	%ecx			/* save Multiboot magic value */
 	call	get_last_boot_addr
 	popl	%ecx			/* restore Multiboot magic value */
 	popl	%ebx			/* restore Multiboot info structure */
-	andl	$0xFFFFF000, %eax	/* page aligned */
-	addl	$0x3000, %eax		/* 2 whole pages for kernel stack */
-	subl	$4, %eax
-	movl	%eax, %esp		/* set kernel stack */
 
-	pushl	%esp			/* save kernel stack address */
+	pushl	%eax			/* save the last boot address */
 	pushl	%ebx			/* save Multiboot info structure */
 	pushl	%ecx			/* save Multiboot magic value */
 	call	start_kernel

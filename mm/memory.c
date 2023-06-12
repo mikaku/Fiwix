@@ -60,9 +60,10 @@ unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, in
 	return addr;
 }
 
-void bss_init(void)
+int bss_init(void)
 {
 	memset_b((void *)((int)_edata), 0, KERNEL_BSS_SIZE);
+	return _kstack;
 }
 
 /*

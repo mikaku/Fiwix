@@ -17,23 +17,19 @@ Fiwix kernel memory address space on the i386 architecture
 	+-------------------+
 	| .bss section      |
 	+-------------------+
-...
+	+-------------------+ this page prevents kernel stack from reaching .bss
+	|       NULL        | section. It shouldn't be mapped so it will GPF,
+	+-------------------+ its purpose is to capture out-of-bounds addresses
+	+-------------------+	   /\
+	|                   |	   ||
+	| kernel stack      | grows downwards
+	+-------------------+
 	+-------------------+
 	| initrd (optional) | allocated by GRUB
 	+-------------------+
-+ PAGE_SIZE
-	+-------------------+ this page prevents stack reaching .bss section
-	|       NULL        | this page *shouldn't be* mapped so it will GPF,
-	+-------------------+ its purpose is to capture out-of-bounds addresses
-+ PAGE_SIZE x 2			   /\
-	+-------------------+	   ||
-	| stack pointer     | grows downwards
-	+-------------------+ kernel has only 4KB space for its own stack
-+ PAGE_SIZE
 	+-------------------+
 	| kpage_dir         | kernel Page Directory
 	+-------------------+
-+ PAGE_SIZE
 	+-------------------+
 	| kpage_table       | kernel Page Tables
 	+-------------------+

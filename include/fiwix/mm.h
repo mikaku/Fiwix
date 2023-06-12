@@ -103,7 +103,7 @@ void page_init(int);
 
 /* memory.c */
 unsigned int map_kaddr(unsigned int, unsigned int, unsigned int, int);
-void bss_init(void);
+int bss_init(void);
 unsigned int setup_minmem(void);
 unsigned int get_mapped_addr(struct proc *, unsigned int);
 int clone_pages(struct proc *);

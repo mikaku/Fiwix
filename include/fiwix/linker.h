@@ -17,6 +17,7 @@
 #endif /* CONFIG_VM_SPLIT22 */
 
 #define KERNEL_ADDR	0x100000
+#define KERNEL_STACK	4096
 #define GDT_BASE	(0xFFFFFFFF - (PAGE_OFFSET - 1))
 
 #endif /* _FIWIX_LINKER_H */
