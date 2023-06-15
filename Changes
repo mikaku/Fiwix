@@ -35,6 +35,16 @@
 - Added kexec implementation which includes new kernel parameters and the new
   configuration option CONFIG_KEXEC (disabled by default).
 - Added microsecond resolution to sys_gettimeofday().
+- Added the /proc/<PID>/fd subdirectory containing symbolic links named by its
+  file descriptor.
+- Added support for 64bit offsets and introduced the new option CONFIG_OFFSET64
+  (enabled by default).
+- Added the linkage of libgcc into the kernel in order to have functions like
+  __divdi3() and friends, necessary when doing certain arithmetic operations
+  with 64bit offsets on an i386 architecture.
+- Added support for the O_DIRECTORY flag to sys_open(). [#32]
+- Added support for the virtual memory split 2GB(user)/2GB(kernel), introducing
+  the new option CONFIG_VM_SPLIT22 (disabled by default). [#34]
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -43,6 +53,9 @@
 - Changed lots of fixed-size arrays to dynamically allocated arrays.
 - Changed malloc_name() and free_name() to use the new memory allocator.
 - Changed do_namei() to use the new memory allocator.
+- Changed the generic llseek() method to support 64bit offsets.
+- Changed the location of the kernel stack address to be right after the BSS
+  section. [#34]
 - Rewritten reclaim_buffers() to be more efficient and also to free up unused
   buffers and shrink the buffer table.
 - Modified the Makefile to disable compiling with PIE option enabled by some
@@ -54,6 +67,7 @@
   PAGE_SIZE bytes. This is more efficient as it helped to remove the call to
   strlen() and even can return now a proper ENAMETOOLONG error.
 - Disabled interrupts in runnable() and not_runnable() to avoid race conditions.
+- Removed the option RAMDISK_MAXSIZE from the RAMdisk drives.
 - Bar addresses of PCI devices are now discovered by the driver.
 - Reorganized _init() functions in start_kernel().
 - Disk drives now show the ATA major version number.
@@ -133,6 +147,8 @@
 - Fixed sync_superblocks() to sync all superblocks if argument is zero.
 - Fixed the size on every symlink in procfs to 64 bytes.
 - Fixed iget() to avoid locking when read_inode() returns an error.
+- Fixed a missing call to sync_buffers() in close() methods of RAMdisk drive and
+  floppy drive.
 - Small fixes and cosmetic changes.
 
 
