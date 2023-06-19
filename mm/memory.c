@@ -7,6 +7,7 @@
 
 #include <fiwix/kernel.h>
 #include <fiwix/asm.h>
+#include <fiwix/multiboot1.h>
 #include <fiwix/mm.h>
 #include <fiwix/mman.h>
 #include <fiwix/bios.h>
@@ -21,8 +22,6 @@
 #define KERNEL_TEXT_SIZE	((int)_etext - (PAGE_OFFSET + KERNEL_ADDR))
 #define KERNEL_DATA_SIZE	((int)_edata - (int)_etext)
 #define KERNEL_BSS_SIZE		((int)_end - (int)_edata)
-
-#define PGDIR_4MB_ADDR		0x50000
 
 unsigned int *kpage_dir;
 
@@ -67,28 +66,46 @@ int bss_init(void)
 }
 
 /*
- * This function creates a minimal Page Directory covering only the first 4MB
- * of physical memory. Just enough to boot the kernel.
- * (it returns the address to be used by the CR3 register)
+ * This function creates a Page Directory covering aproximately all physical
+ * memory pages and places it at the end of the memory. This ensures that it
+ * won't be clobbered by a large initrd image.
+ * (it returns the address of the PD to be activated by the CR3 register)
  */
-unsigned int setup_minmem(void)
+unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 {
-	int n;
-	unsigned int addr;
+	int n, pd;
+	unsigned int addr, memksize;
 	unsigned int *pgtbl;
-	short int pd, mb4;
+	struct multiboot_info *mbi;
 
-	mb4 = 1;	/* 4MB units */
-	addr = PAGE_OFFSET + PGDIR_4MB_ADDR;
+	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+		/* 4MB of memory assumed */
+		memksize = 4096;
+	} else {
+		mbi = (struct multiboot_info *)(PAGE_OFFSET + info);
+		if(!(mbi->flags & MULTIBOOT_INFO_MEMORY)) {
+			/* 4MB of memory assumed */
+			memksize = 4096;
+		} else {
+			memksize = (unsigned int)mbi->mem_upper;
+			/* CONFIG_VM_SPLIT22 marks the maximum physical memory supported */
+			if(memksize > ((0xFFFFFFFF - PAGE_OFFSET) / 1024)) {
+				memksize = (0xFFFFFFFF - PAGE_OFFSET) / 1024;
+			}
+		}
+	}
+
+	addr = PAGE_OFFSET + (memksize * 1024) - memksize;
+	addr = PAGE_ALIGN(addr);
 
 	kpage_dir = (unsigned int *)addr;
 	memset_b(kpage_dir, 0, PAGE_SIZE);
 
 	addr += PAGE_SIZE;
 	pgtbl = (unsigned int *)addr;
-	memset_b(pgtbl, 0, PAGE_SIZE * mb4);
+	memset_b(pgtbl, 0, memksize);
 
-	for(n = 0; n < (1024 * mb4); n++) {
+	for(n = 0; n < memksize / sizeof(unsigned int); n++) {
 		pgtbl[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
 			pd = n / 1024;

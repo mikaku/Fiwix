@@ -104,7 +104,7 @@ void page_init(int);
 /* memory.c */
 unsigned int map_kaddr(unsigned int, unsigned int, unsigned int, int);
 int bss_init(void);
-unsigned int setup_minmem(void);
+unsigned int setup_tmp_pgdir(unsigned int, unsigned int);
 unsigned int get_mapped_addr(struct proc *, unsigned int);
 int clone_pages(struct proc *);
 int free_page_tables(struct proc *);

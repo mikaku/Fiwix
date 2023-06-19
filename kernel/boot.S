@@ -40,7 +40,7 @@ tmp_gdt:
 	.byte	0x00		/* base address 23-16 */
 	.byte	0x9A		/* P=1 DPL=00 S=1 TYPE=1010 (exec/read) */
 	.byte	0xCF		/* G=1 DB=1 0=0 AVL=0 SEGLIM=1111 */
-	.byte	GDT_BASE >> 24		/* base address 31-24 */
+	.byte	GDT_BASE >> 24	/* base address 31-24 */
 
 	/* KERNEL DATA */
 	.word	0xFFFF		/* segment limit 15-00 */
@@ -48,7 +48,7 @@ tmp_gdt:
 	.byte	0x00		/* base address 23-16 */
 	.byte	0x92		/* P=1 DPL=00 S=1 TYPE=0010 (read/write) */
 	.byte	0xCF		/* G=1 DB=1 0=0 AVL=0 SEGLIM=1111 */
-	.byte	GDT_BASE >> 24		/* base address 31-24 */
+	.byte	GDT_BASE >> 24	/* base address 31-24 */
 
 
 .align 4
@@ -88,28 +88,6 @@ multiboot_header:			/* multiboot header */
 	movw	%cx, %ss
 	ljmp	$KERNEL_CS, $setup_kernel
 
-/*
- * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING !!!
- * ---------------------------------------------------------------------------
- * The minimal page directory of 4MB only works if the in-memory size of the
- * kernel is smaller than 3MB (which I presume will be its size for a very long
- * time). If you need more space go to the setup_minmem() function and set the
- * 'mb4' variable accordingly.
- *
- * In order to know the current size of the Fiwix kernel, just follow this:
- *
- * $ readelf -l fiwix
- *   Elf file type is EXEC (Executable file)
- *   Entry point 0x100050
- *   There are 2 program headers, starting at offset 52
- *
- *   Program Headers:
- *     Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
- *     LOAD           0x000074 0x00100000 0x00100000 0x0006d 0x0006d R   0x4
- *     LOAD           0x0000f0 0xc0100070 0x00100070 0x40540 0x5a6b0 RWE 0x20
- *                                      check this value --> ^^^^^^^
- *   ...
- */
 .text
 
 .align 4
@@ -118,8 +96,9 @@ multiboot_header:			/* multiboot header */
 	pushl	$0			/* reset EFLAGS */
 	popf
 
+	pushl	%ebx			/* save Multiboot info structure */
 	pushl	%eax			/* save Multiboot magic value */
-	call	setup_minmem		/* setup a minimal page directory */
+	call	setup_tmp_pgdir		/* setup a temporary page directory */
 	movl	%eax, %cr3
 
 	movl	%cr0, %eax
@@ -137,6 +116,7 @@ multiboot_header:			/* multiboot header */
 
 	popl	%eax			/* restore the stack address */
 	popl	%ecx			/* restore Multiboot magic value */
+	popl	%ebx			/* restore Multiboot info structure */
 	movl	%eax, %esp		/* set the kernel stack */
 
 	pushl	%ebx			/* save Multiboot info structure */
