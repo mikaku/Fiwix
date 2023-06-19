@@ -346,15 +346,16 @@ void multiboot(unsigned int magic, unsigned int info)
 
 
 	if(mbi.flags & MULTIBOOT_INFO_MODS) {
-		unsigned int n;
+		unsigned int n, size;
 		struct multiboot_mod_list *mod;
 
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;
 		for(n = 0; n < mbi.mods_count; n++, mod++) {
 			if(!strcmp((char *)mod->cmdline, kparm_initrd)) {
 				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
+				size = mod->mod_end - mod->mod_start;
 				ramdisk_table[0].addr = (char *)mod->mod_start;
-				ramdisk_table[0].size = kparm_ramdisksize;
+				ramdisk_table[0].size = size / 1024;
 				ramdisk_minors++;
 			}
 		}

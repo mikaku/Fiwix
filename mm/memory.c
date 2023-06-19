@@ -392,7 +392,7 @@ void mem_init(void)
 
 	/* reserve memory space for RAMdisk drives */
 	last_ramdisk = 0;
-	if(kparm_ramdisksize > 0) {
+	if(kparm_ramdisksize > 0 || ramdisk_table[0].addr) {
 		/*
 		 * If the 'initrd=' parameter was supplied, then the first
 		 * RAMdisk drive was already assigned to the initrd image.
