@@ -4,12 +4,11 @@ Fiwix is an operating system kernel written from scratch, based on the UNIX arch
 
 Features
 --------
- - Mostly written in C language (Assembly only used in the needed parts).
+ - Written in ANSI C language (Assembly used only in the needed parts).
  - GRUB Multiboot Specification v1 compliant.
  - Full 32bit protected mode non-preemptive kernel.
  - For i386 processors and higher.
  - Preemptive multitasking.
- - Protected task environment (independent memory address per process).
  - POSIX-compliant (mostly).
  - Process groups, sessions and job control.
  - Interprocess communication with pipes and signals.
@@ -21,6 +20,7 @@ Features
  - ELF-386 executable format support (statically and dynamically linked).
  - Round Robin based scheduler algorithm (no priorities yet).
  - VFS abstraction layer.
+ - Kexec support.
  - EXT2 filesystem support with 1KB, 2KB and 4KB block sizes.
  - Minix v1 and v2 filesystem support.
  - Linux-like PROC filesystem support (read only).
@@ -31,8 +31,11 @@ Features
  - SVGAlib based applications support.
  - PCI local bus support.
    - QEMU PCI serial device support.
+   - QEMU/Bochs Graphics Adapter support.
+   - Intel PIIX3 PCI ISA IDE controller.
  - Keyboard driver with Linux keymaps support.
- - Frame buffer device support for VESA VBE 2.0+ compliant graphic cards.
+ - Framebuffer device support for VESA VBE 2.0+ compliant graphic cards.
+ - Framebuffer console (fbcon) support.
  - Serial port (RS-232) driver support.
  - Remote serial console support.
  - QEMU Bochs-style debug console support.
