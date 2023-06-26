@@ -280,12 +280,14 @@ void mem_init(void)
 	unsigned int physical_memory;
 	unsigned int *pgtbl;
 	int n, pages, last_ramdisk;
+	unsigned int last_boot_addr;
 
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);	/* in bytes */
 
 	/* align _last_data_addr to the next page */
 	_last_data_addr = PAGE_ALIGN(_last_data_addr);
+	last_boot_addr = _last_data_addr;
 
 	/* Page Directory */
 	kpage_dir = (unsigned int *)_last_data_addr;
@@ -325,7 +327,9 @@ void mem_init(void)
 		_last_data_addr += (PAGE_SIZE * 4);
 	}
 
-	_last_data_addr = map_kaddr(KERNEL_ADDR, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	/* two steps mapping to make sure not include the initrd image */
+	_last_data_addr = map_kaddr(KERNEL_ADDR, (unsigned int)_kstack - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr(last_boot_addr, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
 	/* since Page Directory is now activated we can use virtual addresses */
@@ -398,6 +402,7 @@ void mem_init(void)
 		 * RAMdisk drive was already assigned to the initrd image.
 		 */
 		if(ramdisk_table[0].addr) {
+			ramdisk_table[0].addr += PAGE_OFFSET;
 			last_ramdisk = 1;
 		}
 		for(; last_ramdisk < ramdisk_minors; last_ramdisk++) {
