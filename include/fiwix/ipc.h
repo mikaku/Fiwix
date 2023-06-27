@@ -59,7 +59,6 @@ struct ipc_perm {
 	unsigned short int seq;		/* slot sequence number */
 };
 
-extern struct resource ipcsem_resource;
 extern struct resource ipcmsg_resource;
 
 void ipc_init(void);

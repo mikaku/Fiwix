@@ -18,6 +18,8 @@
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_SYSVIPC
+static struct resource ipcsem_resource = { 0, 0 };
+
 struct semid_ds *semset[SEMMNI];
 unsigned int num_semsets;
 unsigned int num_sems;

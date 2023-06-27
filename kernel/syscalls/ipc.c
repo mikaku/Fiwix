@@ -21,9 +21,7 @@
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_SYSVIPC
-struct resource ipcsem_resource = { 0, 0 };
 struct resource ipcmsg_resource = { 0, 0 };
-struct resource ipcshm_resource = { 0, 0 };
 
 void ipc_init(void)
 {
