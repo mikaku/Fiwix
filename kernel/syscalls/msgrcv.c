@@ -22,7 +22,7 @@
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_SYSVIPC
-int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, long int msgtyp, int msgflg)
+int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, unsigned int msgtyp, int msgflg)
 {
 	struct msqid_ds *mq;
 	struct msgbuf *mb;

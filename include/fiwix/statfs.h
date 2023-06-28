@@ -9,20 +9,20 @@
 #define _FIWIX_STATFS_H
 
 typedef struct {
-	long int val[2];
+	unsigned int val[2];
 } fsid_t;
 
 struct statfs {
-	long int f_type;
-	long int f_bsize;
-	long int f_blocks;
-	long int f_bfree;
-	long int f_bavail;
-	long int f_files;
-	long int f_ffree;
+	unsigned int f_type;
+	unsigned int f_bsize;
+	unsigned int f_blocks;
+	unsigned int f_bfree;
+	unsigned int f_bavail;
+	unsigned int f_files;
+	unsigned int f_ffree;
 	fsid_t f_fsid;
-	long int f_namelen;
-	long int f_spare[6];
+	unsigned int f_namelen;
+	unsigned int f_spare[6];
 };
 
 #endif /* _FIWIX_STATFS_H */
