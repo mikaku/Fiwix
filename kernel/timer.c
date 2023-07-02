@@ -214,7 +214,7 @@ unsigned int tv2ticks(const struct timeval *tv)
 	return((tv->tv_sec * HZ) + tv->tv_usec * HZ / 1000000);
 }
 
-void ticks2tv(unsigned int ticks, struct timeval *tv)
+void ticks2tv(long int ticks, struct timeval *tv)
 {
 	tv->tv_sec = ticks / HZ;
 	tv->tv_usec = (ticks % HZ) * 1000000 / HZ;
