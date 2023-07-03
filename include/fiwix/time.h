@@ -42,7 +42,7 @@ struct mt {
 };
 
 unsigned int tv2ticks(const struct timeval *);
-void ticks2tv(long int, struct timeval *);
+void ticks2tv(int, struct timeval *);
 int setitimer(int, const struct itimerval *, struct itimerval *);
 unsigned int mktime(struct mt *);
 

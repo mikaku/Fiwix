@@ -20,10 +20,8 @@
 
 int sys_nanosleep(const struct timespec *req, struct timespec *rem)
 {
-	int errno;
-	long int nsec;
-	unsigned int timeout;
-	unsigned int flags;
+	int errno, nsec;
+	unsigned int timeout, flags;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_nanosleep(0x%08x, 0x%08x)\n", current->pid, (unsigned int)req, (unsigned int)rem);

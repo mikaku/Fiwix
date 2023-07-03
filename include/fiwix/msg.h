@@ -40,7 +40,7 @@ struct msqid_ds {
 
 /* message buffer for msgsnd() and msgrcv() */
 struct msgbuf {
-	long int mtype;			/* type of message */
+	int mtype;			/* type of message */
 	char mtext[1];      		/* message text */
 };
 
@@ -59,7 +59,7 @@ struct msginfo {
 /* one msg structure for each message */
 struct msg {
 	struct msg *msg_next;		/* next message on queue */
-	long int msg_type;
+	int msg_type;
 	char *msg_spot;			/* message text address */
 	__time_t msg_stime;		/* msgsnd time */
 	short int msg_ts;		/* message text size */
@@ -77,7 +77,7 @@ void msg_release_mq(struct msqid_ds *);
 struct msg *msg_get_new_md(void);
 void msg_release_md(struct msg *);
 int sys_msgsnd(int, const void *, __size_t, int);
-int sys_msgrcv(int, void *, __size_t, long int, int);
+int sys_msgrcv(int, void *, __size_t, int, int);
 int sys_msgget(key_t, int);
 int sys_msgctl(int, int, struct msqid_ds *);
 
