@@ -66,10 +66,11 @@ int bss_init(void)
 }
 
 /*
- * This function creates a Page Directory covering aproximately all physical
- * memory pages and places it at the end of the memory. This ensures that it
+ * This function creates a Page Directory covering all physical memory
+ * pages and places it at the end of the memory. This ensures that it
  * won't be clobbered by a large initrd image.
- * (it returns the address of the PD to be activated by the CR3 register)
+ *
+ * It returns the address of the PD to be activated by the CR3 register.
  */
 unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 {
@@ -87,7 +88,8 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 			/* 4MB of memory assumed */
 			memksize = 4096;
 		} else {
-			memksize = (unsigned int)mbi->mem_upper;
+			/* we need to add the first 1MB to memksize */
+			memksize = (unsigned int)mbi->mem_upper + 1024;
 			/* CONFIG_VM_SPLIT22 marks the maximum physical memory supported */
 			if(memksize > ((0xFFFFFFFF - PAGE_OFFSET) / 1024)) {
 				memksize = (0xFFFFFFFF - PAGE_OFFSET) / 1024;
