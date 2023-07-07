@@ -62,7 +62,7 @@ unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, in
 int bss_init(void)
 {
 	memset_b((void *)((int)_edata), 0, KERNEL_BSS_SIZE);
-	return _kstack;
+	return (unsigned int)_kstack;
 }
 
 /*
@@ -278,18 +278,15 @@ int unmap_page(unsigned int vaddr)
 void mem_init(void)
 {
 	unsigned int sizek;
-	unsigned int physical_page_tables;
-	unsigned int physical_memory;
+	unsigned int physical_memory, physical_page_tables;
 	unsigned int *pgtbl;
 	int n, pages, last_ramdisk;
-	unsigned int last_boot_addr;
 
 	physical_page_tables = (kstat.physical_pages / 1024) + ((kstat.physical_pages % 1024) ? 1 : 0);
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);	/* in bytes */
 
 	/* align _last_data_addr to the next page */
 	_last_data_addr = PAGE_ALIGN(_last_data_addr);
-	last_boot_addr = _last_data_addr;
 
 	/* Page Directory */
 	kpage_dir = (unsigned int *)_last_data_addr;
@@ -329,9 +326,9 @@ void mem_init(void)
 		_last_data_addr += (PAGE_SIZE * 4);
 	}
 
-	/* two steps mapping to make sure not include the initrd image */
+	/* two steps mapping to make sure not include an initrd image */
 	_last_data_addr = map_kaddr(KERNEL_ADDR, (unsigned int)_kstack - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
-	_last_data_addr = map_kaddr(last_boot_addr, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr((unsigned int)kpage_dir, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
 	/* since Page Directory is now activated we can use virtual addresses */
