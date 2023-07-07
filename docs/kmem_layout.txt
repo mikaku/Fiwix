@@ -1,60 +1,59 @@
 Fiwix kernel memory address space on the i386 architecture
 ==========================================================
 
-0x00000000
-...
-0x00050000
+	+-------------------+ \
+	| page_table        | |
+	+-------------------+ |
+	+-------------------+ |
+	| page_hash_table   | |
+	+-------------------+ | different
+	+-------------------+ |
+	| RAMdisk drives:   | | preallocated
+	|   - initrd        | |
+	|   - all-purpose   | | areas
+	|   - kexec         | |
+	+-------------------+ | of
+	+-------------------+ |
+	| fd_table          | | contiguous
+	+-------------------+ |
+	+-------------------+ | memory
+	| inode_hash_table  | |
+	+-------------------+ | spaces
+	+-------------------+ |
+	| buffer_hash_table | |
+	+-------------------+ |
+	+-------------------+ |
+	| proc_table        | |
+	+-------------------+ /
 	+-------------------+
-	| 4KB kpage_dir     | this page will be reused once the definitive
-	| only used at boot | kpage_dir is installed
-	+-------------------+
-...
-0x00100000
-	+-------------------+
-	| .text section     | kernel binary (fiwix)
-	+-------------------+
-	| .data section     |
-	+-------------------+
-	| .bss section      |
-	+-------------------+
-	+-------------------+ this page prevents kernel stack from reaching .bss
-	|       NULL        | section. It shouldn't be mapped so it will GPF,
-	+-------------------+ its purpose is to capture out-of-bounds addresses
-	+-------------------+	   /\
-	|                   |	   ||
-	| kernel stack      | grows downwards
-	+-------------------+
-	+-------------------+
-	| initrd (optional) | allocated by GRUB
+	| kpage_table       | kernel Page Tables
 	+-------------------+
 	+-------------------+
 	| kpage_dir         | kernel Page Directory
 	+-------------------+
 	+-------------------+
-	| kpage_table       | kernel Page Tables
+	| initrd (optional) | allocated by GRUB
 	+-------------------+
-	+-------------------+ \
-	| proc_table        | |
-	+-------------------+ |
-	+-------------------+ |
-	| buffer_hash_table | |
-	+-------------------+ |
-	+-------------------+ | different
-	| inode_hash_table  | |
-	+-------------------+ | preallocated
-	+-------------------+ |
-	| fd_table          | | areas
-	+-------------------+ |
-	+-------------------+ | of
-	| RAMdisk drives:   | |
-	|   - initrd        | | contiguous
-	|   - all-purpose   | |
-	|   - kexec         | | memory
-	+-------------------+ |
-	+-------------------+ | spaces
-	| page_hash_table   | |
-	+-------------------+ |
-	+-------------------+ |
-	| page_table        | |
-	+-------------------+ /
-
+	+-------------------+
+	| kernel stack      | grows downwards
+	|                   |	   ||
+	+-------------------+	   \/
+	+-------------------+ this page prevents kernel stack from reaching .bss
+	|       NULL        | section. It shouldn't be mapped so it will GPF,
+	+-------------------+ its purpose is to capture out-of-bounds addresses
+	+-------------------+
+	| .bss section      |
+	+-------------------+
+	| .data section     |
+	+-------------------+
+	| .text section     | kernel binary (fiwix)
+	+-------------------+
+0x00100000
+...
+	+-------------------+
+	| 4KB kpage_dir     | this page will be reused once the definitive
+	| only used at boot | kpage_dir is installed
+	+-------------------+
+0x00050000
+...
+0x00000000
