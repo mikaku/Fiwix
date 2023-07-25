@@ -17,7 +17,7 @@ int script_load(char *interpreter, char *args, char *data)
 	int n, noargs;
 
 	/* has shebang? */
-	if(data[0] != '#' && data[1] != '!') {
+	if(data[0] != '#' || data[1] != '!') {
 		return -ENOEXEC;
 	}
 
