@@ -68,7 +68,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 
 	/* default kernel values */
 	strcpy(kparm_rootfstype, "ext2");		/* filesystem is ext2 */
-	kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0); /* console is /dev/tty0 */
+	kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);	/* console is /dev/tty0 */
 
 #ifdef CONFIG_QEMU_DEBUGCON
 	if(inport_b(QEMU_DEBUG_PORT) == QEMU_DEBUG_PORT) {
@@ -80,7 +80,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	printk("                     Copyright (c) 2018-2022, Jordi Sanfeliu\n");
 	printk("\n");
 	printk("                       kernel v%s for i386 architecture\n", UTS_RELEASE);
-	printk("               (GCC %s, built on %s)\n", __VERSION__, UTS_VERSION);
+	printk("             (built on %s with GCC %s)\n", UTS_VERSION, __VERSION__);
 	printk("\n");
 	printk("DEVICE    ADDRESS         IRQ   COMMENT\n");
 	printk("--------------------------------------------------------------------------------\n");
