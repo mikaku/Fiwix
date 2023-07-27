@@ -256,8 +256,8 @@ int atapi_cd_init(struct ide *ide, struct ata_drv *drive)
 		return -EINVAL;
 	}
 	SET_MINOR(d->minors, minor);
+	((unsigned int *)d->blksize)[minor] = BLKSIZE_2K;
 	((unsigned int *)d->device_data)[minor] = CDROM_DEFAULT_SIZE;
-	d->blksize = BLKSIZE_2K;
 
 	return 0;
 }

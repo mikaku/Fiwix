@@ -83,16 +83,13 @@ static struct ide default_ide_table[NR_IDE_CTRLS] = {
 	}
 };
 
-static unsigned int ide0_sizes[256];
-static unsigned int ide1_sizes[256];
-
 static struct device ide_device[NR_IDE_CTRLS] = {
 	{
 		"ide0",
 		IDE0_MAJOR,
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		0,
-		&ide0_sizes,
+		0,
 		&ata_driver_fsop,
 		NULL
 	},
@@ -101,7 +98,7 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		IDE1_MAJOR,
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		0,
-		&ide1_sizes,
+		0,
 		&ata_driver_fsop,
 		NULL
 	}
@@ -795,6 +792,12 @@ int ata_channel_init(struct ide *ide)
 
 	errno = ata_softreset(ide);
 	devices = 0;
+
+	ide_device[ide->channel].blksize = (unsigned int *)kmalloc(1024);
+	ide_device[ide->channel].device_data = (unsigned int *)kmalloc(1024);
+	memset_b(ide_device[ide->channel].device_data, 0, 1024);
+	memset_b(ide_device[ide->channel].blksize, 0, 1024);
+
 	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
 		/*
 		 * ata_softreset() returns error in the low nibble for master
@@ -806,6 +809,7 @@ int ata_channel_init(struct ide *ide)
 				get_device_size(drive);
 				show_capabilities(ide, drive);
 				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
+				ide_device[ide->channel].blksize[drv_num << drive->minor_shift] = BLKSIZE_1K;
 				if(!devices) {
 					register_device(BLK_DEV, &ide_device[ide->channel]);
 				}
@@ -826,6 +830,8 @@ int ata_channel_init(struct ide *ide)
 	if(!devices) {
 		disable_irq(ide->irq);
 		unregister_irq(ide->irq, &irq_config_ide[ide->channel]);
+		kfree((unsigned int)ide_device[ide->channel].blksize);
+		kfree((unsigned int)ide_device[ide->channel].device_data);
 	}
 
 	return devices;

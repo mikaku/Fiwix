@@ -244,13 +244,13 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 		return -ENXIO;
 	}
 
-	blksize = d->blksize ? d->blksize : BLKSIZE_1K;
 	total_read = 0;
 	if(!d->device_data) {
 		printk("%s(): don't know the size of the block device %d,%d.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
 		return -EIO;
 	}
 
+	blksize = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
@@ -289,13 +289,13 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 		return -ENXIO;
 	}
 
-	blksize = d->blksize ? d->blksize : BLKSIZE_1K;
 	total_written = 0;
 	if(!d->device_data) {
 		printk("%s(): don't know the size of the block device %d,%d.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
 		return -EIO;
 	}
 
+	blksize = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 

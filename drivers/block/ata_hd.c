@@ -100,6 +100,7 @@ static void assign_minors(__dev_t rdev, struct ata_drv *drive, struct partition 
 		CLEAR_MINOR(d->minors, minor);
 		if(part[n].type) {
 			SET_MINOR(d->minors, minor);
+			((unsigned int *)d->blksize)[minor] = BLKSIZE_1K;
 			((unsigned int *)d->device_data)[minor] = part[n].nr_sects / 2;
 		}
 	}

@@ -16,6 +16,7 @@
 #include <fiwix/timer.h>
 #include <fiwix/sched.h>
 #include <fiwix/errno.h>
+#include <fiwix/mm.h>
 #include <fiwix/pic.h>
 #include <fiwix/irq.h>
 #include <fiwix/cmos.h>
@@ -72,7 +73,6 @@ static struct fdd_status fdd_status[] = {
 
 static unsigned char current_fdd = 0;
 static struct fddt *current_fdd_type;
-static unsigned int fdd_sizes[256];
 
 static struct fs_operations fdc_driver_fsop = {
 	0,
@@ -120,8 +120,8 @@ static struct device floppy_device = {
 	"floppy",
 	FDC_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	BLKSIZE_1K,
-	&fdd_sizes,
+	0,
+	0,
 	&fdc_driver_fsop,
 	NULL
 };
@@ -541,7 +541,7 @@ int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		if(!(d = get_device(BLK_DEV, dev))) {
 			return -EINVAL;
 		}
-		blksize = d->blksize;
+		blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
 	}
 	blksize = blksize ? blksize : BLKSIZE_1K;
 
@@ -652,7 +652,7 @@ int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 		if(!(d = get_device(BLK_DEV, dev))) {
 			return -EINVAL;
 		}
-		blksize = d->blksize;
+		blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
 	}
 	blksize = blksize ? blksize : BLKSIZE_1K;
 
@@ -753,12 +753,17 @@ int fdc_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	unsigned char minor;
 	struct hd_geometry *geom;
-	int errno;
+	struct device *d;
+	int errno, size;
 
 	minor = MINOR(i->rdev);
 	if(!TEST_MINOR(floppy_device.minors, minor)) {
 		return -ENXIO;
 	}
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
+		return -EINVAL;
+	}
+	size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 
 	lock_resource(&floppy_resource);
 	set_current_fdd_type(minor);
@@ -781,7 +786,7 @@ int fdc_ioctl(struct inode *i, int cmd, unsigned int arg)
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
 				return errno;
 			}
-			*(int *)arg = fdd_sizes[MINOR(i->rdev)] * 2;
+			*(int *)arg = size * 2;
 			break;
 		default:
 			return -EINVAL;
@@ -808,6 +813,7 @@ __loff_t fdc_llseek(struct inode *i, __loff_t offset)
 void floppy_init(void)
 {
 	short int cmosval, master, slave;
+	int n;
 
 	cmosval = cmos_read(CMOS_FDDTYPE);
 	set_current_fdd_type(0);	/* sets /dev/fd0 by default */
@@ -824,6 +830,11 @@ void floppy_init(void)
 		master = 4;
 	}
 
+	floppy_device.blksize = (unsigned int *)kmalloc(1024);
+	floppy_device.device_data = (unsigned int *)kmalloc(1024);
+	memset_b(floppy_device.blksize, 0, 1024);
+	memset_b(floppy_device.device_data, 0, 1024);
+
 	if(master) {
 		if(!register_irq(FLOPPY_IRQ, &irq_config_floppy)) {
 			enable_irq(FLOPPY_IRQ);
@@ -831,16 +842,15 @@ void floppy_init(void)
 		printk("fd0       0x%04x-0x%04x     %d\t", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
 		printk("%s ", fdd_type[master].name);
 		fdd_status[0].type = fdd_status[1].type = master;
-		SET_MINOR(floppy_device.minors, 0);
-		SET_MINOR(floppy_device.minors, 4);
-		SET_MINOR(floppy_device.minors, 8);
-		SET_MINOR(floppy_device.minors, 12);
-		SET_MINOR(floppy_device.minors, 16);
-		fdd_sizes[0] = fdd_type[master].sizekb;
-		fdd_sizes[4] = fdd_type[1].sizekb;
-		fdd_sizes[8] = fdd_type[2].sizekb;
-		fdd_sizes[12] = fdd_type[3].sizekb;
-		fdd_sizes[16] = fdd_type[4].sizekb;
+		for(n = 0; n < 18; n += 4) {
+			SET_MINOR(floppy_device.minors, n);
+			((unsigned int *)floppy_device.blksize)[n] = BLKSIZE_1K;
+		}
+		((unsigned int *)floppy_device.device_data)[0] = fdd_type[master].sizekb;
+		((unsigned int *)floppy_device.device_data)[4] = fdd_type[1].sizekb;
+		((unsigned int *)floppy_device.device_data)[8] = fdd_type[2].sizekb;
+		((unsigned int *)floppy_device.device_data)[12] = fdd_type[3].sizekb;
+		((unsigned int *)floppy_device.device_data)[16] = fdd_type[4].sizekb;
 		fdc_reset();
 		fdc_get_chip();
 	}
@@ -856,16 +866,15 @@ void floppy_init(void)
 		printk("fd1       0x%04x-0x%04x     %d\t", FDC_SRA, FDC_CCR, FLOPPY_IRQ);
 		printk("%s  ", fdd_type[slave].name);
 		fdd_status[1].type = slave;
-		SET_MINOR(floppy_device.minors, 1);
-		SET_MINOR(floppy_device.minors, 5);
-		SET_MINOR(floppy_device.minors, 9);
-		SET_MINOR(floppy_device.minors, 13);
-		SET_MINOR(floppy_device.minors, 17);
-		fdd_sizes[1] = fdd_type[slave].sizekb;
-		fdd_sizes[5] = fdd_type[1].sizekb;
-		fdd_sizes[9] = fdd_type[2].sizekb;
-		fdd_sizes[13] = fdd_type[3].sizekb;
-		fdd_sizes[17] = fdd_type[4].sizekb;
+		for(n = 1; n < 18; n += 4) {
+			SET_MINOR(floppy_device.minors, n);
+			((unsigned int *)floppy_device.blksize)[n] = BLKSIZE_1K;
+		}
+		((unsigned int *)floppy_device.device_data)[1] = fdd_type[master].sizekb;
+		((unsigned int *)floppy_device.device_data)[5] = fdd_type[1].sizekb;
+		((unsigned int *)floppy_device.device_data)[9] = fdd_type[2].sizekb;
+		((unsigned int *)floppy_device.device_data)[13] = fdd_type[3].sizekb;
+		((unsigned int *)floppy_device.device_data)[17] = fdd_type[4].sizekb;
 		if(!master) {
 			fdc_get_chip();
 		} else {

@@ -19,7 +19,6 @@
 
 int ramdisk_minors;
 struct ramdisk ramdisk_table[RAMDISK_TOTAL];
-static unsigned int rd_sizes[256];
 
 static struct fs_operations ramdisk_driver_fsop = {
 	0,
@@ -67,8 +66,8 @@ static struct device ramdisk_device = {
 	"ramdisk",
 	RAMDISK_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	BLKSIZE_1K,
-	&rd_sizes,
+	0,
+	0,
 	&ramdisk_driver_fsop,
 	NULL
 };
@@ -103,12 +102,16 @@ int ramdisk_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	int size;
 	__off_t offset;
 	struct ramdisk *ramdisk;
+	struct device *d;
 
 	if(!(ramdisk = get_ramdisk(MINOR(dev)))) {
 		return -ENXIO;
 	}
+	if(!(d = get_device(BLK_DEV, dev))) {
+		return -EINVAL;
+	}
 
-	size = rd_sizes[MINOR(dev)] * 1024;
+	size = ((unsigned int *)d->device_data)[MINOR(dev)] * 1024;
 	offset = block * blksize;
 	if(offset > size) {
 		printk("%s(): block %d is beyond the size of the ramdisk.\n", __FUNCTION__, block);
@@ -124,12 +127,16 @@ int ramdisk_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	int size;
 	__off_t offset;
 	struct ramdisk *ramdisk;
+	struct device *d;
 
 	if(!(ramdisk = get_ramdisk(MINOR(dev)))) {
 		return -ENXIO;
 	}
+	if(!(d = get_device(BLK_DEV, dev))) {
+		return -EINVAL;
+	}
 
-	size = rd_sizes[MINOR(dev)] * 1024;
+	size = ((unsigned int *)d->device_data)[MINOR(dev)] * 1024;
 	offset = block * blksize;
 	if(offset > size) {
 		printk("%s(): block %d is beyond the size of the ramdisk.\n", __FUNCTION__, block);
@@ -143,11 +150,16 @@ int ramdisk_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int ramdisk_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
 	struct hd_geometry *geom;
-	int errno;
+	struct device *d;
+	int errno, size;
 
 	if(!get_ramdisk(MINOR(i->rdev))) {
 		return -ENXIO;
 	}
+	if(!(d = get_device(BLK_DEV, i->rdev))) {
+		return -EINVAL;
+	}
+	size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 
 	switch(cmd) {
 		case HDIO_GETGEO:
@@ -157,7 +169,7 @@ int ramdisk_ioctl(struct inode *i, int cmd, unsigned int arg)
 			geom = (struct hd_geometry *)arg;
 			geom->heads = 63;
 			geom->sectors = 16;
-			geom->cylinders = rd_sizes[MINOR(i->rdev)] * 1024 / BPS;
+			geom->cylinders = size * 1024 / BPS;
 			geom->cylinders /= (geom->heads * geom->sectors);
 			geom->start = 0;
 			break;
@@ -167,7 +179,7 @@ int ramdisk_ioctl(struct inode *i, int cmd, unsigned int arg)
 			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
 				return errno;
 			}
-			*(int *)arg = rd_sizes[MINOR(i->rdev)] * 2;
+			*(int *)arg = size * 2;
 			break;
 		default:
 			return -EINVAL;
@@ -186,10 +198,15 @@ void ramdisk_init(void)
 	struct ramdisk *ramdisk;
 
 	if(ramdisk_minors) {
+		ramdisk_device.blksize = (unsigned int *)kmalloc(1024);
+		ramdisk_device.device_data = (unsigned int *)kmalloc(1024);
+		memset_b(ramdisk_device.blksize, 0, 1024);
+		memset_b(ramdisk_device.device_data, 0, 1024);
 		for(n = 0; n < ramdisk_minors; n++) {
 			SET_MINOR(ramdisk_device.minors, n);
 			ramdisk = get_ramdisk(n);
-			rd_sizes[n] = ramdisk->size;
+			((unsigned int *)ramdisk_device.blksize)[n] = BLKSIZE_1K;
+			((unsigned int *)ramdisk_device.device_data)[n] = ramdisk->size;
 			printk("ram%d      0x%08x-0x%08x RAMdisk of %dKB size, %dKB blocksize\n", n, ramdisk->addr, ramdisk->addr + (ramdisk->size * 1024), ramdisk->size, BLKSIZE_1K / 1024);
 		}
 		register_device(BLK_DEV, &ramdisk_device);

@@ -25,7 +25,7 @@ struct device {
 	char *name;
 	unsigned char major;
 	unsigned int minors[8];		/* bitmap of 256 bits */
-	int blksize;
+	unsigned int *blksize;		/* default minor blocksizes, in KB */
 	void *device_data;		/* mostly used for minor sizes, in KB */
 	struct fs_operations *fsop;
 	struct device *next;
