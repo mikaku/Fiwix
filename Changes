@@ -32,7 +32,7 @@
 - Added support in parse_cmdline() to recognize values enclosed in double
   quotes.
 - Added support for multiple RAMdisk drives.
-- Added kexec implementation which includes new kernel parameters and the new
+- Added kexec implementation (see 'docs/kexec.txt') which introduces the new
   configuration option CONFIG_KEXEC (disabled by default).
 - Added microsecond resolution to sys_gettimeofday().
 - Added the /proc/<PID>/fd subdirectory containing symbolic links named by its
@@ -45,6 +45,8 @@
 - Added support for the O_DIRECTORY flag to sys_open(). [#32]
 - Added support for the virtual memory split 2GB(user)/2GB(kernel), introducing
   the new option CONFIG_VM_SPLIT22 (disabled by default). [#34]
+- Added support for large initrd images (see 'docs/initrd.txt'). [#34]
+- Added the ability to have different blksize values for each device minor.
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -71,6 +73,8 @@
 - Bar addresses of PCI devices are now discovered by the driver.
 - Reorganized _init() functions in start_kernel().
 - Disk drives now show the ATA major version number.
+- The kernel parameter 'ramdisksize=' no longer controls the size of the initrd
+  image. [#34]
 - Fixed a bug in syscalls/wait4.c introduced in 9cfe372 that created malfunction
   in control jobs.
 - Fixed to call sleep_init(), buffer_init(), sched_init() and inode_init()
@@ -149,6 +153,9 @@
 - Fixed iget() to avoid locking when read_inode() returns an error.
 - Fixed a missing call to sync_buffers() in close() methods of RAMdisk drive and
   floppy drive.
+- Fixed serial_set_termios() to avoid a division by zero.
+- Fixed script_load() with || instead of && that led to incorrectly recognize as
+  script when there is an incomplete shebang.
 - Small fixes and cosmetic changes.
 
 
