@@ -1,7 +1,7 @@
 /*
- * fiwix/kernel/syscalls/chown.c
+ * fiwix/kernel/syscalls/lchown.c
  *
- * Copyright 2018-2021, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2023, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -17,20 +17,20 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_chown(const char *filename, __uid_t owner, __gid_t group)
+int sys_lchown(const char *filename, __uid_t owner, __gid_t group)
 {
 	struct inode *i;
 	char *tmp_name;
 	int errno;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_chown('%s', %d, %d)\n", current->pid, filename, owner, group);
+	printk("(pid %d) sys_lchown('%s', %d, %d)\n", current->pid, filename, owner, group);
 #endif /*__DEBUG__ */
 
 	if((errno = malloc_name(filename, &tmp_name)) < 0) {
 		return errno;
 	}
-	if((errno = namei(tmp_name, &i, NULL, FOLLOW_LINKS))) {
+	if((errno = namei(tmp_name, &i, NULL, !FOLLOW_LINKS))) {
 		free_name(tmp_name);
 		return errno;
 	}

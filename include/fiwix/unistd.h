@@ -29,7 +29,7 @@
 #define SYS_time		13
 #define SYS_mknod		14
 #define SYS_chmod		15
-#define SYS_chown		16
+#define SYS_lchown		16
 #define SYS_break		17		/* -ENOSYS */
 #define SYS_oldstat		18
 #define SYS_lseek		19
@@ -197,7 +197,7 @@
 /* #define SYS_rt_sigsuspend_wrapper */
 /* #define SYS_pread */
 /* #define SYS_pwrite */
-/* #define SYS_chown */
+#define SYS_chown		182
 #define SYS_getcwd		183
 /* #define SYS_capget */
 /* #define SYS_capset */

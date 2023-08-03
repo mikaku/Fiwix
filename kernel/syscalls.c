@@ -208,7 +208,7 @@ void *syscall_table[] = {
 	sys_time,
 	sys_mknod,
 	sys_chmod,			/* 15 */
-	sys_chown,
+	sys_lchown,
 	NULL,					/* sys_break (-ENOSYS) */
 	sys_stat,
 	sys_lseek,

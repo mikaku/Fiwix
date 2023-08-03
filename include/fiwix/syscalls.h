@@ -57,7 +57,7 @@ int sys_chdir(const char *);
 int sys_time(__time_t *);
 int sys_mknod(const char *, __mode_t, __dev_t);
 int sys_chmod(const char *, __mode_t);
-int sys_chown(const char *, __uid_t, __gid_t);
+int sys_lchown(const char *, __uid_t, __gid_t);
 int sys_stat(const char *, struct old_stat *);
 int sys_lseek(unsigned int, __off_t, unsigned int);
 int sys_getpid(void);
@@ -166,6 +166,7 @@ int sys_flock(unsigned int, int);
 int sys_getsid(__pid_t);
 int sys_fdatasync(int);
 int sys_nanosleep(const struct timespec *, struct timespec *);
+int sys_chown(const char *, __uid_t, __gid_t);
 int sys_getcwd(char *, __size_t);
 
 #endif /* _FIWIX_SYSCALLS_H */
