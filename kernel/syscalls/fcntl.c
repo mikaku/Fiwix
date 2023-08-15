@@ -26,6 +26,7 @@ int sys_fcntl(unsigned int ufd, int cmd, unsigned int arg)
 	CHECK_UFD(ufd);
 	switch(cmd) {
 		case F_DUPFD:
+		case F_DUPFD_CLOEXEC:
 			if(arg >= OPEN_MAX) {
 				return -EINVAL;
 			}
@@ -33,6 +34,9 @@ int sys_fcntl(unsigned int ufd, int cmd, unsigned int arg)
 				return new_ufd;
 			}
 			current->fd[new_ufd] = current->fd[ufd];
+			if (cmd == F_DUPFD_CLOEXEC) {
+			    current->fd_flags[new_ufd] |= FD_CLOEXEC;
+			}
 			fd_table[current->fd[new_ufd]].count++;
 #ifdef __DEBUG__
 			printk("\t--> returning %d\n", new_ufd);
