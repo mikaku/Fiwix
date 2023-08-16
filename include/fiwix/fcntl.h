@@ -36,6 +36,7 @@
 #define F_GETLK		5	/* get record locking information */
 #define F_SETLK		6	/* set record locking information */
 #define F_SETLKW	7	/* same as F_SETLK; wait if blocked */
+#define F_DUPFD_CLOEXEC	1030	/* duplicate file descriptor with close-on-exec*/
 
 /* get/set process or process group ID to receive SIGURG signals */
 #define F_SETOWN	8	/* for sockets only */
