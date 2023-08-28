@@ -492,7 +492,6 @@ void vconsole_reset(struct tty *tty)
 	vc->nparms = 0;
 	memset_b(vc->parms, 0, sizeof(vc->parms));
 	default_color_attr(vc);
-	vc->insert_mode = 0;
 	vc->saved_x = vc->saved_y = 0;
 
 	for(n = 0; n < MAX_TAB_COLS; n++) {
@@ -515,6 +514,7 @@ void vconsole_reset(struct tty *tty)
 	video.update_curpos(vc);
 }
 
+/* https://vt100.net/docs/vt100-ug/chapter3.html */
 void vconsole_write(struct tty *tty)
 {
 	int n;
@@ -695,9 +695,6 @@ void vconsole_write(struct tty *tty)
 								case 25: /* Switch Cursor Visible <ESC>[?25h */
 									video.show_cursor(vc, ON);
 									break;
-								case 4:
-									vc->insert_mode = ON; /* not used */
-									break;
 							}
 						}
 						CSE;
@@ -708,9 +705,6 @@ void vconsole_write(struct tty *tty)
 								/* DEC modes */
 								case 25: /* Switch Cursor Invisible <ESC>[?25l */
 									video.show_cursor(vc, OFF);
-									break;
-								case 4:
-									vc->insert_mode = OFF; /* not used */
 									break;
 							}
 						}

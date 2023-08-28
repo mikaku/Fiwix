@@ -119,7 +119,6 @@ struct vconsole {
 	int nparms, parms[NPARMS];
 	unsigned short int color_attr;
 	unsigned char bold, underline, blink, reverse;
-	int insert_mode;
 	unsigned char *vidmem;	/* write here only when console has focus */
 	short int *screen;	/* the back-buffer of the screen */
 	int saved_x, cursor_x;
