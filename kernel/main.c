@@ -76,10 +76,9 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	}
 #endif /* CONFIG_QEMU_DEBUGCON */
 
-	printk("                                Welcome to %s\n", UTS_SYSNAME);
+	printk("                    %s kernel v%s for i386 architecture\n", UTS_SYSNAME, UTS_RELEASE);
 	printk("                     Copyright (c) 2018-2022, Jordi Sanfeliu\n");
 	printk("\n");
-	printk("                       kernel v%s for i386 architecture\n", UTS_RELEASE);
 	printk("             (built on %s with GCC %s)\n", UTS_VERSION, __VERSION__);
 	printk("\n");
 	printk("DEVICE    ADDRESS         IRQ   COMMENT\n");

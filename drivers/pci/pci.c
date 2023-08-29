@@ -275,7 +275,7 @@ void pci_init(void)
 	}
 
 	printk("pci       0x%04x-0x%04x", PCI_ADDRESS, PCI_DATA + sizeof(unsigned int) - 1);
-	printk("     -\tscanning %d buses, configuration type=1\n", PCI_MAX_BUS);
+	printk("     -\tbus range=0-%d, configuration type=1\n", PCI_MAX_BUS - 1);
 	scan_bus();
 }
 
