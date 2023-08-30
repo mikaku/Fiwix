@@ -10,7 +10,6 @@
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 FSDIRS = minix ext2 pipefs iso9660 procfs
-FILESYSTEMS = minix/*.o ext2/*.o pipefs/*.o iso9660/*.o procfs/*.o
 OBJS = filesystems.o devices.o buffer.o fd.o locks.o super.o inode.o \
 	namei.o elf.o script.o
 
