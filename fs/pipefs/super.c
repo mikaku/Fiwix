@@ -79,7 +79,7 @@ int pipefs_ialloc(struct inode *i, int mode)
 	i_counter++;
 	superblock_unlock(sb);
 
-	i->i_mode = S_IFIFO;
+	i->i_mode = mode;
 	i->dev = i->rdev = sb->dev;
 	i->fsop = &pipefs_fsop;
 	i->inode = i_counter;
