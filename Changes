@@ -47,6 +47,11 @@
   the new option CONFIG_VM_SPLIT22 (disabled by default). [#34]
 - Added support for large initrd images (see 'docs/initrd.txt'). [#34]
 - Added the ability to have different blksize values for each device minor.
+- Added the new system call sys_lchown by renaming the old sys_chown (number 16)
+  to sys_lchown, and creating the new sys_chown (number 182) which will follow
+  (dereference) symbolic links. This might break the compatibility with Linux
+  2.0 ABI.
+- Added support for F_DUPFD_CLOEXEC in sys/fcntl.h. [#40]
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
