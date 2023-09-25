@@ -277,26 +277,6 @@ struct proc *get_proc_by_pid(__pid_t pid)
 	return NULL;
 }
 
-int get_new_user_fd(int fd)
-{
-	int n;
-
-	for(n = fd; n < OPEN_MAX && n < current->rlim[RLIMIT_NOFILE].rlim_cur; n++) {
-		if(current->fd[n] == 0) {
-			current->fd[n] = -1;
-			current->fd_flags[n] = 0;
-			return n;
-		}
-	}
-
-	return -EMFILE;
-}
-
-void release_user_fd(int ufd)
-{
-	current->fd[ufd] = 0;
-}
-
 struct proc *kernel_process(const char *name, int (*fn)(void))
 {
 	struct proc *p;

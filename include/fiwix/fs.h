@@ -254,6 +254,8 @@ struct mount *get_mount_point(struct inode *);
 
 int get_new_fd(struct inode *);
 void release_fd(unsigned int);
+int get_new_user_fd(int);
+void release_user_fd(int);
 void fd_init(void);
 
 void free_name(const char *);

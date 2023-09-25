@@ -181,9 +181,6 @@ void release_proc(struct proc *);
 int get_unused_pid(void);
 struct proc *get_proc_by_pid(__pid_t);
 
-int get_new_user_fd(int);
-void release_user_fd(int);
-
 struct proc *kernel_process(const char *, int (*fn)(void));
 void proc_slot_init(struct proc *);
 void proc_init(void);
