@@ -17,6 +17,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 /* finds a new entry to fit 'name' in the directory 'dir' */
 static struct buffer *find_first_free_dir_entry(struct inode *dir, struct minix_dir_entry **d_res, char *name)
 {
@@ -794,3 +795,4 @@ end:
 	inode_unlock(dir_new);
 	return errno;
 }
+#endif /* CONFIG_FS_MINIX */

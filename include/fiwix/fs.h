@@ -75,6 +75,9 @@ struct fd {
 #define SEL_W		2
 #define SEL_E		4
 
+#define CLEAR_BIT	0
+#define SET_BIT		1
+
 struct inode {
 	__mode_t	i_mode;		/* file mode */
 	__uid_t		i_uid;		/* owner uid */
@@ -102,7 +105,9 @@ struct inode {
 	struct inode *prev_free;
 	struct inode *next_free;
 	union {
+#ifdef CONFIG_FS_MINIX
 		struct minix_i_info minix;
+#endif /* CONFIG_FS_MINIX */
 		struct ext2_i_info ext2;
 		struct pipefs_inode pipefs;
 		struct iso9660_inode iso9660;
@@ -129,7 +134,9 @@ struct superblock {
 	struct fs_operations *fsop;
 	__u32 s_blocksize;
 	union {
+#ifdef CONFIG_FS_MINIX
 		struct minix_sb_info minix;
+#endif /* CONFIG_FS_MINIX */
 		struct ext2_sb_info ext2;
 		struct iso9660_sb_info iso9660;
 	} u;

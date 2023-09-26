@@ -43,6 +43,7 @@
 #undef CONFIG_KEXEC
 #define CONFIG_OFFSET64
 #undef CONFIG_VM_SPLIT22
+#undef CONFIG_FS_MINIX
 
 
 /* configuration options to help debugging */

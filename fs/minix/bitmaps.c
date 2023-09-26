@@ -14,6 +14,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 #define COUNT		1
 #define FIRST_ZERO	2
 
@@ -165,3 +166,4 @@ int minix_find_first_zero(struct superblock *sb, __blk_t offset, int num, int bl
 {
 	return count_bits(sb, offset, num, blocks, FIRST_ZERO);
 }
+#endif /* CONFIG_FS_MINIX */

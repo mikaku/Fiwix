@@ -16,6 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 struct fs_operations minix_fsop = {
 	FSOP_REQUIRES_DEV,
 	0,
@@ -266,3 +267,4 @@ int minix_init(void)
 {
 	return register_filesystem("minix", &minix_fsop);
 }
+#endif /* CONFIG_FS_MINIX */

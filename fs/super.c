@@ -225,9 +225,9 @@ int mount_root(void)
 	}
 
 	if(!(fs = get_filesystem(kparm_rootfstype))) {
-		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'minix'.\n", __FUNCTION__, kparm_rootfstype);
-		if(!(fs = get_filesystem("minix"))) {
-			PANIC("minix filesystem is not registered!\n");
+		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'ext2'.\n", __FUNCTION__, kparm_rootfstype);
+		if(!(fs = get_filesystem("ext2"))) {
+			PANIC("ext2 filesystem is not registered!\n");
 		}
 	}
 

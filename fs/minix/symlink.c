@@ -14,6 +14,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 struct fs_operations minix_symlink_fsop = {
 	0,
 	0,
@@ -135,3 +136,4 @@ int minix_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	current->loopcnt--;
 	return errno;
 }
+#endif /* CONFIG_FS_MINIX */

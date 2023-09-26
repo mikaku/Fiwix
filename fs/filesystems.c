@@ -65,9 +65,11 @@ void fs_init(void)
 {
 	memset_b(filesystems_table, 0, sizeof(filesystems_table));
 
+#ifdef CONFIG_FS_MINIX
 	if(minix_init()) {
 		printk("%s(): unable to register 'minix' filesystem.\n", __FUNCTION__);
 	}
+#endif /* CONFIG_FS_MINIX */
 	if(ext2_init()) {
 		printk("%s(): unable to register 'ext2' filesystem.\n", __FUNCTION__);
 	}

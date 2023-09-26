@@ -5,6 +5,8 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#ifdef CONFIG_FS_MINIX
+
 #ifndef _FIWIX_FS_MINIX_H
 #define _FIWIX_FS_MINIX_H
 
@@ -20,9 +22,6 @@
 
 #define MINIX_VALID_FS		1	/* clean filesystem */
 #define MINIX_ERROR_FS		2	/* needs fsck */
-
-#define CLEAR_BIT		0
-#define SET_BIT			1
 
 #define V1_MAX_BITMAP_BLOCKS	8	/* 64MB filesystem size */
 #define V2_MAX_BITMAP_BLOCKS	128	/* 1GB filesystem size */
@@ -129,3 +128,5 @@ int v2_minix_bmap(struct inode *, __off_t, int);
 int v2_minix_truncate(struct inode *, __off_t);
 
 #endif /* _FIWIX_FS_MINIX_H */
+
+#endif /* CONFIG_FS_MINIX */

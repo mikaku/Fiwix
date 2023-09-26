@@ -21,6 +21,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 #define BLOCKS_PER_IND_BLOCK(sb)	(sb->s_blocksize / sizeof(__u32))
 #define BLOCKS_PER_DIND_BLOCK(sb)	(BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb))
 #define BLOCKS_PER_TIND_BLOCK(sb)	(BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb) * BLOCKS_PER_IND_BLOCK(sb))
@@ -531,3 +532,4 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 
 	return 0;
 }
+#endif /* CONFIG_FS_MINIX */

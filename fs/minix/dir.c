@@ -16,6 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 struct fs_operations minix_dir_fsop = {
 	0,
 	0,
@@ -142,3 +143,4 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 
 	return size;
 }
+#endif /* CONFIG_FS_MINIX */

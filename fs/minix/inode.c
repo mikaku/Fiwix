@@ -20,6 +20,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 int minix_read_inode(struct inode *i)
 {
 	if(i->sb->u.minix.version == 1) {
@@ -73,3 +74,4 @@ int minix_truncate(struct inode *i, __off_t length)
 
 	return v2_minix_truncate(i, length);
 }
+#endif /* CONFIG_FS_MINIX */

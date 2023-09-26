@@ -17,6 +17,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifdef CONFIG_FS_MINIX
 struct fs_operations minix_file_fsop = {
 	0,
 	0,
@@ -129,3 +130,4 @@ __loff_t minix_file_llseek(struct inode *i, __loff_t offset)
 {
 	return offset;
 }
+#endif /* CONFIG_FS_MINIX */
