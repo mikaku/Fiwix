@@ -270,7 +270,7 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 		/* in kernel mode */
 		} else {
 			/*
-			 * When CONFIG_LAZY_USER_ADDR_CHECK is enabled, the
+			 * If CONFIG_LAZY_USER_ADDR_CHECK is enabled, the
 			 * kernel may incur in a page fault when trying to
 			 * access a possible user stack address. In that case,
 			 * sc->oldesp doesn't point to the user stack, but to
@@ -298,13 +298,11 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 				}
 			}
 
-			dump_registers(trap, sc);
-			show_vma_regions(current);
-			do_exit(SIGTERM);
+			/* no */
 		}
 	}
 
 	dump_registers(trap, sc);
 	show_vma_regions(current);
-	PANIC("\n");
+	do_exit(SIGTERM);
 }
