@@ -43,8 +43,8 @@
   __divdi3() and friends, necessary when doing certain arithmetic operations
   with 64bit offsets on an i386 architecture.
 - Added support for the O_DIRECTORY flag to sys_open(). [#32]
-- Added support for the virtual memory split 2GB(user)/2GB(kernel), introducing
-  the new option CONFIG_VM_SPLIT22 (disabled by default). [#34]
+- Added support for the virtual memory split 2GiB(user)/2GiB(kernel), by
+  introducing the new option CONFIG_VM_SPLIT22 (disabled by default). [#34]
 - Added support for large initrd images (see 'docs/initrd.txt'). [#34]
 - Added the ability to have different blksize values for each device minor.
 - Added the new system call sys_lchown by renaming the old sys_chown (number 16)
@@ -78,8 +78,11 @@
 - Bar addresses of PCI devices are now discovered by the driver.
 - Reorganized _init() functions in start_kernel().
 - Disk drives now show the ATA major version number.
+- Reorganized the steps to do on a page fault in kernel mode.
 - The kernel parameter 'ramdisksize=' no longer controls the size of the initrd
   image. [#34]
+- The build of the Minix filesystem depends on the new option CONFIG_FS_MINIX
+  (disabled by default).
 - Fixed a bug in syscalls/wait4.c introduced in 9cfe372 that created malfunction
   in control jobs.
 - Fixed to call sleep_init(), buffer_init(), sched_init() and inode_init()
