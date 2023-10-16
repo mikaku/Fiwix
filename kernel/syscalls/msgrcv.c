@@ -26,7 +26,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 {
 	struct msqid_ds *mq;
 	struct msgbuf *mb;
-	struct msg *m;
+	struct msg *m, *mprev;
 	int errno, found, count;
 
 #ifdef __DEBUG__
@@ -44,6 +44,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 		return -EINVAL;
 	}
 	found = 0;
+	mprev = NULL;
 	for(;;) {
 		if(!ipc_has_perms(&mq->msg_perm, IPC_R)) {
 			return -EACCES;
@@ -58,6 +59,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 							found = 1;
 							break;
 						}
+						mprev = m;
 						m = m->msg_next;
 					}
 				} else {
@@ -66,6 +68,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 							found = 1;
 							break;
 						}
+						mprev = m;
 						m = m->msg_next;
 					}
 				}
@@ -103,7 +106,11 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 
 	lock_resource(&ipcmsg_resource);
 	kfree((unsigned int)m->msg_spot);
-	mq->msg_first = m->msg_next;
+	if(!mprev) {
+		mq->msg_first = m->msg_next;
+	} else {
+		mprev->msg_next = m->msg_next;
+	}
 	mq->msg_rtime = mq->msg_ctime = CURRENT_TIME;
 	mq->msg_qnum--;
 	mq->msg_cbytes -= m->msg_ts;
