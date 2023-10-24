@@ -163,6 +163,8 @@ int sys_llseek(unsigned int, unsigned int, unsigned int, __loff_t *, unsigned in
 int sys_getdents(unsigned int, struct dirent *, unsigned int);
 int sys_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 int sys_flock(unsigned int, int);
+int sys_readv(int, struct iovec *, int);
+int sys_writev(int, struct iovec *, int);
 int sys_getsid(__pid_t);
 int sys_fdatasync(int);
 int sys_nanosleep(const struct timespec *, struct timespec *);

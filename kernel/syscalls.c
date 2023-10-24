@@ -341,8 +341,8 @@ void *syscall_table[] = {
 	sys_select,
 	sys_flock,
 	NULL,	/* sys_msync */
-	NULL,	/* sys_readv */		/* 145 */
-	NULL,	/* sys_writev */
+	sys_readv,			/* 145 */
+	sys_writev,
 	sys_getsid,
 	sys_fdatasync,
 	NULL,	/* sys_sysctl */
