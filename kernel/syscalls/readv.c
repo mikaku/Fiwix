@@ -48,8 +48,9 @@ int sys_readv(unsigned int ufd, const struct iovec *iov, int iovcnt)
 			    return errno;
 			}
 			bytes_read += errno;
-			if (errno < io_read->iov_len)
+			if (errno < io_read->iov_len) {
 				break;
+			}
 		} else {
 			return -EINVAL;
 		}
