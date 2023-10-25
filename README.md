@@ -14,7 +14,7 @@ Features
  - Interprocess communication with pipes and signals.
  - UNIX System V IPC (semaphores, message queues and shared memory).
  - BSD file locking mechanism (POSIX restricted to file and advisory only).
- - Virtual memory management up to 4GB (1GB physical only and no swapping yet).
+ - Virtual memory splits (user/kernel): 3GB/1GB and 2GB/2GB.
  - Demand paging with Copy-On-Write feature.
  - Linux 2.0 ABI system calls compatibility (mostly).
  - ELF-386 executable format support (statically and dynamically linked).
