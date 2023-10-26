@@ -158,8 +158,8 @@
 #define SYS_select		142
 #define SYS_flock		143
 /* #define SYS_msync */
-/* #define SYS_readv */
-/* #define SYS_writev */
+#define SYS_readv		145
+#define SYS_writev		146
 #define SYS_getsid		147
 #define SYS_fdatasync		148
 /* #define SYS_sysctl */
