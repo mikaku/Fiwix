@@ -2,6 +2,7 @@
  * fiwix/kernel/syscalls/readv.c
  *
  * Copyright 2023, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2023, Richard R. Masters.
  * Distributed under the terms of the Fiwix License.
  */
 
