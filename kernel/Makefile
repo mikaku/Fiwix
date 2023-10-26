@@ -5,7 +5,7 @@
 #
 
 .S.o:
-	$(CC) -traditional -I$(INCLUDE) -c -o $@ $<
+	$(CC) $(CONFFLAGS) -traditional -I$(INCLUDE) -c -o $@ $<
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 

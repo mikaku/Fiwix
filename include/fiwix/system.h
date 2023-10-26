@@ -8,7 +8,9 @@
 #ifndef _FIWIX_SYSTEM_H
 #define _FIWIX_SYSTEM_H
 
+#ifndef UTS_SYSNAME
 #define UTS_SYSNAME	"Fiwix"
+#endif
 #define UTS_NODENAME	"(none)"
 #define UTS_RELEASE	"1.4.0"
 #define UTS_DOMAINNAME	"(none)"

@@ -25,7 +25,9 @@
 
 #define CURRENT_TIME	(kstat.system_time)
 #define CURRENT_TICKS	(kstat.ticks)
+#ifndef INIT_PROGRAM
 #define INIT_PROGRAM	"/sbin/init"
+#endif
 
 /* kernel flags */
 #define KF_HAS_PANICKED		0x01	/* the kernel has panic'ed */

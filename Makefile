@@ -17,7 +17,7 @@ LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 LIBGCC := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
-CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
+CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes $(CONFFLAGS) #-Wextra -Wno-unused-parameter
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 
 DIRS =	kernel \
@@ -50,7 +50,7 @@ export CC LD CFLAGS LDFLAGS INCLUDE
 all:
 	@echo "#define UTS_VERSION \"`date`\"" > include/fiwix/version.h
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
-	$(CPP) fiwix.ld > $(TMPFILE)
+	$(CPP) $(CONFFLAGS) fiwix.ld > $(TMPFILE)
 	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
 	rm -f $(TMPFILE)
 	nm fiwix | sort | gzip -9c > System.map.gz
