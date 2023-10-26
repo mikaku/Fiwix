@@ -47,6 +47,12 @@ typedef struct {
 	unsigned int fds_bits[__FD_SETSIZE / __NFDBITS];
 } fd_set;
 
+/* define the iovec structure for readv/writev */
+struct iovec {
+	void  *iov_base;
+	__size_t iov_len;
+};
+
 #define __FD_ZERO(set)		(memset_b((void *) (set), 0, sizeof(fd_set)))
 #define __FD_SET(d, set)	((set)->fds_bits[__FDELT(d)] |= __FDMASK(d))
 #define __FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
