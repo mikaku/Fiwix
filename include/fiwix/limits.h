@@ -23,5 +23,7 @@
 #define PATH_MAX	1024	/* bytes in a pathname */
 #define PIPE_BUF	4096	/* bytes than can be written atomically to a
 				   pipe */
+#define UIO_MAXIOV	16	/* maximum number of scatter/gather elements
+				   that can be processed in one call */
 
 #endif /* _FIWIX_LIMITS_H */

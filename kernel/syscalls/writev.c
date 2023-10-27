@@ -27,6 +27,9 @@ int sys_writev(int ufd, const struct iovec *iov, int iovcnt)
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);
+	if(iovcnt < 0 || iovcnt > UIO_MAXIOV) {
+		return -EINVAL;
+	}
 	for (vi = 0; vi < iovcnt; vi++) {
 		const struct iovec *io_write = &iov[vi];
 		if(!io_write->iov_len) {

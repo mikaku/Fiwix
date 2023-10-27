@@ -27,6 +27,9 @@ int sys_readv(unsigned int ufd, const struct iovec *iov, int iovcnt)
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);
+	if(iovcnt < 0 || iovcnt > UIO_MAXIOV) {
+		return -EINVAL;
+	}
 	for (vi = 0; vi < iovcnt; vi++) {
 		const struct iovec *io_read = &iov[vi];
 		if((errno = check_user_area(VERIFY_WRITE, io_read->iov_base, io_read->iov_len))) {
