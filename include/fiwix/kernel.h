@@ -117,4 +117,9 @@ void stop_kernel(void);
 void init_init(void);
 void cpu_idle(void);
 
+
+#ifdef CUSTOM_KERNEL_H
+#include <fiwix/custom_kernel.h>
+#endif
+
 #endif /* _FIWIX_KERNEL_H */

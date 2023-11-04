@@ -1,4 +1,7 @@
 *.o
 /fiwix
 System.map.gz
-
+include/fiwix/custom_config.h
+include/fiwix/custom_limits.h
+include/fiwix/custom_kernel.h
+include/fiwix/custom_system.h

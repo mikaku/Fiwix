@@ -26,4 +26,8 @@
 #define UIO_MAXIOV	16	/* maximum number of scatter/gather elements
 				   that can be processed in one call */
 
+#ifdef CUSTOM_LIMITS_H
+#include <fiwix/custom_limits.h>
+#endif
+
 #endif /* _FIWIX_LIMITS_H */
