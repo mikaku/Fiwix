@@ -50,4 +50,9 @@
 #define CONFIG_VERBOSE_SEGFAULTS
 #undef CONFIG_QEMU_DEBUGCON
 
+
+#ifdef CUSTOM_CONFIG_H
+#include <fiwix/custom_config.h>
+#endif
+
 #endif /* _FIWIX_CONFIG_H */

@@ -26,4 +26,9 @@ struct sysinfo {
 	char _f[22];			/* pads structure to 64 bytes */
 };
 
+
+#ifdef CUSTOM_SYSTEM_H
+#include <fiwix/custom_system.h>
+#endif
+
 #endif /* _FIWIX_SYSTEM_H */
