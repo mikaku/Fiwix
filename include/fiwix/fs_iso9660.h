@@ -65,7 +65,7 @@
 #define NM_CURRENT		1
 #define NM_PARENT		2
 
-/* formerly Primary Volume Descriptor */
+/* Primary Volume Descriptor */
 struct iso9660_super_block {
 	char type			[ISODCL(  1,   1)];	/* 7.1.1 */
 	char id				[ISODCL(  2,   6)];

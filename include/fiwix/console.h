@@ -153,7 +153,7 @@ struct video_parms {
 	int fb_size;	/* size of screen based on resolution */
 	int fb_vsize;	/* size of screen based on columns x lines */
 
-	/* formerly video driver operations */
+	/* video driver operations */
 	void (*put_char)(struct vconsole *, unsigned char);
 	void (*insert_char)(struct vconsole *);
 	void (*delete_char)(struct vconsole *);

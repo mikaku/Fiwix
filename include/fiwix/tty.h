@@ -62,7 +62,7 @@ struct tty {
 	int column;
 	int flags;
 
-	/* formerly tty driver operations */
+	/* tty driver operations */
 	void (*stop)(struct tty *);
 	void (*start)(struct tty *);
 	void (*deltab)(struct tty *);
