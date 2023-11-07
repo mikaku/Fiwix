@@ -170,5 +170,8 @@ int sys_fdatasync(int);
 int sys_nanosleep(const struct timespec *, struct timespec *);
 int sys_chown(const char *, __uid_t, __gid_t);
 int sys_getcwd(char *, __size_t);
+#ifdef CONFIG_MMAP2
+int sys_mmap2(unsigned int, unsigned int, unsigned int, unsigned int, int, unsigned int);
+#endif /* CONFIG_MMAP2 */
 
 #endif /* _FIWIX_SYSCALLS_H */

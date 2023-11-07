@@ -206,5 +206,7 @@
 /* #define SYS_ni_syscall */
 /* #define SYS_ni_syscall */
 #define SYS_vfork		190
+/* #define SYS_ugetrlimit */
+#define SYS_mmap2		192
 
 #endif /* _FIWIX_UNISTD_H */
