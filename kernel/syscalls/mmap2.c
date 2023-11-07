@@ -18,13 +18,13 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
+#ifdef CONFIG_SYSCALL_6TH_ARG
 #ifdef CONFIG_MMAP2
 int sys_mmap2(unsigned int start, unsigned int length, unsigned int prot, unsigned int user_flags, int fd, unsigned int offset)
 {
 	unsigned int page;
 	struct inode *i;
 	char flags;
-	int errno;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_mmap2(0x%08x, %d, 0x%02x, 0x%02x, %d, 0x%08x) -> ", current->pid, start, length, prot, user_flags, fd, offset);
@@ -50,3 +50,4 @@ int sys_mmap2(unsigned int start, unsigned int length, unsigned int prot, unsign
 	return page;
 }
 #endif /* CONFIG_MMAP2 */
+#endif /* CONFIG_SYSCALL_6TH_ARG */
