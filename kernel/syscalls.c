@@ -387,6 +387,12 @@ void *syscall_table[] = {
 	NULL,
 	NULL,
 	sys_fork,			/* 190 (sys_vfork) */
+	NULL,
+#ifdef CONFIG_MMAP2
+	sys_mmap2,
+#else
+	NULL,
+#endif
 };
 
 static void do_bad_syscall(unsigned int num)

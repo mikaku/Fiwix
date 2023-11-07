@@ -44,6 +44,7 @@
 #define CONFIG_OFFSET64
 #undef CONFIG_VM_SPLIT22
 #undef CONFIG_FS_MINIX
+#undef CONFIG_MMAP2
 
 
 /* configuration options to help debugging */
