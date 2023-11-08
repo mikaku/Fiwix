@@ -48,7 +48,7 @@ OBJS = 	kernel/*.o \
 export CC LD CFLAGS LDFLAGS INCLUDE
 
 all:
-	@echo "#define UTS_VERSION \"`date`\"" > include/fiwix/version.h
+	@echo "#define UTS_VERSION \"`date -u`\"" > include/fiwix/version.h
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
 	$(CPP) $(CONFFLAGS) fiwix.ld > $(TMPFILE)
 	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
