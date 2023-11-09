@@ -198,7 +198,11 @@ void fbcon_insert_char(struct vconsole *vc)
 		tmp = screen[soffset];
 		if(vc->flags & CONSOLE_HAS_FOCUS) {
 			draw_glyph(vidmem, n, vc->y, last_ch, vc->color_attr >> 8);
-			last_ch = &font_data[(tmp & 0xFF) * video.fb_char_height];
+			if(tmp & 0xFF) {
+				last_ch = &font_data[(tmp & 0xFF) * video.fb_char_height];
+			} else {
+				last_ch = &font_data[SPACE_CHAR * video.fb_char_height];
+			}
 		}
 		memset_w(screen + soffset, slast_ch, 1);
 		slast_ch = tmp;
