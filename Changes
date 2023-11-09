@@ -1,4 +1,4 @@
-1.5.0 - DD-MMM-2023
+1.5.0 - DD-Nov-2023
 ===================
 - Added a kernel memory allocator that uses the buddy algorithm to manage
   requests smaller than PAGE_SIZE (4KiB).
@@ -52,6 +52,8 @@
   (dereference) symbolic links. This might break the compatibility with Linux
   2.0 ABI.
 - Added support for F_DUPFD_CLOEXEC in sys/fcntl.h. [#40]
+- Added support for sys_readv() and sys_writev() system calls. [#42]
+- Added support for sys_mmap2() system call. [#47]
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -164,6 +166,9 @@
 - Fixed serial_set_termios() to avoid a division by zero.
 - Fixed script_load() with || instead of && that led to incorrectly recognize as
   script when there is an incomplete shebang.
+- Fixed a linked list corruption when messages are retrieved not sequentially in
+  sys_msgrcv().
+- Fixed ata_hd_init() to not fail build if CONFIG_PCI is #undef.
 - Small fixes and cosmetic changes.
 
 
