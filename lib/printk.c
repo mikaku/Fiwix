@@ -59,6 +59,10 @@ static void puts(char *buffer)
  *	%c	character
  *	%s	string
  *
+ * length modifiers (e.g: %ld or %lu)
+ * --------------------------------------------------------
+ *  	l	long long int arguments
+ *
  * flags
  * --------------------------------------------------------
  *	0	result is padded with zeros (e.g.: '%06d')
@@ -70,7 +74,7 @@ static void puts(char *buffer)
  */
 static void do_printk(char *buffer, const char *format, va_list args)
 {
-	char sw_neg, in_identifier, n_pad, lf;
+	char sw_neg, in_identifier, n_pad, lf, sw_l;
 	char ch_pad, basecase, c;
 	char str[] = {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -82,8 +86,10 @@ static void do_printk(char *buffer, const char *format, va_list args)
 	int num, count;
 	char simplechar;
 	unsigned int unum, digit;
+	long long int lnum;
+	unsigned long long int lunum;
 
-	sw_neg = in_identifier = n_pad = lf = 0;
+	sw_neg = in_identifier = n_pad = lf = sw_l = 0;
 	count = 0;
 	basecase = 'A';
 	ch_pad = ' ';
@@ -100,15 +106,28 @@ static void do_printk(char *buffer, const char *format, va_list args)
 			in_identifier = 1;
 			switch(c = *(format)) {
 				case 'd':
-					num = va_arg(args, int);
-					if(num < 0) {
-						num *= -1;
-						sw_neg = 1;
+					if(sw_l) {
+						lnum = va_arg(args, long long int);
+						if(lnum < 0) {
+							lnum *= -1;
+							sw_neg = 1;
+						}
+						ptr_s = str;
+						do {
+							*(ptr_s++) = '0' + (lnum % 10);
+						} while(lnum /= 10);
+					} else {
+						num = va_arg(args, int);
+						if(num < 0) {
+							num *= -1;
+							sw_neg = 1;
+						}
+						ptr_s = str;
+						do {
+							*(ptr_s++) = '0' + (num % 10);
+						} while(num /= 10);
 					}
-					ptr_s = str;
-					do {
-						*(ptr_s++) = '0' + (num % 10);
-					} while(num /= 10);
+
 					if(lf) {
 						p = ptr_s;
 					} else {
@@ -135,14 +154,24 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 'u':
-					unum = va_arg(args, unsigned int);
-					ptr_s = str;
-					do {
-						*(ptr_s++) = '0' + (unum % 10);
-					} while(unum /= 10);
+					if(sw_l) {
+						lunum = va_arg(args, unsigned long long int);
+						ptr_s = str;
+						do {
+							*(ptr_s++) = '0' + (lunum % 10);
+						} while(lunum /= 10);
+					} else {
+						unum = va_arg(args, unsigned int);
+						ptr_s = str;
+						do {
+							*(ptr_s++) = '0' + (unum % 10);
+						} while(unum /= 10);
+					}
+
 					if(lf) {
 						p = ptr_s;
 					} else {
@@ -165,6 +194,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 'x':
@@ -197,6 +227,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 'b':
@@ -230,6 +261,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 'o':
@@ -263,6 +295,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 'c':
@@ -271,6 +304,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					format++;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case 's':
@@ -298,6 +332,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					n_pad = 0;
 					in_identifier = 0;
 					lf = 0;
+					sw_l = 0;
 					break;
 
 				case ' ':
@@ -322,6 +357,9 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					for(unum = 0; unum < n_pad; unum++) {
 						str[unum] = ch_pad;
 					}
+					break;
+				case 'l':
+					sw_l = 1;
 					break;
 
 				case '-':
