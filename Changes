@@ -35,7 +35,7 @@
 - Added kexec implementation (see 'docs/kexec.txt') which introduces the new
   configuration option CONFIG_KEXEC (disabled by default).
 - Added microsecond resolution to sys_gettimeofday().
-- Added the /proc/<PID>/fd subdirectory containing symbolic links named by its
+- Added the /proc/<PID>/fd/ subdirectory containing symbolic links named by its
   file descriptor.
 - Added support for 64bit offsets and introduced the new option CONFIG_OFFSET64
   (enabled by default).
@@ -54,6 +54,7 @@
 - Added support for F_DUPFD_CLOEXEC in sys/fcntl.h. [#40]
 - Added support for sys_readv() and sys_writev() system calls. [#42]
 - Added support for sys_mmap2() system call. [#47]
+- Added the length modifier 'l' for long long int arguments in printk().
 - Changed the mode how the kernel mounts the root filesystem. From now on, it
   will be mounted in read/write mode by default. This introduces the new kernel
   parameter 'ro' to force to mount it in read-only mode.
@@ -169,6 +170,7 @@
 - Fixed a linked list corruption when messages are retrieved not sequentially in
   sys_msgrcv().
 - Fixed ata_hd_init() to not fail build if CONFIG_PCI is #undef.
+- Fixed padding in fbcon_insert_char() to use character 0x20 instead of 0x00.
 - Small fixes and cosmetic changes.
 
 
