@@ -191,7 +191,7 @@ void vgacon_scroll_screen(struct vconsole *vc, int top, int mode)
 			offset = top * vc->columns;
 			top = (top + 1) * vc->columns;
 			if(vc->flags & CONSOLE_HAS_FOCUS) {
-				memcpy_w(vidmem + offset, vidmem + top, count);
+				memcpy_w(vidmem + offset, screen + top, count);
 				memset_w(vidmem + offset + count, BLANK_MEM, vc->columns);
 			}
 			memcpy_w(screen + offset, screen + top, count);
