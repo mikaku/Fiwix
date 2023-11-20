@@ -23,7 +23,7 @@ int sys_writev(int ufd, const struct iovec *iov, int iovcnt)
 	int vi;	/* vector index */
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_writev(%d, iov, %d) -> ", current->pid, ufd, iovcnt);
+	printk("(pid %d) sys_writev(%d, iov, %d) -> ", current->pid, iov, iovcnt);
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);

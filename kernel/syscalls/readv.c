@@ -23,7 +23,7 @@ int sys_readv(unsigned int ufd, const struct iovec *iov, int iovcnt)
 	int vi;	/* vector index */
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_readv(%d, 0x%08x, %d) -> ", current->pid, ufd, buf, count);
+	printk("(pid %d) sys_readv(%d, 0x%08x, %d) -> ", current->pid, ufd, iov, iovcnt);
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);
