@@ -71,14 +71,14 @@ struct ide *ide_table;
 static struct ide default_ide_table[NR_IDE_CTRLS] = {
 	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, 0, IDE0_IRQ, 0, 0, &ide0_timer, 0, { 0, 0 },
 		{
-			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} }
+			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} }
 		}
 	},
 	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, 0, IDE1_IRQ, 0, 0, &ide1_timer, 0, { 0, 0 },
 		{
-			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, {{ 0 }} }
+			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} }
 		}
 	}
 };

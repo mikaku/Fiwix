@@ -240,6 +240,21 @@ struct prd {
 	unsigned short int eot;		/* End-Of-Table mark */
 };
 
+struct xfer_data {
+	__dev_t dev;
+	__blk_t block;
+	char * buffer;
+	int blksize;
+	int sectors_to_io;
+	__off_t offset;
+	int minor;
+	int datalen;
+	int nrsectors;
+	int bm_cmd;
+	int cmd;
+	char *mode;
+};
+
 struct ata_xfer {
 	void (*read_fn)(unsigned int, void *, unsigned int);
 	int read_cmd;
@@ -251,6 +266,8 @@ struct ata_xfer {
 	unsigned char bm_status;	/* bus master status register */
 	unsigned char bm_prd_addr;	/* bus master PRD table address */
 };
+
+struct ide;	/* needed to satisfy the reference inside 'struct ata_drv' */
 
 struct ata_drv {
 	int num;			/* master or slave */
@@ -269,6 +286,8 @@ struct ata_drv {
 	struct fs_operations *fsop;
 	struct ata_drv_ident ident;
 	struct ata_xfer xfer;
+	int (*read_fn)(struct ide *, struct ata_drv *, struct xfer_data *);
+	int (*write_fn)(struct ide *, struct ata_drv *, struct xfer_data *);
 	struct partition part_table[NR_PARTITIONS];
 };
 

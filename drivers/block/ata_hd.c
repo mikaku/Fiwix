@@ -63,21 +63,6 @@ static struct fs_operations ata_hd_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-struct xfer_data {
-	__dev_t dev;
-	__blk_t block;
-	char * buffer;
-	int blksize;
-	int sectors_to_io;
-	__off_t offset;
-	int minor;
-	int datalen;
-	int nrsectors;
-	int bm_cmd;
-	int cmd;
-	char *mode;
-};
-
 static void assign_minors(__dev_t rdev, struct ata_drv *drive, struct partition *part)
 {
 	int n, minor;
@@ -115,6 +100,81 @@ static __off_t block2sector(__blk_t block, int blksize, struct partition *part, 
 		sector += part[minor - 1].startsect;
 	}
 	return sector;
+}
+
+static int pio28_read(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
+{
+	int n, status;
+
+	lock_resource(&ide->resource);
+
+	n = 0;
+	while(n < xd->sectors_to_io) {
+		if(ata_io(ide, drive, xd->offset, xd->nrsectors)) {
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		if(ata_wait_irq(ide, WAIT_FOR_DISK, xd->cmd)) {
+			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(xd->dev), MINOR(xd->dev));
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		status = ata_wait_state(ide, ATA_STAT_BSY);
+		if(status & ATA_STAT_ERR) {
+			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(xd->dev), MINOR(xd->dev));
+			printk("\tstatus=0x%x ", status);
+			ata_error(ide, status);
+			printk("\tblock %d, sector %d.\n", xd->block, xd->offset);
+			inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		drive->xfer.read_fn(ide->base + ATA_DATA, (void *)xd->buffer, xd->datalen / drive->xfer.copy_raw_factor);
+		n += xd->nrsectors;
+		xd->offset += xd->nrsectors;
+		xd->buffer += (ATA_HD_SECTSIZE * xd->nrsectors);
+	}
+	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
+	unlock_resource(&ide->resource);
+	return xd->sectors_to_io * ATA_HD_SECTSIZE;
+}
+
+static int pio28_write(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
+{
+	int n, status;
+
+	lock_resource(&ide->resource);
+
+	n = 0;
+	while(n < xd->sectors_to_io) {
+		if(ata_io(ide, drive, xd->offset, xd->nrsectors)) {
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		outport_b(ide->base + ATA_COMMAND, drive->xfer.write_cmd);
+		status = ata_wait_state(ide, ATA_STAT_BSY);
+		if(status & ATA_STAT_ERR) {
+			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(xd->dev), MINOR(xd->dev));
+			printk("\tstatus=0x%x ", status);
+			ata_error(ide, status);
+			printk("\tblock %d, sector %d.\n", xd->block, xd->offset);
+			inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		drive->xfer.write_fn(ide->base + ATA_DATA, (void *)xd->buffer, xd->datalen / drive->xfer.copy_raw_factor);
+		if(ata_wait_irq(ide, WAIT_FOR_DISK, 0)) {
+			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(xd->dev), MINOR(xd->dev));
+			unlock_resource(&ide->resource);
+			return -EIO;
+		}
+		n += xd->nrsectors;
+		xd->offset += xd->nrsectors;
+		xd->buffer += (ATA_HD_SECTSIZE * xd->nrsectors);
+	}
+	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
+	unlock_resource(&ide->resource);
+	return xd->sectors_to_io * ATA_HD_SECTSIZE;
 }
 
 #ifdef CONFIG_PCI
@@ -175,175 +235,86 @@ int ata_hd_close(struct inode *i, struct fd *fd_table)
 
 int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	int minor;
-	int sectors_to_read, datalen, nrsectors;
-	int n, status;
-	__off_t offset;
 	struct ide *ide;
 	struct ata_drv *drive;
 	struct partition *part;
-	struct xfer_data xfer_data_read;
+	struct xfer_data xd;
 
 	if(!(ide = get_ide_controller(dev))) {
 		return -EINVAL;
 	}
 
-	minor = MINOR(dev);
+	xd.minor = MINOR(dev);
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
 	if(drive->num) {
-		minor &= ~(1 << IDE_SLAVE_MSF);
+		xd.minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
 	blksize = blksize ? blksize : BLKSIZE_1K;
-	sectors_to_read = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
+	xd.sectors_to_io = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
 
 	part = drive->part_table;
-	offset = block2sector(block, blksize, part, minor);
+	xd.offset = block2sector(block, blksize, part, xd.minor);
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		datalen = ATA_HD_SECTSIZE * sectors_to_read;
-		nrsectors = MIN(sectors_to_read, drive->multi);
+		xd.datalen = ATA_HD_SECTSIZE * xd.sectors_to_io;
+		xd.nrsectors = MIN(xd.sectors_to_io, drive->multi);
 	} else {
-		datalen = ATA_HD_SECTSIZE;
-		nrsectors = 1;
+		xd.datalen = ATA_HD_SECTSIZE;
+		xd.nrsectors = 1;
 	}
 
-#ifdef CONFIG_PCI
-	if(drive->flags & DRIVE_HAS_DMA) {
-		xfer_data_read.dev = dev;
-		xfer_data_read.block = block;
-		xfer_data_read.buffer = buffer;
-		xfer_data_read.blksize = blksize;
-		xfer_data_read.sectors_to_io = sectors_to_read;
-		xfer_data_read.offset = offset;
-		xfer_data_read.minor = minor;
-		xfer_data_read.datalen = datalen;
-		xfer_data_read.nrsectors = nrsectors;
-		xfer_data_read.bm_cmd = BM_COMMAND_READ;
-		xfer_data_read.cmd = drive->xfer.read_cmd;
-		xfer_data_read.mode = "read";
-		return dma_transfer(ide, drive, &xfer_data_read);
-	}
-#endif /* CONFIG_PCI */
+	xd.dev = dev;
+	xd.block = block;
+	xd.buffer = buffer;
+	xd.blksize = blksize;
+	xd.bm_cmd = BM_COMMAND_READ;
+	xd.cmd = drive->xfer.read_cmd;
+	xd.mode = "read";
 
-	lock_resource(&ide->resource);
-
-	n = 0;
-	while(n < sectors_to_read) {
-		if(ata_io(ide, drive, offset, nrsectors)) {
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		if(ata_wait_irq(ide, WAIT_FOR_DISK, drive->xfer.read_cmd)) {
-			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		status = ata_wait_state(ide, ATA_STAT_BSY);
-		if(status & ATA_STAT_ERR) {
-			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during read.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
-			printk("\tstatus=0x%x ", status);
-			ata_error(ide, status);
-			printk("\tblock %d, sector %d.\n", block, offset);
-			inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		drive->xfer.read_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
-		n += nrsectors;
-		offset += nrsectors;
-		buffer += (ATA_HD_SECTSIZE * nrsectors);
-	}
-	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
-	unlock_resource(&ide->resource);
-	return sectors_to_read * ATA_HD_SECTSIZE;
+	return drive->read_fn(ide, drive, &xd);
 }
 
 int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	int minor;
-	int sectors_to_write, datalen, nrsectors;
-	int n, status;
-	__off_t offset;
 	struct ide *ide;
 	struct ata_drv *drive;
 	struct partition *part;
-	struct xfer_data xfer_data_write;
+	struct xfer_data xd;
 
 	if(!(ide = get_ide_controller(dev))) {
 		return -EINVAL;
 	}
 
-	minor = MINOR(dev);
+	xd.minor = MINOR(dev);
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
 	if(drive->num) {
-		minor &= ~(1 << IDE_SLAVE_MSF);
+		xd.minor &= ~(1 << IDE_SLAVE_MSF);
 	}
 
 	blksize = blksize ? blksize : BLKSIZE_1K;
-	sectors_to_write = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
+	xd.sectors_to_io = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
 
 	part = drive->part_table;
-	offset = block2sector(block, blksize, part, minor);
+	xd.offset = block2sector(block, blksize, part, xd.minor);
 
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		datalen = ATA_HD_SECTSIZE * sectors_to_write;
-		nrsectors = MIN(sectors_to_write, drive->multi);
+		xd.datalen = ATA_HD_SECTSIZE * xd.sectors_to_io;
+		xd.nrsectors = MIN(xd.sectors_to_io, drive->multi);
 	} else {
-		datalen = ATA_HD_SECTSIZE;
-		nrsectors = 1;
+		xd.datalen = ATA_HD_SECTSIZE;
+		xd.nrsectors = 1;
 	}
 
-#ifdef CONFIG_PCI
-	if(drive->flags & DRIVE_HAS_DMA) {
-		xfer_data_write.dev = dev;
-		xfer_data_write.block = block;
-		xfer_data_write.buffer = buffer;
-		xfer_data_write.blksize = blksize;
-		xfer_data_write.sectors_to_io = sectors_to_write;
-		xfer_data_write.offset = offset;
-		xfer_data_write.minor = minor;
-		xfer_data_write.datalen = datalen;
-		xfer_data_write.nrsectors = nrsectors;
-		xfer_data_write.bm_cmd = BM_COMMAND_WRITE;
-		xfer_data_write.cmd = drive->xfer.write_cmd;
-		xfer_data_write.mode = "write";
-		return dma_transfer(ide, drive, &xfer_data_write);
-	}
-#endif /* CONFIG_PCI */
+	xd.dev = dev;
+	xd.block = block;
+	xd.buffer = buffer;
+	xd.blksize = blksize;
+	xd.bm_cmd = BM_COMMAND_WRITE;
+	xd.cmd = drive->xfer.write_cmd;
+	xd.mode = "write";
 
-	lock_resource(&ide->resource);
-
-	n = 0;
-	while(n < sectors_to_write) {
-		if(ata_io(ide, drive, offset, nrsectors)) {
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		outport_b(ide->base + ATA_COMMAND, drive->xfer.write_cmd);
-		status = ata_wait_state(ide, ATA_STAT_BSY);
-		if(status & ATA_STAT_ERR) {
-			printk("WARNING: %s(): %s: error on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
-			printk("\tstatus=0x%x ", status);
-			ata_error(ide, status);
-			printk("\tblock %d, sector %d.\n", block, offset);
-			inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		drive->xfer.write_fn(ide->base + ATA_DATA, (void *)buffer, datalen / drive->xfer.copy_raw_factor);
-		if(ata_wait_irq(ide, WAIT_FOR_DISK, 0)) {
-			printk("WARNING: %s(): %s: timeout on hard disk dev %d,%d during write.\n", __FUNCTION__, drive->dev_name, MAJOR(dev), MINOR(dev));
-			unlock_resource(&ide->resource);
-			return -EIO;
-		}
-		n += nrsectors;
-		offset += nrsectors;
-		buffer += (ATA_HD_SECTSIZE * nrsectors);
-	}
-	inport_b(ide->base + ATA_STATUS);	/* clear any pending interrupt */
-	unlock_resource(&ide->resource);
-	return sectors_to_write * ATA_HD_SECTSIZE;
+	return drive->write_fn(ide, drive, &xd);
 }
 
 int ata_hd_ioctl(struct inode *i, int cmd, unsigned int arg)
@@ -461,6 +432,10 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
 	}
 
+	/* default transfer mode */
+	drive->read_fn = pio28_read;
+	drive->write_fn = pio28_write;
+
 	if(drive->flags & DRIVE_HAS_DMA || drive->pio_mode > 2) {
 		outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
 		if(drive->flags & DRIVE_HAS_DMA) {
@@ -486,6 +461,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 #ifdef CONFIG_PCI
 	/* set DMA Capable drive bit */
 	if(drive->flags & DRIVE_HAS_DMA) {
+		drive->read_fn = drive->write_fn = dma_transfer;
 		outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_DRVDMA << drive->num);
 	}
 #endif /* CONFIG_PCI */
