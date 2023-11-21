@@ -17,7 +17,6 @@
 
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
-#include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_SYSVIPC

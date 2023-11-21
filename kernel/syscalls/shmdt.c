@@ -18,10 +18,6 @@
 #include <fiwix/shm.h>
 #include <fiwix/stdio.h>
 
-#ifdef __DEBUG__
-#include <fiwix/process.h>
-#endif /*__DEBUG__ */
-
 #ifdef CONFIG_SYSVIPC
 int sys_shmdt(char *shmaddr)
 {

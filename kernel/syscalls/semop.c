@@ -8,7 +8,6 @@
 #include <fiwix/config.h>
 #include <fiwix/kernel.h>
 #include <fiwix/types.h>
-#include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>
@@ -18,7 +17,7 @@
 #include <fiwix/sem.h>
 
 #ifdef __DEBUG__
-#include <fiwix/process.h>
+#include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
 #ifdef CONFIG_SYSVIPC
