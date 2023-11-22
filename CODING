@@ -54,6 +54,9 @@ conventions in its code:
 - Conditionals should always include curly braces, even if there is only a
   single statement within the conditional.
 
+- The parameters in function prototypes don't need to have a name to reference
+  them by.
+
 
 Recommended for reading
 -------------------------------------------------------------------------------
