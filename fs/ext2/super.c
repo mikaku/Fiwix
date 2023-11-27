@@ -174,7 +174,7 @@ int ext2_remount_fs(struct superblock *sb, int flags)
 		ext2sb->s_state &= ~EXT2_VALID_FS;
 	}
 
-	sb->dirty = 1;
+	sb->state = SUPERBLOCK_DIRTY;
 	superblock_unlock(sb);
 	bwrite(buf);
 	return 0;
@@ -191,7 +191,7 @@ int ext2_write_superblock(struct superblock *sb)
 	}
 
 	memcpy_b(buf->data, &sb->u.ext2.sb, sizeof(struct ext2_super_block));
-	sb->dirty = 0;
+	sb->state &= ~SUPERBLOCK_DIRTY;
 	superblock_unlock(sb);
 	bwrite(buf);
 	return 0;
@@ -206,7 +206,7 @@ void ext2_release_superblock(struct superblock *sb)
 	superblock_lock(sb);
 
 	sb->u.ext2.sb.s_state |= EXT2_VALID_FS;
-	sb->dirty = 1;
+	sb->state = SUPERBLOCK_DIRTY;
 
 	superblock_unlock(sb);
 }

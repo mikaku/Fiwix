@@ -226,7 +226,7 @@ int minix_remount_fs(struct superblock *sb, int flags)
 		minixsb->s_state &= ~MINIX_VALID_FS;
 	}
 
-	sb->dirty = 1;
+	sb->state = SUPERBLOCK_DIRTY;
 	superblock_unlock(sb);
 	bwrite(buf);
 	return 0;
@@ -243,7 +243,7 @@ int minix_write_superblock(struct superblock *sb)
 	}
 
 	memcpy_b(buf->data, &sb->u.minix.sb, sizeof(struct minix_super_block));
-	sb->dirty = 0;
+	sb->state &= ~SUPERBLOCK_DIRTY;
 	superblock_unlock(sb);
 	bwrite(buf);
 	return 0;
@@ -258,7 +258,7 @@ void minix_release_superblock(struct superblock *sb)
 	superblock_lock(sb);
 
 	sb->u.minix.sb.s_state |= MINIX_VALID_FS;
-	sb->dirty = 1;
+	sb->state = SUPERBLOCK_DIRTY;
 
 	superblock_unlock(sb);
 }

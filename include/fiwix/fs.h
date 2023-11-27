@@ -125,6 +125,8 @@ extern unsigned int fd_table_size;		/* size in bytes */
 
 extern struct fd *fd_table;
 
+#define SUPERBLOCK_DIRTY	0x0001
+
 struct superblock {
 	__dev_t dev;
 	unsigned char locked;
@@ -132,7 +134,7 @@ struct superblock {
 	struct inode *root;		/* root inode of mounted fs */
 	struct inode *dir;		/* inode on which the fs was mounted */
 	unsigned int flags;
-	unsigned char dirty;		/* 1 = delayed write */
+	unsigned int state;
 	struct fs_operations *fsop;
 	__u32 s_blocksize;
 	union {

@@ -179,7 +179,7 @@ void sync_superblocks(__dev_t dev)
 	while(mp) {
 		if(!dev || mp->dev == dev) {
 			sb = &mp->sb;
-			if(sb->dirty && !(sb->flags & MS_RDONLY)) {
+			if((sb->state & SUPERBLOCK_DIRTY) && !(sb->flags & MS_RDONLY)) {
 				if((errno = sb->fsop->write_superblock(sb))) {
 					printk("WARNING: %s(): I/O error on device %d,%d while syncing superblock.\n", __FUNCTION__, MAJOR(sb->dev), MINOR(sb->dev));
 				}
