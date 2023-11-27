@@ -206,7 +206,7 @@ void ext2_ifree(struct inode *i)
 	i->i_size = 0;
 	i->i_mtime = CURRENT_TIME;
 	i->i_ctime = CURRENT_TIME;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	superblock_unlock(sb);
 	return;

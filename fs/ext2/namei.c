@@ -331,8 +331,8 @@ int ext2_rmdir(struct inode *dir, struct inode *i)
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 
-	i->dirty = 1;
-	dir->dirty = 1;
+	i->state |= INODE_DIRTY;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -374,8 +374,8 @@ int ext2_link(struct inode *i_old, struct inode *dir_new, char *name)
 	dir_new->i_mtime = CURRENT_TIME;
 	dir_new->i_ctime = CURRENT_TIME;
 
-	i_old->dirty = 1;
-	dir_new->dirty = 1;
+	i_old->state |= INODE_DIRTY;
+	dir_new->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -412,8 +412,8 @@ int ext2_unlink(struct inode *dir, struct inode *i, char *name)
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 
-	i->dirty = 1;
-	dir->dirty = 1;
+	i->state |= INODE_DIRTY;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -498,7 +498,7 @@ int ext2_symlink(struct inode *dir, char *name, char *oldname)
 	}
 
 	i->i_size = n;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	i->i_nlink = 1;
 	d->inode = i->inode;
 	d->name_len = strlen(name);
@@ -514,7 +514,7 @@ int ext2_symlink(struct inode *dir, char *name, char *oldname)
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	iput(i);
@@ -607,12 +607,12 @@ int ext2_mkdir(struct inode *dir, char *name, __mode_t mode)
 	i->i_nlink++;
 	i->i_size = i->sb->s_blocksize;
 	i->i_blocks = dir->sb->s_blocksize / 512;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 	dir->i_nlink++;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	bwrite(buf2);
@@ -667,7 +667,7 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 	i->i_nlink = 1;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	switch(mode & S_IFMT) {
 		case S_IFCHR:
@@ -693,7 +693,7 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	iput(i);
@@ -757,13 +757,13 @@ int ext2_create(struct inode *dir, char *name, int flags, __mode_t mode, struct 
 	i->dev = dir->dev;
 	i->fsop = &ext2_file_fsop;
 	i->count = 1;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	i->u.ext2.i_dtime = 0;
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	*i_res = i;
 	bwrite(buf);
@@ -848,13 +848,13 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 	d_new->inode = i_old->inode;
 	dir_new->i_mtime = CURRENT_TIME;
 	dir_new->i_ctime = CURRENT_TIME;
-	i_new->dirty = 1;
-	dir_new->dirty = 1;
+	i_new->state |= INODE_DIRTY;
+	dir_new->state |= INODE_DIRTY;
 
 	dir_old->i_mtime = CURRENT_TIME;
 	dir_old->i_ctime = CURRENT_TIME;
-	i_old->dirty = 1;
-	dir_old->dirty = 1;
+	i_old->state |= INODE_DIRTY;
+	dir_old->state |= INODE_DIRTY;
 	bwrite(buf_new);
 
 	if(!buf_old) {

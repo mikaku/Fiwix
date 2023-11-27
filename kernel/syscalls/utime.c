@@ -65,7 +65,7 @@ int sys_utime(const char *filename, struct utimbuf *times)
 	}
 
 	i->i_ctime = CURRENT_TIME;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	iput(i);
 	free_name(tmp_name);
 	return 0;

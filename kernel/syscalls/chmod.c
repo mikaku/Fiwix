@@ -49,7 +49,7 @@ int sys_chmod(const char *filename, __mode_t mode)
 	i->i_mode &= S_IFMT;
 	i->i_mode |= mode & ~S_IFMT;
 	i->i_ctime = CURRENT_TIME;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	iput(i);
 	free_name(tmp_name);
 	return 0;

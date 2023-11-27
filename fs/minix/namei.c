@@ -281,8 +281,8 @@ int minix_rmdir(struct inode *dir, struct inode *i)
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 
-	i->dirty = 1;
-	dir->dirty = 1;
+	i->state |= INODE_DIRTY;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -322,8 +322,8 @@ int minix_link(struct inode *i_old, struct inode *dir_new, char *name)
 	dir_new->i_mtime = CURRENT_TIME;
 	dir_new->i_ctime = CURRENT_TIME;
 
-	i_old->dirty = 1;
-	dir_new->dirty = 1;
+	i_old->state |= INODE_DIRTY;
+	dir_new->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -353,8 +353,8 @@ int minix_unlink(struct inode *dir, struct inode *i, char *name)
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 
-	i->dirty = 1;
-	dir->dirty = 1;
+	i->state |= INODE_DIRTY;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 
@@ -393,7 +393,7 @@ int minix_symlink(struct inode *dir, char *name, char *oldname)
 	i->dev = dir->dev;
 	i->count = 1;
 	i->fsop = &minix_symlink_fsop;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	block = minix_balloc(dir->sb);
 	if(block < 0) {
@@ -448,7 +448,7 @@ int minix_symlink(struct inode *dir, char *name, char *oldname)
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	bwrite(buf_new);
@@ -491,7 +491,7 @@ int minix_mkdir(struct inode *dir, char *name, __mode_t mode)
 	i->dev = dir->dev;
 	i->count = 1;
 	i->fsop = &minix_dir_fsop;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	if((block = bmap(i, 0, FOR_WRITING)) < 0) {
 		i->i_nlink = 0;
@@ -544,7 +544,7 @@ int minix_mkdir(struct inode *dir, char *name, __mode_t mode)
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
 	dir->i_nlink++;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	bwrite(buf_new);
@@ -598,7 +598,7 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 	i->i_nlink = 1;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	switch(mode & S_IFMT) {
 		case S_IFCHR:
@@ -621,7 +621,7 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	bwrite(buf);
 	iput(i);
@@ -682,11 +682,11 @@ int minix_create(struct inode *dir, char *name, int flags, __mode_t mode, struct
 	i->dev = dir->dev;
 	i->fsop = &minix_file_fsop;
 	i->count = 1;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	dir->i_mtime = CURRENT_TIME;
 	dir->i_ctime = CURRENT_TIME;
-	dir->dirty = 1;
+	dir->state |= INODE_DIRTY;
 
 	*i_res = i;
 	bwrite(buf);
@@ -762,13 +762,13 @@ int minix_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new
 	d_new->inode = i_old->inode;
 	dir_new->i_mtime = CURRENT_TIME;
 	dir_new->i_ctime = CURRENT_TIME;
-	i_new->dirty = 1;
-	dir_new->dirty = 1;
+	i_new->state |= INODE_DIRTY;
+	dir_new->state |= INODE_DIRTY;
 
 	dir_old->i_mtime = CURRENT_TIME;
 	dir_old->i_ctime = CURRENT_TIME;
-	i_old->dirty = 1;
-	dir_old->dirty = 1;
+	i_old->state |= INODE_DIRTY;
+	dir_old->state |= INODE_DIRTY;
 	bwrite(buf_new);
 
 	if(!buf_old) {

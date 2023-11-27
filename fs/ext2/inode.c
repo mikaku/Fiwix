@@ -210,7 +210,7 @@ int ext2_write_inode(struct inode *i)
 	} else {
 		memcpy_b(ii->i_block, &i->u.ext2.i_data, sizeof(i->u.ext2.i_data));
 	}
-	i->dirty = 0;
+	i->state &= ~INODE_DIRTY;
 	bwrite(buf);
 	return 0;
 }
@@ -509,7 +509,7 @@ int ext2_truncate(struct inode *i, __off_t length)
 	i->i_mtime = CURRENT_TIME;
 	i->i_ctime = CURRENT_TIME;
 	i->i_size = length;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	return 0;
 }

@@ -78,6 +78,9 @@ struct fd {
 #define CLEAR_BIT	0
 #define SET_BIT		1
 
+#define INODE_LOCKED	0x0001
+#define INODE_DIRTY	0x0002
+
 struct inode {
 	__mode_t	i_mode;		/* file mode */
 	__uid_t		i_uid;		/* owner uid */
@@ -89,9 +92,8 @@ struct inode {
 	__nlink_t	i_nlink;	/* links count */
 	__blk_t		i_blocks;	/* blocks count */
 	__u32		i_flags;	/* file flags */
-	unsigned char locked;
-	unsigned char dirty;		/* 1 = delayed write */
 	struct inode *mount_point;
+	__u32		state;
 	__dev_t		dev;
 	__ino_t		inode;
 	__s16		count;

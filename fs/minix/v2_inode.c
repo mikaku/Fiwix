@@ -176,7 +176,7 @@ int v2_minix_write_inode(struct inode *i)
 	} else {
 		memcpy_b(ii->i_zone, i->u.minix.u.i2_zone, sizeof(i->u.minix.u.i2_zone));
 	}
-	i->dirty = 0;
+	i->state &= ~INODE_DIRTY;
 	bwrite(buf);
 	return 0;
 }
@@ -241,7 +241,7 @@ void v2_minix_ifree(struct inode *i)
 	i->i_size = 0;
 	i->i_mtime = CURRENT_TIME;
 	i->i_ctime = CURRENT_TIME;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	superblock_unlock(sb);
 }
 
@@ -528,7 +528,7 @@ int v2_minix_truncate(struct inode *i, __off_t length)
 	i->i_mtime = CURRENT_TIME;
 	i->i_ctime = CURRENT_TIME;
 	i->i_size = length;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 
 	return 0;
 }

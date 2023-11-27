@@ -61,7 +61,7 @@ int sys_lchown(const char *filename, __uid_t owner, __gid_t group)
 
 	i->i_uid = owner;
 	i->i_gid = group;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	iput(i);
 	free_name(tmp_name);
 	return 0;

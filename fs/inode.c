@@ -180,9 +180,8 @@ static struct inode *get_free_inode(void)
 	i->i_nlink = 0;
 	i->i_blocks = 0;
 	i->i_flags = 0;
-	i->locked = 0;
-	i->dirty = 0;
 	i->mount_point = NULL;
+	i->state = 0;
 	i->dev = 0;
 	i->inode = 0;
 	i->count = 0;
@@ -212,7 +211,7 @@ static int write_inode(struct inode *i)
 		errno = i->sb->fsop->write_inode(i);
 	} else {
 		/* PIPE_DEV inodes can't be flushed on disk */
-		i->dirty = 0;
+		i->state &= ~INODE_DIRTY;
 		errno = 0;
 	}
 
@@ -240,7 +239,7 @@ static struct inode *search_inode_hash(__dev_t dev, __ino_t inode)
 static void wait_on_inode(struct inode *i)
 {
 	for(;;) {
-		if(i->locked) {
+		if(i->state & INODE_LOCKED) {
 			sleep(i, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
@@ -254,14 +253,14 @@ void inode_lock(struct inode *i)
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		if(i->locked) {
+		if(i->state & INODE_LOCKED) {
 			RESTORE_FLAGS(flags);
 			sleep(i, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
 	}
-	i->locked = 1;
+	i->state |= INODE_LOCKED;
 	RESTORE_FLAGS(flags);
 }
 
@@ -270,7 +269,7 @@ void inode_unlock(struct inode *i)
 	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
-	i->locked = 0;
+	i->state &= ~INODE_LOCKED;
 	wakeup(i);
 	RESTORE_FLAGS(flags);
 }
@@ -309,7 +308,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 	for(;;) {
 		if((i = search_inode_hash(sb->dev, inode))) {
 			SAVE_FLAGS(flags); CLI();
-			if(i->locked) {
+			if(i->state & INODE_LOCKED) {
 				sleep(i, PROC_UNINTERRUPTIBLE);
 				RESTORE_FLAGS(flags);
 				continue;
@@ -406,7 +405,7 @@ void iput(struct inode *i)
 		}
 		remove_from_hash(i);
 	}
-	if(i->dirty) {
+	if(i->state & INODE_DIRTY) {
 		if(write_inode(i)) {
 			printk("WARNING: %s(): can't write inode %d (%d,%d), will remain as dirty.\n", __FUNCTION__, i->inode, MAJOR(i->dev), MINOR(i->dev));
 			if(!i->i_nlink) {
@@ -432,7 +431,7 @@ void sync_inodes(__dev_t dev)
 
 	lock_resource(&sync_resource);
 	while(i) {
-		if(i->dirty) {
+		if(i->state & INODE_DIRTY) {
 			if(!dev || i->dev == dev) {
 				inode_lock(i);
 				if(write_inode(i)) {

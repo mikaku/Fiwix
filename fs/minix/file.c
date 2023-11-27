@@ -120,7 +120,7 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 	}
 	i->i_ctime = CURRENT_TIME;
 	i->i_mtime = CURRENT_TIME;
-	i->dirty = 1;
+	i->state |= INODE_DIRTY;
 	
 	inode_unlock(i);
 	return total_written;
