@@ -10,7 +10,6 @@
 
 #include <fiwix/types.h>
 
-#define PROC_DEV		0xFFF1	/* special device number for nodev fs */
 #define PROC_ROOT_INO		1	/* root inode */
 #define PROC_SUPER_MAGIC	0x9FA0	/* same as in Linux */
 

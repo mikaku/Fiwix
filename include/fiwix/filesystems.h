@@ -13,6 +13,13 @@
 
 #define NR_FILESYSTEMS		5	/* supported filesystems */
 
+/* special device numbers for nodev filesystems */
+enum {
+	FS_NODEV = 0xFFF0,
+	PIPE_DEV,
+	PROC_DEV,
+};
+
 struct filesystems {
 	const char *name;		/* filesystem name */
 	struct fs_operations *fsop;	/* filesystem operations */

@@ -8,8 +8,6 @@
 #ifndef _FIWIX_FS_PIPE_H
 #define _FIWIX_FS_PIPE_H
 
-#define PIPE_DEV	0xFFF0		/* special device number for nodev fs */
-
 extern struct fs_operations pipefs_fsop;
 
 struct pipefs_inode {
