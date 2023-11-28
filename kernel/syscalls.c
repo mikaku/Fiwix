@@ -393,6 +393,35 @@ void *syscall_table[] = {
 #else
 	NULL,
 #endif
+	NULL,
+	sys_ftruncate64,
+	sys_stat64,			/* 195 */
+	sys_lstat64,
+	sys_fstat64,
+	NULL,
+	NULL,
+	NULL,				/* 200 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 205 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 210 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 215 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 220 */
+	sys_fcntl64,
 };
 
 static void do_bad_syscall(unsigned int num)
