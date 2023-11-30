@@ -177,6 +177,6 @@ int sys_ftruncate64(unsigned int, __loff_t);
 int sys_stat64(const char *, struct stat64 *);
 int sys_lstat64(const char *, struct stat64 *);
 int sys_fstat64(unsigned int, struct stat64 *);
-int sys_fcntl64(unsigned int, int, unsigned long int);
+int sys_fcntl64(unsigned int, int, unsigned int);
 
 #endif /* _FIWIX_SYSCALLS_H */
