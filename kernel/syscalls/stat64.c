@@ -23,7 +23,7 @@ int sys_stat64(const char *filename, struct stat64 *statbuf)
 	int errno;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_stat64('%s', 0x%08x) -> returning structure\n", current->pid, filename, (unsigned int )statbuf);
+	printk("(pid %d) sys_stat64('%s', 0x%08x) -> returning structure\n", current->pid, filename, (unsigned int)statbuf);
 #endif /*__DEBUG__ */
 
 	if((errno = check_user_area(VERIFY_WRITE, statbuf, sizeof(struct stat64)))) {
