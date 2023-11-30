@@ -22,7 +22,7 @@ int sys_fstat64(unsigned int ufd, struct stat64 *statbuf)
 	int errno;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_fstat64(%d, 0x%08x) -> returning structure\n", current->pid, ufd, (unsigned int )statbuf);
+	printk("(pid %d) sys_fstat64(%d, 0x%08x) -> returning structure\n", current->pid, ufd, (unsigned int)statbuf);
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(ufd);
