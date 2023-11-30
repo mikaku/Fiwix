@@ -48,22 +48,22 @@ struct new_stat {
 struct stat64 {
         unsigned long long st_dev;
         int __st_dev_padding;
-        long __st_ino_truncated;
-        unsigned st_mode;
+        int __st_ino_truncated;
+        unsigned int st_mode;
         unsigned int st_nlink;
-        unsigned st_uid;
-        unsigned st_gid;
+        unsigned int st_uid;
+        unsigned int st_gid;
         unsigned long long st_rdev;
         int __st_rdev_padding;
         long long st_size;
-        long st_blksize;
+        int st_blksize;
         long long st_blocks;
-        long st_atime;
-        long st_atime_nsec;
-        long st_mtime;
-        long st_mtime_nsec;
-        long st_ctime;
-        long st_ctime_nsec;
+        int st_atime;
+        int st_atime_nsec;
+        int st_mtime;
+        int st_mtime_nsec;
+        int st_ctime;
+        int st_ctime_nsec;
         unsigned long long st_ino;
 };
 
