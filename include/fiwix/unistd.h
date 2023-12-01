@@ -208,5 +208,10 @@
 #define SYS_vfork		190
 /* #define SYS_ugetrlimit */
 #define SYS_mmap2		192
+/* #define SYS_truncate64 */
+#define SYS_ftruncate64		194
+#define SYS_stat64		195
+#define SYS_lstat64		196
+#define SYS_fstat64		197
 
 #endif /* _FIWIX_UNISTD_H */
