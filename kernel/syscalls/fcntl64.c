@@ -32,9 +32,9 @@ int sys_fcntl64(unsigned int ufd, int cmd, unsigned int arg)
 				return new_ufd;
 			}
 			current->fd[new_ufd] = current->fd[ufd];
-                        if (cmd == F_DUPFD_CLOEXEC) {
-                            current->fd_flags[new_ufd] |= FD_CLOEXEC;
-                        }
+			if (cmd == F_DUPFD_CLOEXEC) {
+				current->fd_flags[new_ufd] |= FD_CLOEXEC;
+			}
 			fd_table[current->fd[new_ufd]].count++;
 #ifdef __DEBUG__
 			printk("\t--> returning %d\n", new_ufd);
