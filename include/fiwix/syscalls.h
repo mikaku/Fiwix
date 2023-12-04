@@ -173,6 +173,7 @@ int sys_getcwd(char *, __size_t);
 #ifdef CONFIG_MMAP2
 int sys_mmap2(unsigned int, unsigned int, unsigned int, unsigned int, int, unsigned int);
 #endif /* CONFIG_MMAP2 */
+int sys_truncate64(const char *, __loff_t);
 int sys_ftruncate64(unsigned int, __loff_t);
 int sys_stat64(const char *, struct stat64 *);
 int sys_lstat64(const char *, struct stat64 *);

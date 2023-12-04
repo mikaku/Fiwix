@@ -393,7 +393,7 @@ void *syscall_table[] = {
 #else
 	NULL,
 #endif
-	NULL,
+	sys_truncate64,
 	sys_ftruncate64,
 	sys_stat64,			/* 195 */
 	sys_lstat64,
