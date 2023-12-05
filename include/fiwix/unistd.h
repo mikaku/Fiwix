@@ -9,8 +9,8 @@
 #define _FIWIX_UNISTD_H
 
 /*
- * This is intended to be pure Linux 2.0 ABI, plus some system calls from
- * Linux 2.2.
+ * This is intended to be pure Linux 2.0 i386 ABI, plus some system calls from
+ * Linux 2.2 and Linux 2.4.
  */
 
 /* #define SYS_setup */
@@ -206,6 +206,8 @@
 /* #define SYS_ni_syscall */
 /* #define SYS_ni_syscall */
 #define SYS_vfork		190
+
+/* extra system calls from Linux 2.4 */
 /* #define SYS_ugetrlimit */
 #define SYS_mmap2		192
 #define SYS_truncate64		193

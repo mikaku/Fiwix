@@ -190,7 +190,7 @@ int check_permission(int mask, struct inode *i)
 }
 
 
-/* Linux 2.0 ABI system call (plus some from Linux 2.2) */
+/* Linux 2.0 i386 ABI system call (plus some from Linux 2.2 and Linux 2.4) */
 void *syscall_table[] = {
 	NULL,				/* 0 */	/* sys_setup (-ENOSYS) */
 	sys_exit,
