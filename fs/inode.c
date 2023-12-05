@@ -43,8 +43,7 @@ struct inode **inode_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
 
-/* append a new inode into the inode pool */
-static struct inode *add_inode(void)
+static struct inode *add_inode_to_pool(void)
 {
 	unsigned int flags;
 	struct inode *i;
@@ -65,6 +64,39 @@ static struct inode *add_inode(void)
 	RESTORE_FLAGS(flags);
 	kstat.nr_inodes++;
 	return i;
+}
+
+static void del_inode_from_pool(struct inode *i)
+{
+	unsigned int flags;
+	struct inode *tmp;
+
+	tmp = i;
+
+	if(!i->next && !i->prev) {
+		printk("WARNING: %s(): trying to delete an unexistent inode (%d).\n", __FUNCTION__, i->inode);
+		return;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if(i->next) {
+		i->next->prev = i->prev;
+	}
+	if(i->prev) {
+		if(i != inode_table) {
+			i->prev->next = i->next;
+		}
+	}
+	if(!i->next) {
+		inode_table->prev = i->prev;
+	}
+	if(i == inode_table) {
+		inode_table = i->next;
+	}
+	RESTORE_FLAGS(flags);
+
+	kfree((unsigned int)tmp);
+	kstat.nr_inodes--;
 }
 
 static void insert_to_hash(struct inode *i)
@@ -155,7 +187,7 @@ static struct inode *get_free_inode(void)
 	struct inode *i;
 
 	if(kstat.nr_inodes < kstat.max_inodes) {
-		if(!(i = add_inode())) {
+		if(!(i = add_inode_to_pool())) {
 			return NULL;
 		}
 		return i;
@@ -416,10 +448,17 @@ void iput(struct inode *i)
 			return;
 		}
 	}
-	inode_unlock(i);
 
 	SAVE_FLAGS(flags); CLI();
-	insert_on_free_list(i);
+	inode_unlock(i);
+
+	if(i->rdev > FS_NODEV) {
+		/* inodes from pseudo-filesystems don't need to be cached */
+		remove_from_hash(i);
+		del_inode_from_pool(i);
+	} else {
+		insert_on_free_list(i);
+	}
 	RESTORE_FLAGS(flags);
 }
 
