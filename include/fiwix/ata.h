@@ -100,13 +100,15 @@
 #define ATA_DEVCTR_NIEN		0x02	/* Disable Interrupt */
 #define ATA_DEVCTR_SRST		0x04	/* Software Reset */
 
-/* ATA commands */
+/* ATA I/O commands (28 bit LBA) */
 #define ATA_READ_PIO		0x20	/* read sector(s) with retries */
 #define ATA_READ_MULTIPLE_PIO	0xC4	/* read multiple sectors */
 #define ATA_WRITE_PIO		0x30	/* write sector(s) with retries */
 #define ATA_WRITE_MULTIPLE_PIO	0xC5	/* write multiple sectors */
 #define ATA_READ_DMA		0xC8	/* read data using DMA */
 #define ATA_WRITE_DMA		0xCA	/* write data using DMA */
+
+/* ATA config commands */
 #define ATA_SET_MULTIPLE_MODE	0xC6
 #define ATA_PACKET		0xA0
 #define ATA_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
