@@ -8,29 +8,9 @@
 #ifndef _FIWIX_FS_H
 #define _FIWIX_FS_H
 
-#include <fiwix/config.h>
-#include <fiwix/types.h>
-
-#define CHECK_UFD(ufd)							\
-{									\
-	if((ufd) > (OPEN_MAX - 1) || current->fd[(ufd)] == 0) {		\
-		return -EBADF;						\
-	}								\
-}									\
-
-struct fd {
-	struct inode *inode;		/* file inode */
-	unsigned short int flags;	/* flags */
-	unsigned short int count;	/* number of opened instances */
-#ifdef CONFIG_OFFSET64
-	__loff_t offset;		/* r/w pointer position */
-#else
-	__off_t offset;			/* r/w pointer position */
-#endif /* CONFIG_OFFSET64 */
-};
-
 #include <fiwix/statfs.h>
 #include <fiwix/limits.h>
+#include <fiwix/fd.h>
 #include <fiwix/process.h>
 #include <fiwix/dirent.h>
 #include <fiwix/fs_minix.h>
