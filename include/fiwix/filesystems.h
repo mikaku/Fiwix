@@ -11,13 +11,14 @@
 #include <fiwix/types.h>
 #include <fiwix/limits.h>
 
-#define NR_FILESYSTEMS		5	/* supported filesystems */
+#define NR_FILESYSTEMS		6	/* supported filesystems */
 
 /* special device numbers for nodev filesystems */
 enum {
 	FS_NODEV = 0xFFF0,
 	PIPE_DEV,
 	PROC_DEV,
+	SOCK_DEV,
 };
 
 struct filesystems {
@@ -82,7 +83,6 @@ int minix_write_superblock(struct superblock *);
 void minix_release_superblock(struct superblock *);
 int minix_init(void);
 
-
 /* ext2 prototypes */
 int ext2_file_open(struct inode *, struct fd *);
 int ext2_file_close(struct inode *, struct fd *);
@@ -117,7 +117,6 @@ int ext2_write_superblock(struct superblock *);
 void ext2_release_superblock(struct superblock *);
 int ext2_init(void);
 
-
 /* pipefs prototypes */
 int fifo_open(struct inode *, struct fd *);
 int pipefs_close(struct inode *, struct fd *);
@@ -130,7 +129,6 @@ int pipefs_ialloc(struct inode *, int);
 void pipefs_ifree(struct inode *);
 int pipefs_read_superblock(__dev_t, struct superblock *);
 int pipefs_init(void);
-
 
 /* iso9660 prototypes */
 int iso9660_file_open(struct inode *, struct fd *);
@@ -150,7 +148,6 @@ int iso9660_read_superblock(__dev_t, struct superblock *);
 void iso9660_release_superblock(struct superblock *);
 int iso9660_init(void);
 
-
 /* procfs prototypes */
 int procfs_file_open(struct inode *, struct fd *);
 int procfs_file_close(struct inode *, struct fd *);
@@ -168,5 +165,19 @@ int procfs_read_inode(struct inode *);
 void procfs_statfs(struct superblock *, struct statfs *);
 int procfs_read_superblock(__dev_t, struct superblock *);
 int procfs_init(void);
+
+#ifdef CONFIG_NET
+/* sockfs prototypes */
+int sockfs_open(struct inode *, struct fd *);
+int sockfs_close(struct inode *, struct fd *);
+int sockfs_read(struct inode *, struct fd *, char *, __size_t);
+int sockfs_write(struct inode *, struct fd *, const char *, __size_t);
+__loff_t sockfs_llseek(struct inode *, __loff_t);
+int sockfs_select(struct inode *, int);
+int sockfs_ialloc(struct inode *, int);
+void sockfs_ifree(struct inode *);
+int sockfs_read_superblock(__dev_t, struct superblock *);
+int sockfs_init(void);
+#endif /* CONFIG_NET */
 
 #endif /* _FIWIX_FILESYSTEMS_H */

@@ -10,6 +10,7 @@
 #include <fiwix/filesystems.h>
 #include <fiwix/fs_ext2.h>
 #include <fiwix/fs_pipe.h>
+#include <fiwix/fs_sock.h>
 #include <fiwix/statfs.h>
 #include <fiwix/sleep.h>
 #include <fiwix/stat.h>
@@ -157,7 +158,13 @@ int ext2_read_inode(struct inode *i)
 			i->fsop = &ext2_symlink_fsop;
 			break;
 		case S_IFSOCK:
+#ifdef CONFIG_NET
+			i->fsop = &sockfs_fsop;
+			/* it's a union so we need to clear sockfs_inode */
+			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
+#else
 			i->fsop = NULL;
+#endif /* CONFIG_NET */
 			break;
 		default:
 			printk("WARNING: %s(): invalid inode (%d) mode %08o.\n", __FUNCTION__, i->inode, i->i_mode);

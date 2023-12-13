@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-FSDIRS = minix ext2 pipefs iso9660 procfs
+FSDIRS = minix ext2 pipefs iso9660 procfs sockfs
 OBJS = filesystems.o devices.o buffer.o fd.o locks.o super.o inode.o \
 	namei.o elf.o script.o
 

@@ -16,10 +16,44 @@
 #include <fiwix/process.h>
 #endif /*__DEBUG__ */
 
-int sys_mknod(const char *pathname, __mode_t mode, __dev_t dev)
+int do_mknod(char *pathname, __mode_t mode, __dev_t dev)
 {
 	struct inode *i, *dir;
-	char *tmp_name, *basename;
+	char *basename;
+	int errno;
+
+	basename = get_basename(pathname);
+	if((errno = namei(pathname, &i, &dir, !FOLLOW_LINKS))) {
+		if(!dir) {
+			return errno;
+		}
+	}
+	if(!errno) {
+		iput(i);
+		iput(dir);
+		return -EEXIST;
+	}
+	if(IS_RDONLY_FS(dir)) {
+		iput(dir);
+		return -EROFS;
+	}
+	if(check_permission(TO_EXEC | TO_WRITE, dir) < 0) {
+		iput(dir);
+		return -EACCES;
+	}
+
+	if(dir->fsop && dir->fsop->mknod) {
+		errno = dir->fsop->mknod(dir, basename, mode, dev);
+	} else {
+		errno = -EPERM;
+	}
+	iput(dir);
+	return errno;
+}
+
+int sys_mknod(const char *pathname, __mode_t mode, __dev_t dev)
+{
+	char *tmp_name;
 	int errno;
 
 #ifdef __DEBUG__
@@ -36,36 +70,7 @@ int sys_mknod(const char *pathname, __mode_t mode, __dev_t dev)
 	if((errno = malloc_name(pathname, &tmp_name)) < 0) {
 		return errno;
 	}
-	basename = get_basename(tmp_name);
-	if((errno = namei(tmp_name, &i, &dir, !FOLLOW_LINKS))) {
-		if(!dir) {
-			free_name(tmp_name);
-			return errno;
-		}
-	}
-	if(!errno) {
-		iput(i);
-		iput(dir);
-		free_name(tmp_name);
-		return -EEXIST;
-	}
-	if(IS_RDONLY_FS(dir)) {
-		iput(dir);
-		free_name(tmp_name);
-		return -EROFS;
-	}
-	if(check_permission(TO_EXEC | TO_WRITE, dir) < 0) {
-		iput(dir);
-		free_name(tmp_name);
-		return -EACCES;
-	}
-
-	if(dir->fsop && dir->fsop->mknod) {
-		errno = dir->fsop->mknod(dir, basename, mode, dev);
-	} else {
-		errno = -EPERM;
-	}
-	iput(dir);
+	errno = do_mknod(tmp_name, mode, dev);
 	free_name(tmp_name);
 	return errno;
 }

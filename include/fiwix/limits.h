@@ -22,7 +22,7 @@
 #define NAME_MAX	255	/* bytes in a filename */
 #define PATH_MAX	1024	/* bytes in a pathname */
 #define PIPE_BUF	4096	/* bytes than can be written atomically to a
-				   pipe */
+				   pipe (cannot be bigger than PAGE_SIZE) */
 #define UIO_MAXIOV	16	/* maximum number of scatter/gather elements
 				   that can be processed in one call */
 

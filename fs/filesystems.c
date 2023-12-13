@@ -82,4 +82,9 @@ void fs_init(void)
 	if(procfs_init()) {
 		printk("%s(): unable to register 'procfs' filesystem.\n", __FUNCTION__);
 	}
+#ifdef CONFIG_NET
+	if(sockfs_init()) {
+		printk("%s(): unable to register 'sockfs' filesystem.\n", __FUNCTION__);
+	}
+#endif /* CONFIG_NET */
 }

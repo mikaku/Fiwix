@@ -136,7 +136,13 @@ int v2_minix_read_inode(struct inode *i)
 			i->fsop = &minix_symlink_fsop;
 			break;
 		case S_IFSOCK:
+#ifdef CONFIG_NET
+			i->fsop = &sockfs_fsop;
+			/* it's a union so we need to clear sockfs_inode */
+			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
+#else
 			i->fsop = NULL;
+#endif /* CONFIG_NET */
 			break;
 		default:
 			printk("WARNING: %s(): invalid inode (%d) mode %o.\n", __FUNCTION__, i->inode, i->i_mode);

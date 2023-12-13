@@ -25,6 +25,7 @@
 #include <fiwix/timer.h>
 #include <fiwix/utsname.h>
 #include <fiwix/version.h>
+#include <fiwix/socket.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
@@ -396,6 +397,38 @@ int data_proc_fullversion(char *buffer, __pid_t pid)
 	return sprintk(buffer, "Fiwix version %s %s\n", UTS_RELEASE, UTS_VERSION);
 }
 
+
+int data_proc_unix(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	struct unix_info *u;
+	struct sockaddr_un *sun;
+	struct socket *s;
+	struct fd *fd;
+	int size;
+
+	size = sprintk(buffer, "Num       RefCount Protocol Flags    Type St Inode Path\n");
+	u = unix_socket_head;
+	while(u) {
+		sun = u->sun;
+		s = u->socket;
+		fd = s->fd;
+		size += sprintk(buffer + size, "%08x: %08d %08d %08x %04d %02d % 5d %s\n",
+			&s->u.unix,
+			u->count,	/* FIXME s->fd->count, */
+			0,
+			s->flags,
+			s->type,
+			s->state,
+			fd->inode->inode,
+			sun ? sun->sun_path : "");
+		u = u->next;
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
 
 int data_proc_buffermax(char *buffer, __pid_t pid)
 {

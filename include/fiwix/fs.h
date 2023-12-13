@@ -18,6 +18,7 @@
 #include <fiwix/fs_pipe.h>
 #include <fiwix/fs_iso9660.h>
 #include <fiwix/fs_proc.h>
+#include <fiwix/fs_sock.h>
 
 #define BPS			512	/* bytes per sector */
 #define BLKSIZE_1K		1024	/* 1KB block size */
@@ -94,6 +95,9 @@ struct inode {
 		struct pipefs_inode pipefs;
 		struct iso9660_inode iso9660;
 		struct procfs_inode procfs;
+#ifdef CONFIG_NET
+		struct sockfs_inode sockfs;
+#endif /* CONFIG_NET */
 	} u;
 };
 extern struct inode *inode_table;
@@ -256,6 +260,7 @@ int check_group(struct inode *);
 int check_user_area(int, const void *, unsigned int);
 int check_permission(int, struct inode *);
 
+int do_mknod(char *, __mode_t, __dev_t);
 int do_select(int, fd_set *, fd_set *, fd_set *, fd_set *, fd_set *, fd_set *);
 
 #endif /* _FIWIX_FS_H */

@@ -689,6 +689,15 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			d->file_type = 0;	/* EXT2_FT_FIFO not used */
 			break;
+#ifdef CONFIG_NET
+		case S_IFSOCK:
+			i->fsop = &sockfs_fsop;
+			i->i_mode |= S_IFSOCK;
+			/* it's a union so we need to clear sockfs_inode */
+			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
+			d->file_type = 0;	/* EXT2_FT_SOCK not used */
+			break;
+#endif /* CONFIG_NET */
 	}
 
 	dir->i_mtime = CURRENT_TIME;

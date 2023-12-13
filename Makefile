@@ -28,6 +28,7 @@ DIRS =	kernel \
 	drivers/block \
 	drivers/pci \
 	drivers/video \
+	net \
 	lib
 
 OBJS = 	kernel/*.o \
@@ -39,10 +40,12 @@ OBJS = 	kernel/*.o \
 	fs/minix/*.o \
 	fs/pipefs/*.o \
 	fs/procfs/*.o \
+	fs/sockfs/*.o \
 	drivers/char/*.o \
 	drivers/block/*.o \
 	drivers/pci/*.o \
 	drivers/video/*.o \
+	net/*.o \
 	lib/*.o
 
 export CC LD CFLAGS LDFLAGS INCLUDE

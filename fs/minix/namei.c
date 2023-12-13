@@ -617,6 +617,14 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 			/* it's a union so we need to clear pipefs_i */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
+#ifdef CONFIG_NET
+		case S_IFSOCK:
+			i->fsop = &sockfs_fsop;
+			i->i_mode |= S_IFSOCK;
+			/* it's a union so we need to clear sockfs_inode */
+			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
+			break;
+#endif /* CONFIG_NET */
 	}
 
 	dir->i_mtime = CURRENT_TIME;

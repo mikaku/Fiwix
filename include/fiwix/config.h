@@ -45,6 +45,7 @@
 #undef CONFIG_VM_SPLIT22
 #undef CONFIG_FS_MINIX
 #undef CONFIG_MMAP2
+#define CONFIG_NET
 
 
 /* configuration options to help debugging */
