@@ -31,6 +31,7 @@ static struct fs_operations ramdisk_driver_fsop = {
 	ramdisk_ioctl,
 	ramdisk_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 

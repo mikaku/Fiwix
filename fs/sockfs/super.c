@@ -29,6 +29,7 @@ struct fs_operations sockfs_fsop = {
 	NULL, 			/* ioctl */
 	sockfs_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	sockfs_select,
 

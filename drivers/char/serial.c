@@ -31,6 +31,7 @@ static struct fs_operations serial_driver_fsop = {
 	tty_ioctl,
 	tty_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	tty_select,
 

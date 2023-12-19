@@ -62,6 +62,7 @@ static struct fs_operations tty_driver_fsop = {
 	tty_ioctl,
 	tty_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	tty_select,
 

@@ -29,6 +29,7 @@ static struct fs_operations atapi_cd_driver_fsop = {
 	atapi_cd_ioctl,
 	atapi_cd_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 

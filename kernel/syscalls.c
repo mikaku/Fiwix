@@ -420,7 +420,7 @@ void *syscall_table[] = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,				/* 220 */
+	sys_getdents64,			/* 220 */
 	sys_fcntl64,
 };
 

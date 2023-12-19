@@ -28,6 +28,7 @@ static struct fs_operations mem_driver_fsop = {
 	NULL,			/* ioctl */
 	mem_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	mem_mmap,
 	NULL,			/* select */
 
@@ -70,6 +71,7 @@ static struct fs_operations kmem_driver_fsop = {
 	NULL,			/* ioctl */
 	kmem_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	mem_mmap,
 	NULL,			/* select */
 
@@ -112,6 +114,7 @@ static struct fs_operations null_driver_fsop = {
 	NULL,			/* ioctl */
 	null_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -154,6 +157,7 @@ static struct fs_operations port_driver_fsop = {
 	NULL,			/* ioctl */
 	port_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -196,6 +200,7 @@ static struct fs_operations zero_driver_fsop = {
 	NULL,			/* ioctl */
 	zero_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -238,6 +243,7 @@ static struct fs_operations full_driver_fsop = {
 	NULL,			/* ioctl */
 	full_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -280,6 +286,7 @@ static struct fs_operations urandom_driver_fsop = {
 	NULL,			/* ioctl */
 	urandom_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -322,6 +329,7 @@ static struct fs_operations memdev_driver_fsop = {
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 

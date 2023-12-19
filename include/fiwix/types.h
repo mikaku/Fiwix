@@ -20,6 +20,7 @@ typedef unsigned long long int __u64;
 typedef __u16 __uid_t;
 typedef __u16 __gid_t;
 typedef __u32 __ino_t;
+typedef __u64 __ino64_t;
 typedef __u16 __mode_t;
 typedef __u16 __nlink_t;
 typedef __u32 __off_t;
