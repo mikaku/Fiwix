@@ -62,6 +62,11 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 		return NULL;
 	}
 
+	/* check if this device is already mounted */
+	if(get_superblock(dev)) {
+		return NULL;
+	}
+
 	if(!(mp = (struct mount *)kmalloc(sizeof(struct mount)))) {
 		return NULL;
 	}
