@@ -147,7 +147,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 	return size;
 }
 
-int ext2_dir_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent, unsigned int count)
+int ext2_dir_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

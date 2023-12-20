@@ -93,7 +93,7 @@ int ext2_dir_close(struct inode *, struct fd *);
 int ext2_dir_read(struct inode *, struct fd *, char *, __size_t);
 int ext2_dir_write(struct inode *, struct fd *, const char *, __size_t);
 int ext2_dir_readdir(struct inode *, struct fd *, struct dirent *, __size_t);
-int ext2_dir_readdir64(struct inode *, struct fd *, struct dirent64 *, unsigned int);
+int ext2_dir_readdir64(struct inode *, struct fd *, struct dirent64 *, __size_t);
 int ext2_readlink(struct inode *, char *, __size_t);
 int ext2_followlink(struct inode *, struct inode *, struct inode **);
 int ext2_bmap(struct inode *, __off_t, int);
