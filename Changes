@@ -1,3 +1,17 @@
+1.6.0 - DD-MMM-2024
+===================
+- Added support for UNIX domain sockets. [#36]
+- Added support for sys_truncate64, sys_ftruncate64, sys_stat64, sys_lstat64,
+  sys_fstat64 and sys_fcntl64 system calls. [#49]
+- Added support for sys_getdents64. [#51]
+- Changed the inode cache mechanism to avoid caching inodes from
+  pseudo-filesystems.
+- Moved the values sb->dirty, inode->locked and inode->dirty to flags.
+- Improved code compaction and efficiency in ATA disk read/write.
+- Fixed sys_mount() to avoid mounting a device already mounted.
+- Small fixes and cosmetic changes.
+
+
 1.5.0 - 15-Nov-2023
 ===================
 - Added a kernel memory allocator that uses the buddy algorithm to manage
