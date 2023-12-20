@@ -22,8 +22,8 @@ struct dirent64 {
 	__ino64_t d_ino;		/* inode number */
 	__loff_t d_off;			/* offset to next dirent */
 	unsigned short d_reclen;	/* length of this dirent */
-	unsigned char d_type;		/* File type */
-	char d_name[];			/* Filename (null-terminated) */
+	unsigned char d_type;		/* file type */
+	char d_name[];			/* file name (null-terminated) */
 };
 
 #define DT_UNKNOWN 0
