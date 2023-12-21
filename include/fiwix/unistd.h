@@ -216,6 +216,7 @@
 #define SYS_lstat64		196
 #define SYS_fstat64		197
 
+#define SYS_getdents64		220
 #define SYS_fcntl64		221
 
 #endif /* _FIWIX_UNISTD_H */
