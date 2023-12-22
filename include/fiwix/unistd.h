@@ -217,6 +217,7 @@
 #define SYS_fstat64		197
 
 #define SYS_chown32		212
+
 #define SYS_getdents64		220
 #define SYS_fcntl64		221
 
