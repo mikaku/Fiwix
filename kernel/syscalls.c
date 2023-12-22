@@ -412,7 +412,7 @@ void *syscall_table[] = {
 	NULL,
 	NULL,				/* 210 */
 	NULL,
-	NULL,
+	sys_chown32,
 	NULL,
 	NULL,
 	NULL,				/* 215 */

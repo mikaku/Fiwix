@@ -124,12 +124,12 @@ int ext2_read_inode(struct inode *i)
 	memcpy_b(&i->u.ext2.i_data, ii->i_block, sizeof(ii->i_block));
 
 	i->i_mode = ii->i_mode;
-	i->i_uid = ii->i_uid;
+	i->i_uid = (ii->osd2.linux2.l_i_uid_high << 16) | ii->i_uid;
 	i->i_size = ii->i_size;
 	i->i_atime = ii->i_atime;
 	i->i_ctime = ii->i_ctime;
 	i->i_mtime = ii->i_mtime;
-	i->i_gid = ii->i_gid;
+	i->i_gid = (ii->osd2.linux2.l_i_gid_high << 16) | ii->i_gid;
 	i->i_nlink = ii->i_links_count;
 	i->i_blocks = ii->i_blocks;
 	i->i_flags = ii->i_flags;
@@ -202,13 +202,15 @@ int ext2_write_inode(struct inode *i)
 	memset_b(ii, 0, sizeof(struct ext2_inode));
 
 	ii->i_mode = i->i_mode;
-	ii->i_uid = i->i_uid;
+	ii->i_uid = i->i_uid & 0xFFFF;
+	ii->osd2.linux2.l_i_uid_high = i->i_uid >> 16;
 	ii->i_size = i->i_size;
 	ii->i_atime = i->i_atime;
 	ii->i_ctime = i->i_ctime;
 	ii->i_mtime = i->i_mtime;
 	ii->i_dtime = i->u.ext2.i_dtime;
-	ii->i_gid = i->i_gid;
+	ii->i_gid = i->i_gid & 0xFFFF;
+	ii->osd2.linux2.l_i_gid_high = i->i_gid >> 16;
 	ii->i_links_count = i->i_nlink;
 	ii->i_blocks = i->i_blocks;
 	ii->i_flags = i->i_flags;

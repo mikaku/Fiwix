@@ -178,6 +178,7 @@ int sys_ftruncate64(unsigned int, __loff_t);
 int sys_stat64(const char *, struct stat64 *);
 int sys_lstat64(const char *, struct stat64 *);
 int sys_fstat64(unsigned int, struct stat64 *);
+int sys_chown32(const char *, unsigned int, unsigned int);
 int sys_getdents64(unsigned int, struct dirent64 *, unsigned int);
 int sys_fcntl64(unsigned int, int, unsigned int);
 
