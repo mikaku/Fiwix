@@ -419,7 +419,11 @@ void *syscall_table[] = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,
+#ifdef CONFIG_MADVISE_STUB
+	sys_madvise,
+#else
+	NULL,	/* sys_madvise */
+#endif /* CONFIG_MADVISE_STUB */
 	sys_getdents64,			/* 220 */
 	sys_fcntl64,
 };

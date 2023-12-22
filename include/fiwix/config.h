@@ -46,6 +46,7 @@
 #undef CONFIG_FS_MINIX
 #undef CONFIG_MMAP2
 #define CONFIG_NET
+#undef CONFIG_MADVISE_STUB
 
 
 /* configuration options to help debugging */

@@ -218,6 +218,8 @@
 
 #define SYS_chown32		212
 
+#define SYS_madvise		219
+
 #define SYS_getdents64		220
 #define SYS_fcntl64		221
 
