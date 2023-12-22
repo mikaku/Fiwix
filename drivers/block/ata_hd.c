@@ -269,7 +269,9 @@ int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	xd.block = block;
 	xd.buffer = buffer;
 	xd.blksize = blksize;
+#ifdef CONFIG_PCI
 	xd.bm_cmd = BM_COMMAND_READ;
+#endif /* CONFIG_PCI */
 	xd.cmd = drive->xfer.read_cmd;
 	xd.mode = "read";
 
@@ -311,7 +313,9 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	xd.block = block;
 	xd.buffer = buffer;
 	xd.blksize = blksize;
+#ifdef CONFIG_PCI
 	xd.bm_cmd = BM_COMMAND_WRITE;
+#endif /* CONFIG_PCI */
 	xd.cmd = drive->xfer.write_cmd;
 	xd.mode = "write";
 

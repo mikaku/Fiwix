@@ -15,6 +15,7 @@
 #include <fiwix/string.h>
 #include <fiwix/stdio.h>
 
+#ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 static struct pci_supported_devices supported[] = {
 	{ PCI_VENDOR_ID_BOCHS, PCI_DEVICE_ID_BGA, 2 },
@@ -105,3 +106,4 @@ void bga_init(void)
 	bga_write_register(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED);
 }
 #endif /* CONFIG_BGA */
+#endif /* CONFIG_PCI */

@@ -24,11 +24,13 @@ void video_init(void)
 		return;
 	}
 
+#ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 	if(video.flags & VPF_VESAFB) {
 		bga_init();
 	}
 #endif /* CONFIG_BGA */
+#endif /* CONFIG_PCI */
 
 	if(video.flags & VPF_VESAFB) {
 		fb_init();
