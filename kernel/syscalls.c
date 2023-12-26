@@ -422,6 +422,56 @@ void *syscall_table[] = {
 	NULL,
 	sys_getdents64,			/* 220 */
 	sys_fcntl64,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 225 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 230 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 235 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 240 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 245 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 250 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 255 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 260 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 265 */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,				/* 270 */
+	sys_utimes,
 };
 
 static void do_bad_syscall(unsigned int num)

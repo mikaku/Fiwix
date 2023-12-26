@@ -221,4 +221,6 @@
 #define SYS_getdents64		220
 #define SYS_fcntl64		221
 
+#define SYS_utimes		271
+
 #endif /* _FIWIX_UNISTD_H */
