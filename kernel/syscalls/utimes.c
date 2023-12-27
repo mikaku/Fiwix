@@ -25,7 +25,7 @@ int sys_utimes(const char *filename, struct timeval times[2])
 	int errno;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_utimes('%s', ...)\n", current->pid, filename);
+	printk("(pid %d) sys_utimes('%s', 0x%08x)\n", current->pid, filename, (int)times);
 #endif /*__DEBUG__ */
 
 	if((errno = malloc_name(filename, &tmp_name)) < 0) {
