@@ -41,7 +41,7 @@ int sys_rmdir(const char *dirname)
 		iput(dir);
 		return -ENOTDIR;
 	}
-	if(i == current->root || i->mount_point || i->count > 1) {
+	if(i == current->root || i->mount_point) {
 		iput(i);
 		iput(dir);
 		return -EBUSY;
