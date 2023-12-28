@@ -92,6 +92,12 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		return 0;
 	}
 
+	if(i_target->mount_point) {
+		iput(i_target);
+		free_name(tmp_target);
+		return -EBUSY;
+	}
+
 	if((errno = malloc_name(fstype, &tmp_fstype)) < 0) {
 		iput(i_target);
 		free_name(tmp_target);
