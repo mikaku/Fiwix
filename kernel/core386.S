@@ -36,7 +36,7 @@
 #define OLDSS		0x44	/* / privilege level change	*/
 
 #define SAVE_ALL							\
-	pushal								;\
+	pusha								;\
 	pushl	%ds							;\
 	pushl	%es							;\
 	pushl	%fs							;\
@@ -82,7 +82,7 @@
 	popl	%fs							;\
 	popl	%es							;\
 	popl	%ds							;\
-	popal								;\
+	popa								;\
 	addl	$4, %esp	/* suppress error code from stack */
 
 
@@ -273,16 +273,16 @@ BUILD_IRQ(15, irq15)
 	BOTTOM_HALVES
 	CHECK_IF_SIGNALS
 	CHECK_IF_NEED_SCHEDULE
-.align 4
 .globl return_from_syscall; return_from_syscall:
 	RESTORE_ALL
 	iret
 
 .align 4
 .globl do_switch; do_switch:
-	movl	%esp, %ebx
-	pushal
+	pusha
 	pushfl
+	movl	%esp, %ebx
+	addl	$0x24, %ebx
 	movl	0x4(%ebx), %eax		# save ESP to 'prev->tss.esp'
 	movl	%esp, (%eax)
 	movl	0x8(%ebx), %eax		# save EIP to 'prev->tss.eip'
@@ -295,7 +295,7 @@ BUILD_IRQ(15, irq15)
 	ret
 1:
 	popfl
-	popal
+	popa
 
 .align 4
 .globl cpuid; cpuid:
@@ -476,12 +476,14 @@ end_brand_str:
 .globl tlbinfo; tlbinfo:
 	pushl	%edx
 	pushl	%ecx
+	pushl	%ebx
 	mov	$2, %eax
 	cpuid
 	movl	%eax, _tlbinfo_eax	# store cache information
 	movl	%ebx, _tlbinfo_ebx
 	movl	%edx, _tlbinfo_ecx
 	movl	%ecx, _tlbinfo_edx
+	popl	%ebx
 	popl	%ecx
 	popl	%edx
 	ret

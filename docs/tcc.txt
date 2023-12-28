@@ -1,0 +1,42 @@
+Fiwix can be built with a modified version of tcc instead of gcc.
+
+A version of tcc which has been verified to compile Fiwix can be retrieved
+(at the time of this writing) from the following URL:
+https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2
+
+Fiwix uses a linker script to specify high virtual addresses for data
+structures but uses low physical addresses for the addresses to load
+the kernel sections into.
+
+tcc does not support linker scripts and so a small modification must
+be applied to tcc in order to calculate the appropriate physical addresess
+for sections in the ELF header.
+
+The layout_sections function in the file tccelf.c must be modified
+(around line 1674).
+
+This line:
+                        ph->p_paddr = ph->p_vaddr;
+
+Must be changed to this:
+                        ph->p_paddr = ph->p_vaddr;
+                        if (s1->text_addr == 0xC0100000)
+                            ph->p_paddr = ph->p_paddr - 0xC0000000;
+                        if (s1->text_addr == 0x80100000)
+                            ph->p_paddr = ph->p_paddr - 0x80000000;
+
+
+This change is specific to Fiwix and so it is unlikely to be incorporated
+into the standard tcc compiler in the future.
+
+
+Note that tcc does not support certain constructs used by CONFIG_OFFSET64,
+CONFIG_PRINTK64, or CONFIG_NET, so you muse undefine these options.
+
+These commands will build Fiwix with tcc:
+
+echo "#undef CONFIG_OFFSET64" > include/fiwix/custom_config.h
+echo "#undef CONFIG_PRINTK64" >> include/fiwix/custom_config.h
+echo "#undef CONFIG_NET" >> include/fiwix/custom_config.h
+make clean
+make CCEXE="tcc" CONFFLAGS="-DCUSTOM_CONFIG_H"

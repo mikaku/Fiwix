@@ -12,13 +12,28 @@ ARCH = -m32
 CPU = -march=i386
 LANG = -std=c89
 
-CC = $(CROSS_COMPILE)gcc $(ARCH) $(CPU) $(LANG) -D__KERNEL__ #-D__DEBUG__
+# CCEXE can be overridden at the command line. For example: make CCEXE="tcc"
+# To use tcc see docs/tcc.txt
+CCEXE=gcc
+
+CC = $(CROSS_COMPILE)$(CCEXE) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(CONFFLAGS) #-D__DEBUG__
+CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
+
+ifeq ($(CCEXE),gcc)
 LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 LIBGCC := $(shell dirname `$(CC) -print-libgcc-file-name`)
-
-CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes $(CONFFLAGS) #-Wextra -Wno-unused-parameter
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
+endif
+
+ifeq ($(CCEXE),tcc)
+CC += -D__VERSION__=\"tcc\"
+LD = $(CROSS_COMPILE)$(CCEXE) $(ARCH)
+LDFLAGS = -static -nostdlib -nostdinc
+# If you define CONFIG_VM_SPLIT22 this should be 0x80100000: make CCEXE="tcc" TEXTADDR="0x80100000"
+TEXTADDR = 0xC0100000
+endif
+
 
 DIRS =	kernel \
 	kernel/syscalls \
@@ -53,10 +68,15 @@ export CC LD CFLAGS LDFLAGS INCLUDE
 all:
 	@echo "#define UTS_VERSION \"`date -u`\"" > include/fiwix/version.h
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
+ifeq ($(CCEXE),gcc)
 	$(CPP) $(CONFFLAGS) fiwix.ld > $(TMPFILE)
 	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
 	rm -f $(TMPFILE)
 	nm fiwix | sort | gzip -9c > System.map.gz
+endif
+ifeq ($(CCEXE),tcc)
+	$(LD) -Wl,-Ttext=$(TEXTADDR) $(LDFLAGS) $(OBJS) -o fiwix
+endif
 
 clean:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE) clean) ; done

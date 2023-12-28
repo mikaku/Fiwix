@@ -59,10 +59,9 @@ unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, in
 	return addr;
 }
 
-int bss_init(void)
+void bss_init(void)
 {
 	memset_b((void *)((int)_edata), 0, KERNEL_BSS_SIZE);
-	return (unsigned int)_kstack;
 }
 
 /*
@@ -327,7 +326,7 @@ void mem_init(void)
 	}
 
 	/* two steps mapping to make sure not include an initrd image */
-	_last_data_addr = map_kaddr(KERNEL_ADDR, (unsigned int)_kstack - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr(KERNEL_ADDR, ((unsigned int)_end & 0xFFFFF000) - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	_last_data_addr = map_kaddr((unsigned int)kpage_dir, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
@@ -468,6 +467,25 @@ void mem_init(void)
 	page_init(kstat.physical_pages);
 	buddy_low_init();
 }
+
+#ifdef __TINYC__
+void* memmove(void* dest, void const* src, int count)
+{
+	if (dest < src) {
+		memcpy_b (dest, src, count);
+		return dest;
+	} else {
+		char *p = dest;
+		char const *q = src;
+		count = count - 1;
+		while (count >= 0) {
+			p[count] = q[count];
+			count = count - 1;
+		}
+	}
+	return dest;
+}
+#endif
 
 void mem_stats(void)
 {

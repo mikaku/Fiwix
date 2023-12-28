@@ -464,6 +464,13 @@ void page_init(int pages)
 			continue;
 		}
 
+		/* Reserve the kernel stack page */
+		if(addr == 0x0000F000) {
+			pg->flags = PAGE_RESERVED;
+			kstat.physical_reserved++;
+			continue;
+		}
+
 		/*
 		 * Some memory addresses are reserved, like the memory between
 		 * 0xA0000 and 0x100000 and other addresses, mostly used by the

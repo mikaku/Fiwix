@@ -106,6 +106,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 			in_identifier = 1;
 			switch(c = *(format)) {
 				case 'd':
+#ifdef CONFIG_PRINTK64
 					if(sw_l) {
 						lnum = va_arg(args, long long int);
 						if(lnum < 0) {
@@ -117,6 +118,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 							*(ptr_s++) = '0' + (lnum % 10);
 						} while(lnum /= 10);
 					} else {
+#endif /* CONFIG_PRINTK64 */
 						num = va_arg(args, int);
 						if(num < 0) {
 							num *= -1;
@@ -126,7 +128,9 @@ static void do_printk(char *buffer, const char *format, va_list args)
 						do {
 							*(ptr_s++) = '0' + (num % 10);
 						} while(num /= 10);
+#ifdef CONFIG_PRINTK64
 					}
+#endif /* CONFIG_PRINTK64 */
 
 					if(lf) {
 						p = ptr_s;
@@ -158,6 +162,7 @@ static void do_printk(char *buffer, const char *format, va_list args)
 					break;
 
 				case 'u':
+#ifdef CONFIG_PRINTK64
 					if(sw_l) {
 						lunum = va_arg(args, unsigned long long int);
 						ptr_s = str;
@@ -165,12 +170,15 @@ static void do_printk(char *buffer, const char *format, va_list args)
 							*(ptr_s++) = '0' + (lunum % 10);
 						} while(lunum /= 10);
 					} else {
+#endif /* CONFIG_PRINTK64 */
 						unum = va_arg(args, unsigned int);
 						ptr_s = str;
 						do {
 							*(ptr_s++) = '0' + (unum % 10);
 						} while(unum /= 10);
+#ifdef CONFIG_PRINTK64
 					}
+#endif /* CONFIG_PRINTK64 */
 
 					if(lf) {
 						p = ptr_s;

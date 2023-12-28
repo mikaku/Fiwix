@@ -116,6 +116,18 @@ void invalidate_tlb(void);
 		: "memory"			\
 	);
 
+#ifdef __TINYC__
+#define USER_SYSCALL(num, arg1, arg2, arg3)    \
+	__asm__ __volatile__(                   \
+		"movl   %0, %%eax\n\t"          \
+		"movl   %1, %%ecx\n\t"          \
+		"movl   %2, %%edx\n\t"          \
+		"movl   %3, %%ebx\n\t"          \
+		"int    $0x80\n\t"              \
+		: /* no output */               \
+		: "r"((unsigned int)num), "r"((unsigned int)arg2), "r"((unsigned int)arg3), "r"((unsigned int)arg1)     \
+	);
+#else
 #define USER_SYSCALL(num, arg1, arg2, arg3)	\
 	__asm__ __volatile__(			\
 		"movl   %0, %%eax\n\t"		\
@@ -126,6 +138,7 @@ void invalidate_tlb(void);
 		: /* no output */		\
 		: "eax"((unsigned int)num), "ebx"((unsigned int)arg1), "ecx"((unsigned int)arg2), "edx"((unsigned int)arg3)	\
 	);
+#endif
 
 /*
 static inline unsigned long long int get_rdtsc(void)

@@ -342,13 +342,13 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	udma = get_udma(drive);
 
 	size = (__loff_t)drive->nr_sects * BPS;
-	size = size / 1024;
+	size = size >> 10;
 	if(size < 1024) {
 		/* the size is less than 1MB (will be reported in KB) */
 		ksize = size;
 		size = 0;
 	} else {
-		size = size / 1024;
+		size = size >> 10;
 		ksize = 0;
 	}
 

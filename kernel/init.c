@@ -20,7 +20,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define INIT_TRAMPOLINE_SIZE	128	/* max. size of init_trampoline() */
+#define INIT_TRAMPOLINE_SIZE	256	/* max. size of init_trampoline() */
 
 char *init_argv[] = { INIT_PROGRAM, NULL, NULL };
 char *init_envp[] = { "HOME=/", "TERM=linux", NULL };

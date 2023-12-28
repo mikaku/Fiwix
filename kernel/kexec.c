@@ -123,7 +123,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movl	%%eax, %%cr3\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered registers */
+		: "eax"	/* clobbered registers */
 	);
 
 	/*
@@ -153,7 +153,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movl	%%eax, %%cr3\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered registers */
+		: "eax"	/* clobbered registers */
 	);
 
 	/* load all the segment registers with the kernel data segment value */
@@ -166,9 +166,18 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		"movw	%%ax, %%ss\n\t"
 		: /* no output */
 		: /* no input */
-		: "%eax"	/* clobbered registers */
+		: "eax"	/* clobbered registers */
 	);
 
+#ifdef __TINYC__
+	unsigned int multiboot_magic = MULTIBOOT_BOOTLOADER_MAGIC;
+	__asm__ __volatile__(
+		"movl	%0, %%eax\n\t"
+		"movl	%1, %%ebx\n\t"
+		: /* no output */
+		: "r"(multiboot_magic), "r"((unsigned int)info)
+	);
+#else
 	/* Multiboot 1 */
 	__asm__ __volatile__(
 		"movl	%0, %%eax\n\t"
@@ -176,6 +185,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		: /* no output */
 		: "eax"(MULTIBOOT_BOOTLOADER_MAGIC), "ebx"((unsigned int)info)
 	);
+#endif
 
 	/*
 	 * This jumps to the kernel entry address.

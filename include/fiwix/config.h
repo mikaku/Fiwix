@@ -46,6 +46,7 @@
 #undef CONFIG_FS_MINIX
 #undef CONFIG_MMAP2
 #define CONFIG_NET
+#define CONFIG_PRINTK64
 
 
 /* configuration options to help debugging */
