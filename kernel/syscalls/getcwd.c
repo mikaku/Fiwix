@@ -103,7 +103,7 @@ int sys_getcwd(char *buf, __size_t size)
 						break;
 					}
 				}
-				if((d_ptr->d_ino == cur->inode && !diff_dev) || (tmp_ino->inode == cur->inode && diff_dev)) {
+				if((!diff_dev && d_ptr->d_ino == cur->inode) || (diff_dev && tmp_ino->inode == cur->inode)) {
 					if(strcmp("..", d_ptr->d_name)) {
 						namelength = strlen(d_ptr->d_name);
 						if(marker < namelength + 1) {
