@@ -278,3 +278,22 @@ void memset_l(void *dest, unsigned int value, unsigned int count)
 		d++;
 	}
 }
+
+#ifdef __TINYC__
+void* memmove(void* dest, void const* src, int count)
+{
+	if (dest < src) {
+		memcpy_b (dest, src, count);
+		return dest;
+	} else {
+		char *p = dest;
+		char const *q = src;
+		count = count - 1;
+		while (count >= 0) {
+			p[count] = q[count];
+			count = count - 1;
+		}
+	}
+	return dest;
+}
+#endif
