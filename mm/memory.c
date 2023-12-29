@@ -326,7 +326,7 @@ void mem_init(void)
 	}
 
 	/* two steps mapping to make sure not include an initrd image */
-	_last_data_addr = map_kaddr(KERNEL_ADDR, ((unsigned int)_end & 0xFFFFF000) - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
+	_last_data_addr = map_kaddr(KERNEL_ADDR, ((unsigned int)_end & PAGE_MASK) - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	_last_data_addr = map_kaddr((unsigned int)kpage_dir, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
