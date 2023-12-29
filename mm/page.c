@@ -464,7 +464,7 @@ void page_init(int pages)
 			continue;
 		}
 
-		/* Reserve the kernel stack page */
+		/* reserve the kernel stack page */
 		if(addr == 0x0000F000) {
 			pg->flags = PAGE_RESERVED;
 			kstat.physical_reserved++;
