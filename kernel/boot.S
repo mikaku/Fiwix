@@ -87,6 +87,7 @@ multiboot_header:			/* multiboot header */
  */
 .align 4
 .globl _start; _start:
+	cli
 #ifdef __TINYC__
 	movl	$tmp_gdt, %esi
 	subl	$PAGE_OFFSET, %esi
@@ -97,7 +98,6 @@ multiboot_header:			/* multiboot header */
 	subl	$PAGE_OFFSET, %esi
 	lgdt	(%esi)                  /* load GDTR with the temporary GDT */
 #else
-	cli
 	lgdt	tmp_gdtr		/* load GDTR with the temporary GDT */
 #endif
 	movw	$KERNEL_DS, %cx
