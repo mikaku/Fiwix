@@ -117,15 +117,16 @@ void invalidate_tlb(void);
 	);
 
 #ifdef __TINYC__
-/* tcc loads "r" (register) arguments automatically into registers using this order:
+/*
+ * tcc loads "r" (register) arguments automatically into registers using this order:
  * eax, ecx, edx, ebx
  * Therefore, we rearrange the arguments so they go into the correct registers.
  */
-#define USER_SYSCALL(num, arg1, arg2, arg3)    \
-	__asm__ __volatile__(                   \
-		"int    $0x80\n\t"              \
-		: /* no output */               \
-		: "r"((unsigned int)num), "r"((unsigned int)arg2), "r"((unsigned int)arg3), "r"((unsigned int)arg1)     \
+#define USER_SYSCALL(num, arg1, arg2, arg3)	\
+	__asm__ __volatile__(			\
+		"int    $0x80\n\t"		\
+		: /* no output */		\
+		: "r"((unsigned int)num), "r"((unsigned int)arg2), "r"((unsigned int)arg3), "r"((unsigned int)arg1)	\
 	);
 #else
 #define USER_SYSCALL(num, arg1, arg2, arg3)	\

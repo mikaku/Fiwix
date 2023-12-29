@@ -96,7 +96,7 @@ multiboot_header:			/* multiboot header */
 	movl	%esi, (%edi)
 	movl	$tmp_gdtr, %esi
 	subl	$PAGE_OFFSET, %esi
-	lgdt	(%esi)                  /* load GDTR with the temporary GDT */
+	lgdt	(%esi)			/* load GDTR with the temporary GDT */
 #else
 	lgdt	tmp_gdtr		/* load GDTR with the temporary GDT */
 #endif
