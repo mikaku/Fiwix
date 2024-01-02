@@ -27,6 +27,9 @@ conventions in its code:
 
 - Pointer types have spaces: (uint16_t *), not (uint16_t*).
 
+- The pointer qualifier, '*', should be with the variable name rather than with
+  the type.
+
 - Comments in code are always in C-Style (as in C89) /* ... */.
 
 - Only the comments that span multiple lines start always with a capital letter
