@@ -4,11 +4,18 @@
 - Added support for sys_truncate64, sys_ftruncate64, sys_stat64, sys_lstat64,
   sys_fstat64 and sys_fcntl64 system calls. [#49]
 - Added support for sys_getdents64. [#51]
+- Added support for sys_chown32. [#53]
+- Added support for sys_utimes. [#57]
+- Added support for building Fiwix with the tcc compiler. [#63]
 - Changed the inode cache mechanism to avoid caching inodes from
   pseudo-filesystems.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
 - Improved code compaction and efficiency in ATA disk read/write.
 - Fixed sys_mount() to avoid mounting a device already mounted.
+- Fixed compilation errors when CONFIG_PCI is not defined.
+- Fixed to allow removing a directory in use. [#59]
+- Fixed in sys_getcwd() to check 'diff_dev' variable before accessing
+  'tmp_inode'. [#61]
 - Small fixes and cosmetic changes.
 
 
