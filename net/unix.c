@@ -108,6 +108,9 @@ void unix_free(struct socket *s)
 	if(u->sun) {
 		kfree((unsigned int)u->sun);
 	}
+	if(u->inode) {
+		iput(u->inode);
+	}
 	u->peer = NULL;
 	remove_unix_socket(u);
 	return;
@@ -115,6 +118,7 @@ void unix_free(struct socket *s)
 
 int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 {
+	struct inode *i;
 	struct sockaddr_un *su;
 	int errno;
 
@@ -144,11 +148,12 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 			errno = -EADDRINUSE;
 		}
 	}
-	if((errno = namei(su->sun_path, &s->u.unix.inode, NULL, FOLLOW_LINKS))) {
+	if((errno = namei(su->sun_path, &i, NULL, FOLLOW_LINKS))) {
 		kfree((unsigned int)s->u.unix.sun);
 		s->u.unix.sun = NULL;
 		return errno;
 	}
+	s->u.unix.inode = i;
 	return errno;
 }
 
@@ -302,9 +307,11 @@ int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __siz
 		return errno;
 	}
 	if(!(u = lookup_unix_socket(tmp_name, i))) {
+		iput(i);
 		free_name(tmp_name);
 		return -ECONNREFUSED;
 	}
+	iput(i);
 	free_name(tmp_name);
 
 	if(!(p = (struct packet *)kmalloc(sizeof(struct packet)))) {
