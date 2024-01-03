@@ -55,14 +55,14 @@ static void remove_unix_socket(struct unix_info *u)
 	}
 }
 
-static struct unix_info *lookup_unix_socket(char *path)
+static struct unix_info *lookup_unix_socket(char *path, struct inode *i)
 {
 	struct unix_info *u;
 
 	u = unix_socket_head;
 	while(u) {
 		if(u->sun) {
-			if(!strcmp(u->sun->sun_path, path)) {
+			if(!strcmp(u->sun->sun_path, path) && u->inode == i) {
 				return u;
 			}
 		}
@@ -86,16 +86,17 @@ int unix_create(struct socket *s)
 
 void unix_free(struct socket *s)
 {
-	struct unix_info *u;
+	struct unix_info *u, *peer;
 
 	u = &s->u.unix;
 	if(u->peer) {
 		if(!--u->peer->count) {
 			remove_unix_socket(u->peer);
 		}
-		wakeup(u->peer);
+		peer = u->peer;
 		u->peer->socket->state = SS_DISCONNECTING;
 		u->peer = NULL;
+		wakeup(peer);
 	}
 	if(--u->count > 0) {
 		return;
@@ -143,6 +144,11 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 			errno = -EADDRINUSE;
 		}
 	}
+	if((errno = namei(su->sun_path, &s->u.unix.inode, NULL, FOLLOW_LINKS))) {
+		kfree((unsigned int)s->u.unix.sun);
+		s->u.unix.sun = NULL;
+		return errno;
+	}
 	return errno;
 }
 
@@ -169,7 +175,7 @@ int unix_connect(struct socket *sc, const struct sockaddr *addr, int addrlen)
 		free_name(tmp_name);
 		return errno;
 	}
-	if(!(up = lookup_unix_socket(tmp_name))) {
+	if(!(up = lookup_unix_socket(tmp_name, i))) {
 		iput(i);
 		free_name(tmp_name);
 		return -ECONNREFUSED;
@@ -273,6 +279,7 @@ int unix_recv(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 
 int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
 {
+	struct inode *i;
 	struct unix_info *u;
 	struct sockaddr_un *su;
 	struct packet *p;
@@ -290,7 +297,11 @@ int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __siz
 	if((errno = malloc_name(su->sun_path, &tmp_name)) < 0) {
 		return errno;
 	}
-	if(!(u = lookup_unix_socket(tmp_name))) {
+	if((errno = namei(tmp_name, &i, NULL, FOLLOW_LINKS))) {
+		free_name(tmp_name);
+		return errno;
+	}
+	if(!(u = lookup_unix_socket(tmp_name, i))) {
 		free_name(tmp_name);
 		return -ECONNREFUSED;
 	}

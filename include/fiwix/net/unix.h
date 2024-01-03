@@ -22,6 +22,7 @@ struct unix_info {
 	int size;
 	struct sockaddr_un *sun;
 	short int sun_len;
+	struct inode *inode;
 	struct socket *socket;
 	struct packet *packet_queue;
 	struct unix_info *peer;
