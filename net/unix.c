@@ -95,7 +95,7 @@ void unix_free(struct socket *s)
 		}
 		wakeup(u->peer);
 		u->peer->socket->state = SS_DISCONNECTING;
-		u->peer->peer = NULL;
+		u->peer = NULL;
 	}
 	if(--u->count > 0) {
 		return;
