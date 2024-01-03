@@ -11,6 +11,7 @@
 #define _FIWIX_NET_UNIX_H
 
 #include <fiwix/types.h>
+#include <fiwix/net/packet.h>
 
 /* AF_UNIX */
 struct unix_info {
@@ -22,6 +23,7 @@ struct unix_info {
 	struct sockaddr_un *sun;
 	short int sun_len;
 	struct socket *socket;
+	struct packet *packet_queue;
 	struct unix_info *peer;
 	struct unix_info *next;
 };

@@ -74,6 +74,16 @@ int sys_socketcall(int call, unsigned int *args)
 				return errno;
 			}
 			return recv(args[0], (void *)args[1], args[2], args[3]);
+		case SYS_SENDTO:
+			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 6))) {
+				return errno;
+			}
+			return sendto(args[0], (void *)args[1], args[2], args[3], (struct sockaddr *)args[4], args[5]);
+		case SYS_RECVFROM:
+			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 6))) {
+				return errno;
+			}
+			return recvfrom(args[0], (void *)args[1], args[2], args[3], (struct sockaddr *)args[4], (int *)args[5]);
 	}
 
 	return -EINVAL;

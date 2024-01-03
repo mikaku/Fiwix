@@ -20,7 +20,7 @@
 #define SOCK_DGRAM	2
 
 /* maximum queue length specifiable by listen() */
-#define SOMAXCONN	5
+#define SOMAXCONN	128
 
 /* states */
 #define SS_UNCONNECTED		1
@@ -32,6 +32,7 @@
 #define SO_ACCEPTCONN		0x10000
 
 /* flags for send() and recv() */
+#define MSG_PEEK		0x02
 #define MSG_DONTWAIT		0x40
 
 typedef unsigned short int sa_family_t;

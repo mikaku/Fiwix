@@ -25,6 +25,8 @@
 #define SYS_SOCKETPAIR	8
 #define SYS_SEND	9
 #define SYS_RECV	10
+#define SYS_SENDTO	11
+#define SYS_RECVFROM	12
 
 struct socket {
 	short int state;
@@ -57,6 +59,8 @@ struct proto_ops {
 	int (*socketpair)(struct socket *, struct socket *);
 	int (*send)(struct socket *, struct fd *, const char *, __size_t, int);
 	int (*recv)(struct socket *, struct fd *, char *, __size_t, int);
+	int (*sendto)(struct socket *, struct fd *, const char *, __size_t, int, const struct sockaddr *, int);
+	int (*recvfrom)(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, int *);
 	int (*read)(struct socket *, struct fd *, char *, __size_t);
 	int (*write)(struct socket *, struct fd *, const char *, __size_t);
 	int (*select)(struct socket *, int);
@@ -76,6 +80,8 @@ int getname(int, struct sockaddr *, int *, int);
 int socketpair(int, int, int, int [2]);
 int send(int, const void *, __size_t, int);
 int recv(int, void *, __size_t, int);
+int sendto(int, const void *, __size_t, int, const struct sockaddr *, int);
+int recvfrom(int, void *, __size_t, int, struct sockaddr *, int *);
 
 void net_init(void);
 

@@ -21,6 +21,8 @@
 #ifdef CONFIG_NET
 struct unix_info *unix_socket_head;
 
+static struct resource packet_resource = { 0, 0 };
+
 static void add_unix_socket(struct unix_info *u)
 {
 	struct unix_info *h;
@@ -267,6 +269,91 @@ int unix_recv(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 		return -EINVAL;
 	}
 	return unix_read(s, fd_table, buffer, count);
+}
+
+int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
+{
+	struct unix_info *u;
+	struct sockaddr_un *su;
+	struct packet *p;
+	char *tmp_name;
+	int errno;
+
+	su = (struct sockaddr_un *)addr;
+	if(su->sun_family != AF_UNIX) {
+                return -EINVAL;
+	}
+	if(addrlen < 0 || addrlen > sizeof(struct sockaddr_un)) {
+                return -EINVAL;
+	}
+
+	if((errno = malloc_name(su->sun_path, &tmp_name)) < 0) {
+		return errno;
+	}
+	if(!(u = lookup_unix_socket(tmp_name))) {
+		free_name(tmp_name);
+		return -ECONNREFUSED;
+	}
+	free_name(tmp_name);
+
+	if(!(p = (struct packet *)kmalloc(sizeof(struct packet)))) {
+		return -ENOMEM;
+	}
+	memset_b(p, 0, sizeof(struct packet));
+	if(!(p->data = (char *)kmalloc(count + 1))) {
+		kfree((unsigned int)p);
+		return -ENOMEM;
+	}
+	memset_b(p->data, 0, count + 1);
+	memcpy_b(p->data, buffer, count);
+	p->len = count;
+	p->socket = s;
+	lock_resource(&packet_resource);
+	append_packet_to_queue(p, &u->packet_queue);
+	unlock_resource(&packet_resource);
+	wakeup(u);
+	return count;
+}
+
+int unix_recvfrom(struct socket *s, struct fd *fd_table, char *buffer, __size_t count, int flags, struct sockaddr *addr, int *addrlen)
+{
+	struct unix_info *u, *up;
+	struct sockaddr_un *sun;
+	struct packet *p;
+	int size;
+
+	u = &s->u.unix;
+
+	lock_resource(&packet_resource);
+	while(!(p = peek_packet(u->packet_queue))) {
+		unlock_resource(&packet_resource);
+		if(!(fd_table->flags & O_NONBLOCK)) {
+			if(sleep(u, PROC_INTERRUPTIBLE)) {
+				return -EINTR;
+			}
+			lock_resource(&packet_resource);
+		} else {
+			unlock_resource(&packet_resource);
+			return -EAGAIN;
+		}
+	}
+
+	size = MIN(p->len - p->offset, count);
+	memcpy_b(buffer, p->data + p->offset, size);
+	p->offset += size;
+	if(!(flags & MSG_PEEK)) {
+		p = remove_packet_from_queue(&u->packet_queue);
+		kfree((unsigned int)p->data);
+		kfree((unsigned int)p);
+	}
+	unlock_resource(&packet_resource);
+
+	up = &p->socket->u.unix;
+	sun = (struct sockaddr_un *)addr;
+	sun->sun_family = AF_UNIX;
+	memcpy_b(sun->sun_path, up->sun->sun_path, up->sun_len);
+	*addrlen = up->sun_len;
+	return size;
 }
 
 int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t count)

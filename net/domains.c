@@ -27,6 +27,8 @@ struct proto_ops unix_ops = {
 	unix_socketpair,
 	unix_send,
 	unix_recv,
+	unix_sendto,
+	unix_recvfrom,
 	unix_read,
 	unix_write,
 	unix_select,

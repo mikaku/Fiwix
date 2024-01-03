@@ -404,4 +404,58 @@ int recv(int sd, void *buf, __size_t len, int flags)
 	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
 	return s->ops->recv(s, &fd_table, buf, len, flags);
 }
+
+int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockaddr *addr, int addrlen)
+{
+	struct socket *s;
+	struct fd fd_table;
+	int errno;
+
+#ifdef __DEBUG__
+	printk("(pid %d) sendto(%d, 0x%08x, %d, %d, 0x%08x, %d)\n", current->pid, sd, (int)buf, len, flags, (int)addr, addrlen);
+#endif /*__DEBUG__ */
+
+	if((errno = check_sd(sd)) < 0) {
+		return errno;
+	}
+	s = get_socket_from_fd(sd);
+	if((errno = check_user_area(VERIFY_READ, buf, len))) {
+		return errno;
+	}
+	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	return s->ops->sendto(s, &fd_table, buf, len, flags, addr, addrlen);
+}
+
+int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, int *addrlen)
+{
+	struct socket *s;
+	struct fd fd_table;
+	char ret_addr[108];
+	int errno, ret_len, bytes_read;
+
+#ifdef __DEBUG__
+	printk("(pid %d) recvfrom(%d, 0x%08x, %d, %d, 0x%08x, 0x%08x)\n", current->pid, sd, (int)buf, len, flags, (int)addr, addrlen);
+#endif /*__DEBUG__ */
+
+	if((errno = check_sd(sd)) < 0) {
+		return errno;
+	}
+	s = get_socket_from_fd(sd);
+	if((errno = check_user_area(VERIFY_WRITE, buf, len))) {
+		return errno;
+	}
+	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	memset_b(ret_addr, 0, 108);
+	if((errno = s->ops->recvfrom(s, &fd_table, buf, len, flags, (struct sockaddr *)ret_addr, &ret_len)) < 0) {
+		return errno;
+	}
+	bytes_read = errno;
+	if(ret_len && addr) {
+		if((errno = check_user_area(VERIFY_WRITE, addr, ret_len))) {
+			return errno;
+		}
+		memcpy_b(addr, ret_addr, ret_len);
+	}
+	return bytes_read;
+}
 #endif /* CONFIG_NET */
