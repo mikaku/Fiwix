@@ -86,17 +86,17 @@ int unix_create(struct socket *s)
 
 void unix_free(struct socket *s)
 {
-	struct unix_info *u, *peer;
+	struct unix_info *u;
 
 	u = &s->u.unix;
 	if(u->peer) {
 		if(!--u->peer->count) {
 			remove_unix_socket(u->peer);
 		}
-		peer = u->peer;
-		u->peer->socket->state = SS_DISCONNECTING;
-		u->peer = NULL;
-		wakeup(peer);
+		if(u->peer->socket) {
+			u->peer->socket->state = SS_DISCONNECTING;
+		}
+		wakeup(u->peer);
 	}
 	if(--u->count > 0) {
 		return;
@@ -147,6 +147,7 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 		if(errno == -EEXIST) {
 			errno = -EADDRINUSE;
 		}
+		return errno;
 	}
 	if((errno = namei(su->sun_path, &i, NULL, FOLLOW_LINKS))) {
 		kfree((unsigned int)s->u.unix.sun);
