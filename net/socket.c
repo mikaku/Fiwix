@@ -42,13 +42,15 @@ static struct socket *remove_socket_from_queue(struct socket *ss)
 	unsigned int flags;
 	struct socket *sc;
 
+	sc = NULL;
+
 	SAVE_FLAGS(flags); CLI();
 	if((sc = ss->queue_head)) {
 		ss->queue_head = sc->next_queue;
+		ss->queue_len--;
 	}
 	RESTORE_FLAGS(flags);
 
-	ss->queue_len--;
 	return sc;
 }
 
