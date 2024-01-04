@@ -31,6 +31,7 @@
 					   scroll back */
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
+#define RAMDISK_DRIVES		1	/* number of all-purpose ramdisk drives */
 
 
 /* toggle configuration options */

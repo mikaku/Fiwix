@@ -13,8 +13,6 @@
 #define RAMDISK_MAJOR	1	/* ramdisk device major number */
 #define RAMDISK_TOTAL	10	/* total number of ramdisk drives */
 
-#define RAMDISK_DRIVES	1	/* number of all-purpose ramdisk drives */
-
 struct ramdisk {
 	char *addr;		/* ramdisk memory address */
 	int size;		/* in KB */

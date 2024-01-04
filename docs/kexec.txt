@@ -17,8 +17,8 @@ line during the system boot. The following are the three parameters that you
 need to specify:
 
 - kexec_proto=
-  This is the boot method of the new kernel. Currently the only supported value
-  is 'multiboot1'.
+  This is the boot method of the new kernel. Currently the supported values
+  are 'multiboot1' and 'linux'.
 
 - kexec_size=
   Size in KB of the memory space to be reserved to allocate the new kernel.
@@ -84,6 +84,9 @@ Example 3:
 		...
 
 
+Multiboot
+---------
+
 Once you know what RAMdisk drive will be used to allocate the new kernel, you
 can proceed to copy the ELF binary kernel into such RAMdisk drive by using any
 user-space tool like 'cp' or 'dd'.
@@ -95,3 +98,10 @@ Example:
 # cp fiwix /dev/ram0
 # shutdown -h 0
 
+
+Linux
+-----
+
+For Linux, you can copy both a Linux kernel and an initramfs image to the ram drive.
+Therefore you must first write the length of the kernel and the initramfs to
+the ram drive as two 32-bit binary integers in little-endian format.

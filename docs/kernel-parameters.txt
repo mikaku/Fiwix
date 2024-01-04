@@ -13,7 +13,7 @@ console=	Set the output console device.
 initrd=		Optional ramdisk image file which will be loaded by GRUB.
 
 kexec_proto=	The boot method of the new kernel.
-		Options: multiboot1
+		Options: multiboot1, linux
 
 kexec_size=	Size of the memory space to be reserved to allocate the new
 		kernel (in KiB).
