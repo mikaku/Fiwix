@@ -42,8 +42,8 @@ static struct kparms parm_table[] = {
 	},
 #ifdef CONFIG_KEXEC
 	{ "kexec_proto=",
-	   { "multiboot1" },
-	   { 1 },
+	   { "multiboot1", "linux" },
+	   { 1, 2 },
 	},
 	{ "kexec_size=",
 	   { 0 },
