@@ -1,7 +1,7 @@
 /*
  * fiwix/kernel/kexec.c
  *
- * Copyright 2024, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2023, Jordi Sanfeliu. All rights reserved.
  * Copyright (C) 2019-2024 mintsuki and contributors, Limine project.
  * Copyright 2023-2024, Richard R. Masters.
  * Distributed under the terms of the Fiwix License.
