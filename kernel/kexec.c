@@ -172,6 +172,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		: "eax"	/* clobbered registers */
 	);
 
+	/* Multiboot 1 */
 #ifdef __TINYC__
 	unsigned int multiboot_magic = MULTIBOOT_BOOTLOADER_MAGIC;
 	__asm__ __volatile__(
@@ -181,7 +182,6 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 		: "r"(multiboot_magic), "r"((unsigned int)info)
 	);
 #else
-	/* Multiboot 1 */
 	__asm__ __volatile__(
 		"movl	%0, %%eax\n\t"
 		"movl	%1, %%ebx\n\t"
@@ -193,7 +193,7 @@ static void multiboot1_trampoline(unsigned int ramdisk_addr, unsigned int kernel
 	/*
 	 * This jumps to the kernel entry address.
 	 *
-	 * Formerly: ljmp $0x08, $entry_addr
+	 * i.e.: ljmp $0x08, $entry_addr
 	 */
 	__asm__ __volatile__(
 		"pushw	$0x08\n\t"
@@ -294,6 +294,8 @@ void kexec_multiboot1(void)
 	prev = current;
 	set_tss(idle);
 	do_switch(&prev->tss.esp, &prev->tss.eip, idle->tss.esp, idle->tss.eip, idle->tss.cr3, TSS);
+	/* not reached */
+	return;
 }
 
 static void linux_trampoline(char *kernel_src_addr, unsigned int kernel_size,
@@ -462,7 +464,8 @@ static void linux_trampoline(char *kernel_src_addr, unsigned int kernel_size,
 }
 
 
-void kexec_linux(void) {
+void kexec_linux(void)
+{
 	struct proc *idle, *prev;
 	unsigned int *esp;
 	char *kernel_src_addr, *initrd_src_addr;
@@ -490,8 +493,9 @@ void kexec_linux(void) {
 
 	__size_t setup_code_size = 0;
 	memcpy_b(&setup_code_size, kernel_src_addr + 0x1f1, 1);
-	if (setup_code_size == 0)
+	if (setup_code_size == 0) {
 		setup_code_size = 4;
+	}
 	setup_code_size *= 512;
 
 	__size_t real_mode_code_size = 512 + setup_code_size;
@@ -551,8 +555,9 @@ void kexec_linux(void) {
 	/* Modules */
 
 	__u32 modules_mem_base = setup_header->initramfs_addr_max;
-	if (modules_mem_base == 0)
+	if (modules_mem_base == 0) {
 		modules_mem_base = 0x38000000;
+	}
 
 	initrd_src_addr = kernel_src_addr + kernel_size;
 
@@ -591,7 +596,7 @@ void kexec_linux(void) {
 		boot_params->num_bios_mem_entries = j;
 	}
 
-	/* now put the four parameters into the stack */
+	/* now put the six parameters into the stack */
 	esp--;
 	*esp = (unsigned int)boot_params;
 	esp--;
