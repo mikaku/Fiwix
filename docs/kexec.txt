@@ -86,7 +86,6 @@ Example 3:
 
 Multiboot
 ---------
-
 Once you know what RAMdisk drive will be used to allocate the new kernel, you
 can proceed to copy the ELF binary kernel into such RAMdisk drive by using any
 user-space tool like 'cp' or 'dd'.
@@ -101,7 +100,46 @@ Example:
 
 Linux
 -----
+In the case of Linux the boot protocol is different. The Linux kernel expects to
+find two 32bit numbers (in little-endian format) at the beginning of the RAMdisk
+drive. The first number is the length of the Linux kernel, and the second one is
+the length of the initramfs. If the kernel doesn't need an initramfs, the length
+must have a value of zero.
 
-For Linux, you can copy both a Linux kernel and an initramfs image to the ram drive.
-Therefore you must first write the length of the kernel and the initramfs to
-the ram drive as two 32-bit binary integers in little-endian format.
+Right after both numbers you must copy the kernel image, and then the initramfs
+image (if needed).
+
+The RAMdisk drive should look like the following before to kexec:
+
++-----------+-----------+-------------------- ~~~ -+-------------------- ~~~ -+
+| kernel    | initramfs |  the kernel image   ~~~ -|   the initramfs     ~~~ -|
+| length    | length    |      'vmlinuz'      ~~~ -|   image (optional)  ~~~ -|
++-----------+-----------+-------------------- ~~~ -+-------------------- ~~~ -+
+0            4           8                          n = (8 + kernel length)
+offset (in bytes)
+
+
+The following script might help you to format correctly the RAMdisk drive:
+
+---------------------------------- 8< ----------------------------------------
+KERNEL=linux-4.9.10
+RAMFS=initramfs.cpio
+
+size=$(printf "%08x" `stat -c %s $KERNEL` | tac -rs .. | echo "$(tr -d '\n')")
+echo -n $size | xxd -r -p - /dev/ram0
+
+if [ -n "$RAMFS" ]; then
+        size=$(printf "%08x" `stat -c %s $RAMFS` | tac -rs .. | echo "$(tr -d '\n')")
+else
+        size=$(printf "%08x" `echo 0` | tac -rs .. | echo "$(tr -d '\n')")
+fi
+echo -n $size | xxd -r -p - | dd of=/dev/ram0 bs=1 seek=4
+
+cat $KERNEL $RAMFS | dd of=/dev/ram0 bs=1 seek=8
+---------------------------------- 8< ----------------------------------------
+
+Finally, when you are ready, just do a normal shutdown to switch automatically
+to the new kernel.
+
+Example:
+# shutdown -h 0
