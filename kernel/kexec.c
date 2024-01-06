@@ -255,8 +255,11 @@ void kexec_multiboot1(void)
 	/* setup the memory map */
 	for(n = 0; n < nmaps; n++) {
 		map->size = sizeof(struct multiboot_mmap_entry) - sizeof(map->size);
-		map->addr = bios_mem_map[n].from;
-		map->len = (bios_mem_map[n].to + 1) - bios_mem_map[n].from;
+		map->addr = bios_mem_map[n].from_hi;
+		map->addr = map->addr << 32 | bios_mem_map[n].from;
+		map->len = bios_mem_map[n].to_hi;
+		map->len = map->len << 32 | bios_mem_map[n].to;
+		map->len -= map->addr - 1;
 		map->type = bios_mem_map[n].type;
 		map++;
 	}
@@ -589,9 +592,12 @@ void kexec_linux(void)
                 if(!bios_mem_map[i].type || bios_mem_map[i].type > 0x1000) {
 			continue;
 		}
-		bios_mem_table[j].addr = bios_mem_map[i].from;
-		bios_mem_table[j].size = bios_mem_map[i].to - bios_mem_map[i].from;
-		bios_mem_table[j].type = bios_mem_map[i].type;
+		bios_mem_table[j].addr = bios_mem_map[i].from_hi;
+		bios_mem_table[j].addr = (bios_mem_table[j].addr << 32) | bios_mem_map[i].from;
+		bios_mem_table[j].size = bios_mem_map[i].to_hi;
+		bios_mem_table[j].size = (bios_mem_table[j].size << 32) | bios_mem_map[i].to;
+		bios_mem_table[j].size -= bios_mem_table[j].addr;
+		bios_mem_table[j].type = bios_mem_map[j].type;
 		j++;
 		boot_params->num_bios_mem_entries = j;
 	}
