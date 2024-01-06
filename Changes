@@ -7,10 +7,12 @@
 - Added support for sys_chown32. [#53]
 - Added support for sys_utimes. [#57]
 - Added support for building Fiwix with the tcc compiler. [#63]
+- Added support for the Linux boot protocol in kexec. [#65]
 - Changed the inode cache mechanism to avoid caching inodes from
   pseudo-filesystems.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
 - Improved code compaction and efficiency in ATA disk read/write.
+- Pass through 64-bit PAE memory entries as part of kexec. [#67]
 - Fixed sys_mount() to avoid mounting a device already mounted.
 - Fixed compilation errors when CONFIG_PCI is not defined.
 - Fixed to allow removing a directory in use. [#59]
