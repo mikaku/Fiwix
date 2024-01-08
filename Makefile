@@ -27,7 +27,6 @@ LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 endif
 
 ifeq ($(CCEXE),tcc)
-CC += -D__VERSION__=\"tcc\"
 LD = $(CROSS_COMPILE)$(CCEXE) $(ARCH)
 LDFLAGS = -static -nostdlib -nostdinc
 # If you define CONFIG_VM_SPLIT22 this should be 0x80100000: make CCEXE="tcc" TEXTADDR="0x80100000"
