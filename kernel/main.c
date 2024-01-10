@@ -31,6 +31,7 @@
 #include <fiwix/mm.h>
 #include <fiwix/ipc.h>
 #include <fiwix/kexec.h>
+#include <fiwix/sysconsole.h>
 
 int kparm_memsize;
 int kparm_extmemsize;
@@ -39,7 +40,7 @@ int kparm_ramdisksize;
 char kparm_rootfstype[10];
 char kparm_rootdevname[DEVNAME_MAX + 1];
 char kparm_initrd[DEVNAME_MAX + 1];
-int kparm_syscondev;
+int kparm_syscondev = 0;
 char kparm_bgaresolution[15];
 int kparm_ro;
 
@@ -59,16 +60,25 @@ struct new_utsname sys_utsname = {
 
 struct kernel_stat kstat;
 
+static void set_default_values(void)
+{
+	/* filesystem is ext2 */
+	strcpy(kparm_rootfstype, "ext2");
+
+	/* console is /dev/tty0 */
+	if(!kparm_syscondev) {
+		kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
+		add_sysconsoledev(kparm_syscondev);
+	}
+}
+
 void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_addr)
 {
 	struct proc *init;
 
 	_last_data_addr = last_boot_addr - PAGE_OFFSET;
 	memset_b(&kstat, 0, sizeof(kstat));
-
-	/* default kernel values */
-	strcpy(kparm_rootfstype, "ext2");		/* filesystem is ext2 */
-	kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);	/* console is /dev/tty0 */
+	sysconsole_init();
 
 #ifdef CONFIG_QEMU_DEBUGCON
 	if(inport_b(QEMU_DEBUG_PORT) == QEMU_DEBUG_PORT) {
@@ -90,6 +100,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 
 	cpu_init();
 	multiboot(magic, info);
+	set_default_values();
 	pic_init();
 	irq_init();
 	idt_init();

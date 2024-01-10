@@ -9,7 +9,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = ctype.o strings.o printk.o
+OBJS = ctype.o strings.o printk.o sysconsole.o
 
 all:	$(OBJS)
 

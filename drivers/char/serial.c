@@ -19,6 +19,7 @@
 #include <fiwix/ctype.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/sysconsole.h>
 
 static struct fs_operations serial_driver_fsop = {
 	0,
@@ -677,7 +678,8 @@ static int serial_isa(void)
 
 void serial_init(void)
 {
-	int minor;
+	int minor, n, syscon;
+	struct tty *tty;
 
 	memset_b(serial_table, 0, sizeof(serial_table));
 
@@ -691,8 +693,21 @@ void serial_init(void)
 		if(register_device(CHR_DEV, &serial_device)) {
 			printk("WARNING: %s(): unable to register serial device.\n", __FUNCTION__);
 		}
-		if(is_serial(kparm_syscondev)) {
-			register_console(console_flush_log_buf);
+
+		/* check if a serial tty will act as a system console */
+		for(n = 0, syscon = 0; n < NR_SERIAL; n++) {
+			if(is_serial(sysconsole_table[n].dev)) {
+				if(!syscon) {
+					syscon = sysconsole_table[n].dev;
+				}
+				tty = get_tty(sysconsole_table[n].dev);
+				register_console(tty);
+			}
+		}
+		if(syscon) {
+			/* flush early log into the first console */
+			tty = get_tty(syscon);
+			flush_log_buf(tty);
 		}
 	}
 }

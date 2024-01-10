@@ -8,6 +8,7 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/tty.h>
+#include <fiwix/sysconsole.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/stdarg.h>
@@ -22,26 +23,37 @@ static unsigned int log_count;
 static void puts(char *buffer)
 {
 	struct tty *tty;
-	unsigned short int count;
+	int n, syscon;
 
-	tty = get_tty(kstat.syscondev);
-	count = strlen(buffer);
-
-	while(count--) {
+	while(*buffer) {
 #ifdef CONFIG_QEMU_DEBUGCON
 		if(kstat.flags & KF_HAS_DEBUGCON) {
 			outport_b(QEMU_DEBUG_PORT, *buffer);
 		}
 #endif /* CONFIG_QEMU_DEBUGCON */
-		if(!tty) {
+
+		for(n = 0, syscon = 0; n < NR_SYSCONSOLES; n++) {
+			if(!sysconsole_table[n].dev) {
+				continue;
+			}
+
+			if(sysconsole_table[n].dev == MKDEV(VCONSOLES_MAJOR, 0)) {
+				tty = get_tty(MKDEV(VCONSOLES_MAJOR, 0));
+			} else {
+				tty = sysconsole_table[n].tty;
+			}
+			if(tty) {
+				tty_queue_putchar(tty, &tty->write_q, *buffer);
+
+				/* kernel messages must be shown immediately */
+				tty->output(tty);
+				syscon = 1;
+			}
+		}
+		if(!syscon) {
 			if(log_count < LOG_BUF_LEN) {
 				log_buf[log_count++] = *buffer;
 			}
-		} else {
-			tty_queue_putchar(tty, &tty->write_q, *buffer);
-
-			/* kernel messages must be shown immediately */
-			tty->output(tty);
 		}
 		buffer++;
 	}
@@ -385,9 +397,20 @@ static void do_printk(char *buffer, const char *format, va_list args)
 	*buffer = 0;
 }
 
-void register_console(void (*fn)(char *, unsigned int))
+void flush_log_buf(struct tty *tty)
 {
-	(*fn)(log_buf, log_count);
+	char *buffer;
+
+	buffer = &log_buf[0];
+	while(log_count) {
+		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
+			tty->output(tty);
+			continue;
+		}
+		log_count--;
+		buffer++;
+	}
+	tty->output(tty);
 }
 
 void printk(const char *format, ...)

@@ -22,6 +22,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/fbcon.h>
+#include <fiwix/sysconsole.h>
 
 #define CSI_J_CUR2END	0	/* clear from cursor to end of screen */
 #define CSI_J_STA2CUR	1	/* clear from start of screen to cursor */
@@ -966,30 +967,9 @@ void vconsole_deltab(struct tty *tty)
 	}
 }
 
-void console_flush_log_buf(char *buffer, unsigned int count)
-{
-	struct tty *tty;
-
-	if(!(tty = get_tty(kparm_syscondev))) {
-		kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
-		tty = get_tty(kparm_syscondev);
-	}
-
-	kstat.syscondev = kparm_syscondev;
-	while(count) {
-		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
-			tty->output(tty);
-			continue;
-		}
-		count--;
-		buffer++;
-	}
-	tty->output(tty);
-}
-
 void console_init(void)
 {
-	int n;
+	int syscon, n;
 	struct tty *tty;
 
 	if(video.flags & VPF_VGA) {
@@ -1052,7 +1032,20 @@ void console_init(void)
 	register_device(CHR_DEV, &console_device);
 	register_device(CHR_DEV, &tty_device);
 
-	if(is_vconsole(kparm_syscondev)) {
-		register_console(console_flush_log_buf);
+	/* check if a vconsole will act as a system console */
+	for(n = 0, syscon = 0; n < NR_SYSCONSOLES; n++) {
+		if(is_vconsole(sysconsole_table[n].dev)) {
+			tty = get_tty(sysconsole_table[n].dev);
+			/* this is required for the case of /dev/tty0 */
+			if(!syscon) {
+				syscon = tty->dev;
+			}
+			register_console(tty);
+		}
+	}
+	if(syscon) {
+		/* flush early log into the first console */
+		tty = get_tty(syscon);
+		flush_log_buf(tty);
 	}
 }

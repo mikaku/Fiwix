@@ -20,6 +20,7 @@
 #include <fiwix/vgacon.h>
 #include <fiwix/fb.h>
 #include <fiwix/fbcon.h>
+#include <fiwix/sysconsole.h>
 
 Elf32_Shdr *symtab, *strtab;
 
@@ -44,7 +45,11 @@ static int check_parm(struct kparms *parm, const char *value)
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
 				if(parm->sysval[n]) {
-					kparm_syscondev = parm->sysval[n];
+					if(add_sysconsoledev(parm->sysval[n])) {
+						kparm_syscondev = parm->sysval[n];
+					} else {
+						printk("WARNING: console device '%s' exceeds NR_SYSCONSOLES.\n", value);
+					}
 					return 0;
 				}
 				printk("WARNING: device name for '%s' is not defined!\n", parm->name);

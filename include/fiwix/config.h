@@ -32,6 +32,7 @@
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
 #define RAMDISK_DRIVES		1	/* number of all-purpose ramdisk drives */
+#define NR_SYSCONSOLES		1	/* max. number of system consoles */
 
 
 /* toggle configuration options */

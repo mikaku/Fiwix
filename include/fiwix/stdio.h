@@ -8,7 +8,9 @@
 #ifndef _INCLUDE_STDIO_H
 #define _INCLUDE_STDIO_H
 
-void register_console(void (*fn)(char *, unsigned int));
+#include <fiwix/tty.h>
+
+void flush_log_buf(struct tty *);
 void printk(const char *, ...);
 int sprintk(char *, const char *, ...);
 

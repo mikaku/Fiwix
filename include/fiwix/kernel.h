@@ -81,7 +81,6 @@ struct kernel_stat {
 	int tz_dsttime;			/* type of DST correction */
 	unsigned int uptime;		/* seconds since boot */
 	unsigned int processes;		/* number of forks since boot */
-	int syscondev;			/* system console device */
 	int physical_pages;		/* physical memory (in pages) */
 	int kernel_reserved;		/* kernel memory reserved (in KB) */
 	int physical_reserved;		/* physical memory reserved (in KB) */
