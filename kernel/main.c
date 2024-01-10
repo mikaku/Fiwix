@@ -116,6 +116,10 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	ipc_init();
 #endif /* CONFIG_SYSVIPC */
 
+#ifdef CONFIG_NET
+	net_init();
+#endif /* CONFIG_NET */
+
 	/*
 	 * IDLE is now the current process (created manually as PID 0),
 	 * it won't be placed in the running queue.
