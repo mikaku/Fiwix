@@ -1039,12 +1039,12 @@ void console_init(void)
 	/* check if a vconsole will act as a system console */
 	for(n = 0, syscon = 0; n < NR_SYSCONSOLES; n++) {
 		if(is_vconsole(sysconsole_table[n].dev)) {
-			tty = get_tty(sysconsole_table[n].dev);
-			/* this is required for the case of /dev/tty0 */
-			if(!syscon) {
-				syscon = tty->dev;
+			if((tty = get_tty(sysconsole_table[n].dev))) {
+				if(!syscon) {
+					syscon = tty->dev;
+				}
+				register_console(tty);
 			}
-			register_console(tty);
 		}
 	}
 	if(syscon) {
