@@ -400,14 +400,16 @@ static void do_printk(char *buffer, const char *format, va_list args)
 void flush_log_buf(struct tty *tty)
 {
 	char *buffer;
+	int count;
 
 	buffer = &log_buf[0];
-	while(log_count) {
+	count = log_count;
+	while(count) {
 		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
 			tty->output(tty);
 			continue;
 		}
-		log_count--;
+		count--;
 		buffer++;
 	}
 	tty->output(tty);
