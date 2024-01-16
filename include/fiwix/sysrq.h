@@ -14,6 +14,6 @@
 #define SYSRQ_TASKS	0x00000004	/* 't' -> task list */
 #define SYSRQ_UNDEF	0x80000000	/* Undefined operation */
 
-void do_sysrq(int);
+void sysrq(int);
 
 #endif /* _FIWIX_SYSRQ_H */

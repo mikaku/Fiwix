@@ -104,7 +104,7 @@ static unsigned char ctrl = 0;
 static unsigned char alt = 0;
 static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
-static unsigned char sysrq = 0;
+static unsigned char altsysrq = 0;
 static int sysrq_op = 0;
 static volatile unsigned char ack = 0;
 
@@ -113,6 +113,7 @@ static unsigned char do_buf_scroll = 0;
 static unsigned char do_setleds = 0;
 static unsigned char do_tty_stop = 0;
 static unsigned char do_tty_start = 0;
+static unsigned char do_sysrq = 0;
 
 unsigned char kb_identify[2] = {0, 0};
 char ps2_active_ports = 0;
@@ -490,7 +491,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			case ALT:
 				if(!extkey) {
 					alt = 0;
-					sysrq = 0;
+					altsysrq = 0;
 				} else {
 					altgr = 0;
 				}
@@ -617,7 +618,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	type = key & 0xFF00;
 	c = key & 0xFF;
 
-	if(sysrq) {
+	if(altsysrq) {
 		/* treat 0-9 and a-z keys as normal */
 		type &= ~META_KEYS;
 	}
@@ -637,7 +638,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 					putc(tty, C('M'));
 					break;
 				case SYSRQ:
-					sysrq = 1;
+					altsysrq = 1;
 					break;
 			}
 			break;
@@ -695,24 +696,24 @@ void irq_keyboard(int num, struct sigcontext *sc)
 			break;
 
 		default:
-			if(sysrq) {
+			if(altsysrq) {
 				switch(c) {
 					case 'l':
 						sysrq_op = SYSRQ_STACK;
+						do_sysrq = 1;
 						break;
 					case 'm':
 						sysrq_op = SYSRQ_MEMORY;
+						do_sysrq = 1;
 						break;
 					case 't':
 						sysrq_op = SYSRQ_TASKS;
+						do_sysrq = 1;
 						break;
 					default:
 						sysrq_op = SYSRQ_UNDEF;
+						do_sysrq = 1;
 						break;
-				}
-				if(sysrq_op) {
-					do_sysrq(sysrq_op);
-					sysrq_op = 0;
 				}
 				break;
 			}
@@ -761,6 +762,11 @@ void irq_keyboard_bh(void)
 	if(do_tty_stop) {
 		tty->stop(tty);
 		do_tty_start = do_tty_stop = 0;
+	}
+
+	if(do_sysrq) {
+		do_sysrq = 0;
+		sysrq(sysrq_op);
 	}
 
 	tty = &tty_table[0];

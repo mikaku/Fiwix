@@ -61,7 +61,7 @@ static void process_list(void)
 	printk("\n");
 }
 
-void do_sysrq(int op)
+void sysrq(int op)
 {
 	switch(op) {
 		case SYSRQ_STACK:
