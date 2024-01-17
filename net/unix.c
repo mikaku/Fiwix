@@ -400,11 +400,11 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 			bytes_read += n;
 			u->readoff += n;
 			u->size -= n;
+			count -= n;
 			if(u->writeoff >= PIPE_BUF) {
 				u->writeoff = 0;
 			}
 			wakeup(u->peer);
-			break;
 		} else {
 			if(s->state != SS_CONNECTED) {
 				if(s->state == SS_DISCONNECTING) {
