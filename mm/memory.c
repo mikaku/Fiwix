@@ -450,7 +450,10 @@ void mem_init(void)
 #endif /* CONFIG_KEXEC */
 
 	/* the last one must be the page_table structure */
-	page_hash_table_size = 1 * PAGE_SIZE;	/* only 1 page size */
+	n = (kstat.physical_pages * PAGE_HASH_PERCENTAGE) / 100;
+	n = MAX(n, 1);	/* 1 page for the hash table as minimum */
+	n = MIN(n, 16);	/* 16 pages for the hash table as maximum */
+	page_hash_table_size = n * PAGE_SIZE;
 	if(!is_addr_in_bios_map(V2P(_last_data_addr) + page_hash_table_size)) {
 		PANIC("Not enough memory for page_hash_table.\n");
 	}
