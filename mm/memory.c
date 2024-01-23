@@ -477,6 +477,16 @@ void mem_stats(void)
 	kstat.physical_reserved <<= 2;
 
 	printk("\n");
-	printk("memory: total=%dKB, user=%dKB, kernel=%dKB, reserved=%dKB\n", kstat.physical_pages << 2, kstat.total_mem_pages << 2, kstat.kernel_reserved, kstat.physical_reserved);
-	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n", KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024, buffer_table_size / sizeof(struct buffer), inode_table_size / sizeof(struct inode));
+	printk("memory: total=%dKB, user=%dKB, kernel=%dKB, reserved=%dKB\n",
+		kstat.physical_pages << 2,
+		kstat.total_mem_pages << 2,
+		kstat.kernel_reserved, kstat.physical_reserved);
+	printk("hash table entries: buffer=%d (%dKB), inode=%d (%dKB), page=%d (%dKB)\n",
+		buffer_hash_table_size / sizeof(unsigned int), buffer_hash_table_size / 1024,
+		inode_hash_table_size / sizeof(unsigned int), inode_hash_table_size / 1024,
+		page_hash_table_size / sizeof(unsigned int), page_hash_table_size / 1024);
+	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n",
+		KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024,
+		buffer_table_size / sizeof(struct buffer),
+		inode_table_size / sizeof(struct inode));
 }
