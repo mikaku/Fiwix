@@ -441,26 +441,29 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	drive->read_fn = pio28_read;
 	drive->write_fn = pio28_write;
 
-	if(drive->flags & DRIVE_HAS_DMA || drive->pio_mode > 2) {
-		outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
-		if(drive->flags & DRIVE_HAS_DMA) {
-			outport_b(ide->base + ATA_SECCNT, 0x20 | drive->dma_mode);
-		} else {
+	outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
+	if(drive->flags & DRIVE_HAS_DMA) {
+		outport_b(ide->base + ATA_SECCNT, 0x20 | drive->dma_mode);
+	} else {
+		if(drive->pio_mode > 2) {
 			outport_b(ide->base + ATA_SECCNT, 0x08 | drive->pio_mode);
+		} else {
+			outport_b(ide->base + ATA_SECCNT, 0x00);
 		}
-		outport_b(ide->base + ATA_SECTOR, 0);
-		outport_b(ide->base + ATA_LCYL, 0);
-		outport_b(ide->base + ATA_HCYL, 0);
-		ata_wait_irq(ide, WAIT_FOR_DISK, ATA_SET_FEATURES);
-		while(!(inport_b(ide->base + ATA_STATUS) & ATA_STAT_RDY));
-		ata_wait400ns(ide);
-		status = inport_b(ide->base + ATA_STATUS);
-		if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
-			printk("WARNING: %s(): error while setting transfer mode.\n", __FUNCTION__);
-			printk("\t");
-			ata_error(ide, status);
-			printk("\n");
-		}
+	}
+	outport_b(ide->base + ATA_SECTOR, 0);
+	outport_b(ide->base + ATA_LCYL, 0);
+	outport_b(ide->base + ATA_HCYL, 0);
+	outport_b(ide->base + ATA_DRVHD, drive->num << 4);
+	ata_wait_irq(ide, WAIT_FOR_DISK, ATA_SET_FEATURES);
+	while(!(inport_b(ide->base + ATA_STATUS) & ATA_STAT_RDY));
+	ata_wait400ns(ide);
+	status = inport_b(ide->base + ATA_STATUS);
+	if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
+		printk("WARNING: %s(): error while setting transfer mode.\n", __FUNCTION__);
+		printk("\t");
+		ata_error(ide, status);
+		printk("\n");
 	}
 
 #ifdef CONFIG_PCI
