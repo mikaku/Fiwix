@@ -101,7 +101,10 @@ void sock_free(struct socket *s)
 	struct inode *i;
 
 	ufd = -1;
-	fd = (s->fd - &fd_table[0]);	/* pointer arithmetic */
+
+	/* pointer arithmetic */
+	fd = ((unsigned int)s->fd - (unsigned int)&fd_table[0]) / sizeof(struct fd);
+
 	for(n = 0; n < OPEN_MAX; n++) {
 		if(current->fd[n] == fd) {
 			ufd = n;
