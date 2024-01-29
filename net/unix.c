@@ -89,6 +89,21 @@ void unix_free(struct socket *s)
 	struct unix_info *u;
 
 	u = &s->u.unix;
+	if(!(--u->count)) {
+		if(u->data) {
+			kfree((unsigned int)u->data);
+		}
+		if(u->sun) {
+			kfree((unsigned int)u->sun);
+		}
+		if(u->inode) {
+			iput(u->inode);
+		}
+		u->peer = NULL;
+		remove_unix_socket(u);
+		return;
+	}
+
 	if(u->peer) {
 		if(!--u->peer->count) {
 			remove_unix_socket(u->peer);
@@ -98,20 +113,6 @@ void unix_free(struct socket *s)
 		}
 		wakeup(u->peer);
 	}
-	if(--u->count > 0) {
-		return;
-	}
-
-	if(u->data) {
-		kfree((unsigned int)u->data);
-	}
-	if(u->sun) {
-		kfree((unsigned int)u->sun);
-	}
-	if(u->inode) {
-		iput(u->inode);
-	}
-	u->peer = NULL;
 	remove_unix_socket(u);
 	return;
 }
