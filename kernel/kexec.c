@@ -597,7 +597,7 @@ void kexec_linux(void)
 		bios_mem_table[j].size = bios_mem_map[i].to_hi;
 		bios_mem_table[j].size = (bios_mem_table[j].size << 32) | bios_mem_map[i].to;
 		bios_mem_table[j].size -= bios_mem_table[j].addr;
-		bios_mem_table[j].type = bios_mem_map[j].type;
+		bios_mem_table[j].type = bios_mem_map[i].type;
 		j++;
 		boot_params->num_bios_mem_entries = j;
 	}
