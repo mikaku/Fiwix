@@ -402,7 +402,7 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 			u->readoff += n;
 			u->size -= n;
 			count -= n;
-			if(u->writeoff >= PIPE_BUF) {
+			if(u->writeoff == PIPE_BUF) {
 				u->writeoff = 0;
 			}
 			wakeup(u->peer);
@@ -410,14 +410,17 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 			if(s->state != SS_CONNECTED) {
 				if(s->state == SS_DISCONNECTING) {
 					if(u->size) {
-						if(u->readoff >= PIPE_BUF) {
+						if(u->readoff == PIPE_BUF) {
 							u->readoff = 0;
-							continue;
 						}
+						continue;
 					}
-					return 0;
+					return bytes_read;
 				}
 				return -EINVAL;
+			}
+			if(u->writeoff) {
+				break;
 			}
 			if(fd_table->flags & O_NONBLOCK) {
 				return -EAGAIN;
@@ -468,7 +471,7 @@ int unix_write(struct socket *s, struct fd *fd_table, const char *buffer, __size
 			bytes_written += n;
 			up->writeoff += n;
 			up->size += n;
-			if(up->readoff >= PIPE_BUF) {
+			if(up->readoff == PIPE_BUF) {
 				up->readoff = 0;
 			}
 			wakeup(u->peer);
