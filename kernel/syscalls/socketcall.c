@@ -10,6 +10,8 @@
 #include <fiwix/errno.h>
 #include <fiwix/process.h>
 
+#define __DEBUG__	/* FIXME: to be deleted */
+
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
@@ -84,6 +86,21 @@ int sys_socketcall(int call, unsigned int *args)
 				return errno;
 			}
 			return recvfrom(args[0], (void *)args[1], args[2], args[3], (struct sockaddr *)args[4], (int *)args[5]);
+		case SYS_SHUTDOWN:
+			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 2))) {
+				return errno;
+			}
+			return shutdown(args[0], args[1]);
+		case SYS_SETSOCKOPT:
+			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 5))) {
+				return errno;
+			}
+			return setsockopt(args[0], args[1], args[2], (void *)args[3], args[4]);
+		case SYS_GETSOCKOPT:
+			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 5))) {
+				return errno;
+			}
+			return getsockopt(args[0], args[1], args[2], (void *)args[3], (socklen_t *)args[4]);
 	}
 
 	return -EINVAL;

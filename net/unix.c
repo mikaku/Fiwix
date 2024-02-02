@@ -518,6 +518,21 @@ int unix_select(struct socket *s, int flag)
 	return 0;
 }
 
+int unix_shutdown(struct socket *s, int how)
+{
+	return -EOPNOTSUPP;
+}
+
+int unix_setsockopt(struct socket *s, int level, int optname, const void *optval, socklen_t optlen)
+{
+	return -EOPNOTSUPP;
+}
+
+int unix_getsockopt(struct socket *s, int level, int optname, void *optval, socklen_t *optlen)
+{
+	return -EOPNOTSUPP;
+}
+
 int unix_init(void)
 {
 	unix_socket_head = NULL;

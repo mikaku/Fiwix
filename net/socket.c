@@ -463,4 +463,52 @@ int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, 
 	}
 	return bytes_read;
 }
+
+int shutdown(int sd, int how)
+{
+	struct socket *s;
+	int errno;
+
+#ifdef __DEBUG__
+	printk("(pid %d) shutdown(%d, %d)\n", current->pid, sd, how);
+#endif /*__DEBUG__ */
+
+	if((errno = check_sd(sd)) < 0) {
+		return errno;
+	}
+	s = get_socket_from_fd(sd);
+	return s->ops->shutdown(s, how);
+}
+
+int setsockopt(int sd, int level, int optname, const void *optval, socklen_t optlen)
+{
+	struct socket *s;
+	int errno;
+
+#ifdef __DEBUG__
+	printk("(pid %d) setsockopt(%d, %d, %d, %x, %d)\n", current->pid, sd, level, optname, (int)optval, optlen);
+#endif /*__DEBUG__ */
+
+	if((errno = check_sd(sd)) < 0) {
+		return errno;
+	}
+	s = get_socket_from_fd(sd);
+	return s->ops->setsockopt(s, level, optname, optval, optlen);
+}
+
+int getsockopt(int sd, int level, int optname, void *optval, socklen_t *optlen)
+{
+	struct socket *s;
+	int errno;
+
+#ifdef __DEBUG__
+	printk("(pid %d) getsockopt(%d, %d, %d, %x, %x)\n", current->pid, sd, level, optname, (int)optval, (int)optlen);
+#endif /*__DEBUG__ */
+
+	if((errno = check_sd(sd)) < 0) {
+		return errno;
+	}
+	s = get_socket_from_fd(sd);
+	return s->ops->getsockopt(s, level, optname, optval, optlen);
+}
 #endif /* CONFIG_NET */

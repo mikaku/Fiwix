@@ -47,6 +47,9 @@ int unix_recvfrom(struct socket *, struct fd *, char *, __size_t, int, struct so
 int unix_read(struct socket *, struct fd *, char *, __size_t);
 int unix_write(struct socket *, struct fd *, const char *, __size_t);
 int unix_select(struct socket *, int);
+int unix_shutdown(struct socket *, int);
+int unix_setsockopt(struct socket *, int, int, const void *, unsigned int);
+int unix_getsockopt(struct socket *, int, int, void *, unsigned int *);
 int unix_init(void);
 
 #endif /* _FIWIX_NET_UNIX_H */

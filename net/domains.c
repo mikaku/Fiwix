@@ -32,6 +32,9 @@ struct proto_ops unix_ops = {
 	unix_read,
 	unix_write,
 	unix_select,
+	unix_shutdown,
+	unix_setsockopt,
+	unix_getsockopt,
         unix_init,
 };
 
