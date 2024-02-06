@@ -43,7 +43,7 @@ int assign_proto(struct socket *so, int domain)
 	struct domain_table *d;
 
 	d = &domains[0];
-	while(d) {
+	while(d->ops) {
 		if(d->family == domain) {
 			so->ops = d->ops;
 			return 0;
