@@ -84,6 +84,9 @@ void do_exit(int exit_code)
 	if(!--nr_processes) {
 		printk("\n");
 		printk("WARNING: the last user process has exited. The kernel will stop itself.\n");
+		sync_superblocks(0);    /* in all devices */
+		sync_inodes(0);         /* in all devices */
+		sync_buffers(0);        /* in all devices */
 		stop_kernel();
 	}
 
