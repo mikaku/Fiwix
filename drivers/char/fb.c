@@ -134,7 +134,7 @@ void fb_init(void)
 	 * memory below 1GB (e.g: 0x3D000000-0x3DFFFFFF + PAGE_OFFSET).
 	 */
 	from = (unsigned int)video.address - PAGE_OFFSET;
-	bios_map_reserve(from, from + video.memsize);
+	bios_map_reserve(from, from + video.memsize - 1);
 
 	printk("fb0       0x%08x-0x%08x\ttype=%s %x.%x resolution=%dx%dx%d size=%dMB\n",
 		video.address,

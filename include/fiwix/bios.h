@@ -20,6 +20,7 @@ struct bios_mem_map {
 	int type;
 };
 extern struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
+extern struct bios_mem_map orig_bios_mem_map[NR_BIOS_MM_ENT];
 
 int is_addr_in_bios_map(unsigned int);
 void bios_map_reserve(unsigned int, unsigned int);

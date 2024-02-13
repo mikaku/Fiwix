@@ -12,6 +12,7 @@
 #include <fiwix/string.h>
 
 struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
+struct bios_mem_map orig_bios_mem_map[NR_BIOS_MM_ENT];
 
 static char *bios_mem_type[] = {
 	NULL,
@@ -32,13 +33,13 @@ static void bios_map_add(unsigned int from, unsigned int to, int from_type, int 
 			if(from_type == to_type) {
 				printk("memory    0x%08x%08x-0x%08x%08x %s\n",
 					0, from,
-					0, to - 1,
+					0, to,
 					bios_mem_type[to_type]
 				);
 			} else {
 				printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
 					0, from,
-					0, to - 1,
+					0, to,
 					bios_mem_type[from_type],
 					bios_mem_type[to_type]
 				);
@@ -69,7 +70,7 @@ int is_addr_in_bios_map(unsigned int addr)
 
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
 		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_AVAILABLE && !bmm->from_hi && !bmm->to_hi) {
-			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
+			if(addr >= bmm->from && addr <= (bmm->to & PAGE_MASK)) {
 				retval = 1;
 			}
 		}
@@ -79,7 +80,7 @@ int is_addr_in_bios_map(unsigned int addr)
 	bmm = &bios_mem_map[0];
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
 		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_RESERVED && !bmm->from_hi && !bmm->to_hi) {
-			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
+			if(addr >= bmm->from && addr <= (bmm->to & PAGE_MASK)) {
 				retval = 0;
 			}
 		}
@@ -173,4 +174,6 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 		kstat.physical_pages = (GDT_BASE >> PAGE_SHIFT);
 		printk("WARNING: only up to %dGB of physical memory will be used.\n", GDT_BASE >> 30);
 	}
+
+	memcpy_b(orig_bios_mem_map, bios_mem_map, NR_BIOS_MM_ENT * sizeof(struct bios_mem_map));
 }

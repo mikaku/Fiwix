@@ -307,7 +307,7 @@ void mem_init(void)
 
 #ifdef CONFIG_KEXEC
 	if(kexec_size > 0) {
-		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2));
+		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2) - 1);
 		_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	}
 #endif /* CONFIG_KEXEC */
