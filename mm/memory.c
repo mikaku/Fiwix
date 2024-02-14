@@ -450,7 +450,7 @@ void mem_init(void)
 #endif /* CONFIG_KEXEC */
 
 	/* the last one must be the page_table structure */
-	n = (kstat.physical_pages * PAGE_HASH_PERCENTAGE) / 100;
+	n = (kstat.physical_pages * PAGE_HASH_PER_10K) / 10000;
 	n = MAX(n, 1);	/* 1 page for the hash table as minimum */
 	n = MIN(n, 16);	/* 16 pages for the hash table as maximum */
 	page_hash_table_size = n * PAGE_SIZE;
