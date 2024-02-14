@@ -16,8 +16,8 @@
 #define NR_FLOCKS		(NR_PROCS * 5)	/* max. number of flocks */
 
 #define FREE_PAGES_RATIO	5	/* % minimum of free memory pages */
-#define PAGE_HASH_PER_10K	10	/* % of % of hash buckets relative to the
-					   number of physical pages */
+#define PAGE_HASH_PER_10K	10	/* % of % of hash buckets relative to
+					   the number of physical pages */
 #define BUFFER_PERCENTAGE	100	/* % of memory for buffer cache */
 #define BUFFER_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the buffer table */
@@ -33,7 +33,7 @@
 					   scroll back */
 #define MAX_SPU_NOTICES		10	/* max. number of messages on spurious
 					   interrupts */
-#define RAMDISK_DRIVES		1	/* number of all-purpose ramdisk drives */
+#define RAMDISK_DRIVES		1	/* num. of all-purpose ramdisk drives */
 #define NR_SYSCONSOLES		1	/* max. number of system consoles */
 
 
