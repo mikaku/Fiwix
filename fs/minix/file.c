@@ -63,11 +63,7 @@ struct fs_operations minix_file_fsop = {
 
 int minix_file_open(struct inode *i, struct fd *fd_table)
 {
-	if(fd_table->flags & O_APPEND) {
-		fd_table->offset = i->i_size;
-	} else {
-		fd_table->offset = 0;
-	}
+	fd_table->offset = 0;
 	if(fd_table->flags & O_TRUNC) {
 		i->i_size = 0;
 		minix_truncate(i, 0);
