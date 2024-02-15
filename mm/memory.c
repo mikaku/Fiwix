@@ -343,7 +343,7 @@ void mem_init(void)
 	_last_data_addr += proc_table_size;
 
 
-	/* reserve memory space for buffer_table */
+	/* calculate the buffer table size */
 	buffer_table_size = (kstat.physical_pages * BUFFER_PERCENTAGE) / 100;
 	buffer_table_size *= sizeof(struct buffer);
 	pages = buffer_table_size >> PAGE_SHIFT;
@@ -363,13 +363,14 @@ void mem_init(void)
 	_last_data_addr += buffer_hash_table_size;
 
 
-	/* reserve memory space for inode_hash_table */
+	/* calculate the inode table size */
 	sizek = physical_memory / 1024;	/* this helps to avoid overflow */
 	inode_table_size = (sizek * INODE_PERCENTAGE) / 100;
 	inode_table_size *= 1024;
 	pages = inode_table_size >> PAGE_SHIFT;
 	inode_table_size = pages << PAGE_SHIFT;
 
+	/* reserve memory space for inode_hash_table */
 	kstat.max_inodes = inode_table_size / sizeof(struct inode);
 	n = (kstat.max_inodes * INODE_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 inode hash buckets as minimum */
@@ -487,6 +488,5 @@ void mem_stats(void)
 		page_hash_table_size / sizeof(unsigned int), page_hash_table_size / 1024);
 	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n",
 		KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024,
-		buffer_table_size / sizeof(struct buffer),
-		inode_table_size / sizeof(struct inode));
+		kstat.max_buffers, kstat.max_inodes);
 }
