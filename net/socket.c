@@ -120,7 +120,9 @@ void sock_free(struct socket *s)
 		iput(i);
 		release_fd(fd);
 	}
-	s->ops->free(s);
+	if(s->ops) {
+		s->ops->free(s);
+	}
 	wakeup(s);
 }
 
