@@ -62,11 +62,7 @@ struct fs_operations ext2_file_fsop = {
 
 int ext2_file_open(struct inode *i, struct fd *fd_table)
 {
-	if(fd_table->flags & O_APPEND) {
-		fd_table->offset = i->i_size;
-	} else {
-		fd_table->offset = 0;
-	}
+	fd_table->offset = 0;
 	if(fd_table->flags & O_TRUNC) {
 		i->i_size = 0;
 		ext2_truncate(i, 0);
