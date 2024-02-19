@@ -10,8 +10,6 @@
 #include <fiwix/errno.h>
 #include <fiwix/process.h>
 
-#define __DEBUG__	/* FIXME: to be deleted */
-
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
