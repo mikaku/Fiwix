@@ -40,7 +40,7 @@ int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, struct sigcontex
 #ifdef __DEBUG__
 	printk("(pid %d) sys_iopl(%d) -> ", current->pid, level);
 #endif /*__DEBUG__ */
-	if(level > USR_PL) {
+	if(level > USER_PL) {
 #ifdef __DEBUG__
 	printk("-EINVAL\n");
 #endif /*__DEBUG__ */

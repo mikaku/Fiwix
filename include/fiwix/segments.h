@@ -16,6 +16,7 @@
 #define USER_DS		0x20	/* user data segment */
 #define TSS		0x28	/* TSS segment */
 
+#define USER_PL		0x03	/* User Privilege Level 3 */
 
 /* flags for memory pages */
 #define PAGE_PRESENT	0x001	/* Present */
@@ -47,8 +48,6 @@
 
 /* low flags of the TSS Descriptors */
 #define SD_TSSPRESENT	0x89	/* TSS present and not busy flag */
-
-#define USR_PL		3	/* User Privilege Level */
 
 /* EFLAGS */
 #define EF_IOPL		12	/* IOPL bit */

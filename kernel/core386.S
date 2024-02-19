@@ -14,8 +14,6 @@
 #define CR0_MP	~(0x00000002)	/* CR0 bit-01 MP (Monitor Coprocessor) */
 #define CR0_EM	0x00000004	/* CR0 bit-02 EM (Emulation) */
 
-#define SS_RPL3		0x03	/* Request Privilege Level 3 */
-
 #define GS		0x00
 #define FS		0x04
 #define ES		0x08
@@ -57,7 +55,7 @@
 	call	do_bh
 
 #define CHECK_IF_NESTED_INTERRUPT					\
-	testl	$SS_RPL3, CS(%esp)					;\
+	testl	$USER_PL, CS(%esp)					;\
 	jz	2f
 
 #define CHECK_IF_SIGNALS						\
@@ -208,7 +206,7 @@ BUILD_IRQ(15, irq15)
 	movl	%eax, %esi		# initialize %esi
 	movl	%eax, %edi		# initialize %edi
 	movl	%eax, %ebp		# initialize %ebp
-	movl	$(USER_DS | SS_RPL3), %eax
+	movl	$(USER_DS | USER_PL), %eax
 	movw	%ax, %ds
 	movw	%ax, %es
 	movw	%ax, %fs
@@ -218,7 +216,7 @@ BUILD_IRQ(15, irq15)
 	pushl	$0x202			# initialize eflags (Linux 2.2 = 0x292)
 	popfl
 	pushfl
-	movl	$(USER_CS | SS_RPL3), %eax
+	movl	$(USER_CS | USER_PL), %eax
 	pushl	%eax
 	pushl	$PAGE_OFFSET - 0x1000	# go to init_trampoline() in user mode
 	iret
