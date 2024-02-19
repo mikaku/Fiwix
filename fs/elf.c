@@ -129,141 +129,140 @@ static void elf_create_stack(struct binargs *barg, unsigned int *sp, unsigned in
 
 	/* copy the Auxiliar Table Items (dlinfo_items) */
 	if(at_base) {
-		memset_l((void *)sp, AT_PHDR, 1);
+		*sp = AT_PHDR;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_PHDR = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &phdr_addr, 1);
+		*sp = (unsigned int)phdr_addr;
 #ifdef __DEBUG__
 		printk("\t\tAT_PHDR = 0x%08x\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_PHENT, 1);
+		*sp = AT_PHENT;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_PHENT = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, sizeof(struct elf32_phdr), 1);
+		*sp = sizeof(struct elf32_phdr);
 #ifdef __DEBUG__
 		printk("\t\tAT_PHENT = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_PHNUM, 1);
+		*sp = AT_PHNUM;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_PHNUM = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, 0, 1);
-		memcpy_w((void *)sp, &elf32_h->e_phnum, 1);
+		*sp = (unsigned int)elf32_h->e_phnum;
 #ifdef __DEBUG__
 		printk("\t\tAT_PHNUM = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_PAGESZ, 1);
+		*sp = AT_PAGESZ;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_PGSIZE = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, PAGE_SIZE, 1);
+		*sp = PAGE_SIZE;
 #ifdef __DEBUG__
 		printk("\t\tAT_PGSIZE = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_BASE, 1);
+		*sp = AT_BASE;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_BASE = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, at_base, 1);
+		*sp = (unsigned int)at_base;
 #ifdef __DEBUG__
 		printk("\t\tAT_BASE = 0x%08x\n", sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_FLAGS, 1);
+		*sp = AT_FLAGS;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_FLAGS = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, 0, 1);
+		*sp = 0;
 #ifdef __DEBUG__
 		printk("\t\tAT_FLAGS = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_ENTRY, 1);
+		*sp = AT_ENTRY;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_ENTRY = %d ", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &elf32_h->e_entry, 1);
+		*sp = (unsigned int)elf32_h->e_entry;
 #ifdef __DEBUG__
 		printk("\t\tAT_ENTRY = 0x%08x\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_UID, 1);
+		*sp = AT_UID;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_UID = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &current->uid, 1);
+		*sp = current->uid;
 #ifdef __DEBUG__
 		printk("\t\tAT_UID = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_EUID, 1);
+		*sp = AT_EUID;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_EUID = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &current->euid, 1);
+		*sp = current->euid;
 #ifdef __DEBUG__
 		printk("\t\tAT_EUID = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_GID, 1);
+		*sp = AT_GID;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_GID = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &current->gid, 1);
+		*sp = current->gid;
 #ifdef __DEBUG__
 		printk("\t\tAT_GID = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memset_l((void *)sp, AT_EGID, 1);
+		*sp = AT_EGID;
 #ifdef __DEBUG__
 		printk("at 0x%08x -> AT_EGID = %d", sp, *sp);
 #endif /*__DEBUG__ */
 		sp++;
 
-		memcpy_l((void *)sp, &current->egid, 1);
+		*sp = current->egid;
 #ifdef __DEBUG__
 		printk("\t\tAT_EGID = %d\n", *sp);
 #endif /*__DEBUG__ */
 		sp++;
 	}
 
-	memset_l((void *)sp, AT_NULL, 1);
+	*sp = AT_NULL;
 #ifdef __DEBUG__
 	printk("at 0x%08x -> AT_NULL = %d", sp, *sp);
 #endif /*__DEBUG__ */
