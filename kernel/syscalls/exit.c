@@ -14,6 +14,8 @@
 #include <fiwix/sleep.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/buffer.h>
+#include <fiwix/filesystems.h>
 #ifdef CONFIG_SYSVIPC
 #include <fiwix/sem.h>
 #endif /* CONFIG_SYSVIPC */
