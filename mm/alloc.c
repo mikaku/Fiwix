@@ -11,7 +11,7 @@
 #include <fiwix/string.h>
 
 /*
- * The kmalloc() function acts like a front-end for the two memory
+ * The kmalloc() function acts like a front-end for the two
  * memory allocators currently supported:
  *
  * - buddy_low() for requests up to 2048KB.
