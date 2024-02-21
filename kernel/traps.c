@@ -287,6 +287,8 @@ void stack_backtrace(void)
 
 	printk("Stack:\n");
 	GET_ESP(sp);
+	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
+	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
 	sp = (unsigned int *)sp;
 	for(n = 1; n <= 32; n++) {
 		printk(" %08x", *sp);
@@ -297,6 +299,8 @@ void stack_backtrace(void)
 	}
 	printk("Backtrace:\n");
 	GET_ESP(sp);
+	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
+	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
 	sp = (unsigned int *)sp;
 	for(n = 0; n < 256; n++) {
 		addr = *sp;
