@@ -20,8 +20,8 @@
 #include <fiwix/fcntl.h>
 #include <fiwix/bios.h>
 
-#define IO_FB_XRES  2       /* TODO(ghaerr): to be removed shortly */
-#define IO_FB_YRES  3
+#define IO_FB_XRES	2	/* TODO(ghaerr): to be removed shortly */
+#define IO_FB_YRES	3
 
 static struct fs_operations fb_driver_fsop = {
 	0,
@@ -118,27 +118,27 @@ int fb_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t 
 
 int fb_mmap(struct inode *i, struct vma *vma)
 {
-    unsigned int fbaddr, addr;
+	unsigned int fbaddr, addr;
 
-    fbaddr = (unsigned int)video.address;
-    for (addr = vma->start; addr < vma->end; addr += 4096) {
-        /* map framebuffer physaddr into user space without page allocations */
-        map_page_flags(current, addr, fbaddr, PROT_READ|PROT_WRITE, PAGE_NOALLOC);
-        fbaddr += 4096;
-    }
-    return 0;
+	fbaddr = (unsigned int)video.address;
+	for (addr = vma->start; addr < vma->end; addr += 4096) {
+		/* map framebuffer physaddr into user space without page allocations */
+		map_page_flags(current, addr, fbaddr, PROT_READ|PROT_WRITE, PAGE_NOALLOC);
+		fbaddr += 4096;
+	}
+	return 0;
 }
 
 int fb_ioctl(struct inode *i, int cmd, unsigned int arg)
 {
-    switch (cmd) {
-    case IO_FB_XRES:
-        return video.fb_width;
-    case IO_FB_YRES:
-        return video.fb_height;
-    default:
-	    return -EINVAL;
-    }
+	switch (cmd) {
+		case IO_FB_XRES:
+			return video.fb_width;
+		case IO_FB_YRES:
+			return video.fb_height;
+		default:
+			return -EINVAL;
+	}
 }
 
 __loff_t fb_llseek(struct inode *i, __loff_t offset)

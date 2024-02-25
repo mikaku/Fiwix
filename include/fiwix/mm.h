@@ -109,7 +109,7 @@ unsigned int get_mapped_addr(struct proc *, unsigned int);
 int clone_pages(struct proc *);
 int free_page_tables(struct proc *);
 unsigned int map_page(struct proc *, unsigned int, unsigned int, unsigned int);
-unsigned int map_page_flags(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot, int flags);
+unsigned int map_page_flags(struct proc *, unsigned int, unsigned int, unsigned int, int);
 int unmap_page(unsigned int);
 void mem_init(void);
 void mem_stats(void);

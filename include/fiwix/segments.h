@@ -22,7 +22,7 @@
 #define PAGE_PRESENT	0x001	/* Present */
 #define PAGE_RW		0x002	/* Read/Write */
 #define PAGE_USER	0x004	/* User */
-#define PAGE_NOALLOC	0x200	/* No Page Alloced (OS Managed) */
+#define PAGE_NOALLOC	0x200	/* No Page Allocated (OS managed) */
 
 #ifndef ASM_FILE
 

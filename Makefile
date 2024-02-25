@@ -11,7 +11,6 @@ TMPFILE := $(shell mktemp)
 ARCH = -m32
 CPU = -march=i386
 LANG = -std=c89
-#CROSS_COMPILE = x86_64-linux-musl-
 
 # CCEXE can be overridden at the command line. For example: make CCEXE="tcc"
 # To use tcc see docs/tcc.txt
