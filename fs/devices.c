@@ -29,6 +29,7 @@ struct fs_operations def_chr_fsop = {
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -71,6 +72,7 @@ struct fs_operations def_blk_fsop = {
 	blk_dev_ioctl,
 	blk_dev_llseek,
 	NULL,			/* readdir */
+	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -138,7 +140,7 @@ int register_device(int type, struct device *new_d)
 	}
 
 	if(*d) {
-		if(&(*d)->minors == &new_d->minors || (&(*d)->next && &(*d)->next->minors == &new_d->minors)) {
+		if(&(*d)->minors == &new_d->minors || ((*d)->next && &(*d)->next->minors == &new_d->minors)) {
 			printk("WARNING: %s(): duplicated device major %d.\n", __FUNCTION__, new_d->major);
 			return 1;
 		}

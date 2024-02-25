@@ -11,6 +11,7 @@ TMPFILE := $(shell mktemp)
 ARCH = -m32
 CPU = -march=i386
 LANG = -std=c89
+#CROSS_COMPILE = x86_64-linux-musl-
 
 # CCEXE can be overridden at the command line. For example: make CCEXE="tcc"
 # To use tcc see docs/tcc.txt
@@ -22,7 +23,7 @@ CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-pro
 ifeq ($(CCEXE),gcc)
 LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
-LIBGCC := $(shell dirname `$(CC) -print-libgcc-file-name`)
+LIBGCC := -L$(shell dirname `$(CC) -print-libgcc-file-name`) -lgcc
 LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
 endif
 
@@ -69,7 +70,7 @@ all:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
 ifeq ($(CCEXE),gcc)
 	$(CPP) $(CONFFLAGS) fiwix.ld > $(TMPFILE)
-	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) -L$(LIBGCC) -lgcc -o fiwix
+	$(LD) -N -T $(TMPFILE) $(LDFLAGS) $(OBJS) $(LIBGCC) -o fiwix
 	rm -f $(TMPFILE)
 	nm fiwix | sort | gzip -9c > System.map.gz
 endif

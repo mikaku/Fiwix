@@ -167,6 +167,10 @@ int clone_pages(struct proc *child)
 				}
 				dst_pgtbl = (unsigned int *)P2V((dst_pgdir[pde] & PAGE_MASK));
 				if(src_pgtbl[pte] & PAGE_PRESENT) {
+					if (src_pgtbl[pte] & PAGE_NOALLOC) {
+						dst_pgtbl[pte] = src_pgtbl[pte];
+						continue;
+					}
 					p_addr = src_pgtbl[pte] >> PAGE_SHIFT;
 					pg = &page_table[p_addr];
 					if(pg->flags & PAGE_RESERVED) {
@@ -209,6 +213,11 @@ int free_page_tables(struct proc *p)
 
 unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot)
 {
+	return map_page_flags(p, vaddr, addr, prot, 0);
+}
+
+unsigned int map_page_flags(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot, int flags)
+{
 	unsigned int *pgdir, *pgtbl;
 	unsigned int newaddr;
 	int pde, pte;
@@ -234,7 +243,7 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 			addr = V2P(addr);
 			p->rss++;
 		}
-		pgtbl[pte] = addr | PAGE_PRESENT | PAGE_USER;
+		pgtbl[pte] = addr | PAGE_PRESENT | PAGE_USER | flags;
 	}
 	if(prot & PROT_WRITE) {
 		pgtbl[pte] |= PAGE_RW;
@@ -245,7 +254,7 @@ unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, uns
 int unmap_page(unsigned int vaddr)
 {
 	unsigned int *pgdir, *pgtbl;
-	unsigned int addr;
+	unsigned int addr, desc;
 	int pde, pte;
 
 	pgdir = (unsigned int *)P2V(current->tss.cr3);
@@ -262,9 +271,12 @@ int unmap_page(unsigned int vaddr)
 		return 1;
 	}
 
-	addr = pgtbl[pte] & PAGE_MASK;
+	desc = pgtbl[pte];
+	addr = desc & PAGE_MASK;
 	pgtbl[pte] = 0;
-	kfree(P2V(addr));
+	if (!(desc & PAGE_NOALLOC)) {
+		kfree(P2V(addr));
+	}
 	current->rss--;
 	return 0;
 }
