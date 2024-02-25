@@ -276,19 +276,21 @@ void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 		if(pgdir[pde] & PAGE_PRESENT) {
 			pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
 			if(pgtbl[pte] & PAGE_PRESENT) {
-				/* make sure to not free reserved pages */
-				page = pgtbl[pte] >> PAGE_SHIFT;
-				pg = &page_table[page];
-				if(pg->flags & PAGE_RESERVED) {
-					continue;
-				}
+				if (!(pgtbl[pte] & PAGE_NOALLOC)) {
+					/* make sure to not free reserved pages */
+					page = pgtbl[pte] >> PAGE_SHIFT;
+					pg = &page_table[page];
+					if(pg->flags & PAGE_RESERVED) {
+						continue;
+					}
 
-				if(vma->prot & PROT_WRITE && vma->flags & MAP_SHARED) {
-					offset = start - vma->start + vma->offset + n * PAGE_SIZE;
-					write_page(pg, vma->inode, offset, PAGE_SIZE);
-				}
+					if(vma->prot & PROT_WRITE && vma->flags & MAP_SHARED) {
+						offset = start - vma->start + vma->offset + n * PAGE_SIZE;
+						write_page(pg, vma->inode, offset, PAGE_SIZE);
+					}
 
-				kfree(P2V(pgtbl[pte]) & PAGE_MASK);
+					kfree(P2V(pgtbl[pte]) & PAGE_MASK);
+				}
 				current->rss--;
 #ifdef CONFIG_SYSVIPC
 				if(vma->object) {
@@ -507,12 +509,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {
-			int errno2;
-
-			if((errno2 = free_vma_region(vma, start, length))) {
-				kfree((unsigned int)vma);
-				return errno2;
-			}
+			free_vma_region(vma, start, length);
 			kfree((unsigned int)vma);
 			return errno;
 		}
