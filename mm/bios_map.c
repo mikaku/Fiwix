@@ -34,14 +34,14 @@ static void bios_map_add(unsigned int from, unsigned int to, int from_type, int 
 				printk("memory    0x%08x%08x-0x%08x%08x %s\n",
 					0, from,
 					0, to - 1,
-					kernel_mem_type[to_type]
+					bios_mem_type[to_type]
 				);
 			} else {
 				printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
 					0, from,
 					0, to - 1,
-					kernel_mem_type[from_type],
-					kernel_mem_type[to_type]
+					bios_mem_type[from_type],
+					bios_mem_type[to_type]
 				);
 			}
 			kernel_mem_map[n].from = from;
