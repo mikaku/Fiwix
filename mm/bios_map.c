@@ -12,7 +12,7 @@
 #include <fiwix/string.h>
 
 struct bios_mem_map bios_mem_map[NR_BIOS_MM_ENT];
-struct bios_mem_map orig_bios_mem_map[NR_BIOS_MM_ENT];
+struct bios_mem_map kernel_mem_map[NR_BIOS_MM_ENT];
 
 static char *bios_mem_type[] = {
 	NULL,
@@ -29,32 +29,32 @@ static void bios_map_add(unsigned int from, unsigned int to, int from_type, int 
 	int n;
 
 	for(n = 0; n < NR_BIOS_MM_ENT; n++) {
-		if(!bios_mem_map[n].type) {
+		if(!kernel_mem_map[n].type) {
 			if(from_type == to_type) {
 				printk("memory    0x%08x%08x-0x%08x%08x %s\n",
 					0, from,
-					0, to,
-					bios_mem_type[to_type]
+					0, to - 1,
+					kernel_mem_type[to_type]
 				);
 			} else {
 				printk("memory    0x%08x%08x-0x%08x%08x %s -> %s\n",
 					0, from,
-					0, to,
-					bios_mem_type[from_type],
-					bios_mem_type[to_type]
+					0, to - 1,
+					kernel_mem_type[from_type],
+					kernel_mem_type[to_type]
 				);
 			}
-			bios_mem_map[n].from = from;
-			bios_mem_map[n].to = to;
-			bios_mem_map[n].from_hi = 0;
-			bios_mem_map[n].to_hi = 0;
-			bios_mem_map[n].type = to_type;
+			kernel_mem_map[n].from = from;
+			kernel_mem_map[n].to = to;
+			kernel_mem_map[n].from_hi = 0;
+			kernel_mem_map[n].to_hi = 0;
+			kernel_mem_map[n].type = to_type;
 			break;
 		}
 	}
 
 	if(n >= NR_BIOS_MM_ENT) {
-		printk("WARNING: %s(): no more entries in bios_mem_map[].\n", __FUNCTION__);
+		printk("WARNING: %s(): no more entries in kernel_mem_map[].\n", __FUNCTION__);
 		return;
 	}
 }
@@ -66,21 +66,21 @@ int is_addr_in_bios_map(unsigned int addr)
 	struct bios_mem_map *bmm;
 
 	retval = 0;
-	bmm = &bios_mem_map[0];
+	bmm = &kernel_mem_map[0];
 
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
 		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_AVAILABLE && !bmm->from_hi && !bmm->to_hi) {
-			if(addr >= bmm->from && addr <= (bmm->to & PAGE_MASK)) {
+			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
 				retval = 1;
 			}
 		}
 	}
 
 	/* this second pass is necessary because the array is not sorted */
-	bmm = &bios_mem_map[0];
+	bmm = &kernel_mem_map[0];
 	for(n = 0; n < NR_BIOS_MM_ENT; n++, bmm++) {
 		if(bmm->to && bmm->type == MULTIBOOT_MEMORY_RESERVED && !bmm->from_hi && !bmm->to_hi) {
-			if(addr >= bmm->from && addr <= (bmm->to & PAGE_MASK)) {
+			if(addr >= bmm->from && addr < (bmm->to & PAGE_MASK)) {
 				retval = 0;
 			}
 		}
@@ -101,7 +101,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 {
 	struct multiboot_mmap_entry *bmmap;
 	unsigned int from_high, from_low, to_high, to_low;
-	unsigned long long to;
+	unsigned long long to, to_orig;
 	int n, type;
 
 	bmmap = bmmap_addr;
@@ -113,6 +113,7 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 		while((unsigned int)bmmap < (unsigned int)bmmap_addr + bmmap_length) {
 			from_high = (unsigned int)(bmmap->addr >> 32);
 			from_low = (unsigned int)(bmmap->addr & 0xFFFFFFFF);
+			to_orig = (bmmap->addr + bmmap->len); /* preserve original end address */
 			to = (bmmap->addr + bmmap->len) - 1;
 			to_high = (unsigned int)(to >> 32);
 			to_low = (unsigned int)(to & 0xFFFFFFFF);
@@ -125,6 +126,9 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 				to_low,
 				bios_mem_type[type]
 			);
+			/* restore the original end address */
+			to_high = (unsigned int)(to_orig >> 32);
+			to_low = (unsigned int)(to_orig & 0xFFFFFFFF);
 			if(n < NR_BIOS_MM_ENT && bmmap->len) {
 				bios_mem_map[n].from = from_low;
 				bios_mem_map[n].from_hi = from_high;
@@ -175,5 +179,5 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 		printk("WARNING: only up to %dGB of physical memory will be used.\n", GDT_BASE >> 30);
 	}
 
-	memcpy_b(orig_bios_mem_map, bios_mem_map, NR_BIOS_MM_ENT * sizeof(struct bios_mem_map));
+	memcpy_b(kernel_mem_map, bios_mem_map, NR_BIOS_MM_ENT * sizeof(struct bios_mem_map));
 }
