@@ -368,7 +368,7 @@ void fbcon_scroll_screen(struct vconsole *vc, int top, int mode)
 				}
 				if(!screen_is_off) {
 					count = video.fb_pitch * video.fb_char_height;
-					memset_l(vidmem + video.fb_vsize - count, 0, count / sizeof(unsigned int));
+					memset_l(vidmem + (vc->lines - 1) * count, 0, count / sizeof(unsigned int));
 				}
 			}
 			count = vc->columns * (vc->lines - top - 1);
