@@ -17,6 +17,7 @@
 #include <fiwix/sleep.h>
 #include <fiwix/mm.h>
 #include <fiwix/string.h>
+#include <fiwix/stdio.h>
 
 #ifdef CONFIG_NET
 struct unix_info *unix_socket_head;
@@ -493,7 +494,10 @@ int unix_select(struct socket *s, int flag)
 {
 	struct unix_info *u, *up;
 
-	if(!(s->flags & SO_ACCEPTCONN)) {
+	if(s->flags & SO_ACCEPTCONN) {
+		if (flag == SEL_R && s->queue_len) {
+			return 1;
+		}
 		return 0;
 	}
 
@@ -502,12 +506,17 @@ int unix_select(struct socket *s, int flag)
 
 	switch(flag) {
 		case SEL_R:
-			if(u->size || s->state != SS_CONNECTED) {
+			if(u->size) {
+				return 1;
+			}
+			if(s->state != SS_CONNECTED) {
+				printk("UNIX: select: socket not connected (read EOF)\n");
 				return 1;
 			}
 			break;
 		case SEL_W:
 			if(s->state != SS_CONNECTED) {
+				printk("UNIX: select: socket not connected (write EOF)\n");
 				return 1;
 			}
 			if(up->size < PIPE_BUF) {
