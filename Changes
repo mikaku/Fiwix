@@ -8,16 +8,30 @@
 - Added support for sys_utimes. [#57]
 - Added support for building Fiwix with the tcc compiler. [#63]
 - Added support for the Linux boot protocol in kexec. [#65]
+- Added the new configuration option PAGE_HASH_PERCENTAGE (0.1% by default) to
+  set the size of the page_hash_table relative to the number of physical memory
+  pages, with a mininum of 1 page and a maximum of 16 pages. The kernel now
+  shows the hash tables sizes during the boot.
+- Added to sync drives when kernel stops because no more user processes exist.
+- Implement mapping framebuffer physical address to user space using mmap. [#79]
 - Changed the inode cache mechanism to avoid caching inodes from
   pseudo-filesystems.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
+- Moved the call to sysrq() into the keyboard interrupt bottom half.
 - Improved code compaction and efficiency in ATA disk read/write.
+- Reorganized and improved the system console related code.
 - Pass through 64-bit PAE memory entries as part of kexec. [#67]
+- Make sure that the early system log will be shown in all system consoles.
 - Fixed sys_mount() to avoid mounting a device already mounted.
 - Fixed compilation errors when CONFIG_PCI is not defined.
 - Fixed to allow removing a directory in use. [#59]
 - Fixed in sys_getcwd() to check 'diff_dev' variable before accessing
   'tmp_inode'. [#61]
+- Fixed vconsole_select() to not switch to an unexistent vconsole.
+- Fixed ata_hd_init() to make sure that the command SET_FEATURES is sent in all
+  cases.
+- Fixed the kernel stack backtrace to skip the first 5 stack values.
+- Fixed an scrolling bug with 'vi' in fbcon_scroll_screen(). [#81]
 - Small fixes and cosmetic changes.
 
 
