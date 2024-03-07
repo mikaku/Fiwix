@@ -113,6 +113,7 @@ void unix_free(struct socket *s)
 			u->peer->socket->state = SS_DISCONNECTING;
 		}
 		wakeup(u->peer);
+		wakeup(&do_select);
 	}
 	remove_unix_socket(u);
 	return;
@@ -218,6 +219,7 @@ int unix_accept(struct socket *sc, struct socket *nss)
 	sc->state = SS_CONNECTED;
 	nss->state = SS_CONNECTED;
 	wakeup(sc);
+	wakeup(&do_select);
 	return 0;
 }
 
@@ -407,6 +409,7 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 				u->writeoff = 0;
 			}
 			wakeup(u->peer);
+			wakeup(&do_select);
 		} else {
 			if(s->state != SS_CONNECTED) {
 				if(s->state == SS_DISCONNECTING) {
@@ -476,9 +479,11 @@ int unix_write(struct socket *s, struct fd *fd_table, const char *buffer, __size
 				up->readoff = 0;
 			}
 			wakeup(u->peer);
+			wakeup(&do_select);
 			continue;
 		}
 		wakeup(u->peer);
+		wakeup(&do_select);
 		if(!(fd_table->flags & O_NONBLOCK)) {
 			if(sleep(u, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
