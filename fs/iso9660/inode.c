@@ -66,6 +66,7 @@ static int read_pathtable(struct inode *i)
 	return 0;
 }
 
+/*
 static int get_parent_dir_size(struct superblock *sb, __blk_t extent)
 {
 	int n;
@@ -85,6 +86,7 @@ static int get_parent_dir_size(struct superblock *sb, __blk_t extent)
 	printk("WARNING: %s(): unable to locate extent '%d' in path table.\n", __FUNCTION__, extent);
 	return 0;
 }
+*/
 
 int iso9660_read_inode(struct inode *i)
 {

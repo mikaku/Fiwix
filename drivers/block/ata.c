@@ -273,6 +273,7 @@ static int get_dma(struct ata_drv *drive)
 	return dma;
 }
 
+/*
 static int get_udma(struct ata_drv *drive)
 {
 	int udma;
@@ -296,6 +297,7 @@ static int get_udma(struct ata_drv *drive)
 	}
 	return udma;
 }
+*/
 
 static int get_ata(struct ata_drv *drive)
 {
@@ -321,7 +323,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	unsigned int cyl, hds, sect;
 	__loff_t size;
 	int ksize, nrsectors;
-	int udma, udma_speed[] = { 16, 25, 33, 44, 66, 100 };
+	/*int udma, udma_speed[] = { 16, 25, 33, 44, 66, 100 };*/
 
 	if(!(drive->flags & (DRIVE_IS_DISK | DRIVE_IS_CDROM))) {
 		return;
@@ -339,7 +341,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 
 	drive->pio_mode = get_piomode(drive);
 	drive->dma_mode = get_dma(drive);
-	udma = get_udma(drive);
+	/*udma = get_udma(drive);*/
 
 	size = (__loff_t)drive->nr_sects * BPS;
 	size = size >> 10;
