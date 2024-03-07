@@ -2,6 +2,7 @@
  * fiwix/mm/mmap.c
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Portions Copyright 2024, Greg Haerr.
  * Distributed under the terms of the Fiwix License.
  */
 
