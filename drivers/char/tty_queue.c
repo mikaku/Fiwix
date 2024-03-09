@@ -45,6 +45,7 @@ static void put_free_cblock(struct cblock *old)
 	cblock_pool_head = old;
 }
 
+/*
 static struct cblock *insert_cblock_in_head(struct clist *q)
 {
 	struct cblock *cb;
@@ -56,7 +57,6 @@ static struct cblock *insert_cblock_in_head(struct clist *q)
 		return NULL;
 	}
 
-	/* initialize cblock */
 	cb->start_off = cb->end_off = 0;
 	memset_b(cb->data, 0, CBSIZE);
 	cb->prev = cb->next = NULL;
@@ -72,6 +72,7 @@ static struct cblock *insert_cblock_in_head(struct clist *q)
 	}
 	return cb;
 }
+*/
 
 static struct cblock *insert_cblock_in_tail(struct clist *q)
 {
