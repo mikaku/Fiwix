@@ -2,6 +2,7 @@
  * fiwix/drivers/char/fb.c
  *
  * Copyright 2021-2022, Jordi Sanfeliu. All rights reserved.
+ * Portions Copyright 2024, Greg Haerr.
  * Distributed under the terms of the Fiwix License.
  */
 
