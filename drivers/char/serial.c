@@ -695,7 +695,7 @@ void serial_init(void)
 		}
 
 		/* check if a serial tty will act as a system console */
-		for(n = 0, syscon = 0; n < NR_SYSCONSOLES; n++) {
+		for(n = 0, syscon = 0; n < NR_SERIAL; n++) {
 			if(is_serial(sysconsole_table[n].dev)) {
 				if((tty = get_tty(sysconsole_table[n].dev))) {
 					if(!syscon) {
