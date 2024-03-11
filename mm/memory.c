@@ -39,6 +39,7 @@ unsigned int fd_table_size = 0;
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
 
+/* NOTE: can only be used after activate_kpage_dir(), requires PAGE_OFFSET mappings */
 unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, int flags)
 {
 	unsigned int n;
@@ -50,10 +51,10 @@ unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, in
 		pte = GET_PGTBL(n);
 		if(!(kpage_dir[pde] & ~PAGE_MASK)) {
 			kpage_dir[pde] = addr | flags;
-			memset_b((void *)addr, 0, PAGE_SIZE);
+			memset_b((void *)(addr + PAGE_OFFSET), 0, PAGE_SIZE);
 			addr += PAGE_SIZE;
 		}
-		pgtbl = (unsigned int *)(kpage_dir[pde] & PAGE_MASK);
+		pgtbl = (unsigned int *)((kpage_dir[pde] & PAGE_MASK) + PAGE_OFFSET);
 		pgtbl[pte] = n | flags;
 	}
 
@@ -115,7 +116,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + GDT_BASE) | PAGE_PRESENT | PAGE_RW;
 		}
 	}
-	return (unsigned int)kpage_dir + GDT_BASE;
+	return (unsigned int)kpage_dir - PAGE_OFFSET;
 }
 
 /* returns the mapped address of a virtual address */
@@ -317,15 +318,18 @@ void mem_init(void)
 			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&pgtbl[n] | PAGE_PRESENT | PAGE_RW;
 		}
 	}
+	activate_kpage_dir();
 
+	/* use virtual address for kpage_dir now that Page Directory is activated */
+	kpage_dir = (unsigned int *)P2V((unsigned int)kpage_dir);
+
+	/* perform mappings that require _last_data_addr to be physical address */
 #ifdef CONFIG_KEXEC
 	if(kexec_size > 0) {
 		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2));
 		_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	}
 #endif /* CONFIG_KEXEC */
-
-	_last_data_addr = map_kaddr(0xA0000, 0xA0000 + video.memsize, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 
 	/*
 	 * FIXME:
@@ -338,14 +342,8 @@ void mem_init(void)
 		_last_data_addr += (PAGE_SIZE * 4);
 	}
 
-	/* two steps mapping to make sure not include an initrd image */
-	_last_data_addr = map_kaddr(KERNEL_ADDR, ((unsigned int)_end & PAGE_MASK) - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
-	_last_data_addr = map_kaddr((unsigned int)kpage_dir, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
-	activate_kpage_dir();
-
-	/* since Page Directory is now activated we can use virtual addresses */
+	/* we can now use virtual addresses for rest of initialization */
 	_last_data_addr = P2V(_last_data_addr);
-
 
 	/* reserve memory space for proc_table[NR_PROCS] */
 	proc_table_size = PAGE_ALIGN(sizeof(struct proc) * NR_PROCS);
