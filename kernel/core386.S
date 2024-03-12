@@ -294,6 +294,7 @@ BUILD_IRQ(15, irq15)
 1:
 	popfl
 	popa
+	ret
 
 .align 4
 .globl cpuid; cpuid:
