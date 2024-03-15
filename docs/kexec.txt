@@ -1,13 +1,14 @@
 Fiwix kexec implementation
 ==========================
 Kexec is a mechanism that let's you switch into a different kernel without
-rebooting your machine. It differs from the Linux kexec implementation because
-it doesn't need a system call nor specific user-space tools, and your current
-system will completely shutdown before jumping to the new kernel.
+rebooting your machine. Its implementation in Fiwix differs from the Linux
+kexec implementation because it doesn't need a system call nor specific
+user-space tools, and your current system will completely shutdown before
+jumping to the new kernel.
 
-The new kernel can be another Fiwix kernel or any other ELF binary kernel. It
-currently only supports the Multiboot 1 Specification to be passed to the new
-kernel, but it's open to include support for other boot methods.
+The new kernel can be another Fiwix kernel or any other ELF binary kernel as
+long as it supports the Multiboot 1 Specification. It can also be a Linux Kernel
+by using the Linux Boot protocol.
 
 How it works
 ------------
@@ -28,12 +29,12 @@ need to specify:
 
 Example of a kernel command line:
 /boot/fiwix ro root=/dev/hda2 kexec_proto=multiboot1 kexec_size=500 \
-kexec_cmdline="fiwix ro root=/dev/hda2"
+kexec_cmdline="ro root=/dev/hda2"
 
 The RAMdisk drives play an important role here. You already know that they can
 be used to allocate an initrd image specified during the boot, or to allocate
-one or more all-purpose RAMdisk drives and, of course, they are also used for
-kexec to allocate the new kernel.
+one or more all-purpose RAMdisk drives. Now they are also used for kexec to
+allocate the new kernel.
 
 Kexec uses always the first unused RAMdisk drive. You'll know which one is the
 first unused depending if you specified an initrd image, or if you specified to
@@ -87,8 +88,8 @@ Example 3:
 Multiboot
 ---------
 Once you know what RAMdisk drive will be used to allocate the new kernel, you
-can proceed to copy the ELF binary kernel into such RAMdisk drive by using any
-user-space tool like 'cp' or 'dd'.
+can proceed to copy the ELF binary kernel into such RAMdisk drive by using a
+common user-space tool like 'cp' or 'dd'.
 
 Finally, when you are ready, just do a normal shutdown to switch automatically
 to the new kernel.
@@ -143,3 +144,4 @@ to the new kernel.
 
 Example:
 # shutdown -h 0
+
