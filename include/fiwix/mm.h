@@ -102,7 +102,7 @@ void reserve_pages(unsigned int, unsigned int);
 void page_init(int);
 
 /* memory.c */
-unsigned int map_kaddr(unsigned int, unsigned int, unsigned int, int);
+unsigned int map_kaddr(unsigned int *,unsigned int, unsigned int, unsigned int, int);
 void bss_init(void);
 unsigned int setup_tmp_pgdir(unsigned int, unsigned int);
 unsigned int get_mapped_addr(struct proc *, unsigned int);

@@ -226,11 +226,15 @@ void kexec_multiboot1(void)
 		return;
 	}
 
-	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
-
 	/* the IDLE process will do the job */
 	idle = &proc_table[IDLE];
 	idle->tss.eip = (unsigned int)KEXEC_BOOT_ADDR;
+
+	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
+    invalidate_tlb();
+
+	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
 
 	/* stack starts at the end of the page */
 	esp = (unsigned int *)(KEXEC_BOOT_ADDR + PAGE_SIZE - 4);
@@ -503,11 +507,15 @@ void kexec_linux(void)
 
 	__size_t real_mode_code_size = 512 + setup_code_size;
 
-	memcpy_b((void *)KEXEC_BOOT_ADDR, linux_trampoline, PAGE_SIZE);
-
 	/* the IDLE process will do the job */
 	idle = &proc_table[IDLE];
 	idle->tss.eip = (unsigned int)KEXEC_BOOT_ADDR;
+
+	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
+    invalidate_tlb();
+
+	memcpy_b((void *)KEXEC_BOOT_ADDR, linux_trampoline, PAGE_SIZE);
 
 	/* stack starts at the end of the page */
 	esp = (unsigned int *)(KEXEC_BOOT_ADDR + (PAGE_SIZE * 2) - 4);

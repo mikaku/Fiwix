@@ -101,7 +101,7 @@ void bga_init(void)
 	video.fb_size = video.fb_width * video.fb_height * video.fb_pixelwidth;
 	video.fb_vsize = video.lines * video.fb_pitch * video.fb_char_height;
 
-	map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, video.pgtbl_addr, PAGE_PRESENT | PAGE_RW);
+	map_kaddr(kpage_dir, (unsigned int)video.address, (unsigned int)video.address + video.memsize, 0, PAGE_PRESENT | PAGE_RW);
 
 	bga_write_register(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED);
 }
