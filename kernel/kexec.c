@@ -232,7 +232,7 @@ void kexec_multiboot1(void)
 
 	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
 	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
-    invalidate_tlb();
+	invalidate_tlb();
 
 	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
 
@@ -513,7 +513,7 @@ void kexec_linux(void)
 
 	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
 	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
-    invalidate_tlb();
+	invalidate_tlb();
 
 	memcpy_b((void *)KEXEC_BOOT_ADDR, linux_trampoline, PAGE_SIZE);
 
