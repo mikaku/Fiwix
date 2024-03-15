@@ -92,8 +92,9 @@ void bios_map_reserve(unsigned int from, unsigned int to)
 {
 	if(is_addr_in_bios_map(from)) {
 		bios_map_add(from, to, MULTIBOOT_MEMORY_AVAILABLE, MULTIBOOT_MEMORY_RESERVED);
-		if (page_table_size)
+		if (page_table_size) {
 			reserve_pages(from, to);
+		}
 	}
 }
 
