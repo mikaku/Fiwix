@@ -54,7 +54,7 @@ unsigned int map_kaddr(unsigned int *page_dir, unsigned int from, unsigned int t
 			if (!addr) {
 				paddr = kmalloc(PAGE_SIZE);
 				if (!paddr) {
-					PANIC("%s(): no memory\n", __FUNCTION__);
+					printk("%s(): no memory\n", __FUNCTION__);
 					return 0;
 				}
 				paddr = V2P(paddr);
