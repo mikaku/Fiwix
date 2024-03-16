@@ -166,8 +166,8 @@ void bios_map_init(struct multiboot_mmap_entry *bmmap_addr, unsigned int bmmap_l
 	}
 
 	/*
-	 * This truncates to 1GB since it's the maximum physical memory
-	 * currently supported.
+	 * Truncate physical memory to upper kernel address space size (1GB or 2GB), since
+	 * currently all memory is permanently mapped there.
 	 */
 	if(kstat.physical_pages > (GDT_BASE >> PAGE_SHIFT)) {
 		kstat.physical_pages = (GDT_BASE >> PAGE_SHIFT);

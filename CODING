@@ -60,6 +60,7 @@ conventions in its code:
 - The parameters in function prototypes don't need to have a name to reference
   them by.
 
+- Case statements should be indented one from switch keyword indentation.
 
 Recommended for reading
 -------------------------------------------------------------------------------

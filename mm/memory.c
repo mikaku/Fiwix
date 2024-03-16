@@ -178,7 +178,7 @@ int clone_pages(struct proc *child)
 						continue;
 					}
 					src_pgtbl[pte] &= ~PAGE_RW;
-					/* mark write-only pages as copy-on-write */
+					/* mark writable pages as copy-on-write */
 					if(vma->prot & PROT_WRITE) {
 						pg->flags |= PAGE_COW;
 					}
