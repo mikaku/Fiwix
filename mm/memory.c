@@ -39,25 +39,35 @@ unsigned int fd_table_size = 0;
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
 
-unsigned int map_kaddr(unsigned int from, unsigned int to, unsigned int addr, int flags)
+unsigned int map_kaddr(unsigned int *page_dir, unsigned int from, unsigned int to, unsigned int addr, int flags)
 {
 	unsigned int n;
+	unsigned int paddr;
 	unsigned int *pgtbl;
 	unsigned int pde, pte;
 
+	paddr = addr;
 	for(n = from; n < to; n += PAGE_SIZE) {
 		pde = GET_PGDIR(n);
 		pte = GET_PGTBL(n);
-		if(!(kpage_dir[pde] & ~PAGE_MASK)) {
-			kpage_dir[pde] = addr | flags;
-			memset_b((void *)addr, 0, PAGE_SIZE);
-			addr += PAGE_SIZE;
+		if(!(page_dir[pde] & ~PAGE_MASK)) {
+			if (!addr) {
+				paddr = kmalloc(PAGE_SIZE);
+				if (!paddr) {
+					printk("%s(): no memory\n", __FUNCTION__);
+					return 0;
+				}
+				paddr = V2P(paddr);
+			}
+			page_dir[pde] = paddr | flags;
+			memset_b((void *)(paddr + PAGE_OFFSET), 0, PAGE_SIZE);
+			paddr += PAGE_SIZE;
 		}
-		pgtbl = (unsigned int *)(kpage_dir[pde] & PAGE_MASK);
+		pgtbl = (unsigned int *)((page_dir[pde] & PAGE_MASK) + PAGE_OFFSET);
 		pgtbl[pte] = n | flags;
 	}
 
-	return addr;
+	return paddr;
 }
 
 void bss_init(void)
@@ -115,7 +125,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 			kpage_dir[GET_PGDIR(PAGE_OFFSET) + pd] = (unsigned int)(addr + (PAGE_SIZE * pd) + GDT_BASE) | PAGE_PRESENT | PAGE_RW;
 		}
 	}
-	return (unsigned int)kpage_dir + GDT_BASE;
+	return (unsigned int)kpage_dir - PAGE_OFFSET;
 }
 
 /* returns the mapped address of a virtual address */
@@ -317,35 +327,11 @@ void mem_init(void)
 			kpage_dir[GET_PGDIR(PAGE_OFFSET) + (n / 1024)] = (unsigned int)&pgtbl[n] | PAGE_PRESENT | PAGE_RW;
 		}
 	}
-
-#ifdef CONFIG_KEXEC
-	if(kexec_size > 0) {
-		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2));
-		_last_data_addr = map_kaddr(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), _last_data_addr, PAGE_PRESENT | PAGE_RW);
-	}
-#endif /* CONFIG_KEXEC */
-
-	_last_data_addr = map_kaddr(0xA0000, 0xA0000 + video.memsize, _last_data_addr, PAGE_PRESENT | PAGE_RW);
-
-	/*
-	 * FIXME:
-	 * Why do I need to reserve the page tables for video framebuffer
-	 * here, instead of using kmalloc() in fbcon_init() and bga_init()?
-	 */
-	video.pgtbl_addr = _last_data_addr;
-	if(video.flags & VPF_VESAFB) {
-		/* reserve 4 page tables (16MB) */
-		_last_data_addr += (PAGE_SIZE * 4);
-	}
-
-	/* two steps mapping to make sure not include an initrd image */
-	_last_data_addr = map_kaddr(KERNEL_ADDR, ((unsigned int)_end & PAGE_MASK) - PAGE_OFFSET + PAGE_SIZE, _last_data_addr, PAGE_PRESENT | PAGE_RW);
-	_last_data_addr = map_kaddr((unsigned int)kpage_dir, _last_data_addr, _last_data_addr, PAGE_PRESENT | PAGE_RW);
 	activate_kpage_dir();
 
 	/* since Page Directory is now activated we can use virtual addresses */
+	kpage_dir = (unsigned int *)P2V((unsigned int)kpage_dir);
 	_last_data_addr = P2V(_last_data_addr);
-
 
 	/* reserve memory space for proc_table[NR_PROCS] */
 	proc_table_size = PAGE_ALIGN(sizeof(struct proc) * NR_PROCS);
@@ -448,6 +434,7 @@ void mem_init(void)
 
 #ifdef CONFIG_KEXEC
 	if(kexec_size > 0) {
+		bios_map_reserve(KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2));
 		ramdisk_minors++;
 		if(last_ramdisk < ramdisk_minors) {
 			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kexec_size * 1024))) {

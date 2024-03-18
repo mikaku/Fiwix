@@ -572,7 +572,7 @@ void fbcon_init(void)
 {
 	struct fbcon_font_desc *font_desc;
 
-	map_kaddr((unsigned int)video.address, (unsigned int)video.address + video.memsize, video.pgtbl_addr, PAGE_PRESENT | PAGE_RW);
+	map_kaddr(kpage_dir, (unsigned int)video.address, (unsigned int)video.address + video.memsize, 0, PAGE_PRESENT | PAGE_RW);
 
 	/* some parameters already set in multiboot.c */
 

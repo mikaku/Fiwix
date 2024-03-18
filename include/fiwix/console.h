@@ -133,7 +133,6 @@ struct video_parms {
 	struct pci_device *pci_dev;
 	int flags;
 	unsigned int *address;
-	unsigned int pgtbl_addr;
 	int port;
 	int memsize;
 	unsigned char signature[32];

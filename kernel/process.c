@@ -293,7 +293,7 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	}
 	p->tss.esp0 += PAGE_SIZE - 4;
 	p->rss++;
-	p->tss.cr3 = (unsigned int)kpage_dir;
+	p->tss.cr3 = V2P((unsigned int)kpage_dir);
 	p->tss.eip = (unsigned int)fn;
 	p->tss.esp = p->tss.esp0;
 	sprintk(p->pidstr, "%d", p->pid);

@@ -319,12 +319,12 @@ void vgacon_init(void)
 	bios_data = (short int *)(PAGE_OFFSET + 0x410);
 	if((*bios_data & 0x30) == 0x30) {
 		/* monochrome = 0x30 */
-		video.address = (void *)MONO_ADDR;
+		video.address = (void *)MONO_ADDR + PAGE_OFFSET;
 		video.port = MONO_6845_ADDR;
 		strcpy((char *)video.signature, "VGA monochrome 80x25");
 	} else {
 		/* color = 0x00 || 0x20 */
-		video.address = (void *)COLOR_ADDR;
+		video.address = (void *)COLOR_ADDR + PAGE_OFFSET;
 		video.port = COLOR_6845_ADDR;
 		strcpy((char *)video.signature, "VGA color 80x25");
 	}
