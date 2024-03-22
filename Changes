@@ -22,6 +22,7 @@
 - Reorganized and improved the system console related code.
 - Pass through 64-bit PAE memory entries as part of kexec. [#67]
 - Make sure that the early system log will be shown in all system consoles.
+- Removed unneeded low memory kernel virtual address mappings. [#88]
 - Fixed sys_mount() to avoid mounting a device already mounted.
 - Fixed compilation errors when CONFIG_PCI is not defined.
 - Fixed to allow removing a directory in use. [#59]
@@ -32,6 +33,9 @@
   cases.
 - Fixed the kernel stack backtrace to skip the first 5 stack values.
 - Fixed an scrolling bug with 'vi' in fbcon_scroll_screen(). [#81]
+- Fixed UNIX sockets working with select(). [#83]
+- Fixed serial system console table overindex. [#87]
+- Fixed a major problem in do_switch routine. [#89]
 - Small fixes and cosmetic changes.
 
 
