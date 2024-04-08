@@ -341,20 +341,15 @@ static int sync_one_buffer(struct buffer *buf)
 		return 0;
 	}
 
-	if(d->fsop && d->fsop->write_block) {
-		errno = d->fsop->write_block(buf->dev, buf->block, buf->data, buf->size);
-		if(errno < 0) {
-			if(errno == -EROFS) {
-				printk("WARNING: %s(): write protection on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
-			} else {
-				printk("WARNING: %s(): I/O error on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
-			}
-			return 1;
+	if((errno = d->fsop->write_block(buf->dev, buf->block, buf->data, buf->size)) < 0) {
+		if(errno == -EROFS) {
+			printk("WARNING: %s(): write protection on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
+		} else {
+			printk("WARNING: %s(): I/O error on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
 		}
-		buf->flags &= ~BUFFER_DIRTY;
-	} else {
-		printk("WARNING: %s(): device %d,%d does not have the write_block() method!\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev));
+		return 1;
 	}
+	buf->flags &= ~BUFFER_DIRTY;
 	return 0;
 }
 
