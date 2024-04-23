@@ -11,16 +11,16 @@ Features
  - Preemptive multitasking.
  - POSIX-compliant (mostly).
  - Process groups, sessions and job control.
- - Interprocess communication with pipes and signals.
+ - Interprocess communication with pipes, signals and UNIX domain sockets.
  - UNIX System V IPC (semaphores, message queues and shared memory).
  - BSD file locking mechanism (POSIX restricted to file and advisory only).
  - Virtual memory splits (user/kernel): 3GB/1GB and 2GB/2GB.
  - Demand paging with Copy-On-Write feature.
  - Linux 2.0 ABI system calls compatibility (mostly).
- - ELF-386 executable format support (statically and dynamically linked).
+ - ELF-i386 executable format support (statically and dynamically linked).
  - Round Robin based scheduler algorithm (no priorities yet).
  - VFS abstraction layer.
- - Kexec support.
+ - Kexec support with Multiboot Specification v1 and Linux boot protocols.
  - EXT2 filesystem support with 1KB, 2KB and 4KB block sizes.
  - Minix v1 and v2 filesystem support.
  - Linux-like PROC filesystem support (read only).
