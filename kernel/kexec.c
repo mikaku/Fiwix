@@ -251,7 +251,7 @@ void kexec_multiboot1(void)
 
 	/* space reserved for the memory map structure */
 	nmaps = 0;
-	while(bios_mem_map[nmaps].to) {
+	while(bios_mem_map[nmaps].type) {
 		nmaps++;
 	}
 	esp -= sizeof(struct multiboot_mmap_entry) * nmaps;
@@ -263,7 +263,7 @@ void kexec_multiboot1(void)
 		map->addr = map->addr << 32 | bios_mem_map[n].from;
 		map->len = bios_mem_map[n].to_hi;
 		map->len = map->len << 32 | bios_mem_map[n].to;
-		map->len -= map->addr - 1;
+		map->len -= map->addr;
 		map->type = bios_mem_map[n].type;
 		map++;
 	}
