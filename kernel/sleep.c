@@ -93,6 +93,9 @@ int sleep(void *address, int state)
 		*h = current;
 	}
 	current->sleep_address = address;
+	if(state == PROC_UNINTERRUPTIBLE) {
+		current->flags |= PF_NOTINTERRUPT;
+	}
 	not_runnable(current, PROC_SLEEPING);
 
 	do_sched();
@@ -120,6 +123,7 @@ void wakeup(void *address)
 		if((*h)->sleep_address == address) {
 			(*h)->sleep_address = NULL;
 			(*h)->cpu_count = (*h)->priority;
+			(*h)->flags &= ~PF_NOTINTERRUPT;
 			runnable(*h);
 			need_resched = 1;
 			if((*h)->next_sleep) {
@@ -147,6 +151,11 @@ void wakeup_proc(struct proc *p)
 	int i;
 
 	if(p->state != PROC_SLEEPING && p->state != PROC_STOPPED) {
+		return;
+	}
+
+	/* return if the process is not interruptible */
+	if(p->flags & PF_NOTINTERRUPT) {
 		return;
 	}
 
