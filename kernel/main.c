@@ -63,7 +63,9 @@ struct kernel_stat kstat;
 static void set_default_values(void)
 {
 	/* filesystem is ext2 */
-	strcpy(kparm_rootfstype, "ext2");
+	if(!kparm_rootfstype[0]) {
+		strcpy(kparm_rootfstype, "ext2");
+	}
 
 	/* console is /dev/tty0 */
 	if(!kparm_syscondev) {
