@@ -9,26 +9,22 @@
 #include <fiwix/ata_hd.h>
 #include <fiwix/fs.h>
 #include <fiwix/part.h>
-#include <fiwix/mm.h>
+#include <fiwix/buffer.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
 int read_msdos_partition(__dev_t dev, struct partition *part)
 {
-	char *buffer;
+	struct buffer *buf;
 
-	if(!(buffer = (void *)kmalloc(BLKSIZE_1K))) {
-		return -ENOMEM;
-	}
-
-	if(ata_hd_read(dev, PARTITION_BLOCK, buffer, BLKSIZE_1K) <= 0) {
+	if(!(buf = bread(dev, PARTITION_BLOCK, BLKSIZE_1K))) {
 		printk("WARNING: %s(): unable to read partition block in device %d,%d.\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-		kfree((unsigned int)buffer);
+		brelse(buf);
 		return -EIO;
 	}
 
-	memcpy_b(part, (void *)(buffer + MBR_CODE_SIZE), sizeof(struct partition) * NR_PARTITIONS);
-	kfree((unsigned int)buffer);
+	memcpy_b(part, (void *)(buf->data + MBR_CODE_SIZE), sizeof(struct partition) * NR_PARTITIONS);
+	brelse(buf);
 	return 0;
 }
