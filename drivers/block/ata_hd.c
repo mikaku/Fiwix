@@ -103,7 +103,60 @@ static __off_t block2sector(__blk_t block, int blksize, struct partition *part, 
 	return sector;
 }
 
-static int pio28_read(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
+static int setup_transfer(int mode, __dev_t dev, __blk_t block, char *buffer, int blksize)
+{
+	struct ide *ide;
+	struct ata_drv *drive;
+	struct partition *part;
+	struct xfer_data xd;
+
+	if(!(ide = get_ide_controller(dev))) {
+		return -EINVAL;
+	}
+
+	xd.minor = MINOR(dev);
+	drive = &ide->drive[GET_DRIVE_NUM(dev)];
+	if(drive->num) {
+		xd.minor &= ~(1 << IDE_SLAVE_MSF);
+	}
+
+	blksize = blksize ? blksize : BLKSIZE_1K;
+	xd.sectors_to_io = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
+
+	part = drive->part_table;
+	xd.offset = block2sector(block, blksize, part, xd.minor);
+
+	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
+		xd.nrsectors = MIN(xd.sectors_to_io, drive->multi);
+		xd.datalen = ATA_HD_SECTSIZE * xd.nrsectors;
+	} else {
+		xd.nrsectors = 1;
+		xd.datalen = ATA_HD_SECTSIZE;
+	}
+
+	xd.dev = dev;
+	xd.block = block;
+	xd.buffer = buffer;
+	xd.blksize = blksize;
+
+	if(mode == BLK_READ) {
+#ifdef CONFIG_PCI
+		xd.bm_cmd = BM_COMMAND_READ;
+#endif /* CONFIG_PCI */
+		xd.cmd = drive->xfer.read_cmd;
+		xd.mode = "read";
+		return drive->read_fn(ide, drive, &xd);
+	} else {
+#ifdef CONFIG_PCI
+		xd.bm_cmd = BM_COMMAND_WRITE;
+#endif /* CONFIG_PCI */
+		xd.cmd = drive->xfer.write_cmd;
+		xd.mode = "write";
+		return drive->write_fn(ide, drive, &xd);
+	}
+}
+
+static int pio_read(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
 {
 	int n, status;
 
@@ -140,7 +193,7 @@ static int pio28_read(struct ide *ide, struct ata_drv *drive, struct xfer_data *
 	return xd->sectors_to_io * ATA_HD_SECTSIZE;
 }
 
-static int pio28_write(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
+static int pio_write(struct ide *ide, struct ata_drv *drive, struct xfer_data *xd)
 {
 	int n, status;
 
@@ -236,90 +289,12 @@ int ata_hd_close(struct inode *i, struct fd *fd_table)
 
 int ata_hd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	struct ide *ide;
-	struct ata_drv *drive;
-	struct partition *part;
-	struct xfer_data xd;
-
-	if(!(ide = get_ide_controller(dev))) {
-		return -EINVAL;
-	}
-
-	xd.minor = MINOR(dev);
-	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	if(drive->num) {
-		xd.minor &= ~(1 << IDE_SLAVE_MSF);
-	}
-
-	blksize = blksize ? blksize : BLKSIZE_1K;
-	xd.sectors_to_io = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
-
-	part = drive->part_table;
-	xd.offset = block2sector(block, blksize, part, xd.minor);
-
-	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		xd.datalen = ATA_HD_SECTSIZE * xd.sectors_to_io;
-		xd.nrsectors = MIN(xd.sectors_to_io, drive->multi);
-	} else {
-		xd.datalen = ATA_HD_SECTSIZE;
-		xd.nrsectors = 1;
-	}
-
-	xd.dev = dev;
-	xd.block = block;
-	xd.buffer = buffer;
-	xd.blksize = blksize;
-#ifdef CONFIG_PCI
-	xd.bm_cmd = BM_COMMAND_READ;
-#endif /* CONFIG_PCI */
-	xd.cmd = drive->xfer.read_cmd;
-	xd.mode = "read";
-
-	return drive->read_fn(ide, drive, &xd);
+	return setup_transfer(BLK_READ, dev, block, buffer, blksize);
 }
 
 int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	struct ide *ide;
-	struct ata_drv *drive;
-	struct partition *part;
-	struct xfer_data xd;
-
-	if(!(ide = get_ide_controller(dev))) {
-		return -EINVAL;
-	}
-
-	xd.minor = MINOR(dev);
-	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	if(drive->num) {
-		xd.minor &= ~(1 << IDE_SLAVE_MSF);
-	}
-
-	blksize = blksize ? blksize : BLKSIZE_1K;
-	xd.sectors_to_io = MIN(blksize, PAGE_SIZE) / ATA_HD_SECTSIZE;
-
-	part = drive->part_table;
-	xd.offset = block2sector(block, blksize, part, xd.minor);
-
-	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
-		xd.datalen = ATA_HD_SECTSIZE * xd.sectors_to_io;
-		xd.nrsectors = MIN(xd.sectors_to_io, drive->multi);
-	} else {
-		xd.datalen = ATA_HD_SECTSIZE;
-		xd.nrsectors = 1;
-	}
-
-	xd.dev = dev;
-	xd.block = block;
-	xd.buffer = buffer;
-	xd.blksize = blksize;
-#ifdef CONFIG_PCI
-	xd.bm_cmd = BM_COMMAND_WRITE;
-#endif /* CONFIG_PCI */
-	xd.cmd = drive->xfer.write_cmd;
-	xd.mode = "write";
-
-	return drive->write_fn(ide, drive, &xd);
+	return setup_transfer(BLK_WRITE, dev, block, buffer, blksize);
 }
 
 int ata_hd_ioctl(struct inode *i, int cmd, unsigned int arg)
@@ -438,8 +413,8 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	}
 
 	/* default transfer mode */
-	drive->read_fn = pio28_read;
-	drive->write_fn = pio28_write;
+	drive->read_fn = pio_read;
+	drive->write_fn = pio_write;
 
 	outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
 	if(drive->flags & DRIVE_HAS_DMA) {
@@ -476,15 +451,16 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 
 	/* show disk partition summary */
 	printk("\t\t\t\tpartition summary: ");
-	read_msdos_partition(rdev, part);
-	assign_minors(rdev, drive, part);
-	for(n = 0; n < NR_PARTITIONS; n++) {
-		/* status values other than 0x00 and 0x80 are invalid */
-		if(part[n].status && part[n].status != 0x80) {
-			continue;
-		}
-		if(part[n].type) {
-			printk("%s%d ", drive->dev_name, n + 1);
+	if(!read_msdos_partition(rdev, part)) {
+		assign_minors(rdev, drive, part);
+		for(n = 0; n < NR_PARTITIONS; n++) {
+			/* status values other than 0x00 and 0x80 are invalid */
+			if(part[n].status && part[n].status != 0x80) {
+				continue;
+			}
+			if(part[n].type) {
+				printk("%s%d ", drive->dev_name, n + 1);
+			}
 		}
 	}
 	printk("\n");
