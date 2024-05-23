@@ -12,9 +12,12 @@
 #include <fiwix/fs.h>
 
 /* buffer flags */
-#define BUFFER_VALID	0x0001
-#define BUFFER_LOCKED	0x0002
-#define BUFFER_DIRTY	0x0004
+#define BUFFER_VALID	0x01
+#define BUFFER_LOCKED	0x02
+#define BUFFER_DIRTY	0x04
+
+#define BLK_READ	1
+#define BLK_WRITE	2
 
 struct buffer {
 	__dev_t dev;			/* device number */
