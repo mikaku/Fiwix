@@ -264,16 +264,19 @@ void trap_handler(unsigned int trap, struct sigcontext sc)
 
 const char *elf_lookup_symbol(unsigned int addr)
 {
+	Elf32_Shdr *vsymtab, *vstrtab;
 	Elf32_Sym *sym;
 	unsigned int n;
 
-	sym = (Elf32_Sym *)symtab->sh_addr;
-	for(n = 0; n < symtab->sh_size / sizeof(Elf32_Sym); n++, sym++) {
+	vsymtab = (Elf32_Shdr *)P2V((unsigned int)symtab);
+	vstrtab = (Elf32_Shdr *)P2V((unsigned int)strtab);
+	sym = (Elf32_Sym *)P2V(vsymtab->sh_addr);
+	for(n = 0; n < vsymtab->sh_size / sizeof(Elf32_Sym); n++, sym++) {
 		if(ELF32_ST_TYPE(sym->st_info) != STT_FUNC) {
 			continue;
 		}
 		if(addr >= sym->st_value && addr < (sym->st_value + sym->st_size)) {
-			return (const char *)strtab->sh_addr + sym->st_name;
+			return (const char *)P2V(vstrtab->sh_addr) + sym->st_name;
 		}
 	}
 	return NULL;
@@ -289,7 +292,7 @@ void stack_backtrace(void)
 	GET_ESP(sp);
 	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
 	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
-	sp = (unsigned int *)sp;
+	sp = (unsigned int *)P2V(sp);
 	for(n = 1; n <= 32; n++) {
 		printk(" %08x", *sp);
 		sp++;
@@ -301,7 +304,7 @@ void stack_backtrace(void)
 	GET_ESP(sp);
 	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
 	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
-	sp = (unsigned int *)sp;
+	sp = (unsigned int *)P2V(sp);
 	for(n = 0; n < 256; n++) {
 		addr = *sp;
 		str = elf_lookup_symbol(addr);
