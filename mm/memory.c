@@ -27,15 +27,10 @@
 unsigned int *kpage_dir;
 
 unsigned int proc_table_size = 0;
-
-unsigned int buffer_table_size = 0;
 unsigned int buffer_hash_table_size = 0;
-
 unsigned int inode_table_size = 0;
 unsigned int inode_hash_table_size = 0;
-
 unsigned int fd_table_size = 0;
-
 unsigned int page_table_size = 0;
 unsigned int page_hash_table_size = 0;
 
@@ -342,15 +337,10 @@ void mem_init(void)
 	_last_data_addr += proc_table_size;
 
 
-	/* calculate the buffer table size */
-	buffer_table_size = (kstat.physical_pages * BUFFER_PERCENTAGE) / 100;
-	buffer_table_size *= sizeof(struct buffer);
-	pages = buffer_table_size >> PAGE_SHIFT;
-	buffer_table_size = !pages ? 4096 : pages << PAGE_SHIFT;
-
 	/* reserve memory space for buffer_hash_table */
-	kstat.max_buffers = buffer_table_size / sizeof(struct buffer);
-	n = (kstat.max_buffers * BUFFER_HASH_PERCENTAGE) / 100;
+	kstat.max_buffers_size = kstat.physical_pages * (PAGE_SIZE / 1024);
+	kstat.max_buffers_size = (kstat.max_buffers_size * BUFFER_PERCENTAGE) / 100;
+	n = (kstat.max_buffers_size * BUFFER_HASH_PERCENTAGE) / 100;
 	n = MAX(n, 10);	/* 10 buffer hashes as minimum */
 	/* buffer_hash_table is an array of pointers */
 	pages = ((n * sizeof(unsigned int)) / PAGE_SIZE) + 1;
@@ -488,5 +478,5 @@ void mem_stats(void)
 		page_hash_table_size / sizeof(unsigned int), page_hash_table_size / 1024);
 	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n",
 		KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024,
-		kstat.max_buffers, kstat.max_inodes);
+		kstat.max_buffers_size, kstat.max_inodes);
 }

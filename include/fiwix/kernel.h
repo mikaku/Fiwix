@@ -86,11 +86,12 @@ struct kernel_stat {
 	int physical_reserved;		/* physical memory reserved (in KB) */
 	int total_mem_pages;		/* total memory (in pages) */
 	int free_pages;			/* pages on free list */
+	int min_free_pages;		/* minimal free pages in system */
 	int max_inodes;			/* max. number of allocated inodes */
 	int nr_inodes;			/* current allocated inodes */
-	int max_buffers;		/* max. number of allocated buffers */
-	int nr_buffers;			/* current allocated buffers */
-	int buffers;			/* memory used by buffers (in KB) */
+	int max_buffers_size;		/* max. allocated buffers (in KB) */
+	int buffers_size;		/* current allocated buffers (in KB) */
+	int nr_buffers;			/* number of buffers created */
 	int cached;			/* memory used to cache file pages */
 	int shared;			/* pages with count > 1 */
 	int max_dirty_buffers;		/* max. number of dirty buffers */

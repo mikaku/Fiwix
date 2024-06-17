@@ -254,12 +254,12 @@ int data_proc_meminfo(char *buffer, __pid_t pid)
 
 	size = 0;
 	size += sprintk(buffer + size, "        total:    used:    free:  shared: buffers:  cached:\n");
-	size += sprintk(buffer + size, "Mem:  %8u %8u %8u %8u %8u %8u\n", kstat.total_mem_pages << PAGE_SHIFT, (kstat.total_mem_pages << PAGE_SHIFT) - (kstat.free_pages << PAGE_SHIFT), kstat.free_pages << PAGE_SHIFT, kstat.shared * 1024, kstat.buffers * 1024, kstat.cached * 1024);
+	size += sprintk(buffer + size, "Mem:  %8u %8u %8u %8u %8u %8u\n", kstat.total_mem_pages << PAGE_SHIFT, (kstat.total_mem_pages << PAGE_SHIFT) - (kstat.free_pages << PAGE_SHIFT), kstat.free_pages << PAGE_SHIFT, kstat.shared * 1024, kstat.buffers_size * 1024, kstat.cached * 1024);
 	size += sprintk(buffer + size, "Swap: %8u %8u %8u\n", 0, 0, 0);
 	size += sprintk(buffer + size, "MemTotal: %9d kB\n", kstat.total_mem_pages << 2);
 	size += sprintk(buffer + size, "MemFree:  %9d kB\n", kstat.free_pages << 2);
 	size += sprintk(buffer + size, "MemShared:%9d kB\n", kstat.shared);
-	size += sprintk(buffer + size, "Buffers:  %9d kB\n", kstat.buffers);
+	size += sprintk(buffer + size, "Buffers:  %9d kB\n", kstat.buffers_size);
 	size += sprintk(buffer + size, "Cached:   %9d kB\n", kstat.cached);
 	size += sprintk(buffer + size, "SwapTotal:%9d kB\n", 0);
 	size += sprintk(buffer + size, "SwapFree: %9d kB\n", 0);
@@ -428,11 +428,6 @@ int data_proc_unix(char *buffer, __pid_t pid)
 #else
 	return 0;
 #endif /* CONFIG_NET */
-}
-
-int data_proc_buffermax(char *buffer, __pid_t pid)
-{
-	return sprintk(buffer, "%d\n", kstat.max_buffers);
 }
 
 int data_proc_buffernr(char *buffer, __pid_t pid)

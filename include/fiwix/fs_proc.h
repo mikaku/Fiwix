@@ -69,7 +69,6 @@ int data_proc_stat(char *, __pid_t);
 int data_proc_uptime(char *, __pid_t);
 int data_proc_fullversion(char *, __pid_t);
 int data_proc_unix(char *, __pid_t);
-int data_proc_buffermax(char *, __pid_t);
 int data_proc_buffernr(char *, __pid_t);
 int data_proc_domainname(char *, __pid_t);
 int data_proc_filemax(char *, __pid_t);

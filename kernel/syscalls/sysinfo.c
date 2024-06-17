@@ -38,7 +38,7 @@ int sys_sysinfo(struct sysinfo *info)
 	tmp_info.totalram = kstat.total_mem_pages << PAGE_SHIFT;
 	tmp_info.freeram = kstat.free_pages << PAGE_SHIFT;
 	tmp_info.sharedram = 0;
-	tmp_info.bufferram = kstat.buffers * 1024;
+	tmp_info.bufferram = kstat.buffers_size * 1024;
 	tmp_info.totalswap = 0;
 	tmp_info.freeswap = 0;
 	FOR_EACH_PROCESS(p) {

@@ -43,8 +43,6 @@ struct page *page_table;		/* page pool */
 struct page *page_head;			/* page pool head */
 struct page **page_hash_table;
 
-static int min_free_pages;
-
 static void insert_to_hash(struct page *pg)
 {
 	struct page **h;
@@ -161,7 +159,7 @@ struct page *get_free_page(void)
 	struct page *pg;
 
 	/* if the number of pages is low then reclaim some buffers */
-	if(kstat.free_pages <= min_free_pages) {
+	if(kstat.free_pages <= kstat.min_free_pages) {
 		/* reclaim memory from buffer cache */
 		wakeup(&kswapd);
 		if(!kstat.free_pages) {
@@ -175,13 +173,13 @@ struct page *get_free_page(void)
 			}
 		}
 		/* this reduces the number of iterations */
-		min_free_pages -= NR_BUF_RECLAIM;
-		min_free_pages = min_free_pages < 0 ? 0 : min_free_pages;
+		kstat.min_free_pages -= NR_BUF_RECLAIM;
+		kstat.min_free_pages = kstat.min_free_pages < 0 ? 0 : kstat.min_free_pages;
 	} else {
 		/* recalculate if free memory is back to normal levels */
-		if(!min_free_pages) {
+		if(!kstat.min_free_pages) {
 			if(kstat.free_pages > NR_BUF_RECLAIM) {
-				min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
+				kstat.min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 			}
 		}
 	}
@@ -442,7 +440,7 @@ void reserve_pages(unsigned int from, unsigned int to)
 
 	/* recalculate */
 	kstat.total_mem_pages = kstat.free_pages;
-	min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
+	kstat.min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 }
 
 void page_init(int pages)
@@ -487,5 +485,5 @@ void page_init(int pages)
 	}
 
 	kstat.total_mem_pages = kstat.free_pages;
-	min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
+	kstat.min_free_pages = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
 }
