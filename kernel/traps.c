@@ -292,7 +292,7 @@ void stack_backtrace(void)
 	GET_ESP(sp);
 	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
 	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
-	sp = (unsigned int *)P2V(sp);
+	sp = (unsigned int *)P2V((unsigned int)sp);
 	for(n = 1; n <= 32; n++) {
 		printk(" %08x", *sp);
 		sp++;
@@ -300,11 +300,11 @@ void stack_backtrace(void)
 			printk("\n");
 		}
 	}
-	printk("Backtrace:\n");
+	printk("Kernel backtrace:\n");
 	GET_ESP(sp);
 	/* eip, cs, eflags, oldesp and oldss cannot be counted here */
 	sp += (sizeof(struct sigcontext) / sizeof(unsigned int)) - 5;
-	sp = (unsigned int *)P2V(sp);
+	sp = (unsigned int *)P2V((unsigned int)sp);
 	for(n = 0; n < 256; n++) {
 		addr = *sp;
 		str = elf_lookup_symbol(addr);
@@ -322,7 +322,7 @@ int dump_registers(unsigned int trap, struct sigcontext *sc)
 	printk("\n");
 	if(trap == 14) {	/* Page Fault */
 		GET_CR2(cr2);
-		printk("%s at 0x%08x (%s) with error code 0x%08x (0b%b)\n", traps_table[trap].name, cr2, sc->err & PFAULT_W ? "writing" : "reading", sc->err, sc->err);
+		printk("%s at 0x%08x (%s) with error code 0x%02x%s", traps_table[trap].name, cr2, sc->err & PFAULT_W ? "writing" : "reading", sc->err, sc->err & PAGE_USER ? "\n" : " in kernel mode.\n");
 	} else {
 		printk("EXCEPTION: %s", traps_table[trap].name);
 		if(traps_table[trap].errcode) {
@@ -333,14 +333,14 @@ int dump_registers(unsigned int trap, struct sigcontext *sc)
 
 	printk("Process '%s' with pid %d", current->argv0, current->pid);
 	if(sc->cs == KERNEL_CS) {
-		printk(" in '%s()'.", elf_lookup_symbol(sc->eip));
+		printk(" in '%s()'", elf_lookup_symbol(sc->eip));
 	}
-	printk("\n");
+	printk(".\n");
 
-	printk(" cs: 0x%08x\teip: 0x%08x\tefl: 0x%08x\t ss: 0x%08x\tesp: 0x%08x\n", sc->cs, sc->eip, sc->eflags, sc->oldss, sc->oldesp);
+	printk(" cs: 0x%04x\teip: 0x%08x\tefl: 0x%08x\t ss: 0x%08x\tesp: 0x%08x\n", sc->cs, sc->eip, sc->eflags, sc->oldss, sc->oldesp);
 	printk("eax: 0x%08x\tebx: 0x%08x\tecx: 0x%08x\tedx: 0x%08x\n", sc->eax, sc->ebx, sc->ecx, sc->edx);
 	printk("esi: 0x%08x\tedi: 0x%08x\tesp: 0x%08x\tebp: 0x%08x\n", sc->esi, sc->edi, sc->esp, sc->ebp);
-	printk(" ds: 0x%08x\t es: 0x%08x\t fs: 0x%08x\t gs: 0x%08x\n", sc->ds, sc->es, sc->fs, sc->gs);
+	printk(" ds: 0x%04x\t es: 0x%04x\t fs: 0x%04x\t gs: 0x%04x\n", sc->ds, sc->es, sc->fs, sc->gs);
 
 	if(sc->cs == KERNEL_CS) {
 		stack_backtrace();
