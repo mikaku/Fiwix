@@ -121,7 +121,7 @@ int ext2_read_superblock(__dev_t dev, struct superblock *sb)
 	sb->fsop = &ext2_fsop;
 	sb->s_blocksize = EXT2_MIN_BLOCK_SIZE << ext2sb->s_log_block_size;
 	memcpy_b(&sb->u.ext2.sb, ext2sb, sizeof(struct ext2_super_block));
-	EXT2_DESC_PER_BLOCK(sb) = sb->s_blocksize / sizeof(struct ext2_group_desc);
+	sb->u.ext2.desc_per_block = sb->s_blocksize / sizeof(struct ext2_group_desc);
 	sb->u.ext2.block_groups = 1 + (ext2sb->s_blocks_count - 1) / ext2sb->s_blocks_per_group;
 
 	if(!(sb->root = iget(sb, EXT2_ROOT_INO))) {

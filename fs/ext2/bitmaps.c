@@ -98,7 +98,7 @@ int ext2_ialloc(struct inode *i, int mode)
 
 	/* read through all group descriptors to find the first unallocated inode */
 	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
-		if(!(bg % (sb->s_blocksize / sizeof(struct ext2_group_desc)))) {
+		if(!(bg % EXT2_DESC_PER_BLOCK(sb))) {
 			if(buf) {
 				brelse(buf);
 				block++;
@@ -227,7 +227,7 @@ int ext2_balloc(struct superblock *sb)
 
 	/* read through all group descriptors to find the first unallocated block */
 	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
-		if(!(bg % (sb->s_blocksize / sizeof(struct ext2_group_desc)))) {
+		if(!(bg % EXT2_DESC_PER_BLOCK(sb))) {
 			if(buf) {
 				brelse(buf);
 				b++;
