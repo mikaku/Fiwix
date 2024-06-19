@@ -13,12 +13,18 @@
   pages, with a mininum of 1 page and a maximum of 16 pages. The kernel now
   shows the hash tables sizes during the boot.
 - Added to sync drives when kernel stops because no more user processes exist.
+  [#70]
+- Added the flag PF_NOTINTERRUPT to avoid waking up a process sleeping in the
+  non-interruptible mode.
+- Changed the file position for reads to be set to zero when a file is opened
+  with O_APPEND. [#76]
 - Implement mapping framebuffer physical address to user space using mmap. [#79]
 - Changed the inode cache mechanism to avoid caching inodes from
   pseudo-filesystems.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
 - Moved the call to sysrq() into the keyboard interrupt bottom half.
 - Improved code compaction and efficiency in ATA disk read/write.
+- Improved the efficiency of the buffer cache.
 - Reorganized and improved the system console related code.
 - Pass through 64-bit PAE memory entries as part of kexec. [#67]
 - Make sure that the early system log will be shown in all system consoles.
@@ -36,6 +42,8 @@
 - Fixed UNIX sockets working with select(). [#83]
 - Fixed serial system console table overindex. [#87]
 - Fixed a major problem in do_switch routine. [#89]
+- Fixed incorrect passing of e820 memory map to Linux kexec guests. [#72]
+- Fixed EXT2_DESC_PER_BLOCK() to avoid redundant calculations.
 - Small fixes and cosmetic changes.
 
 
