@@ -517,7 +517,7 @@ void serial_write(struct tty *tty)
 	RESTORE_FLAGS(flags);
 }
 
-void irq_serial_bh(void)
+void irq_serial_bh(struct sigcontext *sc)
 {
 	struct tty *tty;
 	struct serial *s;

@@ -180,33 +180,6 @@ void irq_timer(int num, struct sigcontext *sc)
 	}
 
 	timer_bh.flags |= BH_ACTIVE;
-
-	if(sc->cs == KERNEL_CS) {
-		current->usage.ru_stime.tv_usec += TICK;
-		if(current->usage.ru_stime.tv_usec >= 1000000) {
-			current->usage.ru_stime.tv_sec++;
-			current->usage.ru_stime.tv_usec -= 1000000;
-		}
-		if(current->pid != IDLE) {
-			kstat.cpu_system++;
-		}
-	} else {
-		current->usage.ru_utime.tv_usec += TICK;
-		if(current->usage.ru_utime.tv_usec >= 1000000) {
-			current->usage.ru_utime.tv_sec++;
-			current->usage.ru_utime.tv_usec -= 1000000;
-		}
-		if(current->pid != IDLE) {
-			kstat.cpu_user++;
-		}
-		if(current->it_virt_value > 0) {
-			current->it_virt_value--;
-			if(!current->it_virt_value) {
-				current->it_virt_value = current->it_virt_interval;
-				send_sig(current, SIGVTALRM);
-			}
-		}
-	}
 }
 
 unsigned int tv2ticks(const struct timeval *tv)
@@ -279,9 +252,36 @@ unsigned int mktime(struct mt *mt)
 	return seconds;
 }
 
-void irq_timer_bh(void)
+void irq_timer_bh(struct sigcontext *sc)
 {
 	struct proc *p;
+
+	if(sc->cs == KERNEL_CS) {
+		current->usage.ru_stime.tv_usec += TICK;
+		if(current->usage.ru_stime.tv_usec >= 1000000) {
+			current->usage.ru_stime.tv_sec++;
+			current->usage.ru_stime.tv_usec -= 1000000;
+		}
+		if(current->pid != IDLE) {
+			kstat.cpu_system++;
+		}
+	} else {
+		current->usage.ru_utime.tv_usec += TICK;
+		if(current->usage.ru_utime.tv_usec >= 1000000) {
+			current->usage.ru_utime.tv_sec++;
+			current->usage.ru_utime.tv_usec -= 1000000;
+		}
+		if(current->pid != IDLE) {
+			kstat.cpu_user++;
+		}
+		if(current->it_virt_value > 0) {
+			current->it_virt_value--;
+			if(!current->it_virt_value) {
+				current->it_virt_value = current->it_virt_interval;
+				send_sig(current, SIGVTALRM);
+			}
+		}
+	}
 
 	if(current->usage.ru_utime.tv_sec + current->usage.ru_stime.tv_sec > current->rlim[RLIMIT_CPU].rlim_cur) {
 		send_sig(current, SIGXCPU);
@@ -332,7 +332,7 @@ void irq_timer_bh(void)
 	}
 }
 
-void do_callouts_bh(void)
+void do_callouts_bh(struct sigcontext *sc)
 {
 	struct callout *c;
 	void (*fn)(unsigned int);

@@ -23,6 +23,7 @@ int register_irq(int num, struct interrupt *new_irq)
 	struct interrupt **irq;
 
 	if(num < 0  || num >= NR_IRQS) {
+		printk("WARNING: %s(): interrupt %d is greater than NR_IRQS (%d)!\n", __FUNCTION__, num, NR_IRQS);
 		return -EINVAL;
 	}
 
@@ -120,17 +121,17 @@ void unknown_irq_handler(void)
 }
 
 /* execute bottom halves (interrupts are enabled) */
-void do_bh(void)
+void do_bh(struct sigcontext sc)
 {
 	struct bh *b;
-	void (*fn)(void);
+	void (*fn)(struct sigcontext *);
 
 	b = bh_table;
 	while(b) {
 		if(b->flags & BH_ACTIVE) {
 			b->flags &= ~BH_ACTIVE;
 			fn = b->fn;
-			(*fn)();
+			(*fn)(&sc);
 		}
 		b = b->next;
 	}

@@ -149,7 +149,7 @@ extern __key_t keymap[NR_MODIFIERS * NR_SCODES];
 
 void set_leds(unsigned char);
 void irq_keyboard(int num, struct sigcontext *);
-void irq_keyboard_bh(void);
+void irq_keyboard_bh(struct sigcontext *);
 void keyboard_init(void);
 
 #endif /* __KERNEL__ */

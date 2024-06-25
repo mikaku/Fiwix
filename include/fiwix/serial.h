@@ -111,7 +111,7 @@ int serial_close(struct tty *);
 int serial_ioctl(struct tty *, int, unsigned int);
 void serial_write(struct tty *);
 void irq_serial(int, struct sigcontext *);
-void irq_serial_bh(void);
+void irq_serial_bh(struct sigcontext *);
 void serial_init(void);
 
 #endif /* _FIWIX_SERIAL_H */

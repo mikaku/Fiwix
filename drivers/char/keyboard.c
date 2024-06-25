@@ -728,7 +728,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	return;
 }
 
-void irq_keyboard_bh(void)
+void irq_keyboard_bh(struct sigcontext *sc)
 {
 	int n;
 	struct tty *tty;

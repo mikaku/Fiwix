@@ -25,7 +25,7 @@ extern struct interrupt *irq_table[NR_IRQS];
 
 struct bh {
 	int flags;
-	void (*fn)(void);
+	void (*fn)(struct sigcontext *);
 	struct bh *next;
 };
 
@@ -34,7 +34,7 @@ int register_irq(int, struct interrupt *);
 int unregister_irq(int, const struct interrupt *);
 void irq_handler(int, struct sigcontext);
 void unknown_irq_handler(void);
-void do_bh(void);
+void do_bh(struct sigcontext);
 void irq_init(void);
 
 #endif /* _FIWIX_IRQ_H */
