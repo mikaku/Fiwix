@@ -37,12 +37,14 @@ int kswapd(void)
 	floppy_init();
 	ata_init();
 
-
 	/* starting system */
 	mem_stats();
 	fs_init();
 	mount_root();
 	init_init();
+
+	/* make sure interrupts are enabled after initializing devices */
+	STI();
 
 	for(;;) {
 		sleep(&kswapd, PROC_UNINTERRUPTIBLE);
