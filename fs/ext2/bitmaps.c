@@ -17,43 +17,42 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static int find_first_zero(struct superblock *sb, __blk_t block)
+static int find_first_zero(struct superblock *sb, __blk_t bmblock, struct buffer **buf)
 {
 	unsigned char c;
-	int blksize;
 	int n, n2;
-	struct buffer *buf;
 
-	blksize = sb->s_blocksize;
-
-	if(!(buf = bread(sb->dev, block, blksize))) {
+	if(!(*buf = bread(sb->dev, bmblock, sb->s_blocksize))) {
 		return -EIO;
 	}
-	for(n = 0; n < blksize; n++) {
-		c = (unsigned char)buf->data[n];
+	for(n = 0; n < sb->s_blocksize; n++) {
+		if((c = (unsigned char)(*buf)->data[n]) == 0xFF) {
+			continue;
+		}
 		for(n2 = 0; n2 < 8; n2++) {
 			if(!(c & (1 << n2))) {
-				brelse(buf);
-				return n2 + (n * 8) + 1;
+				return (n * 8) + n2;
 			}
 		}
 	}
-	brelse(buf);
-	return 0;
+	return -ENOSPC;
 }
 
-static int change_bit(int mode, struct superblock *sb, __blk_t block, int item)
+static int change_bit(int mode, struct superblock *sb, __blk_t bmblock, struct buffer *bmbuf, int item)
 {
 	int byte, bit, mask;
 	struct buffer *buf;
 
-	block += item / (sb->s_blocksize * 8);
 	byte = (item % (sb->s_blocksize * 8)) / 8;
 	bit = (item % (sb->s_blocksize * 8)) % 8;
 	mask = 1 << bit;
 
-	if(!(buf = bread(sb->dev, block, sb->s_blocksize))) {
-		return -EIO;
+	if(!bmbuf) {
+		if(!(buf = bread(sb->dev, bmblock, sb->s_blocksize))) {
+			return -EIO;
+		}
+	} else {
+		buf = bmbuf;
 	}
 
 	if(mode == CLEAR_BIT) {
@@ -86,15 +85,14 @@ int ext2_ialloc(struct inode *i, int mode)
 	__blk_t block;
 	struct superblock *sb;
 	struct ext2_group_desc *gd;
-	struct buffer *buf;
+	struct buffer *buf, *bmbuf;
 	int bg, d, errno;
 
 	sb = i->sb;
 	superblock_lock(sb);
 
 	block = SUPERBLOCK + sb->u.ext2.sb.s_first_data_block;
-	inode = 0;
-	buf = NULL;
+	buf = bmbuf = NULL;
 
 	/* read through all group descriptors to find the first unallocated inode */
 	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
@@ -111,13 +109,11 @@ int ext2_ialloc(struct inode *i, int mode)
 		}
 		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_inodes_count) {
-			if((errno = find_first_zero(sb, gd->bg_inode_bitmap))) {
+			if((errno = find_first_zero(sb, gd->bg_inode_bitmap, &bmbuf)) != -ENOSPC) {
 				break;
 			}
+			brelse(bmbuf);
 		}
-	}
-	if(!errno) {
-		errno = -ENOSPC;
 	}
 	if(errno < 0) {
 		brelse(buf);
@@ -126,7 +122,7 @@ int ext2_ialloc(struct inode *i, int mode)
 	}
 
 	inode = errno;
-	errno = change_bit(SET_BIT, sb, gd->bg_inode_bitmap, inode - 1);
+	errno = change_bit(SET_BIT, sb, gd->bg_inode_bitmap, bmbuf, inode);
 	if(errno) {
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set inode %d.\n", __FUNCTION__, inode);
@@ -138,7 +134,7 @@ int ext2_ialloc(struct inode *i, int mode)
 		}
 	}
 
-	inode += bg * EXT2_INODES_PER_GROUP(sb);
+	inode += (bg * EXT2_INODES_PER_GROUP(sb)) + 1;
 	gd->bg_free_inodes_count--;
 	sb->u.ext2.sb.s_free_inodes_count--;
 	if(S_ISDIR(mode)) {
@@ -183,11 +179,11 @@ void ext2_ifree(struct inode *i)
 		return;
 	}
 	gd = (struct ext2_group_desc *)(buf->data + ((bg % EXT2_DESC_PER_BLOCK(sb)) * sizeof(struct ext2_group_desc)));
-	errno = change_bit(CLEAR_BIT, sb, gd->bg_inode_bitmap, (i->inode - 1) % EXT2_INODES_PER_GROUP(sb));
+	errno = change_bit(CLEAR_BIT, sb, gd->bg_inode_bitmap, NULL, (i->inode - 1) % EXT2_INODES_PER_GROUP(sb));
 
 	if(errno) {
 		if(errno < 0) {
-			printk("WARNING: %s(): unable to clear inode %d.\n", __FUNCTION__, i->inode);
+			printk("WARNING: %s(): unable to free inode %d.\n", __FUNCTION__, i->inode);
 			brelse(buf);
 			superblock_unlock(sb);
 			return;
@@ -214,39 +210,36 @@ void ext2_ifree(struct inode *i)
 
 int ext2_balloc(struct superblock *sb)
 {
-	__blk_t b, block;
+	__blk_t block;
 	struct ext2_group_desc *gd;
-	struct buffer *buf;
+	struct buffer *buf, *bmbuf;
 	int bg, d, errno;
 
 	superblock_lock(sb);
 
-	b = SUPERBLOCK + sb->u.ext2.sb.s_first_data_block;
-	block = 0;
-	buf = NULL;
+	block = SUPERBLOCK + sb->u.ext2.sb.s_first_data_block;
+	buf = bmbuf = NULL;
 
 	/* read through all group descriptors to find the first unallocated block */
 	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
 		if(!(bg % EXT2_DESC_PER_BLOCK(sb))) {
 			if(buf) {
 				brelse(buf);
-				b++;
+				block++;
 				d = 0;
 			}
-			if(!(buf = bread(sb->dev, b, sb->s_blocksize))) {
+			if(!(buf = bread(sb->dev, block, sb->s_blocksize))) {
 				superblock_unlock(sb);
 				return -EIO;
 			}
 		}
 		gd = (struct ext2_group_desc *)(buf->data + (d * sizeof(struct ext2_group_desc)));
 		if(gd->bg_free_blocks_count) {
-			if((errno = find_first_zero(sb, gd->bg_block_bitmap))) {
+			if((errno = find_first_zero(sb, gd->bg_block_bitmap, &bmbuf)) != -ENOSPC) {
 				break;
 			}
+			brelse(bmbuf);
 		}
-	}
-	if(!errno) {
-		errno = -ENOSPC;
 	}
 	if(errno < 0) {
 		brelse(buf);
@@ -255,7 +248,7 @@ int ext2_balloc(struct superblock *sb)
 	}
 
 	block = errno;
-	errno = change_bit(SET_BIT, sb, gd->bg_block_bitmap, block - 1);
+	errno = change_bit(SET_BIT, sb, gd->bg_block_bitmap, bmbuf, block);
 	if(errno) {
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set block %d.\n", __FUNCTION__, block);
@@ -267,7 +260,7 @@ int ext2_balloc(struct superblock *sb)
 		}
 	}
 
-	block += bg * EXT2_BLOCKS_PER_GROUP(sb);
+	block += (bg * EXT2_BLOCKS_PER_GROUP(sb)) + sb->u.ext2.sb.s_first_data_block;
 	gd->bg_free_blocks_count--;
 	sb->u.ext2.sb.s_free_blocks_count--;
 	bwrite(buf);
@@ -291,13 +284,13 @@ void ext2_bfree(struct superblock *sb, int block)
 	superblock_lock(sb);
 
 	b = SUPERBLOCK + sb->u.ext2.sb.s_first_data_block;
-	bg = (block - 1) / EXT2_BLOCKS_PER_GROUP(sb);
+	bg = (block - sb->u.ext2.sb.s_first_data_block) / EXT2_BLOCKS_PER_GROUP(sb);
 	if(!(buf = bread(sb->dev, b + (bg / EXT2_DESC_PER_BLOCK(sb)), sb->s_blocksize))) {
 		superblock_unlock(sb);
 		return;
 	}
 	gd = (struct ext2_group_desc *)(buf->data + ((bg % EXT2_DESC_PER_BLOCK(sb)) * sizeof(struct ext2_group_desc)));
-	errno = change_bit(CLEAR_BIT, sb, gd->bg_block_bitmap, (block - 1) % EXT2_BLOCKS_PER_GROUP(sb));
+	errno = change_bit(CLEAR_BIT, sb, gd->bg_block_bitmap, NULL, (block - sb->u.ext2.sb.s_first_data_block) % EXT2_BLOCKS_PER_GROUP(sb));
 
 	if(errno) {
 		if(errno < 0) {
