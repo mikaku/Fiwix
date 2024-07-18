@@ -55,8 +55,8 @@
 	call	do_bh
 
 #define CHECK_IF_NESTED_INTERRUPT					\
-	testl	$USER_PL, CS(%esp)					;\
-	jz	2f
+	cmpw	$(KERNEL_CS), CS(%esp)					;\
+	je	2f
 
 #define CHECK_IF_SIGNALS						\
 	call	issig							;\
