@@ -217,7 +217,7 @@ static void insert_on_free_list(struct buffer *buf)
 		buf->prev_free = h->prev_free;
 
 		/*
-		 * If is marked as not valid then this buffer
+		 * If is not marked as valid then this buffer
 		 * is placed at the beginning of the free list.
 		 */
 		if(!(buf->flags & BUFFER_VALID)) {
@@ -456,7 +456,7 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 		}
 
 		if(!(buf = get_free_buffer(GROW_IF_NEEDED, size))) {
-			printk("WARNING: %s(): no more buffers on free list!\n", __FUNCTION__);
+			wakeup(&kswapd);
 			sleep(&get_free_buffer, PROC_UNINTERRUPTIBLE);
 			continue;
 		}
@@ -695,6 +695,7 @@ int reclaim_buffers(void)
 		buffer_retained_head[index] = NULL;
 	}
 
+	wakeup(&get_free_buffer);
 	wakeup(&buffer_wait);
 
 	/*
@@ -705,6 +706,9 @@ int reclaim_buffers(void)
 		wakeup(&get_free_page);
 	}
 
+	if(!reclaimed) {
+		printk("WARNING: %s(): no more buffers on free lists!\n", __FUNCTION__);
+	}
 	return reclaimed;
 }
 
