@@ -29,6 +29,7 @@ static int check_parm(struct kparms *parm, const char *value)
 {
 	int n;
 
+#ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 	if(!strcmp(parm->name, "bga=")) {
 		for(n = 0; parm->value[n]; n++) {
@@ -41,6 +42,7 @@ static int check_parm(struct kparms *parm, const char *value)
 		return 1;
 	}
 #endif /* CONFIG_BGA */
+#endif /* CONFIG_PCI */
 	if(!strcmp(parm->name, "console=")) {
 		for(n = 0; parm->value[n]; n++) {
 			if(!strcmp(parm->value[n], value)) {
