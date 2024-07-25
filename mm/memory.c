@@ -443,7 +443,7 @@ void mem_init(void)
 	/* the last one must be the page_table structure */
 	n = (kstat.physical_pages * PAGE_HASH_PER_10K) / 10000;
 	n = MAX(n, 1);	/* 1 page for the hash table as minimum */
-	n = MIN(n, 16);	/* 16 pages for the hash table as maximum */
+	n = MIN(n, MAX_PAGES_HASH);
 	page_hash_table_size = n * PAGE_SIZE;
 	if(!is_addr_in_bios_map(V2P(_last_data_addr) + page_hash_table_size)) {
 		PANIC("Not enough memory for page_hash_table.\n");
@@ -472,11 +472,15 @@ void mem_stats(void)
 		kstat.physical_pages << 2,
 		kstat.total_mem_pages << 2,
 		kstat.kernel_reserved, kstat.physical_reserved);
-	printk("hash table entries: buffer=%d (%dKB), inode=%d (%dKB), page=%d (%dKB)\n",
+	printk("tables: procs=%d (%dKB), opens=%d (%dKB), pages=%dKB, inodes=%d\n",
+		NR_PROCS, proc_table_size / 1024,
+		NR_OPENS, fd_table_size / 1024,
+		page_table_size / 1024,
+		kstat.max_inodes);
+	printk("hash tables: buffers=%d (%dKB), inodes=%d (%dKB), pages=%d (%dKB)\n",
 		buffer_hash_table_size / sizeof(unsigned int), buffer_hash_table_size / 1024,
 		inode_hash_table_size / sizeof(unsigned int), inode_hash_table_size / 1024,
 		page_hash_table_size / sizeof(unsigned int), page_hash_table_size / 1024);
-	printk("kernel: text=%dKB, data=%dKB, bss=%dKB, i/o buffers=%d, inodes=%d\n\n",
-		KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024,
-		kstat.max_buffers_size, kstat.max_inodes);
+	printk("kernel: text=%dKB, data=%dKB, bss=%dKB\n\n",
+		KERNEL_TEXT_SIZE / 1024, KERNEL_DATA_SIZE / 1024, KERNEL_BSS_SIZE / 1024);
 }

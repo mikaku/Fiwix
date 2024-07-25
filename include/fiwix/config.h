@@ -8,7 +8,7 @@
 #ifndef _FIWIX_CONFIG_H
 #define _FIWIX_CONFIG_H
 
-/* kernel tuning */
+/* kernel tuning options */
 #define NR_PROCS		64	/* max. number of processes */
 #define NR_CALLOUTS		NR_PROCS	/* max. active callouts */
 #define NR_MOUNT_POINTS		8	/* max. number of mounted filesystems */
@@ -18,6 +18,7 @@
 #define FREE_PAGES_RATIO	5	/* % minimum of free memory pages */
 #define PAGE_HASH_PER_10K	10	/* % of % of hash buckets relative to
 					   the number of physical pages */
+#define MAX_PAGES_HASH		16	/* max. number of pages in hash table */
 #define BUFFER_PERCENTAGE	100	/* % of memory for buffer cache */
 #define BUFFER_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the buffer table */
