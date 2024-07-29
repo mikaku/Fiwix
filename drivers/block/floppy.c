@@ -124,6 +124,8 @@ static struct device floppy_device = {
 	0,
 	0,
 	&fdc_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

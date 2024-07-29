@@ -11,7 +11,8 @@
 #include <fiwix/fs.h>
 #include <fiwix/part.h>
 #include <fiwix/sigcontext.h>
-#include <fiwix/sleep.h>
+#include <fiwix/blk_queue.h>
+#include <fiwix/timer.h>
 
 #define IDE0_IRQ		14	/* primary controller interrupt */
 #define IDE1_IRQ		15	/* secondary controller interrupt */
@@ -42,7 +43,7 @@
 #define ATA_RDY_RETR_LONG	50000	/* long delay for fast CPUs */
 #define ATA_RDY_RETR_SHORT	500	/* short delay for slow CPUs */
 #define MAX_IDE_ERR		10	/* number of retries */
-#define MAX_CD_ERR		5	/* number of retries in CDROMs */
+#define MAX_CD_ERR		10	/* number of retries in CDROMs */
 
 #define SET_ATA_RDY_RETR(retries)					\
 	if((cpu_table.hz / 1000000) <= 100) {				\
@@ -111,7 +112,6 @@
 /* ATA config commands */
 #define ATA_SET_MULTIPLE_MODE	0xC6
 #define ATA_PACKET		0xA0
-#define ATA_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
 #define ATA_IDENTIFY		0xEC	/* identify ATA device */
 #define ATA_SET_FEATURES	0xEF
 
@@ -119,10 +119,12 @@
 #define ATA_SET_XFERMODE	0x03	/* set transfer mode */
 
 /* ATAPI commands */
+#define ATAPI_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
 #define ATAPI_TEST_UNIT		0x00
 #define ATAPI_REQUEST_SENSE	0x03
 #define ATAPI_START_STOP	0x1B
 #define ATAPI_MEDIUM_REMOVAL	0x1E
+#define ATAPI_GET_CAPACITY	0x25
 #define ATAPI_READ10		0x28
 
 #define CD_UNLOCK_MEDIUM	0x00	/* allow medium removal */
@@ -151,7 +153,7 @@
 #define ATAPI_IS_PRINTER	0x02
 #define ATAPI_IS_PROCESSOR	0x03
 #define ATAPI_IS_WRITE_ONCE	0x04
-#define ATAPI_IS_CDROM		0x05
+#define ATAPI_IS_CDROM		0x05	/* Command Packet Set is MMC-5 */
 #define ATAPI_IS_SCANNER	0x06
 
 /* ATA drive flags */
@@ -165,6 +167,7 @@
 #define DRIVE_HAS_DATA32	0x80
 
 #define PRDT_MARK_END		0x8000
+#define WAKEUP_AND_RETURN	1
 
 /* ATA/ATAPI-4 based */
 struct ata_drv_ident {
@@ -242,6 +245,8 @@ struct prd {
 	unsigned short int eot;		/* End-Of-Table mark */
 };
 
+struct ide;	/* needed to satisfy the reference inside xfer_data & ata_drv */
+
 struct xfer_data {
 	__dev_t dev;
 	__blk_t block;
@@ -252,15 +257,19 @@ struct xfer_data {
 	int minor;
 	int datalen;
 	int nrsectors;
+	int count;
+	int retries;
+	int max_retries;
 	int bm_cmd;
 	int cmd;
 	char *mode;
+	int (*rw_end_fn)(struct ide *, struct xfer_data *);
 };
 
 struct ata_xfer {
-	void (*read_fn)(unsigned int, void *, unsigned int);
+	void (*copy_read_fn)(unsigned int, void *, unsigned int);
 	int read_cmd;
-	void (*write_fn)(unsigned int, void *, unsigned int);
+	void (*copy_write_fn)(unsigned int, void *, unsigned int);
 	int write_cmd;
 	char copy_raw_factor;		/* 2 for 16bit, 4 for 32bit */
 	struct prd prd_table;		/* Physical Region Descriptor table */
@@ -268,8 +277,6 @@ struct ata_xfer {
 	unsigned char bm_status;	/* bus master status register */
 	unsigned char bm_prd_addr;	/* bus master PRD table address */
 };
-
-struct ide;	/* needed to satisfy the reference inside 'struct ata_drv' */
 
 struct ata_drv {
 	int num;			/* master or slave */
@@ -288,8 +295,11 @@ struct ata_drv {
 	struct fs_operations *fsop;
 	struct ata_drv_ident ident;
 	struct ata_xfer xfer;
+	struct xfer_data xd;		/* transfer data setup */
 	int (*read_fn)(struct ide *, struct ata_drv *, struct xfer_data *);
 	int (*write_fn)(struct ide *, struct ata_drv *, struct xfer_data *);
+	int (*read_end_fn)(struct ide *, struct xfer_data *);
+	int (*write_end_fn)(struct ide *, struct xfer_data *);
 	struct partition part_table[NR_PARTITIONS];
 };
 
@@ -303,8 +313,9 @@ struct ide {
 	int wait_interrupt;
 	int irq_timeout;
 	void *timer_fn;
+	struct callout_req creq;
 	struct pci_device *pci_dev;
-	struct resource resource;
+	struct device *device;
 	struct ata_drv drive[NR_ATA_DRVS];
 };
 
@@ -318,9 +329,11 @@ void ide1_timer(unsigned int);
 void ata_error(struct ide *, int);
 void ata_delay(void);
 void ata_wait400ns(struct ide *);
+int ata_wait_nobusy(struct ide *);
 int ata_wait_state(struct ide *, unsigned char);
 int ata_io(struct ide *, struct ata_drv *, __off_t, int);
-int ata_wait_irq(struct ide *, int, int);
+void ata_set_timeout(struct ide *, int, int);
+void ata_end_request(struct ide *);
 int ata_select_drv(struct ide *, int, int, unsigned char);
 struct ide *get_ide_controller(__dev_t);
 void ide_table_init(struct ide *, int);

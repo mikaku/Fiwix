@@ -45,11 +45,11 @@ enum {
 };
 
 int send_packet_command(unsigned char *, struct ide *, struct ata_drv *, int);
-int atapi_read_data(__dev_t, char *, struct ide *, struct ata_drv *, int, int);
 int atapi_cmd_testunit(struct ide *, struct ata_drv *);
 int atapi_cmd_reqsense(struct ide *, struct ata_drv *);
 int atapi_cmd_startstop(int, struct ide *, struct ata_drv *);
 int atapi_cmd_mediumrm(int, struct ide *, struct ata_drv *);
-int request_sense(char *, __dev_t, struct ide *, struct ata_drv *);
+int atapi_cmd_get_capacity(struct ide *, struct ata_drv *);
+int atapi_cmd_read10(struct ide *, struct ata_drv *);
 
 #endif /* _FIWIX_ATAPI_H */

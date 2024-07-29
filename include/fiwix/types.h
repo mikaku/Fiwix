@@ -59,4 +59,12 @@ struct iovec {
 #define __FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
 #define __FD_ISSET(d, set)	((set)->fds_bits[__FDELT(d)] & __FDMASK(d))
 
+#define __bswap32(x) \
+	((unsigned int)(			\
+		((x & 0xFF) << 24) |		\
+		(((x >> 8) & 0xFF) << 16) |	\
+		(((x >> 16) & 0xFF) << 8) |	\
+		((x >> 24) & 0xFF)		\
+	))
+
 #endif /* _FIWIX_TYPES_H */

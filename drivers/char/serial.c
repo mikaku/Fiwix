@@ -74,6 +74,8 @@ static struct device serial_device = {
 	0,
 	NULL,
 	&serial_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

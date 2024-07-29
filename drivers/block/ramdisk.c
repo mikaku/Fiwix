@@ -70,6 +70,8 @@ static struct device ramdisk_device = {
 	0,
 	0,
 	&ramdisk_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

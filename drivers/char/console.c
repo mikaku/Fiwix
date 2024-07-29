@@ -102,6 +102,8 @@ static struct device tty_device = {
 	0,
 	NULL,
 	&tty_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 
@@ -112,6 +114,8 @@ static struct device console_device = {
 	0,
 	NULL,
 	&tty_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

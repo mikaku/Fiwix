@@ -28,6 +28,8 @@ struct device {
 	unsigned int *blksize;		/* default minor blocksizes, in KB */
 	void *device_data;		/* mostly used for minor sizes, in KB */
 	struct fs_operations *fsop;
+	void *requests_queue;
+	void *xfer_data;
 	struct device *next;
 };
 

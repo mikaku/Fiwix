@@ -12,13 +12,13 @@
 #include <fiwix/atapi_cd.h>
 #include <fiwix/devices.h>
 #include <fiwix/sleep.h>
-#include <fiwix/timer.h>
 #include <fiwix/sched.h>
 #include <fiwix/cpu.h>
 #include <fiwix/pic.h>
 #include <fiwix/irq.h>
 #include <fiwix/pci.h>
 #include <fiwix/fs.h>
+#include <fiwix/blk_queue.h>
 #include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
@@ -70,16 +70,16 @@ static struct fs_operations ata_driver_fsop = {
 struct ide *ide_table;
 
 static struct ide default_ide_table[NR_IDE_CTRLS] = {
-	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, 0, IDE0_IRQ, 0, 0, &ide0_timer, 0, { 0, 0 },
+	{ IDE_PRIMARY, "primary", IDE0_BASE, IDE0_CTRL, 0, IDE0_IRQ, 0, 0, &ide0_timer, { 0 }, 0, 0,
 		{
-			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} }
+			{ IDE_MASTER, "master", "hda", IDE0_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0, 0, 0, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdb", IDE0_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0, 0, 0, {{ 0 }} }
 		}
 	},
-	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, 0, IDE1_IRQ, 0, 0, &ide1_timer, 0, { 0, 0 },
+	{ IDE_SECONDARY, "secondary", IDE1_BASE, IDE1_CTRL, 0, IDE1_IRQ, 0, 0, &ide1_timer, { 0 }, 0, 0,
 		{
-			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} },
-			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, 0, 0, {{ 0 }} }
+			{ IDE_MASTER, "master", "hdc", IDE1_MAJOR, 0, IDE_MASTER_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0, 0, 0, {{ 0 }} },
+			{ IDE_SLAVE, "slave", "hdd", IDE1_MAJOR, 0, IDE_SLAVE_MSF, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 0, 0, 0, 0, {{ 0 }} }
 		}
 	}
 };
@@ -92,6 +92,8 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		0,
 		0,
 		&ata_driver_fsop,
+		NULL,
+		NULL,
 		NULL
 	},
 	{
@@ -101,6 +103,8 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		0,
 		0,
 		&ata_driver_fsop,
+		NULL,
+		NULL,
 		NULL
 	}
 };
@@ -111,28 +115,31 @@ static struct interrupt irq_config_ide[NR_IDE_CTRLS] = {
 };
 
 
-static int ata_identify_device(struct ide *ide, struct ata_drv *drive)
+static void ata_identify_device(struct ide *ide, struct ata_drv *drive)
 {
 	int cmd, status;
 
 	if((status = ata_select_drv(ide, drive->num, ATA_CHS_MODE, 0))) {
 		/* some controllers return 0xFF to indicate a non-drive condition */
 		if(status == 0xFF) {
-			return 1;
+			return;
 		}
 		printk("WARNING: %s(): error on device '%s'.\n", __FUNCTION__, drive->dev_name);
 		ata_error(ide, status);
 	}
 
-	cmd = (drive->flags & DRIVE_IS_ATAPI) ? ATA_IDENTIFY_PACKET : ATA_IDENTIFY;
+	cmd = (drive->flags & DRIVE_IS_ATAPI) ? ATAPI_IDENTIFY_PACKET : ATA_IDENTIFY;
 
 	outport_b(ide->base + ATA_FEATURES, 0);
 	outport_b(ide->base + ATA_SECCNT, 0);
 	outport_b(ide->base + ATA_SECTOR, 0);
 	outport_b(ide->base + ATA_LCYL, 0);
 	outport_b(ide->base + ATA_HCYL, 0);
-	ata_wait_irq(ide, WAIT_FOR_DISK, cmd);
-	return 0;
+	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
+	outport_b(ide->base + ATA_COMMAND, cmd);
+	if(ide->wait_interrupt) {
+		sleep(ide, PROC_UNINTERRUPTIBLE);
+	}
 }
 
 static int identify_drive(struct ide *ide, struct ata_drv *drive)
@@ -403,8 +410,8 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	*/
 
 	/* default common values for 'xfer' */
-	drive->xfer.read_fn = inport_sw;
-	drive->xfer.write_fn = outport_sw;
+	drive->xfer.copy_read_fn = inport_sw;
+	drive->xfer.copy_write_fn = outport_sw;
 	drive->xfer.copy_raw_factor = 2;	/* 16bit */
 
 	drive->multi = 1;
@@ -444,8 +451,8 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 
 	if(drive->flags & DRIVE_HAS_DATA32) {
 		printk(", 32bit");
-		drive->xfer.read_fn = inport_sl;
-		drive->xfer.write_fn = outport_sl;
+		drive->xfer.copy_read_fn = inport_sl;
+		drive->xfer.copy_write_fn = outport_sl;
 		drive->xfer.copy_raw_factor = 4;
 	} else {
 		printk(", 16bit");
@@ -482,9 +489,12 @@ static int ata_softreset(struct ide *ide)
 	/* select drive 0 (don't care of ATA_STAT_BSY bit) */
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
 	ata_delay();
-	ata_wait_irq(ide, WAIT_FOR_DISK, 0);
+	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
+	if(ide->wait_interrupt) {
+		sleep(ide, PROC_UNINTERRUPTIBLE);
+	}
 
-	if(ata_wait_state(ide, ATA_STAT_BSY)) {
+	if(ata_wait_nobusy(ide)) {
 		printk("WARNING: %s(): reset error on ide%d(0).\n", __FUNCTION__, ide->channel);
 		error = 1;
 	} else {
@@ -506,12 +516,12 @@ static int ata_softreset(struct ide *ide)
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE + (1 << 4));
 	ata_delay();
 
-	if(ata_wait_state(ide, ATA_STAT_BSY)) {
+	if(ata_wait_nobusy(ide)) {
 		printk("WARNING: %s(): reset error on ide%d(1).\n", __FUNCTION__, ide->channel);
 		/* select drive 0 (don't care of ATA_STAT_BSY bit) */
 		outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
 		ata_delay();
-		ata_wait_state(ide, ATA_STAT_BSY);
+		ata_wait_nobusy(ide);
 		error |= (1 << 4);
 	}
 
@@ -556,7 +566,7 @@ void irq_ide0(int num, struct sigcontext *sc)
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
 	} else {
 		ide->irq_timeout = ide->wait_interrupt = 0;
-		wakeup(&irq_ide0);
+		ata_end_request(ide);
 	}
 }
 
@@ -569,7 +579,7 @@ void irq_ide1(int num, struct sigcontext *sc)
 		printk("WARNING: %s(): unexpected interrupt!\n", __FUNCTION__);
 	} else {
 		ide->irq_timeout = ide->wait_interrupt = 0;
-		wakeup(&irq_ide1);
+		ata_end_request(ide);
 	}
 }
 
@@ -580,7 +590,7 @@ void ide0_timer(unsigned int arg)
 	ide = &ide_table[IDE_PRIMARY];
 	ide->irq_timeout = 1;
 	ide->wait_interrupt = 0;
-	wakeup(&irq_ide0);
+	ata_end_request(ide);
 }
 
 void ide1_timer(unsigned int arg)
@@ -590,7 +600,7 @@ void ide1_timer(unsigned int arg)
 	ide = &ide_table[IDE_SECONDARY];
 	ide->irq_timeout = 1;
 	ide->wait_interrupt = 0;
-	wakeup(&irq_ide1);
+	ata_end_request(ide);
 }
 
 void ata_error(struct ide *ide, int status)
@@ -656,6 +666,23 @@ void ata_wait400ns(struct ide *ide)
 	}
 }
 
+int ata_wait_nobusy(struct ide *ide)
+{
+	int n, retries, status;
+
+	status = 0;
+	SET_ATA_RDY_RETR(retries);
+
+	for(n = 0; n < retries; n++) {
+		status = inport_b(ide->base + ATA_STATUS);
+		if(!(status & ATA_STAT_BSY)) {
+			return 0;
+		}
+		ata_delay();
+	}
+	return status;
+}
+
 int ata_wait_state(struct ide *ide, unsigned char state)
 {
 	int n, retries, status;
@@ -665,8 +692,13 @@ int ata_wait_state(struct ide *ide, unsigned char state)
 
 	for(n = 0; n < retries; n++) {
 		status = inport_b(ide->base + ATA_STATUS);
-		if(!(status & state)) {
-			return 0;
+		if(!(status & ATA_STAT_BSY)) {
+			if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
+				return status;
+			}
+			if(status & state) {
+				return 0;
+			}
 		}
 		ata_delay();
 	}
@@ -677,8 +709,6 @@ int ata_wait_state(struct ide *ide, unsigned char state)
 int ata_io(struct ide *ide, struct ata_drv *drive, __off_t offset, int nrsectors)
 {
 	int cyl, sector, head;
-
-	CLI();
 
 	if(drive->flags & DRIVE_REQUIRES_LBA) {
 		if(!ata_select_drv(ide, drive->num, ATA_LBA_MODE, offset >> 24)) {
@@ -705,30 +735,51 @@ int ata_io(struct ide *ide, struct ata_drv *drive, __off_t offset, int nrsectors
 	return -EIO;
 }
 
-int ata_wait_irq(struct ide *ide, int timeout, int cmd)
+void ata_set_timeout(struct ide *ide, int timeout, int reason)
 {
-	int status;
-	struct callout_req creq;
-
 	ide->wait_interrupt = ide->base;
-	creq.fn = ide->timer_fn;
-	creq.arg = 0;
-	add_callout(&creq, timeout);
+	ide->creq.fn = ide->timer_fn;
+	ide->creq.arg = reason;
+	add_callout(&ide->creq, timeout);
+}
 
-	if(cmd) {
-		outport_b(ide->base + ATA_COMMAND, cmd);
+void ata_end_request(struct ide *ide)
+{
+	struct blk_request *br;
+	struct xfer_data *xd;
+
+	if(!ide->irq_timeout) {
+		del_callout(&ide->creq);
 	}
-	if(ide->wait_interrupt) {
-		sleep(irq_config_ide[ide->channel].handler, PROC_UNINTERRUPTIBLE);
+
+	if(ide->creq.arg == WAKEUP_AND_RETURN) {
+		wakeup(ide);
+		return;
 	}
-	if(ide->irq_timeout) {
-		status = inport_b(ide->base + ATA_STATUS);
-		if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
-			return 1;
+
+	if((br = (struct blk_request *)ide->device->requests_queue)) {
+		if(br->status != BR_PROCESSING) {	/* FIXME: needed? */
+			printk("WARNING: block request: flag is %d in block %d.\n", br->status, br->block);
+		}
+
+		xd = (struct xfer_data *)br->device->xfer_data;
+		br->errno = xd->rw_end_fn(ide, xd);
+		/* FIXME: if -EIO then reset controller and return
+		if(br->errno < 0) {
+		}
+		*/
+		if(br->errno < 0 || xd->count == xd->sectors_to_io) {
+			ide->device->requests_queue = (void *)br->next;
+			br->status = BR_COMPLETED;
+			wakeup(br);
+			if(br->errno < 0) {
+				return;
+			}
+		}
+		if(br->next) {
+			run_blk_request(br->device);
 		}
 	}
-	del_callout(&creq);
-	return 0;
 }
 
 int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_head)
@@ -738,7 +789,7 @@ int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_hea
 	status = 0;
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ata_wait_state(ide, ATA_STAT_BSY))) {
+		if((status = ata_wait_nobusy(ide))) {
 			continue;
 		}
 		break;
@@ -752,7 +803,7 @@ int ata_select_drv(struct ide *ide, int drive, int mode, unsigned char lba28_hea
 	ata_wait400ns(ide);
 
 	for(n = 0; n < MAX_IDE_ERR; n++) {
-		if((status = ata_wait_state(ide, ATA_STAT_BSY))) {
+		if((status = ata_wait_nobusy(ide))) {
 			continue;
 		}
 		break;
@@ -793,6 +844,7 @@ int ata_channel_init(struct ide *ide)
 		enable_irq(ide->irq);
 	}
 
+	ide->device = &ide_device[ide->channel];
 	errno = ata_softreset(ide);
 	devices = 0;
 
@@ -961,7 +1013,7 @@ void ata_init(void)
 	channel = channel ? NR_IDE_CTRLS : IDE_PRIMARY;
 	ide = ide_table;
 	while(channel < NR_IDE_CTRLS) {
-		memcpy_b(ide, &default_ide_table[channel], sizeof(struct ide));
+		ide_table_init(ide, channel);
 		printk("ide%d	  0x%04x-0x%04x    %d\t", channel, ide->base, ide->base + IDE_BASE_LEN, ide->irq);
 		printk("ISA IDE controller\n");
 		if(!ata_channel_init(ide)) {

@@ -368,6 +368,8 @@ static struct device memdev_device = {
 	0,
 	NULL,
 	&memdev_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

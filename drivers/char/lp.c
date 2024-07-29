@@ -65,6 +65,8 @@ static struct device lp_device = {
 	0,
 	NULL,
 	&lp_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 

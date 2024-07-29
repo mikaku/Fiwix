@@ -17,6 +17,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/stat.h>
+#include <fiwix/blk_queue.h>
 
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define NR_BUF_HASH		(buffer_hash_table_size / sizeof(unsigned int))
@@ -406,11 +407,11 @@ static int sync_one_buffer(struct buffer *buf)
 		return 1;
 	}
 
-	if((errno = d->fsop->write_block(buf->dev, buf->block, buf->data, buf->size)) < 0) {
+	if((errno = do_blk_request(d, BLK_WRITE, buf->dev, buf->block, buf->data, buf->size)) < 0) {
 		if(errno == -EROFS) {
-			printk("WARNING: %s(): write protection on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
+			printk("WARNING: %s(): unable to write block %d, write protection on device %d,%d.\n", __FUNCTION__, buf->block, MAJOR(buf->dev), MINOR(buf->dev));
 		} else {
-			printk("WARNING: %s(): I/O error on device %d,%d.\n", __FUNCTION__, MAJOR(buf->dev), MINOR(buf->dev), buf->block);
+			printk("WARNING: %s(): unable to write block %d, I/O error on device %d,%d.\n", __FUNCTION__, buf->block, MAJOR(buf->dev), MINOR(buf->dev));
 		}
 		return 1;
 	}
@@ -494,7 +495,7 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 			return NULL;
 		}
-		if(d->fsop->read_block(dev, block, buf->data, size) == size) {
+		if(do_blk_request(d, BLK_READ, dev, block, buf->data, size) == size) {
 			buf->flags |= BUFFER_VALID;
 		}
 		if(buf->flags & BUFFER_VALID) {
