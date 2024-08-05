@@ -66,19 +66,22 @@ int sleep(void *address, int state)
 	struct proc **h;
 	int signum, i;
 
+	SAVE_FLAGS(flags); CLI();
+
 	/* return if it has signals */
 	if(state == PROC_INTERRUPTIBLE) {
 		if((signum = issig())) {
+			RESTORE_FLAGS(flags);
 			return signum;
 		}
 	}
 
 	if(current->state == PROC_SLEEPING) {
 		printk("WARNING: %s(): process with pid '%d' is already sleeping!\n", __FUNCTION__, current->pid);
+		RESTORE_FLAGS(flags);
 		return 0;
 	}
 
-	SAVE_FLAGS(flags); CLI();
 	i = SLEEP_HASH((unsigned int)address);
 	h = &sleep_hash_table[i];
 
