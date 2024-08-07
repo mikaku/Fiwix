@@ -29,6 +29,8 @@
 - Pass through 64-bit PAE memory entries as part of kexec. [#67]
 - Make sure that the early system log will be shown in all system consoles.
 - Removed unneeded low memory kernel virtual address mappings. [#88]
+- Reduced a number of functions in the timer interrupt by moving them to the
+  bottom half.
 - Fixed sys_mount() to avoid mounting a device already mounted.
 - Fixed compilation errors when CONFIG_PCI is not defined.
 - Fixed to allow removing a directory in use. [#59]
@@ -44,6 +46,12 @@
 - Fixed a major problem in do_switch routine. [#89]
 - Fixed incorrect passing of e820 memory map to Linux kexec guests. [#72]
 - Fixed EXT2_DESC_PER_BLOCK() to avoid redundant calculations.
+- Fixed kswapd() to enable interrupts after initializing devices.
+- Fixed a long standing bug during bitmap calculation in the ext2 filesystem.
+- Fixed CHECK_IF_NESTED_INTERRUPT by comparing KERNEL_CS against CS.
+- Fixed a kernel crash on boot when PCI is disabled and the kernel parameter
+  'bga=' is supplied.
+- Fixed sleep() to avoid race conditions by executing CLI() earlier.
 - Small fixes and cosmetic changes.
 
 
