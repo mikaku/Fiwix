@@ -30,7 +30,7 @@ static int check_sd(int sd)
 
 	CHECK_UFD(sd);
 	i = fd_table[current->fd[sd]].inode;
-	if(!i || !i->u.sockfs.sock.state) {
+	if(!i || !S_ISSOCK(i->i_mode)) {
 		return -ENOTSOCK;
 	}
 
