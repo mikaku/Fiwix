@@ -10,6 +10,7 @@
 
 #include <fiwix/types.h>
 #include <fiwix/fs.h>
+#include <fiwix/blk_queue.h>
 
 /* buffer flags */
 #define BUFFER_VALID	0x01
@@ -43,6 +44,7 @@ extern struct buffer **buffer_hash_table;
 /* value to be determined during system startup */
 extern unsigned int buffer_hash_table_size;	/* size in bytes */
 
+int gbread(struct device *, struct blk_request *);
 struct buffer *bread(__dev_t, __blk_t, int);
 void bwrite(struct buffer *);
 void brelse(struct buffer *);

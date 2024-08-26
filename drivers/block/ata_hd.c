@@ -68,7 +68,7 @@ static struct fs_operations ata_hd_driver_fsop = {
 
 static void assign_minors(__dev_t rdev, struct ata_drv *drive, struct partition *part)
 {
-	int n, minor;
+	int n, minor, blksize;
 	struct device *d;
 
 	minor = 0;
@@ -88,7 +88,8 @@ static void assign_minors(__dev_t rdev, struct ata_drv *drive, struct partition 
 		CLEAR_MINOR(d->minors, minor);
 		if(part[n].type) {
 			SET_MINOR(d->minors, minor);
-			((unsigned int *)d->blksize)[minor] = BLKSIZE_1K;
+			blksize = MAX(drive->multi * ATA_HD_SECTSIZE, BLKSIZE_1K);
+			((unsigned int *)d->blksize)[minor] = blksize;
 			((unsigned int *)d->device_data)[minor] = part[n].nr_sects / 2;
 		}
 	}

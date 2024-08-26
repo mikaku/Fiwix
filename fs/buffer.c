@@ -407,7 +407,7 @@ static int sync_one_buffer(struct buffer *buf)
 		return 1;
 	}
 
-	if((errno = do_blk_request(d, BLK_WRITE, buf->dev, buf->block, buf->data, buf->size)) < 0) {
+	if((errno = do_blk_request(d, BLK_WRITE, buf)) < 0) {
 		if(errno == -EROFS) {
 			printk("WARNING: %s(): unable to write block %d, write protection on device %d,%d.\n", __FUNCTION__, buf->block, MAJOR(buf->dev), MINOR(buf->dev));
 		} else {
@@ -481,6 +481,47 @@ static struct buffer *getblk(__dev_t dev, __blk_t block, int size)
 	}
 }
 
+/* read a group of blocks */
+int gbread(struct device *d, struct blk_request *brh)
+{
+	struct blk_request *br;
+	struct buffer *buf;
+
+	br = brh->next_group;
+	while(br) {
+		if(br->block) {
+			if((buf = getblk(br->dev, br->block, br->size))) {
+				br->buffer = buf;
+				if(buf->flags & BUFFER_VALID) {
+					br = br->next_group;
+					continue;
+				}
+				brh->left++;
+				add_blk_request(br);
+			} else {
+				/* cancel the previous requests already queued */
+				/* FIXME: not tested!! */
+				br = brh->next_group;
+				while(br) {
+					if(!br->status) {
+						br->status = BR_COMPLETED;
+					}
+					br = br->next_group;
+				}
+				return 1;
+			}
+		}
+		br = br->next_group;
+	}
+
+	run_blk_request(d);
+	if(brh->left) {
+		sleep(brh, PROC_UNINTERRUPTIBLE);
+	}
+	return 0;
+}
+
+/* read a single block */
 struct buffer *bread(__dev_t dev, __blk_t block, int size)
 {
 	struct buffer *buf;
@@ -490,15 +531,12 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 		if(buf->flags & BUFFER_VALID) {
 			return buf;
 		}
-
 		if(!(d = get_device(BLK_DEV, dev))) {
 			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 			return NULL;
 		}
-		if(do_blk_request(d, BLK_READ, dev, block, buf->data, size) == size) {
+		if(do_blk_request(d, BLK_READ, buf) == size) {
 			buf->flags |= BUFFER_VALID;
-		}
-		if(buf->flags & BUFFER_VALID) {
 			return buf;
 		}
 		brelse(buf);

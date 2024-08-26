@@ -22,13 +22,17 @@ struct blk_request {
 	__dev_t dev;
 	__blk_t block;
 	int size;
-	char *buffer;
+	struct buffer *buffer;
 	struct device *device;
 	int (*fn)(__dev_t, __blk_t, char *, int);
+	int left;
 	struct blk_request *next;
+	struct blk_request *next_group;
+	struct blk_request *head_group;
 };
 
-int do_blk_request(struct device *, int, __dev_t, __blk_t, char *, int);
+void add_blk_request(struct blk_request *);
+int do_blk_request(struct device *, int, struct buffer *);
 void run_blk_request(struct device *);
 
 #endif /* _FIWIX_BLKQUEUE_H */

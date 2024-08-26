@@ -250,7 +250,7 @@ struct ide;	/* needed to satisfy the reference inside xfer_data & ata_drv */
 struct xfer_data {
 	__dev_t dev;
 	__blk_t block;
-	char * buffer;
+	char *buffer;
 	int blksize;
 	int sectors_to_io;
 	__off_t offset;

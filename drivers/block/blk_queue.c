@@ -18,11 +18,13 @@
 #include <fiwix/string.h>
 
 /* append the request into the queue */
-static void add_blk_request(struct blk_request *br, struct device *d)
+void add_blk_request(struct blk_request *br)
 {
 	unsigned long int flags;
 	struct blk_request *h;
+	struct device *d;
 
+	d = br->device;
 	SAVE_FLAGS(flags); CLI();
 	if((h = (struct blk_request *)d->requests_queue)) {
 		while(h->next) {
@@ -35,7 +37,7 @@ static void add_blk_request(struct blk_request *br, struct device *d)
 	RESTORE_FLAGS(flags);
 }
 
-int do_blk_request(struct device *d, int cmd, __dev_t dev, __blk_t block, char *buffer, int size)
+int do_blk_request(struct device *d, int cmd, struct buffer *buf)
 {
 	struct blk_request *br;
 	int errno;
@@ -47,10 +49,10 @@ int do_blk_request(struct device *d, int cmd, __dev_t dev, __blk_t block, char *
 
 	memset_b(br, 0, sizeof(struct blk_request));
 	br->cmd = cmd;
-	br->dev = dev;
-	br->block = block;
-	br->size = size;
-	br->buffer = buffer;
+	br->cmd = buf->dev;
+	br->block = buf->block;
+	br->size = buf->size;
+	br->buffer = buf;
 	br->device = d;
 	if(cmd == BLK_READ) {
 		br->fn = d->fsop->read_block;
@@ -58,36 +60,47 @@ int do_blk_request(struct device *d, int cmd, __dev_t dev, __blk_t block, char *
 		br->fn = d->fsop->write_block;
 	}
 
-	add_blk_request(br, d);
+	add_blk_request(br);
 	run_blk_request(d);
 	if(br->status != BR_COMPLETED) {
 		sleep(br, PROC_UNINTERRUPTIBLE);
 	}
 	errno = br->errno;
-	kfree((unsigned int)br);
+	if(!br->head_group) {
+		kfree((unsigned int)br);
+	}
 	return errno;
 }
 
 void run_blk_request(struct device *d)
 {
 	unsigned long int flags;
-	struct blk_request *br;
+	struct blk_request *br, *brh;
 	int errno;
 
 	SAVE_FLAGS(flags); CLI();
 	br = (struct blk_request *)d->requests_queue;
-	if(br) {
+	while(br) {
 		if(br->status) {
 			return;
 		}
 		br->status = BR_PROCESSING;
-		if(!(errno = br->fn(br->dev, br->block, br->buffer, br->size))) {
+		if(!(errno = br->fn(br->buffer->dev, br->buffer->block, br->buffer->data, br->buffer->size))) {
 			return;
 		}
 		br->errno = errno;
 		d->requests_queue = (void *)br->next;
 		br->status = BR_COMPLETED;
-		wakeup(br);
+		if(br->head_group) {
+			brh = br->head_group;
+			brh->left--;
+			if(!brh->left) {
+				wakeup(brh);
+			}
+		} else {
+			wakeup(br);
+		}
+		br = br->next;
 	}
 	RESTORE_FLAGS(flags);
 }

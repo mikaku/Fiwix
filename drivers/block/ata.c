@@ -745,7 +745,7 @@ void ata_set_timeout(struct ide *ide, int timeout, int reason)
 
 void ata_end_request(struct ide *ide)
 {
-	struct blk_request *br;
+	struct blk_request *br, *brh;
 	struct xfer_data *xd;
 
 	if(!ide->irq_timeout) {
@@ -764,14 +764,18 @@ void ata_end_request(struct ide *ide)
 
 		xd = (struct xfer_data *)br->device->xfer_data;
 		br->errno = xd->rw_end_fn(ide, xd);
-		/* FIXME: if -EIO then reset controller and return
-		if(br->errno < 0) {
-		}
-		*/
 		if(br->errno < 0 || xd->count == xd->sectors_to_io) {
 			ide->device->requests_queue = (void *)br->next;
 			br->status = BR_COMPLETED;
-			wakeup(br);
+			if(br->head_group) {
+				brh = br->head_group;
+				brh->left--;
+				if(!brh->left) {
+					wakeup(brh);
+				}
+			} else {
+				wakeup(br);
+			}
 			if(br->errno < 0) {
 				return;
 			}
@@ -837,7 +841,7 @@ void ide_table_init(struct ide *ide, int channel)
 int ata_channel_init(struct ide *ide)
 {
 	int drv_num;
-	int devices, errno;
+	int devices, errno, blksize;
 	struct ata_drv *drive;
 
 	if(!register_irq(ide->irq, &irq_config_ide[ide->channel])) {
@@ -864,7 +868,8 @@ int ata_channel_init(struct ide *ide)
 				get_device_size(drive);
 				show_capabilities(ide, drive);
 				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
-				ide_device[ide->channel].blksize[drv_num << drive->minor_shift] = BLKSIZE_1K;
+				blksize = MAX(drive->multi * ATA_HD_SECTSIZE, BLKSIZE_1K);
+				ide_device[ide->channel].blksize[drv_num << drive->minor_shift] = blksize;
 				if(!devices) {
 					register_device(BLK_DEV, &ide_device[ide->channel]);
 				}

@@ -34,6 +34,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/blk_queue.h>
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % (NR_PAGE_HASH))
 #define NR_PAGES	(page_table_size / sizeof(struct page))
@@ -333,11 +334,19 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	__blk_t block;
 	__off_t size_read;
 	int blksize, retval;
-	struct buffer *buf;
+	struct device *d;
+	struct blk_request brh, *br, *tmp;
 
 	blksize = i->sb->s_blocksize;
 	retval = size_read = 0;
+	tmp = NULL;
 
+	if(!(d = get_device(BLK_DEV, i->dev))) {
+		printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
+		return 1;
+	}
+
+	memset_b(&brh, 0, sizeof(struct blk_request));
 	page_lock(pg);
 
 	/* cache any read-only or public (shared) pages */
@@ -349,22 +358,54 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	}
 
 	while(size_read < PAGE_SIZE) {
+		if(!(br = (struct blk_request *)kmalloc(sizeof(struct blk_request)))) {
+			printk("WARNING: %s(): no more free memory for block requests.\n", __FUNCTION__);
+			retval = 1;
+			break;
+		}
 		if((block = bmap(i, offset + size_read, FOR_READING)) < 0) {
 			retval = 1;
 			break;
 		}
-		if(block) {
-			if(!(buf = bread(i->dev, block, blksize))) {
-				retval = 1;
-				break;
-			}
-			memcpy_b(pg->data + size_read, buf->data, blksize);
-			brelse(buf);
+		memset_b(br, 0, sizeof(struct blk_request));
+		br->cmd = BLK_READ;
+		br->dev = i->dev;
+		br->block = block;
+		br->size = blksize;
+		br->device = d;
+		br->fn = d->fsop->read_block;
+		br->head_group = &brh;
+		if(!brh.next_group) {
+			brh.next_group = br;
 		} else {
-			/* fill the hole with zeros */
-			memset_b(pg->data + size_read, 0, blksize);
+			tmp->next_group = br;
 		}
+		tmp = br;
 		size_read += blksize;
+	}
+
+	if(!retval) {
+		retval = gbread(d, &brh);
+	}
+	br = brh.next_group;
+	size_read = 0;
+	while(br) {
+		if(!retval) {
+			if(br->block) {
+				memcpy_b(pg->data + size_read, br->buffer->data, br->size);
+				br->buffer->flags |= BUFFER_VALID;
+			} else {
+				/* fill the hole with zeros */
+				memset_b(pg->data + size_read, 0, br->size);
+			}
+			size_read += br->size;
+		}
+		if(br->block) {
+			brelse(br->buffer);
+		}
+		tmp = br->next_group;
+		kfree((unsigned int)br);
+		br = tmp;
 	}
 
 	page_unlock(pg);
