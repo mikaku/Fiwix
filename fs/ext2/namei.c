@@ -264,6 +264,10 @@ int ext2_lookup(const char *name, struct inode *dir, struct inode **i_res)
 			doffset = 0;
 			do {
 				d = (struct ext2_dir_entry_2 *)(buf->data + doffset);
+				/* check dir entry */
+				if(d->rec_len < EXT2_DIR_REC_LEN(1)) {
+					break;
+				}
 				if(d->inode) {
 					if(d->name_len == strlen(name)) {
 						if(strncmp(d->name, name, d->name_len) == 0) {

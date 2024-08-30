@@ -209,6 +209,16 @@ struct ext2_dir_entry {
 };
 
 /*
+ * EXT2_DIR_PAD defines the directory entries boundaries
+ *
+ * NOTE: It must be a multiple of 4
+ */
+#define EXT2_DIR_PAD			4
+#define EXT2_DIR_ROUND			(EXT2_DIR_PAD - 1)
+#define EXT2_DIR_REC_LEN(name_len)	(((name_len) + 8 + EXT2_DIR_ROUND) & \
+					~EXT2_DIR_ROUND)
+
+/*
  * The new version of the directory entry.  Since EXT2 structures are
  * stored in intel byte order, and the name_len field could never be
  * bigger than 255 chars, it's safe to reclaim the extra byte for the
