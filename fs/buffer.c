@@ -489,7 +489,7 @@ int gbread(struct device *d, struct blk_request *brh)
 
 	br = brh->next_group;
 	while(br) {
-		if(br->block) {
+		if(!(br->flags & BRF_NOBLOCK)) {
 			if((buf = getblk(br->dev, br->block, br->size))) {
 				br->buffer = buf;
 				if(buf->flags & BUFFER_VALID) {

@@ -15,6 +15,8 @@
 #define BR_PROCESSING	1
 #define BR_COMPLETED	2
 
+#define BRF_NOBLOCK	1
+
 struct blk_request {
 	int cmd;
 	int status;
@@ -22,6 +24,7 @@ struct blk_request {
 	__dev_t dev;
 	__blk_t block;
 	int size;
+	int flags;
 	struct buffer *buffer;
 	struct device *device;
 	int (*fn)(__dev_t, __blk_t, char *, int);

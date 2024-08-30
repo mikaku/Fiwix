@@ -371,6 +371,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		br->cmd = BLK_READ;
 		br->dev = i->dev;
 		br->block = block;
+		br->flags = block ? 0 : BRF_NOBLOCK;
 		br->size = blksize;
 		br->device = d;
 		br->fn = d->fsop->read_block;
@@ -383,7 +384,6 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		tmp = br;
 		size_read += blksize;
 	}
-
 	if(!retval) {
 		retval = gbread(d, &brh);
 	}
