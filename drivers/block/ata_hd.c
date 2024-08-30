@@ -381,6 +381,7 @@ int ata_hd_ioctl(struct inode *i, int cmd, unsigned int arg)
 			invalidate_buffers(i->rdev);
 			break;
 		case BLKRRPART:
+			invalidate_buffers(i->rdev);
 			read_msdos_partition(i->rdev, part);
 			assign_minors(i->rdev, drive, part);
 			break;
