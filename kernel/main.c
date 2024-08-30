@@ -167,7 +167,7 @@ void stop_kernel(void)
 
 	/* put all processes to sleep and reset all pending signals */
 	FOR_EACH_PROCESS_RUNNING(p) {
-		next = p->next;
+		next = p->next_run;
 		not_runnable(p, PROC_SLEEPING);
 		p->sigpending = 0;
 		p = next;
