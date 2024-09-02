@@ -17,10 +17,16 @@
 int read_msdos_partition(__dev_t dev, struct partition *part)
 {
 	struct buffer *buf;
+	struct device *d;
+	int blksize;
 
-	if(!(buf = bread(dev, PARTITION_BLOCK, BLKSIZE_1K))) {
+	if(!(d = get_device(BLK_DEV, dev))) {
+		return -ENXIO;
+	}
+
+	blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
+	if(!(buf = bread(dev, PARTITION_BLOCK, blksize))) {
 		printk("WARNING: %s(): unable to read partition block in device %d,%d.\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-		brelse(buf);
 		return -EIO;
 	}
 
