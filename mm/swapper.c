@@ -47,7 +47,7 @@ int kswapd(void)
 	STI();
 
 	for(;;) {
-		sleep(&kswapd, PROC_UNINTERRUPTIBLE);
+		sleep(&kswapd, PROC_INTERRUPTIBLE);
 		if((kstat.pages_reclaimed = reclaim_buffers())) {
 			continue;
 		}

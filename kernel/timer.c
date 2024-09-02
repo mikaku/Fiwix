@@ -53,9 +53,12 @@ static unsigned int count_active_procs(void)
 	struct proc *p;
 
 	counter = 0;
-	FOR_EACH_PROCESS_RUNNING(p) {
-		counter += FIXED_1;
-		p = p->next_run;
+	FOR_EACH_PROCESS(p) {
+		if(p->state == PROC_RUNNING ||
+		  (p->state == PROC_SLEEPING && p->flags & PF_NOTINTERRUPT)) {
+			counter += FIXED_1;
+		}
+		p = p->next;
 	}
 	return counter;
 }
@@ -65,7 +68,7 @@ static void calc_load(void)
 	unsigned int active_procs;
 	static int count = LOAD_FREQ;
 
-	if(count-- > 0) {
+	if(count-- >= 0) {
 		return;
 	}
 

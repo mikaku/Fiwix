@@ -757,7 +757,7 @@ int kbdflushd(void)
 	int flushed, size;
 
 	for(;;) {
-		sleep(&kbdflushd, PROC_UNINTERRUPTIBLE);
+		sleep(&kbdflushd, PROC_INTERRUPTIBLE);
 		flushed = 0;
 
 		lock_resource(&sync_resource);
