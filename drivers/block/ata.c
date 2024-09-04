@@ -841,7 +841,7 @@ void ide_table_init(struct ide *ide, int channel)
 int ata_channel_init(struct ide *ide)
 {
 	int drv_num;
-	int devices, errno, blksize;
+	int devices, errno;
 	struct ata_drv *drive;
 
 	if(!register_irq(ide->irq, &irq_config_ide[ide->channel])) {
@@ -868,8 +868,7 @@ int ata_channel_init(struct ide *ide)
 				get_device_size(drive);
 				show_capabilities(ide, drive);
 				SET_MINOR(ide_device[ide->channel].minors, drv_num << drive->minor_shift);
-				blksize = MAX(drive->multi * ATA_HD_SECTSIZE, BLKSIZE_1K);
-				ide_device[ide->channel].blksize[drv_num << drive->minor_shift] = blksize;
+				ide_device[ide->channel].blksize[drv_num << drive->minor_shift] = BLKSIZE_1K;
 				if(!devices) {
 					register_device(BLK_DEV, &ide_device[ide->channel]);
 				}
