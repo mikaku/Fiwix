@@ -16,11 +16,22 @@
   [#70]
 - Added the flag PF_NOTINTERRUPT to avoid waking up a process sleeping in the
   non-interruptible mode.
+- Added a consistency check on every directory entry during ext2_lookup().
+- Added a call to invalidate_buffers() before reread the partition table in the
+  ioctl BLKRRPART.
+- Rewritten how multiple I/O block requests are managed. Now the new I/O block
+  layer enqueues a block request group with all the buffers needed in a read or
+  write operation, and keeps sleeping until the whole transaction has been
+  completed. This improves dramatically the disk accesses, reduces a lot the
+  number of context switches, and it overall boosts the performance of the
+  system.
 - Changed the file position for reads to be set to zero when a file is opened
   with O_APPEND. [#76]
 - Implement mapping framebuffer physical address to user space using mmap. [#79]
 - Changed the inode cache mechanism to avoid caching inodes from
   pseudo-filesystems.
+- Changed count_active_procs() to also count processes that are sleeping as
+  non-interruptible.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
 - Moved the call to sysrq() into the keyboard interrupt bottom half.
 - Improved code compaction and efficiency in ATA disk read/write.
@@ -52,6 +63,10 @@
 - Fixed a kernel crash on boot when PCI is disabled and the kernel parameter
   'bga=' is supplied.
 - Fixed sleep() to avoid race conditions by executing CLI() earlier.
+- Fixed a bug introduced in 4317cbe that prevented from continuing to the next
+  running process in stop_kernel().
+- Fixed read_msdos_partition() to use the default device block size instead of
+  BLKSIZE_1K.
 - Small fixes and cosmetic changes.
 
 
