@@ -137,6 +137,7 @@ int ext2_ialloc(struct inode *i, int mode)
 	inode += (bg * EXT2_INODES_PER_GROUP(sb)) + 1;
 	gd->bg_free_inodes_count--;
 	sb->u.ext2.sb.s_free_inodes_count--;
+	sb->state |= SUPERBLOCK_DIRTY;
 	if(S_ISDIR(mode)) {
 		gd->bg_used_dirs_count++;
 	}
@@ -194,6 +195,7 @@ void ext2_ifree(struct inode *i)
 
 	gd->bg_free_inodes_count++;
 	sb->u.ext2.sb.s_free_inodes_count++;
+	sb->state |= SUPERBLOCK_DIRTY;
 	if(S_ISDIR(i->i_mode)) {
 		gd->bg_used_dirs_count--;
 	}
@@ -263,6 +265,7 @@ int ext2_balloc(struct superblock *sb)
 	block += (bg * EXT2_BLOCKS_PER_GROUP(sb)) + sb->u.ext2.sb.s_first_data_block;
 	gd->bg_free_blocks_count--;
 	sb->u.ext2.sb.s_free_blocks_count--;
+	sb->state |= SUPERBLOCK_DIRTY;
 	bwrite(buf);
 
 	superblock_unlock(sb);
@@ -305,6 +308,7 @@ void ext2_bfree(struct superblock *sb, int block)
 
 	gd->bg_free_blocks_count++;
 	sb->u.ext2.sb.s_free_blocks_count++;
+	sb->state |= SUPERBLOCK_DIRTY;
 	bwrite(buf);
 
 	superblock_unlock(sb);
