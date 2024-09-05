@@ -27,15 +27,14 @@ void superblock_lock(struct superblock *sb)
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		if(sb->locked) {
-			sb->wanted = 1;
+		if(sb->state & SUPERBLOCK_LOCKED) {
 			RESTORE_FLAGS(flags);
-			sleep(&superblock_lock, PROC_UNINTERRUPTIBLE);
+			sleep(sb, PROC_UNINTERRUPTIBLE);
 		} else {
 			break;
 		}
 	}
-	sb->locked = 1;
+	sb->state |= SUPERBLOCK_LOCKED;
 	RESTORE_FLAGS(flags);
 }
  
@@ -44,11 +43,8 @@ void superblock_unlock(struct superblock *sb)
 	unsigned int flags;
 
 	SAVE_FLAGS(flags); CLI();
-	sb->locked = 0;
-	if(sb->wanted) {
-		sb->wanted = 0;
-		wakeup(&superblock_lock);
-	}
+	sb->state &= ~SUPERBLOCK_LOCKED;
+	wakeup(sb);
 	RESTORE_FLAGS(flags);
 }
 

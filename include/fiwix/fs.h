@@ -59,8 +59,8 @@
 #define CLEAR_BIT	0
 #define SET_BIT		1
 
-#define INODE_LOCKED	0x0001
-#define INODE_DIRTY	0x0002
+#define INODE_LOCKED	0x01
+#define INODE_DIRTY	0x02
 
 struct inode {
 	__mode_t	i_mode;		/* file mode */
@@ -109,16 +109,15 @@ extern unsigned int fd_table_size;		/* size in bytes */
 
 extern struct fd *fd_table;
 
-#define SUPERBLOCK_DIRTY	0x0001
+#define SUPERBLOCK_LOCKED	0x01
+#define SUPERBLOCK_DIRTY	0x02
 
 struct superblock {
 	__dev_t dev;
-	unsigned char locked;
-	unsigned char wanted;
-	struct inode *root;		/* root inode of mounted fs */
-	struct inode *dir;		/* inode on which the fs was mounted */
 	unsigned int flags;
 	unsigned int state;
+	struct inode *root;		/* root inode of mounted fs */
+	struct inode *dir;		/* inode on which the fs was mounted */
 	struct fs_operations *fsop;
 	__u32 s_blocksize;
 	union {
