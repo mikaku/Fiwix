@@ -82,6 +82,12 @@ void run_blk_request(struct device *d)
 	br = (struct blk_request *)d->requests_queue;
 	while(br) {
 		if(br->status) {
+			if(br->status == BR_COMPLETED) {
+				printk("%s(): status marked as BR_COMPLETED, picking the next one ...\n", __FUNCTION__);
+				d->requests_queue = (void *)br->next;
+				br = br->next;
+				continue;
+			}
 			return;
 		}
 		br->status = BR_PROCESSING;
@@ -94,6 +100,7 @@ void run_blk_request(struct device *d)
 		if(br->head_group) {
 			brh = br->head_group;
 			brh->left--;
+			brh->errno = errno;
 			if(!brh->left) {
 				wakeup(brh);
 			}

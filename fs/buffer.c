@@ -518,7 +518,7 @@ int gbread(struct device *d, struct blk_request *brh)
 	if(brh->left) {
 		sleep(brh, PROC_UNINTERRUPTIBLE);
 	}
-	return 0;
+	return brh->errno;
 }
 
 /* read a single block */
