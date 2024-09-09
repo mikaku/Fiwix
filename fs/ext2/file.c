@@ -16,6 +16,7 @@
 #include <fiwix/fcntl.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/blk_queue.h>
 
 struct fs_operations ext2_file_fsop = {
 	0,
@@ -80,45 +81,123 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 	__blk_t block;
 	__size_t total_written;
 	unsigned int boffset, bytes;
-	int blksize;
+	int blksize, retval;
 	struct buffer *buf;
+	struct device *d;
+	struct blk_request brh, *br, *tmp;
+#ifdef CONFIG_OFFSET64
+	__loff_t offset;
+#else
+	__off_t offset;
+#endif /* CONFIG_OFFSET64 */
 
 	inode_lock(i);
 
 	blksize = i->sb->s_blocksize;
-	total_written = 0;
+	retval = total_written = 0;
 
 	if(fd_table->flags & O_APPEND) {
 		fd_table->offset = i->i_size;
 	}
+	offset = fd_table->offset;
 
-	while(total_written < count) {
-		boffset = fd_table->offset % blksize;
-		if((block = bmap(i, fd_table->offset, FOR_WRITING)) < 0) {
+	if(count > blksize) {
+		if(!(d = get_device(BLK_DEV, i->dev))) {
+			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(i->dev));
 			inode_unlock(i);
-			return block;
+			return -ENXIO;
 		}
-		bytes = blksize - boffset;
-		bytes = MIN(bytes, (count - total_written));
-		if(!(buf = bread(i->dev, block, blksize))) {
-			inode_unlock(i);
-			return -EIO;
+		memset_b(&brh, 0, sizeof(struct blk_request));
+		tmp = NULL;
+		while(total_written < count) {
+			if(!(br = (struct blk_request *)kmalloc(sizeof(struct blk_request)))) {
+				printk("WARNING: %s(): no more free memory for block requests.\n", __FUNCTION__);
+				retval = -ENOMEM;
+				break;
+			}
+			if((block = bmap(i, offset, FOR_WRITING)) < 0) {
+				retval = block;
+				break;
+			}
+			memset_b(br, 0, sizeof(struct blk_request));
+			br->cmd = BLK_READ;
+			br->dev = i->dev;
+			br->block = block;
+			br->size = blksize;
+			br->device = d;
+			br->fn = d->fsop->read_block;
+			br->head_group = &brh;
+			if(!brh.next_group) {
+				brh.next_group = br;
+			} else {
+				tmp->next_group = br;
+			}
+			tmp = br;
+			boffset = offset % blksize;
+			bytes = blksize - boffset;
+			bytes = MIN(bytes, (count - total_written));
+			total_written += bytes;
+			offset += bytes;
 		}
-		memcpy_b(buf->data + boffset, buffer + total_written, bytes);
-		update_page_cache(i, fd_table->offset, buffer + total_written, bytes);
-		bwrite(buf);
-		total_written += bytes;
-		fd_table->offset += bytes;
+		if(!retval) {
+			retval = gbread(d, &brh);
+		}
+		br = brh.next_group;
+		offset = fd_table->offset;
+		total_written = 0;
+		while(br) {
+			if(!retval) {
+				boffset = offset % blksize;
+				bytes = blksize - boffset;
+				bytes = MIN(bytes, (count - total_written));
+				memcpy_b(br->buffer->data + boffset, buffer + total_written, bytes);
+				update_page_cache(i, offset, buffer + total_written, bytes);
+				bwrite(br->buffer);
+				total_written += bytes;
+				offset += bytes;
+			} else {
+				brelse(br->buffer);
+			}
+			tmp = br->next_group;
+			kfree((unsigned int)br);
+			br = tmp;
+		}
+	} else {
+		while(total_written < count) {
+			boffset = offset % blksize;
+			if((block = bmap(i, offset, FOR_WRITING)) < 0) {
+				retval = block;
+				break;
+			}
+			bytes = blksize - boffset;
+			bytes = MIN(bytes, (count - total_written));
+			if(!(buf = bread(i->dev, block, blksize))) {
+				retval = -EIO;
+				break;
+			}
+			memcpy_b(buf->data + boffset, buffer + total_written, bytes);
+			update_page_cache(i, offset, buffer + total_written, bytes);
+			bwrite(buf);
+			total_written += bytes;
+			offset += bytes;
+		}
 	}
 
-	if(fd_table->offset > i->i_size) {
-		i->i_size = fd_table->offset;
+	if(!retval) {
+		fd_table->offset = offset;
+		if(fd_table->offset > i->i_size) {
+			i->i_size = fd_table->offset;
+		}
+		i->i_ctime = CURRENT_TIME;
+		i->i_mtime = CURRENT_TIME;
+		i->state |= INODE_DIRTY;
 	}
-	i->i_ctime = CURRENT_TIME;
-	i->i_mtime = CURRENT_TIME;
-	i->state |= INODE_DIRTY;
-	
+
 	inode_unlock(i);
+
+	if(retval) {
+		return retval;
+	}
 	return total_written;
 }
 
