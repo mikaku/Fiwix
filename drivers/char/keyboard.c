@@ -8,7 +8,9 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/limits.h>
+#include <fiwix/ps2.h>
 #include <fiwix/keyboard.h>
+#include <fiwix/reboot.h>
 #include <fiwix/console.h>
 #include <fiwix/vgacon.h>
 #include <fiwix/pic.h>
@@ -21,53 +23,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define KB_DATA		0x60	/* I/O data port */
-#define KBC_COMMAND	0x64	/* command/control port */
-#define KBC_STATUS 	0x64	/* status register port */
-
-/*
- * PS/2 System Control Port A
- * --------------------------------
- * bit 7 -> fixed disk activity led
- * bit 6 -> fixed disk activity led
- * bit 5 -> reserved
- * bit 4 -> watchdog timer status
- * bit 3 -> security lock latch
- * bit 2 -> reserved
- * bit 1 -> alternate gate A20
- * bit 0 -> alternate hot reset
- */
-#define PS2_SYSCTRL_A	0x92	/* PS/2 system control port A (write) */
-
-#define KB_CMD_RESET	0xFF	/* keyboard reset */
-#define KB_CMD_ENABLE	0xF4	/* keyboard enable scanning */
-#define KB_CMD_DISABLE	0xF5	/* keyboard disable scanning */
-#define KB_CMD_IDENTIFY	0xF2	/* keyboard identify (for PS/2 only) */
-#define KB_CMD_ECHO	0xEE	/* echo (for diagnostics only) */
-
-#define KBC_CMD_RECV_CONFIG	0x20	/* read controller's config byte */
-#define KBC_CMD_SEND_CONFIG	0x60	/* write controller's config byte */
-#define KBC_CMD_SELF_TEST	0xAA	/* self-test command */
-#define KBC_CMD_PS2_1_TEST	0xAB	/* first PS/2 interface test command */
-#define KBC_CMD_PS2_2_TEST	0xA9	/* second PS/2 interface test command */
-#define KBC_CMD_DISABLE_PS2_1	0xAD	/* disable first PS/2 port */
-#define KBC_CMD_ENABLE_PS2_1	0xAE	/* enable first PS/2 port */
-#define KBC_CMD_DISABLE_PS2_2	0xA7	/* disable second PS/2 port (if any) */
-#define KBC_CMD_ENABLE_PS2_2	0xA8	/* enable second PS/2 port (if any) */
-#define KBC_CMD_HOTRESET	0xFE	/* Hot Reset */
-
-/* flags of the status register */
-#define KB_STR_OUTBUSY	0x01	/* output buffer full, don't read yet */
-#define KB_STR_INBUSY	0x02	/* input buffer full, don't write yet */
-#define KB_STR_TXTMOUT	0x20	/* transmit time-out error */
-#define KB_STR_RXTMOUT	0x40	/* receive time-out error */
-#define KB_STR_PARERR	0X80	/* parity error */
-#define KB_STR_COMMERR	(KB_STR_TXTMOUT | KB_STR_RXTMOUT)
-
-#define KB_RESET_OK	0xAA	/* self-test passed */
-#define KB_ACK		0xFA	/* acknowledge */
-#define KB_SETLED	0xED	/* set/reset status indicators (LEDs) */
-#define KB_RATE		0xF3	/* set typematic rate/delay */
 #define DELAY_250	0x00	/* typematic delay at 250ms (default) */
 #define DELAY_500	0x40	/* typematic delay at 500ms */
 #define DELAY_750	0x80	/* typematic delay at 750ms */
@@ -106,7 +61,9 @@ static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
 static unsigned char altsysrq = 0;
 static int sysrq_op = 0;
-static volatile unsigned char ack = 0;
+volatile unsigned char ack = 0;
+unsigned char kb_identify[2] = {0, 0};
+unsigned char orig_scan_set = 0;
 
 static char do_switch_console = -1;
 static unsigned char do_buf_scroll = 0;
@@ -115,9 +72,6 @@ static unsigned char do_tty_stop = 0;
 static unsigned char do_tty_start = 0;
 static unsigned char do_sysrq = 0;
 
-unsigned char kb_identify[2] = {0, 0};
-char ps2_active_ports = 0;
-char ps2_supp_ports = 0;
 char ctrl_alt_del = 1;
 char any_key_to_reboot = 0;
 
@@ -220,7 +174,7 @@ static char *fn_seq[] = {
 	"\033[34~",	/* SF10 */
 };
 
-static void keyboard_delay(void)
+static void ps2_delay(void)
 {
 	int n;
 
@@ -229,57 +183,16 @@ static void keyboard_delay(void)
 	}
 }
 
-/* wait controller input buffer to be clear */
-static int is_ready_to_write(void)
-{
-	int n;
-
-	for(n = 0; n < 500000; n++) {
-		if(!(inport_b(KBC_STATUS) & KB_STR_INBUSY)) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-static void keyboard_write(const unsigned char port, const unsigned char byte)
-{
-	ack = 0;
-
-	if(is_ready_to_write()) {
-		outport_b(port, byte);
-	}
-}
-
-/* wait controller output buffer to be full or for controller acknowledge */
-static int is_ready_to_read(void)
-{
-	int n, value;
-
-	for(n = 0; n < 500000; n++) {
-		if(ack) {
-			return 1;
-		}
-		if((value = inport_b(KBC_STATUS)) & KB_STR_OUTBUSY) {
-			if(value & (KB_STR_COMMERR | KB_STR_PARERR)) {
-				continue;
-			}
-			return 1;
-		}
-	}
-	return 0;
-}
-
 static int keyboard_wait_ack(void)
 {
 	int n;
 
 	if(is_ready_to_read()) {
 		for(n = 0; n < 1000; n++) {
-			if(inport_b(KB_DATA) == KB_ACK) {
+			if(inport_b(PS2_DATA) == KB_ACK) {
 				return 0;
 			}
-			keyboard_delay();
+			ps2_delay();
 		}
 	}
 	return 1;
@@ -287,111 +200,63 @@ static int keyboard_wait_ack(void)
 
 static void keyboard_identify(void)
 {
+	char config;
+
 	/* disable */
-	keyboard_write(KB_DATA, KB_CMD_DISABLE);
+	ps2_write(PS2_DATA, PS2_KB_DISABLE);
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on disable command!\n", __FUNCTION__);
 	}
 
 	/* identify */
-	keyboard_write(KB_DATA, KB_CMD_IDENTIFY);
+	ps2_write(PS2_DATA, PS2_DEV_IDENTIFY);
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on identify command!\n", __FUNCTION__);
 	}
 	if(is_ready_to_read()) {
-		kb_identify[0] = inport_b(KB_DATA);
+		kb_identify[0] = inport_b(PS2_DATA);
 	}
 	if(is_ready_to_read()) {
-		kb_identify[1] = inport_b(KB_DATA);
+		kb_identify[1] = inport_b(PS2_DATA);
 	}
 
+	/* get scan code */
+	config = 0;
+	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
+	if(is_ready_to_read()) {
+		config = inport_b(PS2_DATA);	/* save state */
+	}
+	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
+	ps2_write(PS2_DATA, config & ~0x40);	/* unset translation */
+	ps2_write(PS2_DATA, PS2_KB_GETSETSCAN);
+	if(keyboard_wait_ack()) {
+		printk("WARNING: %s(): ACK not received on get scan code command!\n", __FUNCTION__);
+	}
+	ps2_write(PS2_DATA, 0);
+	if(keyboard_wait_ack()) {
+		printk("WARNING: %s(): ACK not received on get scan code command!\n", __FUNCTION__);
+	}
+	if(is_ready_to_read()) {
+		orig_scan_set = inport_b(PS2_DATA);
+	}
+	if(orig_scan_set != 2) {
+		ps2_write(PS2_DATA, PS2_KB_GETSETSCAN);
+		ps2_write(PS2_DATA, 2);
+		if(keyboard_wait_ack()) {
+			printk("WARNING: %s(): ACK not received on set scan code command!\n", __FUNCTION__);
+		}
+	}
+	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
+	ps2_write(PS2_DATA, config);	/* restore state */
+
 	/* enable */
-	keyboard_write(KB_DATA, KB_CMD_ENABLE);
+	ps2_write(PS2_DATA, PS2_DEV_ENABLE);
 	if(keyboard_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on enable command!\n", __FUNCTION__);
 	}
 
 	/* flush buffers */
-	inport_b(KB_DATA);
-}
-
-static void keyboard_reset(void)
-{
-	int errno;
-	unsigned char config;
-
-	/* disable device(s) */
-	keyboard_write(KBC_COMMAND, KBC_CMD_DISABLE_PS2_1);
-	keyboard_write(KBC_COMMAND, KBC_CMD_DISABLE_PS2_2);
-
-	/* flush buffers */
-	inport_b(KB_DATA);
-
-	/* get controller configuration */
-	config = 0;
-	keyboard_write(KBC_COMMAND, KBC_CMD_RECV_CONFIG);
-	if(is_ready_to_read()) {
-		config = inport_b(KB_DATA);
-	}
-	ps2_active_ports = config & 0x01 ? 1 : 0;
-	ps2_active_ports += config & 0x02 ? 1 : 0;
-	ps2_supp_ports = 1 + (config & 0x20 ? 1 : 0);
-
-	/* set controller configuration (disabling IRQs) */
-	/*
-	keyboard_write(KBC_COMMAND, KBC_CMD_SEND_CONFIG);
-	keyboard_write(KB_DATA, config & ~(0x01 | 0x02 | 0x40));
-	*/
-
-	/* PS/2 controller self-test */
-	keyboard_write(KBC_COMMAND, KBC_CMD_SELF_TEST);
-	if(is_ready_to_read()) {
-		if((errno = inport_b(KB_DATA)) != 0x55) {
-			printk("WARNING: %s(): keyboard returned 0x%x in self-test.\n", __FUNCTION__, errno);
-		}
-	}
-
-	/*
-	 * This sets again the controller configuration since the previous
-	 * step may also reset the PS/2 controller to its power-on defaults.
-	 */
-	keyboard_write(KBC_COMMAND, KBC_CMD_SEND_CONFIG);
-	keyboard_write(KB_DATA, config);
-
-	/* first PS/2 interface test */
-	keyboard_write(KBC_COMMAND, KBC_CMD_PS2_1_TEST);
-	if(is_ready_to_read()) {
-		if((errno = inport_b(KB_DATA)) != 0) {
-			printk("WARNING: %s(): keyboard returned 0x%x in first PS/2 interface test.\n", __FUNCTION__, errno);
-		}
-	}
-
-	if(ps2_supp_ports > 1) {
-		/* second PS/2 interface test */
-		keyboard_write(KBC_COMMAND, KBC_CMD_PS2_2_TEST);
-		if(is_ready_to_read()) {
-			if((errno = inport_b(KB_DATA)) != 0) {
-				printk("WARNING: %s(): keyboard returned 0x%x in second PS/2 interface test.\n", __FUNCTION__, errno);
-			}
-		}
-	}
-
-	/* enable device(s) */
-	keyboard_write(KBC_COMMAND, KBC_CMD_ENABLE_PS2_1);
-	keyboard_write(KBC_COMMAND, KBC_CMD_ENABLE_PS2_2);
-
-	/* reset device(s) */
-	keyboard_write(KB_DATA, KB_CMD_RESET);
-	if(keyboard_wait_ack()) {
-		printk("WARNING: %s(): ACK not received on reset command!\n", __FUNCTION__);
-	}
-	if(is_ready_to_read()) {
-		if((errno = inport_b(KB_DATA)) != KB_RESET_OK) {
-			printk("WARNING: %s(): keyboard returned 0x%x in reset.\n", __FUNCTION__, errno);
-		}
-	}
-
-	return;
+	inport_b(PS2_DATA);
 }
 
 static void putc(struct tty *tty, unsigned char ch)
@@ -416,20 +281,12 @@ static void puts(struct tty *tty, char *seq)
 	}
 }
 
-void reboot(void)
-{
-	CLI();
-	keyboard_write(PS2_SYSCTRL_A, 0x01);		/* Fast Hot Reset */
-	keyboard_write(KBC_COMMAND, KBC_CMD_HOTRESET);	/* Hot Reset */
-	HLT();
-}
-
 void set_leds(unsigned char led_status)
 {
-	keyboard_write(KB_DATA, KB_SETLED);
+	ps2_write(PS2_DATA, PS2_KB_SETLED);
 	keyboard_wait_ack();
 
-	keyboard_write(KB_DATA, led_status);
+	ps2_write(PS2_DATA, led_status);
 	keyboard_wait_ack();
 }
 
@@ -445,7 +302,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
 	vc = (struct vconsole *)tty->driver_data;
 
-	scode = inport_b(KB_DATA);
+	scode = inport_b(PS2_DATA);
 
 	/* keyboard controller said 'acknowledge!' */
 	if(scode == KB_ACK) {
@@ -725,7 +582,6 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	}
 
 	deadkey = 0;
-	return;
 }
 
 void irq_keyboard_bh(struct sigcontext *sc)
@@ -791,6 +647,7 @@ void keyboard_init(void)
 {
 	struct tty *tty;
 	struct vconsole *vc;
+	int errno;
 
 	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
 	vc = (struct vconsole *)tty->driver_data;
@@ -803,17 +660,33 @@ void keyboard_init(void)
 		enable_irq(KEYBOARD_IRQ);
 	}
 
-	keyboard_reset();
+	/* reset device(s) */
+	ps2_write(PS2_DATA, PS2_DEV_RESET);
+	if(keyboard_wait_ack()) {
+		printk("WARNING: %s(): ACK not received on reset command!\n", __FUNCTION__);
+	}
+	if(is_ready_to_read()) {
+		if((errno = inport_b(PS2_DATA)) != KB_RESET_OK) {
+			printk("WARNING: %s(): keyboard returned 0x%x on reset.\n", __FUNCTION__, errno);
+		}
+	}
 
 	/* flush buffers */
-	inport_b(KB_DATA);
+	inport_b(PS2_DATA);
 
 	keyboard_identify();
 
-	printk("keyboard  0x%04x-0x%04x     %d\ttype=%s PS/2 devices=%d/%d\n", 0x60, 0x64, KEYBOARD_IRQ, kb_identify[0] == 0xAB ? "MF2" : "unknown", ps2_active_ports, ps2_supp_ports);
+	printk("keyboard  0x%04x-0x%04x     %d", 0x60, 0x64, KEYBOARD_IRQ);
+	printk("\ttype=%s PS/2", kb_identify[0] == 0xAB ? "MF2" : "unknown");
+	printk(" %s", (kb_identify[1] == 0x41 || kb_identify[1] == 0xC1) ? "translated" : "");
+	printk(" scan set 2");
+	if(orig_scan_set != 2) {
+		printk(" (was %d)", orig_scan_set);
+	}
+	printk("\n");
 
-	keyboard_write(KB_DATA, KB_RATE);
+	ps2_write(PS2_DATA, KB_RATE);
 	keyboard_wait_ack();
-	keyboard_write(KB_DATA, DELAY_250 | RATE_30);
+	ps2_write(PS2_DATA, DELAY_250 | RATE_30);
 	keyboard_wait_ack();
 }

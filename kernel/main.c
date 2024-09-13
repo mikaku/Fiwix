@@ -26,6 +26,7 @@
 #include <fiwix/timer.h>
 #include <fiwix/sleep.h>
 #include <fiwix/locks.h>
+#include <fiwix/ps2.h>
 #include <fiwix/keyboard.h>
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
@@ -117,7 +118,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	video_init();
 	console_init();
 	timer_init();
-	keyboard_init();
+	ps2_init();
 	proc_init();
 	sleep_init();
 	buffer_init();
