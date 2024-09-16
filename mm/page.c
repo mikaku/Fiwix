@@ -387,6 +387,12 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 	if(!retval) {
 		retval = gbread(d, &brh);
 	}
+	/*
+	 * We must zero retval if is not negative because block drivers
+	 * that still don't use the new I/O mechanism will return the
+	 * bytes read, and this value could be interpreted below as an error.
+	 */
+	retval = retval < 0 ? retval : 0;
 	br = brh.next_group;
 	size_read = 0;
 	while(br) {
