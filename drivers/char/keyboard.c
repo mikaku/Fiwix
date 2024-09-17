@@ -61,9 +61,10 @@ static unsigned char extkey = 0;
 static unsigned char deadkey = 0;
 static unsigned char altsysrq = 0;
 static int sysrq_op = 0;
+static unsigned char kb_identify[2] = {0, 0};
+static unsigned char is_ps2 = 0;
+static unsigned char orig_scan_set = 0;
 volatile unsigned char ack = 0;
-unsigned char kb_identify[2] = {0, 0};
-unsigned char orig_scan_set = 0;
 
 static char do_switch_console = -1;
 static unsigned char do_buf_scroll = 0;
@@ -174,75 +175,47 @@ static char *fn_seq[] = {
 	"\033[34~",	/* SF10 */
 };
 
-static void ps2_delay(void)
-{
-	int n;
-
-	for(n = 0; n < 1000; n++) {
-		NOP();
-	}
-}
-
-static int keyboard_wait_ack(void)
-{
-	int n;
-
-	if(is_ready_to_read()) {
-		for(n = 0; n < 1000; n++) {
-			if(inport_b(PS2_DATA) == KB_ACK) {
-				return 0;
-			}
-			ps2_delay();
-		}
-	}
-	return 1;
-}
-
 static void keyboard_identify(void)
 {
 	char config;
 
 	/* disable */
 	ps2_write(PS2_DATA, PS2_KB_DISABLE);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on disable command!\n", __FUNCTION__);
+	} else {
+		is_ps2++;
 	}
 
 	/* identify */
 	ps2_write(PS2_DATA, PS2_DEV_IDENTIFY);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on identify command!\n", __FUNCTION__);
+	} else {
+		is_ps2++;
 	}
-	if(is_ready_to_read()) {
-		kb_identify[0] = inport_b(PS2_DATA);
-	}
-	if(is_ready_to_read()) {
-		kb_identify[1] = inport_b(PS2_DATA);
-	}
+	kb_identify[0] = ps2_read(PS2_DATA);
+	kb_identify[1] = ps2_read(PS2_DATA);
 
 	/* get scan code */
 	config = 0;
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
-	if(is_ready_to_read()) {
-		config = inport_b(PS2_DATA);	/* save state */
-	}
+	config = ps2_read(PS2_DATA);	/* save state */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 	ps2_write(PS2_DATA, config & ~0x40);	/* unset translation */
 	ps2_write(PS2_DATA, PS2_KB_GETSETSCAN);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on get scan code command!\n", __FUNCTION__);
 	}
 	ps2_write(PS2_DATA, 0);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on get scan code command!\n", __FUNCTION__);
 	}
-	if(is_ready_to_read()) {
-		orig_scan_set = inport_b(PS2_DATA);
-	}
+	orig_scan_set = ps2_read(PS2_DATA);
 	if(orig_scan_set != 2) {
 		ps2_write(PS2_DATA, PS2_KB_GETSETSCAN);
 		ps2_write(PS2_DATA, 2);
-		if(keyboard_wait_ack()) {
+		if(ps2_wait_ack()) {
 			printk("WARNING: %s(): ACK not received on set scan code command!\n", __FUNCTION__);
 		}
 	}
@@ -251,12 +224,10 @@ static void keyboard_identify(void)
 
 	/* enable */
 	ps2_write(PS2_DATA, PS2_DEV_ENABLE);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on enable command!\n", __FUNCTION__);
 	}
-
-	/* flush buffers */
-	inport_b(PS2_DATA);
+	ps2_clear_buffer();
 }
 
 static void putc(struct tty *tty, unsigned char ch)
@@ -284,10 +255,10 @@ static void puts(struct tty *tty, char *seq)
 void set_leds(unsigned char led_status)
 {
 	ps2_write(PS2_DATA, PS2_KB_SETLED);
-	keyboard_wait_ack();
+	ps2_wait_ack();
 
 	ps2_write(PS2_DATA, led_status);
-	keyboard_wait_ack();
+	ps2_wait_ack();
 }
 
 void irq_keyboard(int num, struct sigcontext *sc)
@@ -305,7 +276,7 @@ void irq_keyboard(int num, struct sigcontext *sc)
 	scode = inport_b(PS2_DATA);
 
 	/* keyboard controller said 'acknowledge!' */
-	if(scode == KB_ACK) {
+	if(scode == DEV_ACK) {
 		ack = 1;
 		return;
 	}
@@ -655,29 +626,23 @@ void keyboard_init(void)
 	video.cursor_blink((unsigned int)vc);
 
 	add_bh(&keyboard_bh);
-
 	if(!register_irq(KEYBOARD_IRQ, &irq_config_keyboard)) {
 		enable_irq(KEYBOARD_IRQ);
 	}
 
-	/* reset device(s) */
+	/* reset device */
 	ps2_write(PS2_DATA, PS2_DEV_RESET);
-	if(keyboard_wait_ack()) {
+	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on reset command!\n", __FUNCTION__);
 	}
-	if(is_ready_to_read()) {
-		if((errno = inport_b(PS2_DATA)) != KB_RESET_OK) {
-			printk("WARNING: %s(): keyboard returned 0x%x on reset.\n", __FUNCTION__, errno);
-		}
+	if((errno = ps2_read(PS2_DATA)) != DEV_RESET_OK) {
+		printk("WARNING: %s(): keyboard returned 0x%x on reset.\n", __FUNCTION__, errno);
 	}
 
-	/* flush buffers */
-	inport_b(PS2_DATA);
-
+	ps2_clear_buffer();
 	keyboard_identify();
-
 	printk("keyboard  0x%04x-0x%04x     %d", 0x60, 0x64, KEYBOARD_IRQ);
-	printk("\ttype=%s PS/2", kb_identify[0] == 0xAB ? "MF2" : "unknown");
+	printk("\ttype=%s %s", kb_identify[0] == 0xAB ? "MF2" : "unknown", is_ps2 ? "PS/2" : "");
 	printk(" %s", (kb_identify[1] == 0x41 || kb_identify[1] == 0xC1) ? "translated" : "");
 	printk(" scan set 2");
 	if(orig_scan_set != 2) {
@@ -685,8 +650,8 @@ void keyboard_init(void)
 	}
 	printk("\n");
 
-	ps2_write(PS2_DATA, KB_RATE);
-	keyboard_wait_ack();
+	ps2_write(PS2_DATA, PS2_DEV_RATE);
+	ps2_wait_ack();
 	ps2_write(PS2_DATA, DELAY_250 | RATE_30);
-	keyboard_wait_ack();
+	ps2_wait_ack();
 }

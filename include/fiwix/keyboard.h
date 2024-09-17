@@ -10,10 +10,6 @@
 
 #define KEYBOARD_IRQ	1
 
-/* keyboard commands */
-#define KB_SETLED	0xED	/* set/reset status indicators (LEDs) */
-#define KB_RATE		0xF3	/* set typematic rate/delay */
-
 #define NR_MODIFIERS	16	/* max. number of modifiers per keymap */
 #define NR_SCODES	128	/* max. number of scancodes */
 #define NR_DIACR	10

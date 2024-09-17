@@ -30,6 +30,23 @@
 
 extern volatile unsigned char ack;
 
+/* wait controller output buffer to be full or for controller acknowledge */
+static int is_ready_to_read(void)
+{
+	int n;
+
+	for(n = 0; n < PS2_TIMEOUT; n++) {
+		if(ack) {
+			return 1;
+		}
+		if(inport_b(PS2_STATUS) & PS2_STAT_OUTBUSY) {
+			return 1;
+		}
+	}
+	printk("WARNING: PS/2 controller not ready to read.\n");
+	return 0;
+}
+
 /* wait controller input buffer to be clear */
 static int is_ready_to_write(void)
 {
@@ -43,23 +60,28 @@ static int is_ready_to_write(void)
 	return 0;
 }
 
-/* wait controller output buffer to be full or for controller acknowledge */
-int is_ready_to_read(void)
+static void ps2_delay(void)
 {
-	int n, value;
+	int n;
 
-	for(n = 0; n < PS2_TIMEOUT; n++) {
-		if(ack) {
-			return 1;
-		}
-		if((value = inport_b(PS2_STATUS)) & PS2_STAT_OUTBUSY) {
-			if(value & (PS2_STAT_COMMERR | PS2_STAT_PARERR)) {
-				continue;
+	for(n = 0; n < 1000; n++) {
+		NOP();
+	}
+}
+
+int ps2_wait_ack(void)
+{
+	int n;
+
+	if(is_ready_to_read()) {
+		for(n = 0; n < 1000; n++) {
+			if(inport_b(PS2_DATA) == DEV_ACK) {
+				return 0;
 			}
-			return 1;
+			ps2_delay();
 		}
 	}
-	return 0;
+	return 1;
 }
 
 void ps2_write(const unsigned char port, const unsigned char byte)
@@ -68,6 +90,28 @@ void ps2_write(const unsigned char port, const unsigned char byte)
 
 	if(is_ready_to_write()) {
 		outport_b(port, byte);
+	}
+}
+
+unsigned char ps2_read(const unsigned char port)
+{
+	if(is_ready_to_read()) {
+		return inport_b(port);
+	}
+	return 0;
+}
+
+void ps2_clear_buffer(void)
+{
+	int n;
+
+	for(n = 0; n < 1000; n++) {
+		ps2_delay();
+		if(inport_b(PS2_STATUS) & PS2_STAT_OUTBUSY) {
+			ps2_read(PS2_DATA);
+			continue;
+		}
+		break;
 	}
 }
 
@@ -97,9 +141,7 @@ void ps2_init(void)
 	/* get controller configuration */
 	config = 0;
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
-	if(is_ready_to_read()) {
-		config = inport_b(PS2_DATA);
-	}
+	config = ps2_read(PS2_DATA);
 
 	/* set controller configuration (disabling IRQs) */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
@@ -107,60 +149,45 @@ void ps2_init(void)
 
 	/* PS/2 controller self-test */
 	ps2_write(PS2_COMMAND, PS2_CMD_SELF_TEST);
-	if(is_ready_to_read()) {
-		if((errno = inport_b(PS2_DATA)) != 0x55) {
-			printk("WARNING: %s(): PS/2 controller returned 0x%x in self-test (expected 0x55).\n", __FUNCTION__, errno);
-			return;
-		} else {
-			supp_ports = 1;
-		}
-	} else {
-		printk("WARNING: %s(): PS/2 controller not ready.\n", __FUNCTION__);
+	if((errno = ps2_read(PS2_DATA)) != 0x55) {
+		printk("WARNING: %s(): PS/2 controller returned 0x%x in self-test (expected 0x55).\n", __FUNCTION__, errno);
 		return;
+	} else {
+		supp_ports = 1;
 	}
 
 	/* double-check if we have a second channel */
 	if(config & 0x20) {
 		ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH2);
 		ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
-		if(is_ready_to_read()) {
-			if(!(inport_b(PS2_DATA) & 0x20)) {
-				supp_ports = 1 + (config & 0x20 ? 1 : 0);
-			}
+		if(!(ps2_read(PS2_DATA) & 0x20)) {
+			supp_ports = 1 + (config & 0x20 ? 1 : 0);
 		}
 		ps2_write(PS2_COMMAND, PS2_CMD_DISABLE_CH2);
 	}
 
 	/* test interface first channel */
 	ps2_write(PS2_COMMAND, PS2_CMD_TEST_CH1);
-	if(is_ready_to_read()) {
-		if((errno = inport_b(PS2_DATA)) != 0) {
-			printk("WARNING: %s(): test in first PS/2 interface returned 0x%x.\n", __FUNCTION__, errno);
-		}
+	if((errno = ps2_read(PS2_DATA)) != 0) {
+		printk("WARNING: %s(): test in first PS/2 interface returned 0x%x.\n", __FUNCTION__, errno);
 	}
 
 	if(supp_ports > 1) {
 		/* test interface second channel */
 		ps2_write(PS2_COMMAND, PS2_CMD_TEST_CH2);
-		if(is_ready_to_read()) {
-			if((errno = inport_b(PS2_DATA)) != 0) {
-				printk("WARNING: %s(): test in second PS/2 interface retrurned 0x%x.\n", __FUNCTION__, errno);
-			}
+		if((errno = ps2_read(PS2_DATA)) != 0) {
+			printk("WARNING: %s(): test in second PS/2 interface returned 0x%x.\n", __FUNCTION__, errno);
 		}
 	}
 
 	/* check if it is a type 1 or type 2 controller */
 	config2 = 0;
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
-	if(is_ready_to_read()) {
-		config = inport_b(PS2_DATA);	/* save state */
-	}
+	config = ps2_read(PS2_DATA);	/* save state */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 	ps2_write(PS2_DATA, config | 0x40);	/* set translation */
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
-	if(is_ready_to_read()) {
-		config2 = inport_b(PS2_DATA);
-	}
+	config2 = ps2_read(PS2_DATA);
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 	ps2_write(PS2_DATA, config);	/* restore state */
 	type = (config2 & 0x40) ? 1 : 0;
@@ -179,10 +206,9 @@ void ps2_init(void)
 	ps2_write(PS2_DATA, config);
 
 	/* get current interface */
+	ps2_clear_buffer();
 	ps2_write(PS2_COMMAND, PS2_CMD_GET_IFACE);
-	if(is_ready_to_read()) {
-		iface = inport_b(PS2_DATA) & 0x01;
-	}
+	iface = ps2_read(PS2_DATA) & 0x01;
 
 	printk("ps/2      0x%04x,0x%04x     \t%s type=%d, channels=%d\n", PS2_DATA, PS2_COMMAND, iface == 1 ? "(MCA) PS/2" : "(ISA) AT", type, supp_ports);
 

@@ -34,6 +34,7 @@
 #define PS2_CMD_HOTRESET	0xFE	/* Hot Reset */
 
 /* device commands */
+#define PS2_DEV_GETINFO		0xE9	/* get current status information */
 #define PS2_KB_SETLED		0xED	/* set/reset status indicators (LEDs) */
 #define PS2_KB_ECHO		0xEE	/* echo (for diagnostics only) */
 #define PS2_KB_GETSETSCAN	0xF0	/* keyboard get/set scan code */
@@ -43,13 +44,15 @@
 #define PS2_KB_DISABLE		0xF5	/* keyboard disable scanning */
 #define PS2_DEV_RESET		0xFF	/* device reset */
 
-#define KB_RESET_OK		0xAA	/* self-test passed */
-#define KB_ACK			0xFA	/* acknowledge */
+#define DEV_RESET_OK		0xAA	/* self-test passed */
+#define DEV_ACK			0xFA	/* acknowledge */
 
 extern volatile unsigned char ack;
 
-int is_ready_to_read(void);
+int ps2_wait_ack(void);
 void ps2_write(const unsigned char, const unsigned char);
+unsigned char ps2_read(const unsigned char);
+void ps2_clear_buffer(void);
 void ps2_init(void);
 
 #endif /* _FIWIX_PS2_H */
