@@ -80,7 +80,6 @@ struct tty *get_tty(__dev_t);
 void disassociate_ctty(struct tty *);
 void termios_reset(struct tty *);
 void do_cook(struct tty *);
-int tty_putchar(struct tty *, unsigned char);
 int tty_open(struct inode *, struct fd *);
 int tty_close(struct inode *, struct fd *);
 int tty_read(struct inode *, struct fd *, char *, __size_t);
