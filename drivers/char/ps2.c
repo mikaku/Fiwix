@@ -13,20 +13,18 @@
 #include <fiwix/stdio.h>
 
 /*
- * PS/2 System Control Port A
- * --------------------------------
- * bit 7 -> fixed disk activity led
- * bit 6 -> fixed disk activity led
- * bit 5 -> reserved
- * bit 4 -> watchdog timer status
- * bit 3 -> security lock latch
- * bit 2 -> reserved
- * bit 1 -> alternate gate A20
- * bit 0 -> alternate hot reset
+ * PS/2 System Control Port A bits
+ * -------------------------------
+ * #7 RW:fixed disk activity led
+ * #6 RW:fixed disk activity led
+ * #5 RW:reserved
+ * #4 RW:watchdog timer status
+ * #3 RW:security lock latch
+ * #2 RW:reserved
+ * #1 RW:alternate gate A20
+ * #0 RW:alternate hot reset
  */
-#define PS2_SYSCTRL_A	0x92	/* PS/2 system control port A (write) */
-
-#define PS2_TIMEOUT	500000
+#define PS2_SYSCTRL_A	0x92	/* PS/2 system control port A (R/W) */
 
 extern volatile unsigned char ack;
 

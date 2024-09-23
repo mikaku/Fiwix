@@ -25,18 +25,18 @@
 #define SEL_CHAN2	0x80	/* select channel 2 */
 
 /*
- * PS/2 System Control Port B
- * ---------------------------------------
- * bit 7 -> IRQ=1, 0=reset
- * bit 6 -> reserved
- * bit 5 -> reserved
- * bit 4 -> reserved
- * bit 3 -> channel check enable
- * bit 2 -> parity check enable
- * bit 1 -> speaker data enable
- * bit 0 -> timer 2 gate to speaker enable
+ * PS/2 System Control Port B bits
+ * ---------------------------------------------------------------------
+ * #7 R:system board RAM parity		W:IRQ=1, 0=reset
+ * #6 R:channel check			W:reserved
+ * #5 R:timer 2 (speaker time) output	W:reserved
+ * #4 R:refresh request (toggle)	W:reserved
+ * #3 R:channel check status		W:channel check enable
+ * #2 R:parity check status		W:parity check enable
+ * #1 R:speaker data status		W:speaker data enable
+ * #0 R:timer 2 gate to speaker status	W:timer 2 gate to speaker enable
  */
-#define PS2_SYSCTRL_B	0x61	/* PS/2 system control port B (write) */
+#define PS2_SYSCTRL_B	0x61	/* PS/2 system control port B (R/W) */
 
 #define ENABLE_TMR2G	0x01	/* timer 2 gate to speaker enable */
 #define ENABLE_SDATA	0x02	/* speaker data enable */

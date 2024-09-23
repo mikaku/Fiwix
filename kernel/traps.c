@@ -9,26 +9,13 @@
 #include <fiwix/kernel.h>
 #include <fiwix/traps.h>
 #include <fiwix/cpu.h>
+#include <fiwix/pit.h>
 #include <fiwix/mm.h>
 #include <fiwix/process.h>
 #include <fiwix/signal.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/sched.h>
-
-/*
- * PS/2 System Control Port B
- * ---------------------------------------
- * bit 7 -> system board RAM parity check
- * bit 6 -> channel check
- * bit 5 -> timer 2 (speaker time) output
- * bit 4 -> refresh request (toggle)
- * bit 3 -> channel check status
- * bit 2 -> parity check status
- * bit 1 -> speaker data status
- * bit 0 -> timer 2 gate to speaker status
- */
-#define PS2_SYSCTRL_B	0x61	/* PS/2 system control port B (read) */
 
 struct traps traps_table[NR_EXCEPTIONS] = {
 	{ "Divide Error", do_divide_error, 0 },
