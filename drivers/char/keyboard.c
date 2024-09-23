@@ -233,7 +233,7 @@ static void keyboard_identify(void)
 static void putc(struct tty *tty, unsigned char ch)
 {
 	if(tty->count) {
-		if(tty_queue_putchar(tty, &tty->read_q, ch) < 0) {
+		if(charq_putchar(&tty->read_q, ch) < 0) {
 			if(tty->termios.c_iflag & IMAXBEL) {
 				vconsole_beep();
 			}

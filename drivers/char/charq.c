@@ -1,5 +1,5 @@
 /*
- * fiwix/drivers/char/tty_queue.c
+ * fiwix/drivers/char/charq.c
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
@@ -7,43 +7,10 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
-#include <fiwix/tty.h>
+#include <fiwix/charq.h>
+#include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
-
-/*
- * tty_queue.c implements a queue using a static-sized doubly linked list of a
- * central pool of buffers which covers all ttys.
- *
- *  head                                     tail
- * +--------------+  +--------------+  ...  +--------------+
- * |prev|data|next|  |prev|data|next|  ...  |prev|data|next|
- * | /  |    |  -->  <--  |    |  -->  ...  <--  |    |  / |
- * +--------------+  +--------------+  ...  +--------------+
- *  (cblock)          (cblock)               (cblock)
- */
-
-struct cblock cblock_pool[CB_POOL_SIZE];
-struct cblock *cblock_pool_head;
-
-static struct cblock *get_free_cblock(void)
-{
-	struct cblock *new = NULL;
-
-	if(cblock_pool_head) {
-		new = cblock_pool_head;
-		cblock_pool_head = cblock_pool_head->next;
-		new->prev = new->next = NULL;
-	}
-	return new;
-}
-
-static void put_free_cblock(struct cblock *old)
-{
-	old->prev = NULL;
-	old->next = cblock_pool_head;
-	cblock_pool_head = old;
-}
 
 /*
 static struct cblock *insert_cblock_in_head(struct clist *q)
@@ -53,13 +20,11 @@ static struct cblock *insert_cblock_in_head(struct clist *q)
 	if(q->cb_num >= NR_CB_QUEUE) {
 		return NULL;
 	}
-	if(!(cb = get_free_cblock())) {
+	if(!(cb = (struct cblock *)kmalloc(sizeof(struct cblock)))) {
 		return NULL;
 	}
 
-	cb->start_off = cb->end_off = 0;
-	memset_b(cb->data, 0, CBSIZE);
-	cb->prev = cb->next = NULL;
+	memset_b(cb, 0, sizeof(struct cblock));
 	q->cb_num++;
 
 	if(!q->head) {
@@ -81,14 +46,11 @@ static struct cblock *insert_cblock_in_tail(struct clist *q)
 	if(q->cb_num >= NR_CB_QUEUE) {
 		return NULL;
 	}
-	if(!(cb = get_free_cblock())) {
+	if(!(cb = (struct cblock *)kmalloc(sizeof(struct cblock)))) {
 		return NULL;
 	}
 
-	/* initialize cblock */
-	cb->start_off = cb->end_off = 0;
-	memset_b(cb->data, 0, CBSIZE);
-	cb->prev = cb->next = NULL;
+	memset_b(cb, 0, sizeof(struct cblock));
 	q->cb_num++;
 
 	if(!q->tail) {
@@ -120,7 +82,7 @@ static void delete_cblock_from_head(struct clist *q)
 
 	q->count -= tmp->end_off - tmp->start_off;
 	q->cb_num--;
-	put_free_cblock(tmp);
+	kfree((unsigned int)tmp);
 }
 
 static void delete_cblock_from_tail(struct clist *q)
@@ -141,10 +103,10 @@ static void delete_cblock_from_tail(struct clist *q)
 
 	q->count -= tmp->end_off - tmp->start_off;
 	q->cb_num--;
-	put_free_cblock(tmp);
+	kfree((unsigned int)tmp);
 }
 
-int tty_queue_putchar(struct tty *tty, struct clist *q, unsigned char ch)
+int charq_putchar(struct clist *q, unsigned char ch)
 {
 	unsigned int flags;
 	struct cblock *cb;
@@ -167,7 +129,7 @@ int tty_queue_putchar(struct tty *tty, struct clist *q, unsigned char ch)
 		q->count++;
 		errno = 0;
 	} else if(insert_cblock_in_tail(q)) {
-		tty_queue_putchar(tty, q, ch);
+		charq_putchar(q, ch);
 		errno = 0;
 	} else {
 		errno = -EAGAIN;
@@ -177,7 +139,7 @@ int tty_queue_putchar(struct tty *tty, struct clist *q, unsigned char ch)
 	return errno;
 }
 
-int tty_queue_unputchar(struct clist *q)
+int charq_unputchar(struct clist *q)
 {
 	unsigned int flags;
 	struct cblock *cb;
@@ -202,7 +164,7 @@ int tty_queue_unputchar(struct clist *q)
 	return ch;
 }
 
-unsigned char tty_queue_getchar(struct clist *q)
+unsigned char charq_getchar(struct clist *q)
 {
 	unsigned int flags;
 	struct cblock *cb;
@@ -227,7 +189,7 @@ unsigned char tty_queue_getchar(struct clist *q)
 	return ch;
 }
 
-void tty_queue_flush(struct clist *q)
+void charq_flush(struct clist *q)
 {
 	unsigned int flags;
 
@@ -240,23 +202,7 @@ void tty_queue_flush(struct clist *q)
 	RESTORE_FLAGS(flags);
 }
 
-int tty_queue_room(struct clist *q)
+int charq_room(struct clist *q)
 {
 	return (NR_CB_QUEUE * CBSIZE) - q->count;
-}
-
-void tty_queue_init(void)
-{
-	int n;
-	struct cblock *cb;
-
-	memset_b(cblock_pool, 0, sizeof(cblock_pool));
-
-	/* cblock free list initialization */
-	cblock_pool_head = NULL;
-	n = CB_POOL_SIZE;
-	while(n--) {
-		cb = &cblock_pool[n];
-		put_free_cblock(cb);
-	}
 }

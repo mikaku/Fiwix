@@ -273,7 +273,7 @@ static void serial_deltab(struct tty *tty)
 	count = tty->column - col;
 
 	while(count--) {
-		tty_queue_putchar(tty, &tty->write_q, '\b');
+		charq_putchar(&tty->write_q, '\b');
 		tty->column--;
 	}
 }
@@ -332,7 +332,7 @@ static void serial_send(struct tty *tty)
 
 	count = 0;
 	while(tty->write_q.count > 0 && count < UART_FIFO_SIZE) {
-		ch = tty_queue_getchar(&tty->write_q);
+		ch = charq_getchar(&tty->write_q);
 		outport_b(s->ioaddr + UART_TD, ch);
 		count++;
 	}
@@ -353,12 +353,12 @@ static int serial_receive(struct serial *s)
 	tty = s->tty;
 
 	do {
-		if(!tty_queue_room(&tty->read_q)) {
+		if(!charq_room(&tty->read_q)) {
 			errno = -EAGAIN;
 			break;
 		}
 		ch = inport_b(s->ioaddr + UART_RD);
-		tty_queue_putchar(tty, &tty->read_q, ch);
+		charq_putchar(&tty->read_q, ch);
 		status = inport_b(s->ioaddr + UART_LSR);
 	} while(status & UART_LSR_RDA);
 

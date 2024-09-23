@@ -379,7 +379,7 @@ static void init_vt(struct vconsole *vc)
 static void insert_seq(struct tty *tty, char *buf, int count)
 {
 	while(count--) {
-		tty_queue_putchar(tty, &tty->read_q, *(buf++));
+		charq_putchar(&tty->read_q, *(buf++));
 	}
 	tty->input(tty);
 }
@@ -542,7 +542,7 @@ void vconsole_write(struct tty *tty)
 	ch = numeric = 0;
 
 	while(!vc->scrlock && tty->write_q.count > 0) {
-		ch = tty_queue_getchar(&tty->write_q);
+		ch = charq_getchar(&tty->write_q);
 
 		if(vc->esc) {
 			if(vc->sbracket) {
@@ -971,7 +971,7 @@ void vconsole_deltab(struct tty *tty)
 	count = vc->x - col;
 
 	while(count--) {
-		tty_queue_putchar(tty, &tty->write_q, '\b');
+		charq_putchar(&tty->write_q, '\b');
 	}
 }
 

@@ -43,7 +43,7 @@ static void puts(char *buffer)
 				tty = sysconsole_table[n].tty;
 			}
 			if(tty) {
-				tty_queue_putchar(tty, &tty->write_q, *buffer);
+				charq_putchar(&tty->write_q, *buffer);
 
 				/* kernel messages must be shown immediately */
 				tty->output(tty);
@@ -405,7 +405,7 @@ void flush_log_buf(struct tty *tty)
 	buffer = &log_buf[0];
 	count = log_count;
 	while(count) {
-		if(tty_queue_putchar(tty, &tty->write_q, *buffer) < 0) {
+		if(charq_putchar(&tty->write_q, *buffer) < 0) {
 			tty->output(tty);
 			continue;
 		}

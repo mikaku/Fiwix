@@ -70,8 +70,8 @@ static int opost(struct tty *tty, unsigned char ch)
 		switch(ch) {
 			case '\n':
 				if(tty->termios.c_oflag & ONLCR) {
-					if(tty_queue_room(&tty->write_q) >= 2) {
-						tty_queue_putchar(tty, &tty->write_q, '\r');
+					if(charq_room(&tty->write_q) >= 2) {
+						charq_putchar(&tty->write_q, '\r');
 						tty->column = 0;
 					} else {
 						return -1;
@@ -99,7 +99,7 @@ static int opost(struct tty *tty, unsigned char ch)
 				break;
 		}
 	}
-	if(tty_queue_putchar(tty, &tty->write_q, ch) < 0) {
+	if(charq_putchar(&tty->write_q, ch) < 0) {
 		status = -1;
 	}
 	return status;
@@ -109,8 +109,8 @@ static void out_char(struct tty *tty, unsigned char ch)
 {
 	if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
 		if(tty->flags & TTY_HAS_LNEXT || (!(tty->flags & TTY_HAS_LNEXT) && ch != tty->termios.c_cc[VEOF])) {
-			tty_queue_putchar(tty, &tty->write_q, '^');
-			tty_queue_putchar(tty, &tty->write_q, ch + 64);
+			charq_putchar(&tty->write_q, '^');
+			charq_putchar(&tty->write_q, ch + 64);
 			tty->column += 2;
 		}
 	} else {
@@ -123,18 +123,18 @@ static void erase_char(struct tty *tty, unsigned char erasechar)
 	unsigned char ch;
 
 	if(erasechar == tty->termios.c_cc[VERASE]) {
-		if((ch = tty_queue_unputchar(&tty->cooked_q))) {
+		if((ch = charq_unputchar(&tty->cooked_q))) {
 			if(tty->termios.c_lflag & ECHO) {
-				tty_queue_putchar(tty, &tty->write_q, '\b');
-				tty_queue_putchar(tty, &tty->write_q, ' ');
-				tty_queue_putchar(tty, &tty->write_q, '\b');
+				charq_putchar(&tty->write_q, '\b');
+				charq_putchar(&tty->write_q, ' ');
+				charq_putchar(&tty->write_q, '\b');
 				if(ch == '\t') {
 					tty->deltab(tty);
 				}
 				if(ISCNTRL(ch) && !ISSPACE(ch) && tty->termios.c_lflag & ECHOCTL) {
-					tty_queue_putchar(tty, &tty->write_q, '\b');
-					tty_queue_putchar(tty, &tty->write_q, ' ');
-					tty_queue_putchar(tty, &tty->write_q, '\b');
+					charq_putchar(&tty->write_q, '\b');
+					charq_putchar(&tty->write_q, ' ');
+					charq_putchar(&tty->write_q, '\b');
 				}
 			}
 		}
@@ -158,7 +158,7 @@ static void erase_char(struct tty *tty, unsigned char erasechar)
 			erase_char(tty, tty->termios.c_cc[VERASE]);
 		}
 		if(tty->termios.c_lflag & ECHOK && !(tty->termios.c_lflag & ECHOE)) {
-			tty_queue_putchar(tty, &tty->write_q, '\n');
+			charq_putchar(&tty->write_q, '\n');
 		}
 	}
 }
@@ -288,13 +288,13 @@ void do_cook(struct tty *tty)
 	struct cblock *cb;
 
 	while(tty->read_q.count > 0) {
-		ch = tty_queue_getchar(&tty->read_q);
+		ch = charq_getchar(&tty->read_q);
 
 		if((tty->termios.c_lflag & ISIG) && !(tty->flags & TTY_HAS_LNEXT)) {
 			if(ch == tty->termios.c_cc[VINTR]) {
 				if(!(tty->termios.c_lflag & NOFLSH)) {
-					tty_queue_flush(&tty->read_q);
-					tty_queue_flush(&tty->cooked_q);
+					charq_flush(&tty->read_q);
+					charq_flush(&tty->cooked_q);
 				}
 				if(tty->pgid > 0) {
 					kill_pgrp(tty->pgid, SIGINT, KERNEL);
@@ -349,7 +349,7 @@ void do_cook(struct tty *tty)
 
 			if(ch == tty->termios.c_cc[VREPRINT]) {
 				out_char(tty, ch);
-				tty_queue_putchar(tty, &tty->write_q, '\n');
+				charq_putchar(&tty->write_q, '\n');
 				cb = tty->cooked_q.head;
 				while(cb) {
 					for(n = 0; n < cb->end_off; n++) {
@@ -365,8 +365,8 @@ void do_cook(struct tty *tty)
 			if(ch == tty->termios.c_cc[VLNEXT] && tty->termios.c_lflag & IEXTEN) {
 				tty->flags |= TTY_HAS_LNEXT;
 				if(tty->termios.c_lflag & ECHOCTL) {
-					tty_queue_putchar(tty, &tty->write_q, '^');
-					tty_queue_putchar(tty, &tty->write_q, '\b');
+					charq_putchar(&tty->write_q, '^');
+					charq_putchar(&tty->write_q, '\b');
 				}
 				break;
 			}
@@ -390,7 +390,7 @@ void do_cook(struct tty *tty)
 		if(tty->termios.c_lflag & ICANON) {
 			if(ISCNTRL(ch) && !ISSPACE(ch) && (tty->termios.c_lflag & ECHOCTL)) {
 				out_char(tty, ch);
-				tty_queue_putchar(tty, &tty->cooked_q, ch);
+				charq_putchar(&tty->cooked_q, ch);
 				tty->flags &= ~TTY_HAS_LNEXT;
 				continue;
 			}
@@ -406,7 +406,7 @@ void do_cook(struct tty *tty)
 				out_char(tty, ch);
 			}
 		}
-		tty_queue_putchar(tty, &tty->cooked_q, ch);
+		charq_putchar(&tty->cooked_q, ch);
 		tty->flags &= ~TTY_HAS_LNEXT;
 	}
 	tty->output(tty);
@@ -515,7 +515,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 		if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
 			n = 0;
 			while(n < count) {
-				if((ch = tty_queue_getchar(&tty->read_q))) {
+				if((ch = charq_getchar(&tty->read_q))) {
 					buffer[n++] = ch;
 				} else {
 					break;
@@ -533,11 +533,11 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 					tty->canon_data = 0;
 					/* EOF is not passed to the reading process */
 					if(ch == tty->termios.c_cc[VEOF]) {
-						tty_queue_unputchar(&tty->cooked_q);
+						charq_unputchar(&tty->cooked_q);
 					}
 
 					while(n < count) {
-						if((ch = tty_queue_getchar(&tty->cooked_q))) {
+						if((ch = charq_getchar(&tty->cooked_q))) {
 							buffer[n++] = ch;
 						} else {
 							break;
@@ -567,7 +567,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						}
 					}
 					while(n < count) {
-						if((ch = tty_queue_getchar(&tty->cooked_q))) {
+						if((ch = charq_getchar(&tty->cooked_q))) {
 							buffer[n++] = ch;
 						} else {
 							break;
@@ -577,7 +577,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 				} else {
 					if(tty->cooked_q.count > 0) {
 						if(n < MIN(tty->termios.c_cc[VMIN], count)) {
-							ch = tty_queue_getchar(&tty->cooked_q);
+							ch = charq_getchar(&tty->cooked_q);
 							buffer[n++] = ch;
 						}
 						if(n >= MIN(tty->termios.c_cc[VMIN], count)) {
@@ -606,7 +606,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 				if(tty->cooked_q.count > 0) {
 					if(min < tty->termios.c_cc[VMIN] || !tty->termios.c_cc[VMIN]) {
 						if(n < count) {
-							ch = tty_queue_getchar(&tty->cooked_q);
+							ch = charq_getchar(&tty->cooked_q);
 							buffer[n++] = ch;
 							if(--tty->canon_data < 0) {
 								tty->canon_data = 0;
@@ -767,7 +767,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 				do_sched();
 			}
 			set_termios(tty, (struct termios *)arg);
-			tty_queue_flush(&tty->read_q);
+			charq_flush(&tty->read_q);
 			break;
 
 		/*
@@ -826,7 +826,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 				do_sched();
 			}
 			set_termio(tty, (struct termio *)arg);
-			tty_queue_flush(&tty->read_q);
+			charq_flush(&tty->read_q);
 			break;
 
 		/* Perform start/stop control */
@@ -845,16 +845,16 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 		case TCFLSH:
 			switch(arg) {
 				case TCIFLUSH:
-					tty_queue_flush(&tty->read_q);
-					tty_queue_flush(&tty->cooked_q);
+					charq_flush(&tty->read_q);
+					charq_flush(&tty->cooked_q);
 					break;
 				case TCOFLUSH:
-					tty_queue_flush(&tty->write_q);
+					charq_flush(&tty->write_q);
 					break;
 				case TCIOFLUSH:
-					tty_queue_flush(&tty->read_q);
-					tty_queue_flush(&tty->cooked_q);
-					tty_queue_flush(&tty->write_q);
+					charq_flush(&tty->read_q);
+					charq_flush(&tty->cooked_q);
+					charq_flush(&tty->write_q);
 					break;
 				default:
 					return -EINVAL;
@@ -1024,6 +1024,5 @@ int tty_select(struct inode *i, int flag)
 
 void tty_init(void)
 {
-	tty_queue_init();
 	memset_b(tty_table, 0, sizeof(tty_table));
 }

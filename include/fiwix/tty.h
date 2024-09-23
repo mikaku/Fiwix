@@ -10,14 +10,11 @@
 
 #include <fiwix/termios.h>
 #include <fiwix/fs.h>
+#include <fiwix/charq.h>
 #include <fiwix/console.h>
 #include <fiwix/serial.h>
 
 #define NR_TTYS		NR_VCONSOLES + NR_SERIAL
-
-#define CBSIZE		32	/* number of characters in cblock */
-#define NR_CB_QUEUE	8	/* number of cblocks per queue */
-#define CB_POOL_SIZE	128	/* number of cblocks in the central pool */
 
 #define TAB_SIZE	8
 #define MAX_TAB_COLS	132	/* maximum number of tab stops */
@@ -26,21 +23,6 @@
 
 /* tty flags */
 #define TTY_HAS_LNEXT		0x01
-
-struct clist {
-	unsigned short int count;
-	unsigned short int cb_num;
-	struct cblock *head;
-	struct cblock *tail;
-};
-
-struct cblock {
-	unsigned short int start_off;
-	unsigned short int end_off;
-	unsigned char data[CBSIZE];
-	struct cblock *prev;
-	struct cblock *next;
-};
 
 struct kbd_state {
 	char mode;
@@ -88,13 +70,6 @@ int tty_ioctl(struct inode *, int cmd, unsigned int);
 __loff_t tty_llseek(struct inode *, __loff_t);
 int tty_select(struct inode *, int);
 void tty_init(void);
-
-int tty_queue_putchar(struct tty *, struct clist *, unsigned char);
-int tty_queue_unputchar(struct clist *);
-unsigned char tty_queue_getchar(struct clist *);
-void tty_queue_flush(struct clist *);
-int tty_queue_room(struct clist *q);
-void tty_queue_init(void);
 
 int vt_ioctl(struct tty *, int, unsigned int);
 

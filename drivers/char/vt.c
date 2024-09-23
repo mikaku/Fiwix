@@ -89,7 +89,7 @@ int vt_ioctl(struct tty *tty, int cmd, unsigned int arg)
 				arg = K_XLATE;
 			}
 			tty->kbd.mode = arg;
-			tty_queue_flush(&tty->read_q);
+			charq_flush(&tty->read_q);
 			break;
 
 		case KDSKBENT:
