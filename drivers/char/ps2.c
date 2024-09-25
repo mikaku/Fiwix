@@ -7,6 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/config.h>
 #include <fiwix/ps2.h>
 #include <fiwix/keyboard.h>
 #include <fiwix/psaux.h>
@@ -214,9 +215,11 @@ void ps2_init(void)
 	if(supp_ports) {
 		ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH1);
 		keyboard_init();
+#ifdef CONFIG_PSAUX
 		if(supp_ports > 1) {
 			ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH2);
 			psaux_init();
 		}
+#endif /* CONFIG_PSAUX */
 	}
 }

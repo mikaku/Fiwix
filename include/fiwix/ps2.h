@@ -31,6 +31,7 @@
 #define PS2_CMD_DISABLE_CH1	0xAD	/* disable first channel */
 #define PS2_CMD_ENABLE_CH1	0xAE	/* enable first channel */
 #define PS2_CMD_GET_IFACE	0xCA	/* get the current interface */
+#define PS2_CMD_CH2_PREFIX	0xD4	/* second channel (mouse) prefix */
 #define PS2_CMD_HOTRESET	0xFE	/* Hot Reset */
 
 /* device commands */
@@ -42,10 +43,13 @@
 #define PS2_DEV_RATE		0xF3	/* set typematic rate/delay */
 #define PS2_DEV_ENABLE		0xF4	/* keyboard enable scanning */
 #define PS2_KB_DISABLE		0xF5	/* keyboard disable scanning */
+#define PS2_AUX_DISABLE		0xF6	/* mouse disable scanning */
 #define PS2_DEV_RESET		0xFF	/* device reset */
 
 #define DEV_RESET_OK		0xAA	/* self-test passed */
 #define DEV_ACK			0xFA	/* acknowledge */
+
+#define PS2_TIMEOUT		500000
 
 extern volatile unsigned char ack;
 

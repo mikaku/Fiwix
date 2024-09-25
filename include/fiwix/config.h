@@ -52,6 +52,7 @@
 #undef CONFIG_MMAP2
 #define CONFIG_NET
 #define CONFIG_PRINTK64
+#define CONFIG_PSAUX
 
 
 /* configuration options to help debugging */

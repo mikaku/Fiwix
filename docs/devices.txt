@@ -32,6 +32,9 @@ Major | Minor | Device name   | Description
 6				Parallel printer devices
 	0	lp0		first parallel printer port
 
+10				Non-serial mice
+	1	psaux		PS/2-style mouse port
+
 29				Universal framebuffer
 	0	fb0		first framebuffer
 
