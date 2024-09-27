@@ -104,8 +104,8 @@ struct i386tss {
 
 struct proc {
 	struct i386tss tss;
+	struct proc *ppid;		/* pointer to parent process */
 	__pid_t pid;			/* process ID */
-	__pid_t ppid;			/* parent process ID */
 	__pid_t pgid;			/* process group ID */
 	__pid_t sid;			/* session ID */
 	int flags;

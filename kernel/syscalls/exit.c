@@ -27,7 +27,7 @@ void do_exit(int exit_code)
 
 #ifdef __DEBUG__
 	printk("\n");
-	printk("sys_exit(pid %d, ppid %d)\n", current->pid, current->ppid);
+	printk("sys_exit(pid %d, ppid %d)\n", current->pid, current->ppid->pid);
 	printk("------------------------------\n");
 #endif /*__DEBUG__ */
 
@@ -41,7 +41,7 @@ void do_exit(int exit_code)
 	current->argv = NULL;
 	current->envp = NULL;
 
-	init = get_proc_by_pid(INIT);
+	init = &proc_table[INIT];
 	FOR_EACH_PROCESS(p) {
 		if(SESS_LEADER(current)) {
 			if(p->sid == current->sid && p->state != PROC_ZOMBIE) {
@@ -54,8 +54,8 @@ void do_exit(int exit_code)
 		}
 
 		/* make INIT inherit the children of this exiting process */
-		if(p->ppid == current->pid) {
-			p->ppid = INIT;
+		if(p->ppid == current) {
+			p->ppid = init;
 			init->children++;
 			current->children--;
 			if(p->state == PROC_ZOMBIE) {
@@ -93,11 +93,10 @@ void do_exit(int exit_code)
 	}
 
 	/* notify the parent about the child's death */
-	if((p = get_proc_by_pid(current->ppid))) {
-		send_sig(p, SIGCHLD);
-		if(p->sleep_address == &sys_wait4) {
-			wakeup_proc(p);
-		}
+	p = current->ppid;
+	send_sig(p, SIGCHLD);
+	if(p->sleep_address == &sys_wait4) {
+		wakeup_proc(p);
 	}
 
 	current->sigpending = 0;

@@ -63,7 +63,7 @@ void init_init(void)
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
 	init->tss.cr3 = V2P((unsigned int)pgdir);
 
-	init->ppid = 0;
+	init->ppid = &proc_table[IDLE];
 	init->pgid = 0;
 	init->sid = 0;
 	init->flags = 0;

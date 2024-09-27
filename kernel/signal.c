@@ -213,11 +213,10 @@ void psig(unsigned int stack)
 						current->exit_code = signum;
 						not_runnable(current, PROC_STOPPED);
 						if(!(current->sigaction[signum - 1].sa_flags & SA_NOCLDSTOP)) {
-							if((p = get_proc_by_pid(current->ppid))) {
-								send_sig(p, SIGCHLD);
-								/* needed for job control */
-								wakeup(&sys_wait4);
-							}
+							p = current->ppid;
+							send_sig(p, SIGCHLD);
+							/* needed for job control */
+							wakeup(&sys_wait4);
 						}
 						need_resched = 1;
 						break;

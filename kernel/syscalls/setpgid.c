@@ -36,7 +36,7 @@ int sys_setpgid(__pid_t pid, __pid_t pgid)
 		pgid = p->pid;
 	}
 
-	if(p != current && p->ppid != current->pid) {
+	if(p != current && p->ppid != current) {
 		return -ESRCH;
 	}
 	if(p->sid == p->pid || p->sid != current->sid) {

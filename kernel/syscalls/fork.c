@@ -86,7 +86,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	memcpy_b(child_pgdir, kpage_dir, PAGE_SIZE);
 	child->tss.cr3 = V2P((unsigned int)child_pgdir);
 
-	child->ppid = current->pid;
+	child->ppid = current;
 	child->flags = 0;
 	child->children = 0;
 	child->cpu_count = child->priority;

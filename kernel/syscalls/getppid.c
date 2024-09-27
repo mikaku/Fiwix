@@ -14,7 +14,7 @@
 int sys_getppid(void)
 {
 #ifdef __DEBUG__
-	printk("(pid %d) sys_getppid() -> %d\n", current->pid, current->ppid);
+	printk("(pid %d) sys_getppid() -> %d\n", current->pid, current->ppid->pid);
 #endif /*__DEBUG__ */
-	return current->ppid;
+	return current->ppid->pid;
 }

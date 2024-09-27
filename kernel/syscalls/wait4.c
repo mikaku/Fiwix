@@ -35,7 +35,7 @@ int sys_wait4(__pid_t pid, int *status, int options, struct rusage *ru)
 	while(current->children) {
 		flag = 0;
 		FOR_EACH_PROCESS(p) {
-			if(p->ppid != current->pid) {
+			if(p->ppid != current) {
 				p = p->next;
 				continue;
 			}

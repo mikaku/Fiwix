@@ -116,12 +116,8 @@ struct proc *get_next_zombie(struct proc *parent)
 {
 	struct proc *p;
 
-	if(proc_table_head == NULL) {
-		PANIC("process table is empty!\n");
-	}
-
 	FOR_EACH_PROCESS(p) {
-		if(p->ppid == parent->pid && p->state == PROC_ZOMBIE) {
+		if(p->ppid == parent && p->state == PROC_ZOMBIE) {
 			return p;
 		}
 		p = p->next;
@@ -140,7 +136,7 @@ __pid_t remove_zombie(struct proc *p)
 	p->rss--;
 	kfree(P2V(p->tss.cr3));
 	p->rss--;
-	pp = get_proc_by_pid(p->ppid);
+	pp = p->ppid;
 	release_proc(p);
 	if(pp) {
 		pp->children--;
@@ -164,7 +160,7 @@ int is_orphaned_pgrp(__pid_t pgid)
 	FOR_EACH_PROCESS(p) {
 		if(p->pgid == pgid) {
 			if(p->state != PROC_ZOMBIE) {
-				pp = get_proc_by_pid(p->ppid);
+				pp = p->ppid;
 				/* return if only one is found that breaks the rule */
 				if(pp->pgid != pgid || pp->sid == p->sid) {
 					break;
@@ -284,7 +280,7 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	p = get_proc_free();
 	proc_slot_init(p);
 	p->pid = get_unused_pid();
-	p->ppid = 0;
+	p->ppid = &proc_table[IDLE];
 	p->flags |= PF_KPROC;
 	p->priority = DEF_PRIORITY;
 	if(!(p->tss.esp0 = kmalloc(PAGE_SIZE))) {

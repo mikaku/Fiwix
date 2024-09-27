@@ -787,7 +787,7 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 			p->pid,
 			p->argv0,
 			pstate[p->state][0],
-			p->ppid, p->pgid, p->sid,
+			p->ppid->pid, p->pgid, p->sid,
 			p->ctty ? p->ctty->dev : 0,
 			p->ctty ? p->ctty->pgid : - 1,
 			0,			/* flags */
@@ -893,7 +893,7 @@ int data_proc_pid_status(char *buffer, __pid_t pid)
 		size = sprintk(buffer, "Name:\t%s\n", p->argv0);
 		size += sprintk(buffer + size, "State:\t%s\n", pstate[p->state]);
 		size += sprintk(buffer + size, "Pid:\t%d\n", p->pid);
-		size += sprintk(buffer + size, "PPid:\t%d\n", p->ppid);
+		size += sprintk(buffer + size, "PPid:\t%d\n", p->ppid->pid);
 		size += sprintk(buffer + size, "Uid:\t%d\t%d\t%d\t-\n", p->uid, p->euid, p->suid);
 		size += sprintk(buffer + size, "Gid:\t%d\t%d\t%d\t-\n", p->gid, p->egid, p->sgid);
 		size += sprintk(buffer + size, "VmSize:\t%8d kB\n", (text + data + stack + mmap) / 1024);
