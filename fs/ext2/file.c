@@ -120,7 +120,6 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 				break;
 			}
 			memset_b(br, 0, sizeof(struct blk_request));
-			br->cmd = BLK_READ;
 			br->dev = i->dev;
 			br->block = block;
 			br->size = blksize;

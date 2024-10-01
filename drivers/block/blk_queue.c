@@ -37,7 +37,7 @@ void add_blk_request(struct blk_request *br)
 	RESTORE_FLAGS(flags);
 }
 
-int do_blk_request(struct device *d, int cmd, struct buffer *buf)
+int do_blk_request(struct device *d, void *fn, struct buffer *buf)
 {
 	struct blk_request *br;
 	int errno;
@@ -48,17 +48,12 @@ int do_blk_request(struct device *d, int cmd, struct buffer *buf)
 	}
 
 	memset_b(br, 0, sizeof(struct blk_request));
-	br->cmd = cmd;
-	br->cmd = buf->dev;
+	br->dev = buf->dev;
 	br->block = buf->block;
 	br->size = buf->size;
 	br->buffer = buf;
 	br->device = d;
-	if(cmd == BLK_READ) {
-		br->fn = d->fsop->read_block;
-	} else {
-		br->fn = d->fsop->write_block;
-	}
+	br->fn = fn;
 
 	add_blk_request(br);
 	run_blk_request(d);

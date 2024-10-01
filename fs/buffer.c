@@ -407,7 +407,7 @@ static int sync_one_buffer(struct buffer *buf)
 		return 1;
 	}
 
-	if((errno = do_blk_request(d, BLK_WRITE, buf)) < 0) {
+	if((errno = do_blk_request(d, d->fsop->write_block, buf)) < 0) {
 		if(errno == -EROFS) {
 			printk("WARNING: %s(): unable to write block %d, write protection on device %d,%d.\n", __FUNCTION__, buf->block, MAJOR(buf->dev), MINOR(buf->dev));
 		} else {
@@ -535,7 +535,7 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 			return NULL;
 		}
-		if(do_blk_request(d, BLK_READ, buf) == size) {
+		if(do_blk_request(d, d->fsop->read_block, buf) == size) {
 			buf->flags |= BUFFER_VALID;
 			return buf;
 		}

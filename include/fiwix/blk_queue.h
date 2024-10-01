@@ -18,7 +18,6 @@
 #define BRF_NOBLOCK	1
 
 struct blk_request {
-	int cmd;
 	int status;
 	int errno;
 	__dev_t dev;
@@ -35,7 +34,7 @@ struct blk_request {
 };
 
 void add_blk_request(struct blk_request *);
-int do_blk_request(struct device *, int, struct buffer *);
+int do_blk_request(struct device *, void *, struct buffer *);
 void run_blk_request(struct device *);
 
 #endif /* _FIWIX_BLKQUEUE_H */

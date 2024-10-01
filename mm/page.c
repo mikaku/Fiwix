@@ -368,7 +368,6 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 			break;
 		}
 		memset_b(br, 0, sizeof(struct blk_request));
-		br->cmd = BLK_READ;
 		br->dev = i->dev;
 		br->block = block;
 		br->flags = block ? 0 : BRF_NOBLOCK;
