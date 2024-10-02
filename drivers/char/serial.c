@@ -526,19 +526,17 @@ void irq_serial_bh(struct sigcontext *sc)
 
 	s = serial_active;
 
-	if(s) {
-		do {
-			tty = s->tty;
-			if(tty->read_q.count) {
-				if(!lock_area(AREA_SERIAL_READ)) {
-					tty->input(tty);
-					unlock_area(AREA_SERIAL_READ);
-				} else {
-					serial_bh.flags |= BH_ACTIVE;
-				}
+	while(s) {
+		tty = s->tty;
+		if(tty->read_q.count) {
+			if(!lock_area(AREA_SERIAL_READ)) {
+				tty->input(tty);
+				unlock_area(AREA_SERIAL_READ);
+			} else {
+				serial_bh.flags |= BH_ACTIVE;
 			}
-			s = s->next;
-		} while(s);
+		}
+		s = s->next;
 	}
 }
 
