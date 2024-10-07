@@ -136,10 +136,10 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 		n = MIN((count - bytes_written), (limit - i->u.pipefs.i_writeoff));
 
 		/*
-		 * POSIX requires that any write operation involving fewer than
-		 * PIPE_BUF bytes must be automatically executed and finished
-		 * without being interleaved with write operations of other
-		 * processes to the same pipe.
+		 * POSIX requires that any write operation involving less than
+		 * or equal to PIPE_BUF bytes, must be automatically executed
+		 * and finished without being interleaved with write operations
+		 * of other processes to the same pipe.
 		*/
 		if(n && n <= PIPE_BUF) {
 			lock_resource(&pipe_resource);
