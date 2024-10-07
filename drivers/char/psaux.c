@@ -246,7 +246,6 @@ void psaux_init(void)
 {
 	int errno;
 
-	/*add_bh(&psaux_bh);*/
 	if(!register_irq(PSAUX_IRQ, &irq_config_psaux)) {
 		enable_irq(PSAUX_IRQ);
 	}
