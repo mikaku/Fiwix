@@ -85,39 +85,41 @@ static unsigned char status[3] = { 0, 0, 0};
 static unsigned char is_ps2 = 0;
 static char id = -1;
 
-static void ps2_command_write(const unsigned char byte)
+static int psaux_command_write(const unsigned char byte)
 {
 	ps2_write(PS2_COMMAND, PS2_CMD_CH2_PREFIX);
 	ps2_write(PS2_DATA, byte);
 	if(ps2_wait_ack()) {
 		printk("WARNING: %s(): ACK not received on %x command!\n", __FUNCTION__, byte);
+		return 1;
 	}
+	return 0;
 }
 
 static void psaux_identify(void)
 {
 	/* disable */
-	ps2_command_write(PS2_AUX_DISABLE);
+	psaux_command_write(PS2_AUX_DISABLE);
 
 	/* status information */
-	ps2_command_write(PS2_DEV_GETINFO);
+	psaux_command_write(PS2_DEV_GETINFO);
 	status[0] = ps2_read(PS2_DATA);	/* status */
 	status[2] = ps2_read(PS2_DATA);	/* resolution */
 	status[2] = ps2_read(PS2_DATA);	/* sample rate */
 
 	/* identify */
-	ps2_command_write(PS2_DEV_RATE);
-	ps2_command_write(200);
-	ps2_command_write(PS2_DEV_RATE);
-	ps2_command_write(100);
-	ps2_command_write(PS2_DEV_RATE);
-	ps2_command_write(80);
-	ps2_command_write(PS2_DEV_IDENTIFY);
+	psaux_command_write(PS2_DEV_RATE);
+	psaux_command_write(200);
+	psaux_command_write(PS2_DEV_RATE);
+	psaux_command_write(100);
+	psaux_command_write(PS2_DEV_RATE);
+	psaux_command_write(80);
+	psaux_command_write(PS2_DEV_IDENTIFY);
 	id = ps2_read(PS2_DATA);
 	ps2_clear_buffer();
 
 	/* enable */
-	ps2_command_write(PS2_DEV_ENABLE);
+	psaux_command_write(PS2_DEV_ENABLE);
 }
 
 void irq_psaux(int num, struct sigcontext *sc)
@@ -215,7 +217,7 @@ int psaux_write(struct inode *i, struct fd *fdtable, const char *buffer, __size_
 	bytes_written = 0;
 	while(bytes_written < count) {
 		ch = buffer[bytes_written++];
-		ps2_command_write(ch);
+		psaux_command_write(ch);
 	}
 	if(bytes_written) {
 		i->i_mtime = CURRENT_TIME;
@@ -246,17 +248,18 @@ void psaux_init(void)
 {
 	int errno;
 
-	if(!register_irq(PSAUX_IRQ, &irq_config_psaux)) {
-		enable_irq(PSAUX_IRQ);
-	}
-
 	/* reset device */
-	ps2_command_write(PS2_DEV_RESET);
+	psaux_command_write(PS2_DEV_RESET);
 	if((errno = ps2_read(PS2_DATA)) != DEV_RESET_OK) {
-		printk("WARNING: %s(): psaux returned 0x%x on reset.\n", __FUNCTION__, errno);
+		printk("psaux     0x%04x-0x%04x       \tdevice not detected\n", 0x60, 0x64);
+		return;
 	}
 	if(ps2_read(PS2_DATA) == 0) {
 		is_ps2 = 1;
+	}
+
+	if(!register_irq(PSAUX_IRQ, &irq_config_psaux)) {
+		enable_irq(PSAUX_IRQ);
 	}
 
 	ps2_clear_buffer();
