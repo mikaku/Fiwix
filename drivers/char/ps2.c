@@ -144,7 +144,7 @@ void ps2_init(void)
 
 	/* set controller configuration (disabling IRQs) */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
-	ps2_write(PS2_DATA, config & ~(0x01 | 0x02 | 0x40));
+	ps2_write(PS2_DATA, config & ~(0x01 | 0x02));
 
 	/* PS/2 controller self-test */
 	ps2_write(PS2_COMMAND, PS2_CMD_SELF_TEST);
@@ -154,6 +154,13 @@ void ps2_init(void)
 	} else {
 		supp_ports = 1;
 	}
+
+	/*
+	 * This sets again the controller configuration since the previous
+	 * step may also reset the PS/2 controller to its power-on defaults.
+	 */
+	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
+	ps2_write(PS2_DATA, config);
 
 	/* double-check if we have a second channel */
 	if(config & 0x20) {
@@ -192,15 +199,11 @@ void ps2_init(void)
 	type = (config2 & 0x40) ? 1 : 0;
 
 	/* enable interrupts if channels are present */
-	if(supp_ports) {
-		config = 0x01;
-		if(supp_ports > 1) {
-			config |= 0x02;
-		}
-		config |= 0x40;	/* allow translation */
-	} else {
-		config = 0x10 + 0x20;	/* disable clocks */
+	config |= 0x01;
+	if(supp_ports > 1) {
+		config |= 0x02;
 	}
+	config |= 0x40;	/* allow translation */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 	ps2_write(PS2_DATA, config);
 
@@ -212,14 +215,12 @@ void ps2_init(void)
 	printk("ps/2      0x%04x,0x%04x     \t%s type=%d, channels=%d\n", PS2_DATA, PS2_COMMAND, iface == 1 ? "(MCA) PS/2" : "(ISA) AT", type, supp_ports);
 
 	/* enable device(s) */
-	if(supp_ports) {
-		ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH1);
-		keyboard_init();
+	ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH1);
+	keyboard_init();
 #ifdef CONFIG_PSAUX
-		if(supp_ports > 1) {
-			ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH2);
-			psaux_init();
-		}
-#endif /* CONFIG_PSAUX */
+	if(supp_ports > 1) {
+		ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH2);
+		psaux_init();
 	}
+#endif /* CONFIG_PSAUX */
 }
