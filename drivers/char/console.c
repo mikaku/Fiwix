@@ -837,7 +837,7 @@ void vconsole_write(struct tty *tty)
 		if(vc->vc_mode != KD_GRAPHICS) {
 			video.update_curpos(vc);
 		}
-		wakeup(&tty_write);
+		wakeup(&tty->write_q);
 	}
 }
 

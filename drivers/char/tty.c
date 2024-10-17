@@ -413,7 +413,7 @@ void do_cook(struct tty *tty)
 	if(!(tty->termios.c_lflag & ICANON) || ((tty->termios.c_lflag & ICANON) && tty->canon_data)) {
 		wakeup(&do_select);
 	}
-	wakeup(&tty_read);
+	wakeup(&tty->read_q);
 }
 
 int tty_open(struct inode *i, struct fd *fd_table)
@@ -562,7 +562,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						if(fd_table->flags & O_NONBLOCK) {
 							return -EAGAIN;
 						}
-						if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
+						if(sleep(&tty->read_q, PROC_INTERRUPTIBLE)) {
 							return -EINTR;
 						}
 					}
@@ -592,7 +592,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 							n = -EAGAIN;
 							break;
 						}
-						if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
+						if(sleep(&tty->read_q, PROC_INTERRUPTIBLE)) {
 							n = -EINTR;
 							break;
 						}
@@ -624,7 +624,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 			n = -EAGAIN;
 			break;
 		}
-		if(sleep(&tty_read, PROC_INTERRUPTIBLE)) {
+		if(sleep(&tty->read_q, PROC_INTERRUPTIBLE)) {
 			n = -EINTR;
 			break;
 		}
@@ -682,7 +682,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 			break;
 		}
 		if(tty->write_q.count > 0) {
-			if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+			if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
 				n = -EINTR;
 				break;
 			}
@@ -743,7 +743,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 			}
 			/* not tested */
 			while(tty->write_q.count) {
-				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+				if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
 					return -EINTR;
 				}
 				do_sched();
@@ -761,7 +761,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 			}
 			/* not tested */
 			while(tty->write_q.count) {
-				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+				if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
 					return -EINTR;
 				}
 				do_sched();
@@ -802,7 +802,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 			}
 			/* not tested */
 			while(tty->write_q.count) {
-				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+				if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
 					return -EINTR;
 				}
 				do_sched();
@@ -820,7 +820,7 @@ int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
 			}
 			/* not tested */
 			while(tty->write_q.count) {
-				if(sleep(&tty_write, PROC_INTERRUPTIBLE)) {
+				if(sleep(&tty->write_q, PROC_INTERRUPTIBLE)) {
 					return -EINTR;
 				}
 				do_sched();
