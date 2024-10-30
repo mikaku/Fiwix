@@ -602,7 +602,7 @@ void irq_keyboard_bh(struct sigcontext *sc)
 			continue;
 		}
 		if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
-			wakeup(&tty_read);
+			wakeup(&tty->read_q);
 			continue;
 		}
 		if(lock_area(AREA_TTY_READ)) {
