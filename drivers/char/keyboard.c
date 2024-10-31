@@ -198,7 +198,6 @@ static void keyboard_identify(void)
 	kb_identify[1] = ps2_read(PS2_DATA);
 
 	/* get scan code */
-	config = 0;
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
 	config = ps2_read(PS2_DATA);	/* save state */
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
@@ -636,7 +635,10 @@ void keyboard_init(void)
 		printk("WARNING: %s(): ACK not received on reset command!\n", __FUNCTION__);
 	}
 	if((errno = ps2_read(PS2_DATA)) != DEV_RESET_OK) {
-		printk("WARNING: %s(): keyboard returned 0x%x on reset.\n", __FUNCTION__, errno);
+		/* some keyboards return an ID byte before 0xAA */
+		if((errno = ps2_read(PS2_DATA)) != DEV_RESET_OK) {
+			printk("WARNING: %s(): keyboard returned 0x%x on reset (1).\n", __FUNCTION__, errno);
+		}
 	}
 
 	ps2_clear_buffer();
