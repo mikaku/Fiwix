@@ -1,13 +1,14 @@
 1.6.0 - DD-MMM-2024
 ===================
-- Added support for UNIX domain sockets. [#36]
+- Added support for UNIX-domain sockets (with the Berkeley socket API). [#36]
 - Added support for sys_truncate64, sys_ftruncate64, sys_stat64, sys_lstat64,
   sys_fstat64 and sys_fcntl64 system calls. [#49]
 - Added support for sys_getdents64. [#51]
 - Added support for sys_chown32. [#53]
 - Added support for sys_utimes. [#57]
-- Added support for building Fiwix with the tcc compiler. [#63]
+- Added support for building Fiwix with the TCC compiler. [#63]
 - Added support for the Linux boot protocol in kexec. [#65]
+- Added support for the PS/2 mouse with the new device /dev/psaux. [#94]
 - Added the new configuration option PAGE_HASH_PERCENTAGE (0.1% by default) to
   set the size of the page_hash_table relative to the number of physical memory
   pages, with a mininum of 1 page and a maximum of 16 pages. The kernel now
@@ -32,16 +33,22 @@
   pseudo-filesystems.
 - Changed count_active_procs() to also count processes that are sleeping as
   non-interruptible.
+- Changed the tty sleeping address to be process specific in order to reduce
+  the wakeup latency.
 - Moved the values sb->dirty, inode->locked and inode->dirty to flags.
 - Moved the call to sysrq() into the keyboard interrupt bottom half.
 - Improved code compaction and efficiency in ATA disk read/write.
 - Improved the efficiency of the buffer cache.
+- Improved ext2_file_write() to use a multiblock request with gbread() when the
+  count is greater than the blocksize.
 - Reorganized and improved the system console related code.
 - Pass through 64-bit PAE memory entries as part of kexec. [#67]
 - Make sure that the early system log will be shown in all system consoles.
 - Removed unneeded low memory kernel virtual address mappings. [#88]
 - Reduced a number of functions in the timer interrupt by moving them to the
   bottom half.
+- Reorganized the code of the keyboard driver.
+- Renamed and reorganized tty_queue into charq to make it more generic.
 - Fixed sys_mount() to avoid mounting a device already mounted.
 - Fixed compilation errors when CONFIG_PCI is not defined.
 - Fixed to allow removing a directory in use. [#59]
@@ -67,6 +74,10 @@
   running process in stop_kernel().
 - Fixed read_msdos_partition() to use the default device block size instead of
   BLKSIZE_1K.
+- Fixed to flag the superblock as dirty in ext2_ialloc(), ext2_ifree(),
+  ext2_balloc() and ext2_bfree().
+- Fixed fbcon_blank_screen() to not show cursor. [#94]
+- Fixed a lack of schedule randomization introduced in b935b3d.
 - Small fixes and cosmetic changes.
 
 
