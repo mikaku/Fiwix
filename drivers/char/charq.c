@@ -8,9 +8,44 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/charq.h>
-#include <fiwix/mm.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
+
+/*
+ * charq.c implements a queue using a static-sized doubly linked list of a
+ * central pool of buffers which covers all ttys.
+ *
+ *  head                                     tail
+ * +--------------+  +--------------+  ...  +--------------+
+ * |prev|data|next|  |prev|data|next|  ...  |prev|data|next|
+ * | /  |    |  -->  <--  |    |  -->  ...  <--  |    |  / |
+ * +--------------+  +--------------+  ...  +--------------+
+ *  (cblock)          (cblock)               (cblock)
+ */
+
+#define CB_POOL_SIZE	128	/* number of cblocks in the central pool */
+
+struct cblock cblock_pool[CB_POOL_SIZE];
+struct cblock *cblock_pool_head;
+
+static struct cblock *get_free_cblock(void)
+{
+	struct cblock *new = NULL;
+
+	if(cblock_pool_head) {
+		new = cblock_pool_head;
+		cblock_pool_head = cblock_pool_head->next;
+		new->prev = new->next = NULL;
+	}
+	return new;
+}
+
+static void put_free_cblock(struct cblock *old)
+{
+	old->prev = NULL;
+	old->next = cblock_pool_head;
+	cblock_pool_head = old;
+}
 
 /*
 static struct cblock *insert_cblock_in_head(struct clist *q)
@@ -20,11 +55,13 @@ static struct cblock *insert_cblock_in_head(struct clist *q)
 	if(q->cb_num >= NR_CB_QUEUE) {
 		return NULL;
 	}
-	if(!(cb = (struct cblock *)kmalloc(sizeof(struct cblock)))) {
+	if(!(cb = get_free_cblock())) {
 		return NULL;
 	}
 
-	memset_b(cb, 0, sizeof(struct cblock));
+	cb->start_off = cb->end_off = 0;
+	memset_b(cb->data, 0, CBSIZE);
+	cb->prev = cb->next = NULL;
 	q->cb_num++;
 
 	if(!q->head) {
@@ -46,11 +83,14 @@ static struct cblock *insert_cblock_in_tail(struct clist *q)
 	if(q->cb_num >= NR_CB_QUEUE) {
 		return NULL;
 	}
-	if(!(cb = (struct cblock *)kmalloc(sizeof(struct cblock)))) {
+	if(!(cb = get_free_cblock())) {
 		return NULL;
 	}
 
-	memset_b(cb, 0, sizeof(struct cblock));
+	/* initialize cblock */
+	cb->start_off = cb->end_off = 0;
+	memset_b(cb->data, 0, CBSIZE);
+	cb->prev = cb->next = NULL;
 	q->cb_num++;
 
 	if(!q->tail) {
@@ -82,7 +122,7 @@ static void delete_cblock_from_head(struct clist *q)
 
 	q->count -= tmp->end_off - tmp->start_off;
 	q->cb_num--;
-	kfree((unsigned int)tmp);
+	put_free_cblock(tmp);
 }
 
 static void delete_cblock_from_tail(struct clist *q)
@@ -103,7 +143,7 @@ static void delete_cblock_from_tail(struct clist *q)
 
 	q->count -= tmp->end_off - tmp->start_off;
 	q->cb_num--;
-	kfree((unsigned int)tmp);
+	put_free_cblock(tmp);
 }
 
 int charq_putchar(struct clist *q, unsigned char ch)
@@ -205,4 +245,20 @@ void charq_flush(struct clist *q)
 int charq_room(struct clist *q)
 {
 	return (NR_CB_QUEUE * CBSIZE) - q->count;
+}
+
+void charq_init(void)
+{
+	int n;
+	struct cblock *cb;
+
+	memset_b(cblock_pool, 0, sizeof(cblock_pool));
+
+	/* cblock free list initialization */
+	cblock_pool_head = NULL;
+	n = CB_POOL_SIZE;
+	while(n--) {
+		cb = &cblock_pool[n];
+		put_free_cblock(cb);
+	}
 }

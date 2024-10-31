@@ -1024,5 +1024,6 @@ int tty_select(struct inode *i, int flag)
 
 void tty_init(void)
 {
+	charq_init();
 	memset_b(tty_table, 0, sizeof(tty_table));
 }
