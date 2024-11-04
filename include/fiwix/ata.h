@@ -43,7 +43,7 @@
 #define ATA_RDY_RETR_LONG	50000	/* long delay for fast CPUs */
 #define ATA_RDY_RETR_SHORT	500	/* short delay for slow CPUs */
 #define MAX_IDE_ERR		10	/* number of retries */
-#define MAX_CD_ERR		10	/* number of retries in CDROMs */
+#define MAX_CD_ERR		5	/* number of retries in CDROMs */
 
 #define SET_ATA_RDY_RETR(retries)					\
 	if((cpu_table.hz / 1000000) <= 100) {				\
