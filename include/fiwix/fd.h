@@ -18,6 +18,9 @@
 	}								\
 }									\
 
+extern unsigned int fd_table_size;	/* size in bytes */
+extern struct fd *fd_table;
+
 struct fd {
 	struct inode *inode;		/* file inode */
 	unsigned short int flags;	/* flags */

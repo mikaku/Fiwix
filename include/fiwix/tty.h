@@ -10,6 +10,7 @@
 
 #include <fiwix/termios.h>
 #include <fiwix/fs.h>
+#include <fiwix/fd.h>
 #include <fiwix/charq.h>
 #include <fiwix/console.h>
 #include <fiwix/serial.h>

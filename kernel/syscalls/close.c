@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/syscalls.h>
+#include <fiwix/fd.h>
 #include <fiwix/locks.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>

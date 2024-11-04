@@ -10,7 +10,6 @@
 
 #include <fiwix/statfs.h>
 #include <fiwix/limits.h>
-#include <fiwix/fd.h>
 #include <fiwix/process.h>
 #include <fiwix/dirent.h>
 #include <fiwix/fs_minix.h>
@@ -105,9 +104,6 @@ extern struct inode **inode_hash_table;
 
 /* values to be determined during system startup */
 extern unsigned int inode_hash_table_size;	/* size in bytes */
-extern unsigned int fd_table_size;		/* size in bytes */
-
-extern struct fd *fd_table;
 
 #define SUPERBLOCK_LOCKED	0x01
 #define SUPERBLOCK_DIRTY	0x02
