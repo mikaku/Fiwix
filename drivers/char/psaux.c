@@ -178,17 +178,13 @@ int psaux_read(struct inode *i, struct fd *fdtable, char *buffer, __size_t count
 		return -ENXIO;
 	}
 
-	for(;;) {
-		if(!psaux_table.read_q.count) {
-			if(fd_table->flags & O_NONBLOCK) {
-				return -EAGAIN;
-			}
-			if(sleep(&psaux_read, PROC_INTERRUPTIBLE)) {
-				return -EINTR;
-			}
-			continue;
+	while(!psaux_table.read_q.count) {
+		if(fd_table->flags & O_NONBLOCK) {
+			return -EAGAIN;
 		}
-		break;
+		if(sleep(&psaux_read, PROC_INTERRUPTIBLE)) {
+			return -EINTR;
+		}
 	}
 	bytes_read = 0;
 	while(bytes_read < count) {
@@ -214,6 +210,7 @@ int psaux_write(struct inode *i, struct fd *fdtable, const char *buffer, __size_
 	if(!TEST_MINOR(psaux_device.minors, minor)) {
 		return -ENXIO;
 	}
+
 	bytes_written = 0;
 	while(bytes_written < count) {
 		ch = buffer[bytes_written++];
