@@ -33,5 +33,6 @@ int charq_unputchar(struct clist *);
 unsigned char charq_getchar(struct clist *);
 void charq_flush(struct clist *);
 int charq_room(struct clist *q);
+void charq_init(void);
 
 #endif /* _FIWIX_CHARQ_H */
