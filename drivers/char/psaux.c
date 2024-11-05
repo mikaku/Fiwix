@@ -156,7 +156,7 @@ int psaux_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int psaux_close(struct inode *i, struct fd *fdtable)
+int psaux_close(struct inode *i, struct fd *fd_table)
 {
 	int minor;
 
@@ -168,7 +168,7 @@ int psaux_close(struct inode *i, struct fd *fdtable)
 	return 0;
 }
 
-int psaux_read(struct inode *i, struct fd *fdtable, char *buffer, __size_t count)
+int psaux_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	int minor, bytes_read;
 	unsigned char ch;
@@ -201,7 +201,7 @@ int psaux_read(struct inode *i, struct fd *fdtable, char *buffer, __size_t count
 	return bytes_read;
 }
 
-int psaux_write(struct inode *i, struct fd *fdtable, const char *buffer, __size_t count)
+int psaux_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
 {
 	int minor, bytes_written;
 	unsigned char ch;
