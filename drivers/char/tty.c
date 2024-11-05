@@ -1012,6 +1012,9 @@ int tty_select(struct inode *i, int flag)
 					return 1;
 				}
 			}
+			if(tty->read_q.count > 0) {
+				return 1;
+			}
 			break;
 		case SEL_W:
 			if(!tty->write_q.count) {
