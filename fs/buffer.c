@@ -698,6 +698,7 @@ int reclaim_buffers(void)
 	size = BLKSIZE_1K;
 
 	/* iterate through all buffer sizes */
+	STI();
 	for(;;) {
 		if(size > PAGE_SIZE) {
 			if(!found) {
