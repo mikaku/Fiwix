@@ -574,9 +574,10 @@ void brelse(struct buffer *buf)
 void sync_buffers(__dev_t dev)
 {
 	struct buffer *buf, *first;
-	int size;
+	int flushed, size;
 
 	lock_resource(&sync_resource);
+	flushed = 0;
 	for(size = BLKSIZE_1K; size <= PAGE_SIZE; size <<= 1) {
 		first = NULL;
 		for(;;) {
@@ -592,7 +593,10 @@ void sync_buffers(__dev_t dev)
 			if(!dev || buf->dev == dev) {
 				if(sync_one_buffer(buf)) {
 					insert_on_dirty_list(buf);
+					buf->flags &= ~BUFFER_LOCKED;
+					continue;
 				}
+				flushed++;
 			} else {
 				if(!first) {
 					first = buf;
@@ -600,8 +604,10 @@ void sync_buffers(__dev_t dev)
 				insert_on_dirty_list(buf);
 			}
 			buf->flags &= ~BUFFER_LOCKED;
-			wakeup(&buffer_wait);
 		}
+	}
+	if(flushed) {
+		wakeup(&buffer_wait);
 	}
 	unlock_resource(&sync_resource);
 }
