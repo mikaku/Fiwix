@@ -238,6 +238,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 		if(!(new = (struct vma *)kmalloc(sizeof(struct vma)))) {
 			return;
 		}
+		memset_b(new, 0, sizeof(struct vma));
 		new->start = b->end;
 		new->end = a->end;
 		new->prot = a->prot;
