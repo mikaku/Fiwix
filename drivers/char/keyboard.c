@@ -559,6 +559,7 @@ void irq_keyboard_bh(struct sigcontext *sc)
 	int n;
 	struct tty *tty;
 	struct vconsole *vc;
+	char value;
 
 	tty = get_tty(MKDEV(VCONSOLES_MAJOR, current_cons));
 	vc = (struct vconsole *)tty->driver_data;
@@ -566,28 +567,30 @@ void irq_keyboard_bh(struct sigcontext *sc)
 	video.screen_on(vc);
 
 	if(do_switch_console >= 0) {
-		vconsole_select(do_switch_console);
+		value = do_switch_console;
 		do_switch_console = -1;
+		vconsole_select(value);
 	}
 
 	if(do_buf_scroll) {
-		video.buf_scroll(vc, do_buf_scroll);
+		value = do_buf_scroll;
 		do_buf_scroll = 0;
+		video.buf_scroll(vc, value);
 	}
 
 	if(do_setleds) {
-		set_leds(vc->led_status);
 		do_setleds = 0;
+		set_leds(vc->led_status);
 	}
 
 	if(do_tty_start) {
-		tty->start(tty);
 		do_tty_start = do_tty_stop = 0;
+		tty->start(tty);
 	}
 
 	if(do_tty_stop) {
-		tty->stop(tty);
 		do_tty_start = do_tty_stop = 0;
+		tty->stop(tty);
 	}
 
 	if(do_sysrq) {
