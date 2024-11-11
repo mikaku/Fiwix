@@ -850,7 +850,7 @@ void vconsole_select(int new_cons)
 
 	if(current_cons != new_cons) {
 		if(vc[current_cons].vt_mode.mode == VT_PROCESS) {
-			if(!kill_pid(vc[current_cons].tty->pid, vc[current_cons].vt_mode.acqsig, KERNEL)) {
+			if(!kill_pid(vc[current_cons].tty->pid, vc[current_cons].vt_mode.relsig, KERNEL)) {
 				vc[current_cons].switchto_tty = new_cons;
 				return;
 			}
