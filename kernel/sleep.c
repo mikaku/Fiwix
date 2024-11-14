@@ -136,12 +136,10 @@ void wakeup(void *address)
 			}
 			if(h == &sleep_hash_table[i]) {	/* if it's the head */
 				*h = (*h)->next_sleep;
-				continue;
 			}
+			continue;
 		}
-		if(*h) {
-			h = &(*h)->next_sleep;
-		}
+		h = &(*h)->next_sleep;
 	}
 	RESTORE_FLAGS(flags);
 }
