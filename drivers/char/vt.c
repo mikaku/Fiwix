@@ -202,13 +202,17 @@ int vt_ioctl(struct tty *tty, int cmd, unsigned int arg)
 			break;
 
 		case VT_WAITACTIVE:
-			if(current_cons == MINOR(tty->dev)) {
-				break;
+			if(current_cons == MINOR(tty->dev) || IS_SUPERUSER) {
+				if(current_cons == MINOR(tty->dev)) {
+					break;
+				}
+				if(!arg || arg > NR_VCONSOLES) {
+					return -ENXIO;
+				}
+				printk("ACTIVATING another tty!! (cmd = 0x%x)\n", cmd);
+			} else {
+				return -EPERM;
 			}
-			if(!arg || arg > NR_VCONSOLES) {
-				return -ENXIO;
-			}
-			printk("ACTIVATING another tty!! (cmd = 0x%x)\n", cmd);
 			break;
 
 		default:
