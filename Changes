@@ -1,4 +1,4 @@
-1.6.0 - DD-MMM-2024
+1.6.0 - 15-Nov-2024
 ===================
 - Added support for UNIX-domain sockets (with the Berkeley socket API). [#36]
 - Added support for sys_truncate64, sys_ftruncate64, sys_stat64, sys_lstat64,
@@ -78,6 +78,15 @@
   ext2_balloc() and ext2_bfree().
 - Fixed fbcon_blank_screen() to not show cursor. [#94]
 - Fixed a lack of schedule randomization introduced in b935b3d.
+- Fixed reclaim_buffers() to run with interrupts enabled.
+- Fixed to initialize the new vma struct in merge_vma_regions().
+- Fixed to reset the flag before calling some functions to avoid reentrancy
+  in irq_keyboard_bh().
+- Fixed a long standing bug in vconsole_select() that prevented from switching
+  between consoles in VT_PROCESS mode.
+- Fixed permissions in the ioctl VT_WAITACTIVE.
+- Fixed a long standing bug in wakeup() that put as running one in two processes
+  sleeping, leading to frequent cases where some processes keep sleeping.
 - Small fixes and cosmetic changes.
 
 
