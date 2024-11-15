@@ -90,7 +90,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 #endif /* CONFIG_QEMU_DEBUGCON */
 
 	printk("                    Fiwix kernel v%s for i386 architecture\n", UTS_RELEASE);
-	printk("                     Copyright (c) 2018-2023, Jordi Sanfeliu\n");
+	printk("                     Copyright (c) 2018-2024, Jordi Sanfeliu\n");
 	printk("\n");
 #ifdef __TINYC__
 	printk("             (built on %s with tcc)\n", UTS_VERSION);

@@ -11,7 +11,7 @@ Features
  - Preemptive multitasking.
  - POSIX-compliant (mostly).
  - Process groups, sessions and job control.
- - Interprocess communication with pipes, signals and UNIX domain sockets.
+ - Interprocess communication with pipes, signals and UNIX-domain sockets.
  - UNIX System V IPC (semaphores, message queues and shared memory).
  - BSD file locking mechanism (POSIX restricted to file and advisory only).
  - Virtual memory splits (user/kernel): 3GB/1GB and 2GB/2GB.
@@ -34,6 +34,7 @@ Features
    - QEMU/Bochs Graphics Adapter support.
    - Intel PIIX3 PCI ISA IDE controller.
  - Keyboard driver with Linux keymaps support.
+ - PS/2 mouse support.
  - Framebuffer device support for VESA VBE 2.0+ compliant graphic cards.
  - Framebuffer console (fbcon) support.
  - Serial port (RS-232) driver support.
@@ -63,7 +64,7 @@ The minimal hardware requirements are as follows:
 
  - Standard IBM PC-AT architecture.
  - i386 processor (with floating-point processor).
- - 3MB of RAM memory (128MB recommended).
+ - 4MB of RAM memory (128MB recommended).
  - IDE/ATAPI CD-ROM or floppy disk (3.5", 1.44MB).
  - 1GB ATA hard disk.
 
@@ -86,10 +87,11 @@ References
 License
 -------
 Fiwix is free software licensed under the terms of the MIT License, see the LICENSE file for more details.  
-Copyright (C) 2018-2023, Jordi Sanfeliu.
+Copyright (C) 2018-2024, Jordi Sanfeliu.
 
 Credits
 -------
 Fiwix was created by [Jordi Sanfeliu](https://www.fibranet.cat).  
 You can contact me at [jordi@fibranet.cat](mailto:jordi@fibranet.cat).
+See also the CREDITS file.
 
