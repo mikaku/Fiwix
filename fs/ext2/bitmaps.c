@@ -224,7 +224,7 @@ int ext2_balloc(struct superblock *sb)
 	block = SUPERBLOCK + sb->u.ext2.sb.s_first_data_block;
 	buf = bmbuf = NULL;
 	gd = NULL;
-	errno = 0;
+	errno = -ENOSPC;
 
 	/* read through all group descriptors to find the first unallocated block */
 	for(bg = 0, d = 0; bg < sb->u.ext2.block_groups; bg++, d++) {
