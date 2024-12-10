@@ -23,7 +23,7 @@ ifeq ($(CCEXE),gcc)
 LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 LIBGCC := -L$(shell dirname `$(CC) -print-libgcc-file-name`) -lgcc
-LDFLAGS = -m elf_i386 -nostartfiles -nostdlib -nodefaultlibs -nostdinc
+LDFLAGS = -m elf_i386
 endif
 
 ifeq ($(CCEXE),tcc)
