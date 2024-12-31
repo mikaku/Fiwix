@@ -261,7 +261,7 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 		return 0;
 	}
 	while(count) {
-		boffset = fd_table->offset % blksize;
+		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
 		block = (fd_table->offset / blksize);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;
@@ -306,7 +306,7 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 		return -ENOSPC;
 	}
 	while(count) {
-		boffset = fd_table->offset % blksize;
+		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
 		block = (fd_table->offset / blksize);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;

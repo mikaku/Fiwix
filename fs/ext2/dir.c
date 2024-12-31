@@ -112,7 +112,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 			}
 
 			doffset = fd_table->offset;
-			offset = fd_table->offset % blksize;
+			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct ext2_dir_entry_2 *)(buf->data + offset);
 				if(d->inode) {
@@ -179,7 +179,7 @@ int ext2_dir_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *di
 			}
 
 			doffset = fd_table->offset;
-			offset = fd_table->offset % blksize;
+			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct ext2_dir_entry_2 *)(buf->data + offset);
 				if(d->inode) {

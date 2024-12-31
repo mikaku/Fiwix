@@ -224,7 +224,7 @@ int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dire
 	offset = fd_table->offset;
 	boffset = dirent_offset = doffset = 0;
 
-	boffset = offset % PAGE_SIZE;
+	boffset = offset & (PAGE_SIZE - 1);	/* mod PAGE_SIZE */
 
 	total_read = dir_read(i, fd_table, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {

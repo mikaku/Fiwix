@@ -108,7 +108,7 @@ int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dir
 			}
 
 			doffset = fd_table->offset;
-			offset = fd_table->offset % blksize;
+			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
 
 			while(doffset < i->i_size && offset < blksize) {
 				d = (struct iso9660_directory_record *)(buf->data + offset);

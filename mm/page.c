@@ -294,7 +294,7 @@ void update_page_cache(struct inode *i, __off_t offset, const char *buf, int cou
 	struct page *pg;
 	int bytes;
 
-	poffset = offset % PAGE_SIZE;
+	poffset = offset & (PAGE_SIZE - 1);	/* mod PAGE_SIZE */
 	offset &= PAGE_MASK;
 	bytes = PAGE_SIZE - poffset;
 
@@ -437,7 +437,7 @@ int file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count
 			break;
 		}
 
-		poffset = fd_table->offset % PAGE_SIZE;
+		poffset = fd_table->offset & (PAGE_SIZE - 1);	/* mod PAGE_SIZE */
 		if(!(pg = search_page_hash(i, fd_table->offset & PAGE_MASK))) {
 			if(!(addr = kmalloc(PAGE_SIZE))) {
 				inode_unlock(i);

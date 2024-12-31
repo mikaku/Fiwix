@@ -94,7 +94,7 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 	}
 
 	while(total_written < count) {
-		boffset = fd_table->offset % blksize;
+		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
 		if((block = bmap(i, fd_table->offset, FOR_WRITING)) < 0) {
 			inode_unlock(i);
 			return block;

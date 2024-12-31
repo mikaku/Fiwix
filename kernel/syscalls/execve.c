@@ -71,7 +71,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 	p = ARG_MAX - 1;
 	ae_str_len = barg->argv_len + barg->envp_len + 4;
 	p -= ae_str_len / PAGE_SIZE;
-	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	offset = PAGE_SIZE - (ae_str_len & (PAGE_SIZE - 1));	/* mod PAGE_SIZE */
 	if(offset == PAGE_SIZE) {
 		offset = 0;
 		p++;
@@ -99,7 +99,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 	}
 	ae_str_len = barg->argv_len + barg->envp_len + 4;
 	p -= ae_str_len / PAGE_SIZE;
-	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	offset = PAGE_SIZE - (ae_str_len & (PAGE_SIZE - 1));	/* mod PAGE_SIZE */
 	if(offset == PAGE_SIZE) {
 		offset = 0;
 		p++;
@@ -183,7 +183,7 @@ static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 		return -E2BIG;
 	}
 	p -= ae_str_len / PAGE_SIZE;
-	offset = PAGE_SIZE - (ae_str_len % PAGE_SIZE);
+	offset = PAGE_SIZE - (ae_str_len & (PAGE_SIZE - 1));	/* mod PAGE_SIZE */
 	if(offset == PAGE_SIZE) {
 		offset = 0;
 		p++;

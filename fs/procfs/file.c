@@ -104,7 +104,7 @@ int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 			break;
 		}
 
-		boffset = fd_table->offset % blksize;
+		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
 		bytes = blksize - boffset;
 		bytes = MIN(bytes, count);
 		memcpy_b(buffer + total_read, buf + boffset, bytes);

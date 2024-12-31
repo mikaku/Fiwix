@@ -113,7 +113,7 @@ int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *diren
 			}
 
 			doffset = fd_table->offset;
-			offset = fd_table->offset % blksize;
+			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct minix_dir_entry *)(buf->data + offset);
 				if(d->inode) {

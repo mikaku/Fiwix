@@ -132,7 +132,7 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 				tmp->next_group = br;
 			}
 			tmp = br;
-			boffset = offset % blksize;
+			boffset = offset & (blksize - 1);	/* mod blksize */
 			bytes = blksize - boffset;
 			bytes = MIN(bytes, (count - total_written));
 			total_written += bytes;
@@ -146,7 +146,7 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 		total_written = 0;
 		while(br) {
 			if(!retval) {
-				boffset = offset % blksize;
+				boffset = offset & (blksize - 1);	/* mod blksize */
 				bytes = blksize - boffset;
 				bytes = MIN(bytes, (count - total_written));
 				memcpy_b(br->buffer->data + boffset, buffer + total_written, bytes);
@@ -163,7 +163,7 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 		}
 	} else {
 		while(total_written < count) {
-			boffset = offset % blksize;
+			boffset = offset & (blksize - 1);	/* mod blksize */
 			if((block = bmap(i, offset, FOR_WRITING)) < 0) {
 				retval = block;
 				break;
