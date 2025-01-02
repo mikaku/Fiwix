@@ -61,17 +61,6 @@ struct fs_operations sockfs_fsop = {
 	NULL			/* release_superblock */
 };
 
-int sockfs_read_superblock(__dev_t dev, struct superblock *sb)
-{
-	superblock_lock(sb);
-	sb->dev = dev;
-	sb->fsop = &sockfs_fsop;
-	sb->s_blocksize = BLKSIZE_1K;
-	i_counter = 0;
-	superblock_unlock(sb);
-	return 0;
-}
-
 int sockfs_ialloc(struct inode *i, int mode)
 {
 	struct superblock *sb = i->sb;
@@ -101,6 +90,17 @@ void sockfs_ifree(struct inode *i)
 		kfree((unsigned int)i->u.sockfs.sock);
 	}
 	*/
+}
+
+int sockfs_read_superblock(__dev_t dev, struct superblock *sb)
+{
+	superblock_lock(sb);
+	sb->dev = dev;
+	sb->fsop = &sockfs_fsop;
+	sb->s_blocksize = BLKSIZE_1K;
+	i_counter = 0;
+	superblock_unlock(sb);
+	return 0;
 }
 
 int sockfs_init(void)
