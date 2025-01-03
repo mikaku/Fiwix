@@ -12,6 +12,7 @@
 #include <fiwix/limits.h>
 #include <fiwix/process.h>
 #include <fiwix/dirent.h>
+#include <fiwix/fd.h>
 #include <fiwix/fs_minix.h>
 #include <fiwix/fs_ext2.h>
 #include <fiwix/fs_pipe.h>
