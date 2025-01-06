@@ -233,7 +233,7 @@ int ext2_bmap(struct inode *i, __off_t offset, int mode)
 	struct buffer *buf, *buf2, *buf3, *buf4;
 
 	blksize = i->sb->s_blocksize;
-	block = offset / blksize;
+	block = offset >> EXT2_BLOCK_SIZE_BITS(i->sb);
 	level = 0;
 	buf3 = NULL;	/* makes GCC happy */
 
@@ -427,7 +427,7 @@ int ext2_truncate(struct inode *i, __off_t length)
 	int n, retval, blksize;
 
 	blksize = i->sb->s_blocksize;
-	block = length / blksize;
+	block = length >> EXT2_BLOCK_SIZE_BITS(i->sb);
 
 	if(!S_ISDIR(i->i_mode) && !S_ISREG(i->i_mode) && !S_ISLNK(i->i_mode)) {
 		return -EINVAL;

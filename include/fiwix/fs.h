@@ -117,6 +117,7 @@ struct superblock {
 	struct inode *dir;		/* inode on which the fs was mounted */
 	struct fs_operations *fsop;
 	__u32 s_blocksize;
+	unsigned char s_blocksize_bits;
 	union {
 #ifdef CONFIG_FS_MINIX
 		struct minix_sb_info minix;
