@@ -748,11 +748,9 @@ int reclaim_buffers(void)
 	 * If some buffers were reclaimed, then wakeup any process
 	 * waiting for a new page because release_page() won't do it.
 	 */
-	if(reclaimed && reclaimed <= NR_BUF_RECLAIM) {
+	if(reclaimed) {
 		wakeup(&get_free_page);
-	}
-
-	if(!reclaimed) {
+	} else {
 		printk("WARNING: %s(): no more buffers on free lists!\n", __FUNCTION__);
 	}
 	return reclaimed;
