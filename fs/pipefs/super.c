@@ -61,17 +61,6 @@ struct fs_operations pipefs_fsop = {
 	NULL			/* release_superblock */
 };
 
-int pipefs_read_superblock(__dev_t dev, struct superblock *sb)
-{
-	superblock_lock(sb);
-	sb->dev = dev;
-	sb->fsop = &pipefs_fsop;
-	sb->s_blocksize = BLKSIZE_1K;
-	i_counter = 0;
-	superblock_unlock(sb);
-	return 0;
-}
-
 int pipefs_ialloc(struct inode *i, int mode)
 {
 	struct superblock *sb = i->sb;
@@ -106,6 +95,17 @@ void pipefs_ifree(struct inode *i)
 			kfree((unsigned int)i->u.pipefs.i_data);
 		}
 	}
+}
+
+int pipefs_read_superblock(__dev_t dev, struct superblock *sb)
+{
+	superblock_lock(sb);
+	sb->dev = dev;
+	sb->fsop = &pipefs_fsop;
+	sb->s_blocksize = BLKSIZE_1K;
+	i_counter = 0;
+	superblock_unlock(sb);
+	return 0;
 }
 
 int pipefs_init(void)
