@@ -1,3 +1,18 @@
+1.7.0 - DD-MMM-2025
+===================
+- Added the member s_blocksize_bits in the superblock struct to use bitwise
+  shift instead of division in ext2_bmap() and ext2_truncate().
+- Changed modulo operations by bitwise (where possible) to reduce dependency
+  from libgcc.
+- Removed some flags from LDFLAGS in the main Makefile that prevented compile
+  the kernel with newer GCC versions. [#97]
+- Fixed ext2_balloc() and ext2_ialloc() to return -ENOSPC when there is not
+  space on device.
+- Fixed fs.h to include fd.h when CONFIG_NET is not set.
+- Fixed some kernel crashes with the message 'WARNING: page_head returned NULL!
+  (free_pages = 0)' when using a RAMdisk drive as the root filesystem. [#98]
+
+
 1.6.0 - 15-Nov-2024
 ===================
 - Added support for UNIX-domain sockets (with the Berkeley socket API). [#36]
