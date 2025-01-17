@@ -24,7 +24,7 @@ struct fs_operations minix_dir_fsop = {
 	minix_dir_open,
 	minix_dir_close,
 	minix_dir_read,
-	minix_dir_write,
+	NULL,			/* write */
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
 	minix_dir_readdir,
@@ -74,11 +74,6 @@ int minix_dir_close(struct inode *i, struct fd *fd_table)
 int minix_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 {
 	return -EISDIR;
-}
-
-int minix_dir_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
-{
-	return -EBADF;
 }
 
 int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
