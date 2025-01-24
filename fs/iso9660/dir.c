@@ -25,7 +25,7 @@ struct fs_operations iso9660_dir_fsop = {
 	NULL,			/* write */
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
-	iso9660_dir_readdir,
+	iso9660_readdir,
 	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -74,7 +74,7 @@ int iso9660_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 	return -EISDIR;
 }
 
-int iso9660_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int iso9660_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

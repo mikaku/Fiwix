@@ -27,7 +27,7 @@ struct fs_operations minix_dir_fsop = {
 	NULL,			/* write */
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
-	minix_dir_readdir,
+	minix_readdir,
 	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -76,7 +76,7 @@ int minix_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t 
 	return -EISDIR;
 }
 
-int minix_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int minix_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

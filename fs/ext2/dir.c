@@ -26,8 +26,8 @@ struct fs_operations ext2_dir_fsop = {
 	NULL,			/* write */
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
-	ext2_dir_readdir,
-	ext2_dir_readdir64,
+	ext2_readdir,
+	ext2_readdir64,
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -75,7 +75,7 @@ int ext2_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t c
 	return -EISDIR;
 }
 
-int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int ext2_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
@@ -142,7 +142,7 @@ int ext2_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent
 	return size;
 }
 
-int ext2_dir_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent, __size_t count)
+int ext2_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;

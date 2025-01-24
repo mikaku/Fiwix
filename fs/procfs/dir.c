@@ -26,7 +26,7 @@ struct fs_operations procfs_dir_fsop = {
 	NULL,			/* write */
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
-	procfs_dir_readdir,
+	procfs_readdir,
 	NULL,			/* readdir64 */
 	NULL,			/* mmap */
 	NULL,			/* select */
@@ -206,7 +206,7 @@ int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	return -EISDIR;
 }
 
-int procfs_dir_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int procfs_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
 {
 	unsigned int offset, boffset, dirent_offset, doffset;
 	int dirent_len;
