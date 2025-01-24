@@ -155,7 +155,9 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 				total_written += bytes;
 				offset += bytes;
 			} else {
-				brelse(br->buffer);
+				if(br->buffer) {
+					brelse(br->buffer);
+				}
 			}
 			tmp = br->next_group;
 			kfree((unsigned int)br);
