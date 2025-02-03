@@ -60,6 +60,12 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 	}
 
 	if(flags & O_CREAT) {
+		if(!errno && S_ISDIR(i->i_mode)) {
+			iput(i);
+			iput(dir);
+			free_name(tmp_name);
+			return -EISDIR;
+		}
 		if(!errno && (flags & O_EXCL)) {
 			iput(i);
 			iput(dir);
