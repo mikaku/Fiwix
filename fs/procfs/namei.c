@@ -35,10 +35,12 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 	/* <PID>/fd directory */
 	if(lev == 2) {
 		if(name[0] == '[') {
+			iput(dir);
 			return -ENOENT;
 		}
 		pid = (dir->inode >> 12) & 0xFFFF;
 		if(!(p = get_proc_by_pid(pid))) {
+			iput(dir);
 			return -ENOENT;
 		}
 
@@ -49,6 +51,7 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 		if(name[0] == '.' && name[1] == '.') {
 			inode = PROC_PID_INO + (p->pid << 12);
 			if(!(*i_res = iget(dir->sb, inode))) {
+				iput(dir);
 				return -EACCES;
 			}
 			iput(dir);
@@ -59,6 +62,7 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 		if(p->fd[ufd]) {
 			inode = (PROC_FD_INO + (pid << 12)) + ufd;
 			if(!(*i_res = iget(dir->sb, inode))) {
+				iput(dir);
 				return -EACCES;
 			}
 			iput(dir);
@@ -94,6 +98,7 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 			}
 
 			if(!(*i_res = iget(dir->sb, inode))) {
+				iput(dir);
 				return -EACCES;
 			}
 			iput(dir);
@@ -110,6 +115,7 @@ int procfs_lookup(const char *name, struct inode *dir, struct inode **i_res)
 		}
 		if(inode) {
 			if(!(*i_res = iget(dir->sb, inode))) {
+				iput(dir);
 				return -EACCES;
 			}
 			iput(dir);

@@ -119,6 +119,7 @@ int procfs_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	p = NULL;
 	if((pid = (i->inode >> 12) & 0xFFFF)) {
 		if(!(p = get_proc_by_pid(pid))) {
+			iput(i);
 			return -ENOENT;
 		}
 	}
@@ -127,6 +128,7 @@ int procfs_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		ufd = i->inode & 0xFFF;
 		*i_res = fd_table[p->fd[ufd]].inode;
 		fd_table[p->fd[ufd]].inode->count++;
+		iput(i);
 		return 0;
 	}
 
