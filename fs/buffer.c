@@ -31,7 +31,6 @@ struct buffer *buffer_table;		/* buffer pool */
 /* [0] = 1KB, [1] = 2KB, [2] = unused, [3] = 4KB */
 struct buffer *buffer_head[4];		/* heads of free list */
 struct buffer *buffer_dirty_head[4];	/* heads of dirty list */
-struct buffer *buffer_retained_head[4];	/* heads of retained list */
 
 /*
  * hash table
@@ -229,6 +228,24 @@ static void insert_on_free_list(struct buffer *buf)
 		} else {
 			h->prev_free->next_free = buf;
 		}
+	}
+	h->prev_free = buf;
+}
+
+static void append_on_free_list(struct buffer *buf)
+{
+	struct buffer *h;
+	int index;
+
+	index = BUFHEAD_INDEX(buf->size);
+	h = buffer_head[index];
+
+	if(!h) {
+		buffer_head[index] = buf;
+		h = buffer_head[index];
+	} else {
+		buf->prev_free = h->prev_free;
+		h->prev_free->next_free = buf;
 	}
 	h->prev_free = buf;
 }
@@ -637,30 +654,18 @@ void invalidate_buffers(__dev_t dev)
 static int reclaim_siblings(struct buffer *buf)
 {
 	struct buffer *orig, *tmp;
-	int index;
 
-	index = BUFHEAD_INDEX(buf->size);
 	orig = buf;
 
 	if(buf->first_sibling) {
 		buf = buf->first_sibling;
 	}
-	/* check if one of the siblings is locked or dirty */
+	/* abort if one of the siblings is locked or dirty */
 	do {
-		if(buf == orig) {
-			buf = buf->next_sibling;
-			continue;
-		}
-		if(buf->flags & (BUFFER_LOCKED | BUFFER_DIRTY)) {
-			/*
-			 * If one of the siblings is not eligible to be freed up, then
-			 * we give up and return without brelse(orig), otherwise
-			 * get_free_buffer() will return the same buffer again. So we
-			 * must retain 'orig' in a temporary list to be brelse()d later.
-			 */
-			orig->next_retained = buffer_retained_head[index];
-			buffer_retained_head[index] = orig;
-			return 1;
+		if(buf != orig) {
+			if(buf->flags & (BUFFER_LOCKED | BUFFER_DIRTY)) {
+				return 1;
+			}
 		}
 		buf = buf->next_sibling;
 	} while(buf);
@@ -691,8 +696,9 @@ static int reclaim_siblings(struct buffer *buf)
  */
 int reclaim_buffers(void)
 {
-	struct buffer *buf, *tmp, *retained;
-	int size, found, reclaimed, index;
+	struct buffer *buf;
+	int size, found, reclaimed;
+	unsigned int flags;
 
 	found = reclaimed = 0;
 	size = BLKSIZE_1K;
@@ -700,13 +706,6 @@ int reclaim_buffers(void)
 	/* iterate through all buffer sizes */
 	STI();
 	for(;;) {
-		if(size > PAGE_SIZE) {
-			if(!found) {
-				break;
-			}
-			size = BLKSIZE_1K;
-			found = 0;
-		}
 		if((buf = get_free_buffer(NO_GROW, size))) {
 			found++;
 			if(buf->flags & BUFFER_DIRTY) {
@@ -715,30 +714,35 @@ int reclaim_buffers(void)
 				}
 			}
 			if(reclaim_siblings(buf)) {
+				/*
+				 * If one of the siblings is not eligible to be
+				 * freed up, then we release this buffer without
+				 * using brelse(), otherwise get_free_buffer()
+				 * will return the same buffer again.
+				 */
+				SAVE_FLAGS(flags); CLI();
+				buf->flags &= ~BUFFER_LOCKED;
+				append_on_free_list(buf);
+				RESTORE_FLAGS(flags);
 				continue;
 			}
 			kfree((unsigned int)(buf->data) & PAGE_MASK);
 			remove_from_hash(buf);
 			kstat.buffers_size -= buf->size / 1024;
 			del_buffer_from_pool(buf);
-			reclaimed++;
-		}
-		if(reclaimed == NR_BUF_RECLAIM) {
-			break;
+			if(++reclaimed == NR_BUF_RECLAIM) {
+				break;
+			}
+			continue;
 		}
 		size <<= 1;
-	}
-
-	/* release all retained buffers */
-	for(size = BLKSIZE_1K; size <= PAGE_SIZE; size <<= 1) {
-		index = BUFHEAD_INDEX(size);
-		retained = buffer_retained_head[index];
-		while(retained) {
-			tmp = retained;
-			retained = retained->next_retained;
-			brelse(tmp);
+		if(size > PAGE_SIZE) {
+			if(!found) {
+				break;
+			}
+			size = BLKSIZE_1K;
+			found = 0;
 		}
-		buffer_retained_head[index] = NULL;
 	}
 
 	wakeup(&get_free_buffer);
@@ -817,7 +821,6 @@ void buffer_init(void)
 	buffer_table = NULL;
 	memset_b(buffer_head, 0, sizeof(buffer_head));
 	memset_b(buffer_dirty_head, 0, sizeof(buffer_dirty_head));
-	memset_b(buffer_retained_head, 0, sizeof(buffer_retained_head));
 	kstat.max_dirty_buffers = (kstat.max_buffers_size * BUFFER_DIRTY_RATIO) / 100;
 	memset_b(buffer_hash_table, 0, buffer_hash_table_size);
 }
