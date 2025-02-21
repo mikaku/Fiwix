@@ -523,7 +523,7 @@ int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		for(n = 0; n < p->argc && (p->argv + n); n++) {
+		for(n = 0; n < p->argc && *(p->argv + n); n++) {
 			argv = p->argv + n;
 			offset = (int)argv & ~PAGE_MASK;
 			addr = get_mapped_addr(p, (int)argv) & PAGE_MASK;
@@ -574,7 +574,7 @@ int data_proc_pid_environ(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		for(n = 0; n < p->envc && (p->envp + n); n++) {
+		for(n = 0; n < p->envc && *(p->envp + n); n++) {
 			envp = p->envp + n;
 			offset = (int)envp & ~PAGE_MASK;
 			addr = get_mapped_addr(p, (int)envp) & PAGE_MASK;
