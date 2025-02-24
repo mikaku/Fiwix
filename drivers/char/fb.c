@@ -151,7 +151,7 @@ void fb_init(void)
 {
 	unsigned int limit, from;
 
-	SET_MINOR(fb_device.minors, 0);
+	SET_MINOR(fb_device.minors, FB_MINOR);
 	limit = (unsigned int)video.address + video.memsize - 1;
 
 	/*

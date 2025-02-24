@@ -285,7 +285,7 @@ void psaux_init(void)
 	}
 	printk("\n");
 	memset_b(&psaux_table, 0, sizeof(struct psaux));
-	SET_MINOR(psaux_device.minors, 1);
+	SET_MINOR(psaux_device.minors, PSAUX_MINOR);
 	if(register_device(CHR_DEV, &psaux_device)) {
 		printk("WARNING: %s(): unable to register psaux device.\n", __FUNCTION__);
 	}
