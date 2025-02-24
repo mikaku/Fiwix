@@ -11,7 +11,7 @@
 #include <fiwix/fs.h>
 
 #define FB_MAJOR	29	/* major number */
-#define FB_MINORS	1	/* number of supported minors */
+#define FB_MINOR	0	/* minor number */
 
 int fb_open(struct inode *, struct fd *);
 int fb_close(struct inode *, struct fd *);

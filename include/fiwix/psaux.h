@@ -17,7 +17,7 @@
 #define PSAUX_IRQ	12
 
 #define PSAUX_MAJOR	10	/* major number for /dev/psaux */
-#define PSAUX_MINORS	1
+#define PSAUX_MINOR	1	/* minor number for /dev/psaux */
 
 struct psaux {
 	int count;
