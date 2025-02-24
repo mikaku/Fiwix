@@ -345,13 +345,10 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 				RESTORE_FLAGS(flags);
 				continue;
 			}
-			inode_lock(i);
-
 			if(i->mount_point) {
-				inode_unlock(i);
 				i = i->mount_point;
-				inode_lock(i);
 			}
+			inode_lock(i);
 			if(!i->count) {
 				remove_from_free_list(i);
 			}
