@@ -261,7 +261,7 @@ void psaux_init(void)
 
 	ps2_clear_buffer();
 	psaux_identify();
-	printk("psaux     0x%04x-0x%04x     %d", 0x60, 0x64, PSAUX_IRQ);
+	printk("psaux     0x%04x-0x%04x    %d", 0x60, 0x64, PSAUX_IRQ);
 	printk("\ttype=%s", is_ps2 ? "PS/2" : "unknown");
 	switch(id) {
 		case -1:
