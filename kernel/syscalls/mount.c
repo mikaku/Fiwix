@@ -193,6 +193,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 
 	mp->sb.dir = i_target;
 	mp->fs = fs;
+	fs->mp = mp;
 	i_target->mount_point = mp->sb.root;
 	free_name(tmp_target);
 	free_name(tmp_fstype);
