@@ -37,13 +37,18 @@ static void memory(void)
 	kfree((unsigned int)buf);
 }
 
-static void process_list(void)
+static void proc_list(void)
 {
 	struct proc *p;
 
-	printk("USER   PID   PPID  S SLEEP_ADDR CMD\n");
+	printk("USER   PID   PPID    RSS S SLEEP_ADDR CMD\n");
 	FOR_EACH_PROCESS(p) {
-		printk("%d    %5d  %5d  %s ", p->uid, p->pid, p->ppid->pid, pstate[p->state]);
+		printk("%d    %5d  %5d  %5d %s ",
+			p->uid,
+			p->pid,
+			p->ppid->pid,
+			p->rss << 2,
+			pstate[p->state]);
 		if(p->state == PROC_SLEEPING) {
 			printk("0x%08x ", p->sleep_address);
 		} else {
@@ -74,7 +79,7 @@ void sysrq(int op)
 			break;
 		case SYSRQ_TASKS:
 			printk("sysrq: Task list.\n");
-			process_list();
+			proc_list();
 			break;
 		case SYSRQ_UNDEF:
 			printk("sysrq: Undefined operation.\n");
