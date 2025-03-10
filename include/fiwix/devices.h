@@ -43,7 +43,7 @@ int blk_dev_open(struct inode *, struct fd *);
 int blk_dev_close(struct inode *, struct fd *);
 int blk_dev_read(struct inode *, struct fd *, char *, __size_t);
 int blk_dev_write(struct inode *, struct fd *, const char *, __size_t);
-int blk_dev_ioctl(struct inode *, int, unsigned int);
+int blk_dev_ioctl(struct inode *, struct fd *, int, unsigned int);
 __loff_t blk_dev_llseek(struct inode *, __loff_t);
 
 void dev_init(void);

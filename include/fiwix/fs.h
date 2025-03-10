@@ -140,12 +140,12 @@ struct fs_operations {
 	int (*close)(struct inode *, struct fd *);
 	int (*read)(struct inode *, struct fd *, char *, __size_t);
 	int (*write)(struct inode *, struct fd *, const char *, __size_t);
-	int (*ioctl)(struct inode *, int, unsigned int);
+	int (*ioctl)(struct inode *, struct fd *, int, unsigned int);
 	__loff_t (*llseek)(struct inode *, __loff_t);
 	int (*readdir)(struct inode *, struct fd *, struct dirent *, __size_t);
 	int (*readdir64)(struct inode *, struct fd *, struct dirent64 *, __size_t);
 	int (*mmap)(struct inode *, struct vma *);
-	int (*select)(struct inode *, int);
+	int (*select)(struct inode *, struct fd *, int);
 
 /* inode operations */
 	int (*readlink)(struct inode *, char *, __size_t);

@@ -93,7 +93,7 @@ int fdc_open(struct inode *, struct fd *);
 int fdc_close(struct inode *, struct fd *);
 int fdc_read(__dev_t, __blk_t, char *, int);
 int fdc_write(__dev_t, __blk_t, char *, int);
-int fdc_ioctl(struct inode *, int, unsigned int);
+int fdc_ioctl(struct inode *, struct fd *, int, unsigned int);
 __loff_t fdc_llseek(struct inode *, __loff_t);
 
 void floppy_init(void);

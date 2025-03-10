@@ -169,7 +169,7 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 	return bytes_written;
 }
 
-int pipefs_ioctl(struct inode *i, int cmd, unsigned int arg)
+int pipefs_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 {
 	int errno;
 
@@ -191,7 +191,7 @@ __loff_t pipefs_llseek(struct inode *i, __loff_t offset)
 	return -ESPIPE;
 }
 
-int pipefs_select(struct inode *i, int flag)
+int pipefs_select(struct inode *i, struct fd *fd_table, int flag)
 {
 	switch(flag) {
 		case SEL_R:

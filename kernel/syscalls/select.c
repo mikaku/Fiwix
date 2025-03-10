@@ -37,10 +37,10 @@ static int check_fds(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds)
 	return 0;
 }
 
-static int do_check(struct inode *i, int flag)
+static int do_check(struct inode *i, struct fd *fd_table, int flag)
 {
 	if(i->fsop && i->fsop->select) {
-		if(i->fsop->select(i, flag)) {
+		if(i->fsop->select(i, fd_table, flag)) {
 			return 1;
 		}
 	}
@@ -61,19 +61,19 @@ int do_select(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds, fd_set *res_rf
 			}
 			i = fd_table[current->fd[n]].inode;
 			if(__FD_ISSET(n, rfds)) {
-				if(do_check(i, SEL_R)) {
+				if(do_check(i, &fd_table[current->fd[n]], SEL_R)) {
 					__FD_SET(n, res_rfds);
 					count++;
 				}
 			}
 			if(__FD_ISSET(n, wfds)) {
-				if(do_check(i, SEL_W)) {
+				if(do_check(i, &fd_table[current->fd[n]], SEL_W)) {
 					__FD_SET(n, res_wfds);
 					count++;
 				}
 			}
 			if(__FD_ISSET(n, efds)) {
-				if(do_check(i, SEL_E)) {
+				if(do_check(i, &fd_table[current->fd[n]], SEL_E)) {
 					__FD_SET(n, res_efds);
 					count++;
 				}

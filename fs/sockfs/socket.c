@@ -49,7 +49,7 @@ __loff_t sockfs_llseek(struct inode *i, __loff_t offset)
         return -ESPIPE;
 }
 
-int sockfs_select(struct inode *i, int flag)
+int sockfs_select(struct inode *i, struct fd *fd_table, int flag)
 {
 	struct socket *s;
 

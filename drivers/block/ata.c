@@ -966,7 +966,7 @@ int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return drive->fsop->write_block(dev, block, buffer, blksize);
 }
 
-int ata_ioctl(struct inode *i, int cmd, unsigned int arg)
+int ata_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 {
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -980,7 +980,7 @@ int ata_ioctl(struct inode *i, int cmd, unsigned int arg)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->ioctl(i, cmd, arg);
+	return drive->fsop->ioctl(i, fd_table, cmd, arg);
 }
 
 __loff_t ata_llseek(struct inode *i, __loff_t offset)

@@ -322,12 +322,12 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	return total_written;
 }
 
-int blk_dev_ioctl(struct inode *i, int cmd, unsigned int arg)
+int blk_dev_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 {
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->ioctl(i, cmd, arg);
+		return d->fsop->ioctl(i, fd_table, cmd, arg);
 	}
 
 	return -ENXIO;

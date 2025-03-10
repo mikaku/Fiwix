@@ -222,7 +222,7 @@ int psaux_write(struct inode *i, struct fd *fd_table, const char *buffer, __size
 	return bytes_written;
 }
 
-int psaux_select(struct inode *i, int flag)
+int psaux_select(struct inode *i, struct fd *fd_table, int flag)
 {
 	int minor;
 

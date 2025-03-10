@@ -12,19 +12,19 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_ioctl(unsigned int fd, int cmd, unsigned int arg)
+int sys_ioctl(unsigned int ufd, int cmd, unsigned int arg)
 {
 	int errno;
 	struct inode *i;
 
 #ifdef __DEBUG__
-	printk("(pid %d) sys_ioctl(%d, 0x%x, 0x%08x) -> ", current->pid, fd, cmd, arg);
+	printk("(pid %d) sys_ioctl(%d, 0x%x, 0x%08x) -> ", current->pid, ufd, cmd, arg);
 #endif /*__DEBUG__ */
 
-	CHECK_UFD(fd);
-	i = fd_table[current->fd[fd]].inode;
+	CHECK_UFD(ufd);
+	i = fd_table[current->fd[ufd]].inode;
 	if(i->fsop && i->fsop->ioctl) {
-		errno = i->fsop->ioctl(i, cmd, arg);
+		errno = i->fsop->ioctl(i, &fd_table[current->fd[ufd]], cmd, arg);
 
 #ifdef __DEBUG__
 		printk("%d\n", errno);

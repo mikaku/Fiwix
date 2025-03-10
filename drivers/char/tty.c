@@ -699,7 +699,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 }
 
 /* FIXME: http://www.lafn.org/~dave/linux/termios.txt (doc/termios.txt) */
-int tty_ioctl(struct inode *i, int cmd, unsigned int arg)
+int tty_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 {
 	struct proc *p;
 	struct tty *tty;
@@ -996,7 +996,7 @@ __loff_t tty_llseek(struct inode *i, __loff_t offset)
 	return -ESPIPE;
 }
 
-int tty_select(struct inode *i, int flag)
+int tty_select(struct inode *i, struct fd *fd_table, int flag)
 {
 	struct tty *tty;
 
