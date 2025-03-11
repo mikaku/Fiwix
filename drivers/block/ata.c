@@ -896,7 +896,7 @@ int ata_channel_init(struct ide *ide)
 	return devices;
 }
 
-int ata_open(struct inode *i, struct fd *fd_table)
+int ata_open(struct inode *i, struct fd *f)
 {
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -910,10 +910,10 @@ int ata_open(struct inode *i, struct fd *fd_table)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->open(i, fd_table);
+	return drive->fsop->open(i, f);
 }
 
-int ata_close(struct inode *i, struct fd *fd_table)
+int ata_close(struct inode *i, struct fd *f)
 {
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -927,7 +927,7 @@ int ata_close(struct inode *i, struct fd *fd_table)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->close(i, fd_table);
+	return drive->fsop->close(i, f);
 }
 
 int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
@@ -966,7 +966,7 @@ int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return drive->fsop->write_block(dev, block, buffer, blksize);
 }
 
-int ata_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int ata_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -980,7 +980,7 @@ int ata_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->ioctl(i, fd_table, cmd, arg);
+	return drive->fsop->ioctl(i, f, cmd, arg);
 }
 
 __loff_t ata_llseek(struct inode *i, __loff_t offset)

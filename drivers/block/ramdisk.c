@@ -83,7 +83,7 @@ static struct ramdisk *get_ramdisk(int minor)
 	return NULL;
 }
 
-int ramdisk_open(struct inode *i, struct fd *fd_table)
+int ramdisk_open(struct inode *i, struct fd *f)
 {
 	if(!get_ramdisk(MINOR(i->rdev))) {
 		return -ENXIO;
@@ -91,7 +91,7 @@ int ramdisk_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int ramdisk_close(struct inode *i, struct fd *fd_table)
+int ramdisk_close(struct inode *i, struct fd *f)
 {
 	if(!get_ramdisk(MINOR(i->rdev))) {
 		return -ENXIO;
@@ -150,7 +150,7 @@ int ramdisk_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return blksize;
 }
 
-int ramdisk_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int ramdisk_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct hd_geometry *geom;
 	struct device *d;

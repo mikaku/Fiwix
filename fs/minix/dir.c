@@ -60,23 +60,23 @@ struct fs_operations minix_dir_fsop = {
 	NULL			/* release_superblock */
 };
 
-int minix_dir_open(struct inode *i, struct fd *fd_table)
+int minix_dir_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int minix_dir_close(struct inode *i, struct fd *fd_table)
+int minix_dir_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int minix_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int minix_dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	return -EISDIR;
 }
 
-int minix_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int minix_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
@@ -91,15 +91,15 @@ int minix_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, _
 	}
 
 	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > i->i_size) {
-		fd_table->offset = i->i_size;
+	if(f->offset > i->i_size) {
+		f->offset = i->i_size;
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 	offset = size = 0;
 
-	while(fd_table->offset < i->i_size && count > 0) {
-		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
+	while(f->offset < i->i_size && count > 0) {
+		if((block = bmap(i, f->offset, FOR_READING)) < 0) {
 			return block;
 		}
 		if(block) {
@@ -107,8 +107,8 @@ int minix_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, _
 				return -EIO;
 			}
 
-			doffset = fd_table->offset;
-			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
+			doffset = f->offset;
+			offset = f->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct minix_dir_entry *)(buf->data + offset);
 				if(d->inode) {
@@ -133,8 +133,8 @@ int minix_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, _
 			}
 			brelse(buf);
 		}
-		fd_table->offset &= ~(blksize - 1);
-		fd_table->offset += offset;
+		f->offset &= ~(blksize - 1);
+		f->offset += offset;
 	}
 
 	return size;

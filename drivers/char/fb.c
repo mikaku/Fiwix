@@ -77,43 +77,43 @@ static struct device fb_device = {
 	NULL
 };
 
-int fb_open(struct inode *i, struct fd *fd_table)
+int fb_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int fb_close(struct inode *i, struct fd *fd_table)
+int fb_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int fb_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int fb_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int addr;
 
-	if(fd_table->offset >= video.memsize) {
+	if(f->offset >= video.memsize) {
 		return 0;
 	}
 
-	addr = (unsigned int)video.address + fd_table->offset;
-	count = MIN(count, video.memsize - fd_table->offset);
+	addr = (unsigned int)video.address + f->offset;
+	count = MIN(count, video.memsize - f->offset);
 	memcpy_b(buffer, (void *)addr, count);
-	fd_table->offset += count;
+	f->offset += count;
 	return count;
 }
 
-int fb_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int fb_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int addr;
 
-	if(fd_table->offset >= video.memsize) {
+	if(f->offset >= video.memsize) {
 		return -ENOSPC;
 	}
 
-	addr = (unsigned int)video.address + fd_table->offset;
-	count = MIN(count, video.memsize - fd_table->offset);
+	addr = (unsigned int)video.address + f->offset;
+	count = MIN(count, video.memsize - f->offset);
 	memcpy_b((void *)addr, buffer, count);
-	fd_table->offset += count;
+	f->offset += count;
 	return count;
 }
 
@@ -130,7 +130,7 @@ int fb_mmap(struct inode *i, struct vma *vma)
 	return 0;
 }
 
-int fb_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int fb_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	switch (cmd) {
 		case IO_FB_XRES:

@@ -140,7 +140,7 @@ void irq_psaux(int num, struct sigcontext *sc)
 	wakeup(&do_select);
 }
 
-int psaux_open(struct inode *i, struct fd *fd_table)
+int psaux_open(struct inode *i, struct fd *f)
 {
 	int minor;
 
@@ -156,7 +156,7 @@ int psaux_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int psaux_close(struct inode *i, struct fd *fd_table)
+int psaux_close(struct inode *i, struct fd *f)
 {
 	int minor;
 
@@ -168,7 +168,7 @@ int psaux_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int psaux_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int psaux_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	int minor, bytes_read;
 	unsigned char ch;
@@ -179,7 +179,7 @@ int psaux_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t coun
 	}
 
 	while(!psaux_table.read_q.count) {
-		if(fd_table->flags & O_NONBLOCK) {
+		if(f->flags & O_NONBLOCK) {
 			return -EAGAIN;
 		}
 		if(sleep(&psaux_read, PROC_INTERRUPTIBLE)) {
@@ -201,7 +201,7 @@ int psaux_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t coun
 	return bytes_read;
 }
 
-int psaux_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int psaux_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	int minor, bytes_written;
 	unsigned char ch;
@@ -222,7 +222,7 @@ int psaux_write(struct inode *i, struct fd *fd_table, const char *buffer, __size
 	return bytes_written;
 }
 
-int psaux_select(struct inode *i, struct fd *fd_table, int flag)
+int psaux_select(struct inode *i, struct fd *f, int flag)
 {
 	int minor;
 

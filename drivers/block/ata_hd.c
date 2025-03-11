@@ -309,12 +309,12 @@ static int dma_transfer_end(struct ide *ide, struct xfer_data *xd)
 }
 #endif /* CONFIG_PCI */
 
-int ata_hd_open(struct inode *i, struct fd *fd_table)
+int ata_hd_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int ata_hd_close(struct inode *i, struct fd *fd_table)
+int ata_hd_close(struct inode *i, struct fd *f)
 {
 	sync_buffers(i->rdev);
 	return 0;
@@ -330,7 +330,7 @@ int ata_hd_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return setup_transfer(BLK_WRITE, dev, block, buffer, blksize);
 }
 
-int ata_hd_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int ata_hd_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	int minor;
 	struct ide *ide;

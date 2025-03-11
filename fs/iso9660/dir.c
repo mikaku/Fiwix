@@ -58,23 +58,23 @@ struct fs_operations iso9660_dir_fsop = {
 	NULL			/* release_superblock */
 };
 
-int iso9660_dir_open(struct inode *i, struct fd *fd_table)
+int iso9660_dir_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int iso9660_dir_close(struct inode *i, struct fd *fd_table)
+int iso9660_dir_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int iso9660_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int iso9660_dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	return -EISDIR;
 }
 
-int iso9660_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int iso9660_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
@@ -91,15 +91,15 @@ int iso9660_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent,
 	}
 
 	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > i->i_size) {
-		fd_table->offset = i->i_size;
+	if(f->offset > i->i_size) {
+		f->offset = i->i_size;
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 	doffset = size = 0;
 
 	while(doffset < count) {
-		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
+		if((block = bmap(i, f->offset, FOR_READING)) < 0) {
 			return block;
 		}
 		if(block) {
@@ -107,8 +107,8 @@ int iso9660_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent,
 				return -EIO;
 			}
 
-			doffset = fd_table->offset;
-			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
+			doffset = f->offset;
+			offset = f->offset & (blksize - 1);	/* mod blksize */
 
 			while(doffset < i->i_size && offset < blksize) {
 				d = (struct iso9660_directory_record *)(buf->data + offset);
@@ -171,7 +171,7 @@ int iso9660_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent,
 			}
 			brelse(buf);
 		}
-		fd_table->offset = doffset;
+		f->offset = doffset;
 	}
 	return size;
 }

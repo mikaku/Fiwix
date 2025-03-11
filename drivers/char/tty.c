@@ -416,13 +416,13 @@ void do_cook(struct tty *tty)
 	wakeup(&tty->read_q);
 }
 
-int tty_open(struct inode *i, struct fd *fd_table)
+int tty_open(struct inode *i, struct fd *f)
 {
 	int noctty_flag;
 	struct tty *tty;
 	int errno;
 	 
-	noctty_flag = fd_table->flags & O_NOCTTY;
+	noctty_flag = f->flags & O_NOCTTY;
 
 	if(MAJOR(i->rdev) == SYSCON_MAJOR && MINOR(i->rdev) == 0) {
 		if(!current->ctty) {
@@ -456,7 +456,7 @@ int tty_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int tty_close(struct inode *i, struct fd *fd_table)
+int tty_close(struct inode *i, struct fd *f)
 {
 	struct proc *p;
 	struct tty *tty;
@@ -488,7 +488,7 @@ int tty_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int tty_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int min;
 	unsigned char ch;
@@ -559,7 +559,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						creq.fn = wait_vtime_off;
 						creq.arg = (unsigned int)&tty->cooked_q;
 						add_callout(&creq, timeout);
-						if(fd_table->flags & O_NONBLOCK) {
+						if(f->flags & O_NONBLOCK) {
 							return -EAGAIN;
 						}
 						if(sleep(&tty->read_q, PROC_INTERRUPTIBLE)) {
@@ -588,7 +588,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 						creq.fn = wait_vtime_off;
 						creq.arg = (unsigned int)&tty->cooked_q;
 						add_callout(&creq, timeout);
-						if(fd_table->flags & O_NONBLOCK) {
+						if(f->flags & O_NONBLOCK) {
 							n = -EAGAIN;
 							break;
 						}
@@ -620,7 +620,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 				}
 			}
 		}
-		if(fd_table->flags & O_NONBLOCK) {
+		if(f->flags & O_NONBLOCK) {
 			n = -EAGAIN;
 			break;
 		}
@@ -636,7 +636,7 @@ int tty_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
 	return n;
 }
 
-int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int tty_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned char ch;
 	struct tty *tty;
@@ -677,7 +677,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 		if(n == count) {
 			break;
 		}
-		if(fd_table->flags & O_NONBLOCK) {
+		if(f->flags & O_NONBLOCK) {
 			n = -EAGAIN;
 			break;
 		}
@@ -699,7 +699,7 @@ int tty_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t
 }
 
 /* FIXME: http://www.lafn.org/~dave/linux/termios.txt (doc/termios.txt) */
-int tty_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct proc *p;
 	struct tty *tty;
@@ -984,7 +984,6 @@ int tty_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
 			}
 			break;
 		}
-
 		default:
 			return vt_ioctl(tty, cmd, arg);
 	}
@@ -996,7 +995,7 @@ __loff_t tty_llseek(struct inode *i, __loff_t offset)
 	return -ESPIPE;
 }
 
-int tty_select(struct inode *i, struct fd *fd_table, int flag)
+int tty_select(struct inode *i, struct fd *f, int flag)
 {
 	struct tty *tty;
 

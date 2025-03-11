@@ -61,22 +61,22 @@ struct fs_operations ext2_file_fsop = {
 	NULL			/* release_superblock */
 };
 
-int ext2_file_open(struct inode *i, struct fd *fd_table)
+int ext2_file_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
-	if(fd_table->flags & O_TRUNC) {
+	f->offset = 0;
+	if(f->flags & O_TRUNC) {
 		i->i_size = 0;
 		ext2_truncate(i, 0);
 	}
 	return 0;
 }
 
-int ext2_file_close(struct inode *i, struct fd *fd_table)
+int ext2_file_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int ext2_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	__blk_t block;
 	__size_t total_written;
@@ -96,10 +96,10 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 	blksize = i->sb->s_blocksize;
 	retval = total_written = 0;
 
-	if(fd_table->flags & O_APPEND) {
-		fd_table->offset = i->i_size;
+	if(f->flags & O_APPEND) {
+		f->offset = i->i_size;
 	}
-	offset = fd_table->offset;
+	offset = f->offset;
 
 	if(count > blksize) {
 		if(!(d = get_device(BLK_DEV, i->dev))) {
@@ -142,7 +142,7 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 			retval = gbread(d, &brh);
 		}
 		br = brh.next_group;
-		offset = fd_table->offset;
+		offset = f->offset;
 		total_written = 0;
 		while(br) {
 			if(!retval) {
@@ -185,9 +185,9 @@ int ext2_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __
 	}
 
 	if(!retval) {
-		fd_table->offset = offset;
-		if(fd_table->offset > i->i_size) {
-			i->i_size = fd_table->offset;
+		f->offset = offset;
+		if(f->offset > i->i_size) {
+			i->i_size = f->offset;
 		}
 		i->i_ctime = CURRENT_TIME;
 		i->i_mtime = CURRENT_TIME;

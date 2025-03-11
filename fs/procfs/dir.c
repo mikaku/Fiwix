@@ -147,7 +147,7 @@ static int proc_listfd(struct inode *i, char *buffer, int count)
 	return size;
 }
 
-static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+static int dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	__size_t total_read;
 	unsigned int bytes;
@@ -184,29 +184,29 @@ static int dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t
 	}
 	memcpy_b(buf + len, (char *)&procfs_array[lev], bytes);
 	len += bytes;
-	total_read = fd_table->offset = len;
+	total_read = f->offset = len;
 	memcpy_b(buffer, buf, len);
 	kfree((unsigned int)buf);
 	return total_read;
 }
 
-int procfs_dir_open(struct inode *i, struct fd *fd_table)
+int procfs_dir_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int procfs_dir_close(struct inode *i, struct fd *fd_table)
+int procfs_dir_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int procfs_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int procfs_dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	return -EISDIR;
 }
 
-int procfs_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int procfs_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_t count)
 {
 	unsigned int offset, boffset, dirent_offset, doffset;
 	int dirent_len;
@@ -221,18 +221,18 @@ int procfs_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, 
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 
-	offset = fd_table->offset;
+	offset = f->offset;
 	boffset = dirent_offset = doffset = 0;
 
 	boffset = offset & (PAGE_SIZE - 1);	/* mod PAGE_SIZE */
 
-	total_read = dir_read(i, fd_table, buffer, PAGE_SIZE);
+	total_read = dir_read(i, f, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {
 		kfree((unsigned int)buffer);
 		return dirent_offset;
 	}
 
-	while(boffset < fd_table->offset) {
+	while(boffset < f->offset) {
 		d = (struct procfs_dir_entry *)(buffer + boffset);
 		if(!d->inode) {
 			break;
@@ -257,7 +257,7 @@ int procfs_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, 
 			kfree((unsigned int)d->name);
 		}
 	}
-	fd_table->offset = boffset;
+	f->offset = boffset;
 	kfree((unsigned int)buffer);
 	return dirent_offset;
 }

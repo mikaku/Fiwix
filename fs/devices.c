@@ -198,41 +198,41 @@ struct device *get_device(int type, __dev_t dev)
 	return NULL;
 }
 
-int chr_dev_open(struct inode *i, struct fd *fd_table)
+int chr_dev_open(struct inode *i, struct fd *f)
 {
 	struct device *d;
 
 	if((d = get_device(CHR_DEV, i->rdev))) {
 		i->fsop = d->fsop;
-		return i->fsop->open(i, fd_table);
+		return i->fsop->open(i, f);
 	}
 
 	return -ENXIO;
 }
 
-int blk_dev_open(struct inode *i, struct fd *fd_table)
+int blk_dev_open(struct inode *i, struct fd *f)
 {
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->open(i, fd_table);
+		return d->fsop->open(i, f);
 	}
 
 	return -ENXIO;
 }
 
-int blk_dev_close(struct inode *i, struct fd *fd_table)
+int blk_dev_close(struct inode *i, struct fd *f)
 {
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->close(i, fd_table);
+		return d->fsop->close(i, f);
 	}
 
 	return -ENXIO;
 }
 
-int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	__blk_t block;
 	__size_t total_read;
@@ -256,13 +256,13 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
-	count = (fd_table->offset + count > device_size) ? device_size - fd_table->offset : count;
-	if(!count || fd_table->offset > device_size) {
+	count = (f->offset + count > device_size) ? device_size - f->offset : count;
+	if(!count || f->offset > device_size) {
 		return 0;
 	}
 	while(count) {
-		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
-		block = (fd_table->offset / blksize);
+		boffset = f->offset & (blksize - 1);	/* mod blksize */
+		block = (f->offset / blksize);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;
 		}
@@ -271,13 +271,13 @@ int blk_dev_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 		memcpy_b(buffer + total_read, buf->data + boffset, bytes);
 		total_read += bytes;
 		count -= bytes;
-		fd_table->offset += bytes;
+		f->offset += bytes;
 		brelse(buf);
 	}
 	return total_read;
 }
 
-int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	__blk_t block;
 	__size_t total_written;
@@ -301,13 +301,13 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
-	count = (fd_table->offset + count > device_size) ? device_size - fd_table->offset : count;
-	if(!count || fd_table->offset > device_size) {
+	count = (f->offset + count > device_size) ? device_size - f->offset : count;
+	if(!count || f->offset > device_size) {
 		return -ENOSPC;
 	}
 	while(count) {
-		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
-		block = (fd_table->offset / blksize);
+		boffset = f->offset & (blksize - 1);	/* mod blksize */
+		block = (f->offset / blksize);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;
 		}
@@ -316,18 +316,18 @@ int blk_dev_write(struct inode *i, struct fd *fd_table, const char *buffer, __si
 		memcpy_b(buf->data + boffset, buffer + total_written, bytes);
 		total_written += bytes;
 		count -= bytes;
-		fd_table->offset += bytes;
+		f->offset += bytes;
 		bwrite(buf);
 	}
 	return total_written;
 }
 
-int blk_dev_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int blk_dev_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->ioctl(i, fd_table, cmd, arg);
+		return d->fsop->ioctl(i, f, cmd, arg);
 	}
 
 	return -ENXIO;

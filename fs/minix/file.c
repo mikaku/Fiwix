@@ -61,22 +61,22 @@ struct fs_operations minix_file_fsop = {
 	NULL			/* release_superblock */
 };
 
-int minix_file_open(struct inode *i, struct fd *fd_table)
+int minix_file_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
-	if(fd_table->flags & O_TRUNC) {
+	f->offset = 0;
+	if(f->flags & O_TRUNC) {
 		i->i_size = 0;
 		minix_truncate(i, 0);
 	}
 	return 0;
 }
 
-int minix_file_close(struct inode *i, struct fd *fd_table)
+int minix_file_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int minix_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	__blk_t block;
 	__size_t total_written;
@@ -89,13 +89,13 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 	blksize = i->sb->s_blocksize;
 	total_written = 0;
 
-	if(fd_table->flags & O_APPEND) {
-		fd_table->offset = i->i_size;
+	if(f->flags & O_APPEND) {
+		f->offset = i->i_size;
 	}
 
 	while(total_written < count) {
-		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
-		if((block = bmap(i, fd_table->offset, FOR_WRITING)) < 0) {
+		boffset = f->offset & (blksize - 1);	/* mod blksize */
+		if((block = bmap(i, f->offset, FOR_WRITING)) < 0) {
 			inode_unlock(i);
 			return block;
 		}
@@ -106,14 +106,14 @@ int minix_file_write(struct inode *i, struct fd *fd_table, const char *buffer, _
 			return -EIO;
 		}
 		memcpy_b(buf->data + boffset, buffer + total_written, bytes);
-		update_page_cache(i, fd_table->offset, buffer + total_written, bytes);
+		update_page_cache(i, f->offset, buffer + total_written, bytes);
 		bwrite(buf);
 		total_written += bytes;
-		fd_table->offset += bytes;
+		f->offset += bytes;
 	}
 
-	if(fd_table->offset > i->i_size) {
-		i->i_size = fd_table->offset;
+	if(f->offset > i->i_size) {
+		i->i_size = f->offset;
 	}
 	i->i_ctime = CURRENT_TIME;
 	i->i_mtime = CURRENT_TIME;

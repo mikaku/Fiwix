@@ -59,23 +59,23 @@ struct fs_operations ext2_dir_fsop = {
 	NULL			/* release_superblock */
 };
 
-int ext2_dir_open(struct inode *i, struct fd *fd_table)
+int ext2_dir_open(struct inode *i, struct fd *f)
 {
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int ext2_dir_close(struct inode *i, struct fd *fd_table)
+int ext2_dir_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int ext2_dir_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int ext2_dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	return -EISDIR;
 }
 
-int ext2_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __size_t count)
+int ext2_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
@@ -90,15 +90,15 @@ int ext2_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __
 	}
 
 	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > i->i_size) {
-		fd_table->offset = i->i_size;
+	if(f->offset > i->i_size) {
+		f->offset = i->i_size;
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen);
 	offset = size = 0;
 
-	while(fd_table->offset < i->i_size && count > 0) {
-		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
+	while(f->offset < i->i_size && count > 0) {
+		if((block = bmap(i, f->offset, FOR_READING)) < 0) {
 			return block;
 		}
 		if(block) {
@@ -106,8 +106,8 @@ int ext2_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __
 				return -EIO;
 			}
 
-			doffset = fd_table->offset;
-			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
+			doffset = f->offset;
+			offset = f->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct ext2_dir_entry_2 *)(buf->data + offset);
 				if(d->inode) {
@@ -135,14 +135,14 @@ int ext2_readdir(struct inode *i, struct fd *fd_table, struct dirent *dirent, __
 			}
 			brelse(buf);
 		}
-		fd_table->offset &= ~(blksize - 1);
-		fd_table->offset += offset;
+		f->offset &= ~(blksize - 1);
+		f->offset += offset;
 	}
 
 	return size;
 }
 
-int ext2_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent, __size_t count)
+int ext2_readdir64(struct inode *i, struct fd *f, struct dirent64 *dirent, __size_t count)
 {
 	__blk_t block;
 	unsigned int doffset, offset;
@@ -157,15 +157,15 @@ int ext2_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent
 	}
 
 	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > i->i_size) {
-		fd_table->offset = i->i_size;
+	if(f->offset > i->i_size) {
+		f->offset = i->i_size;
 	}
 
 	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen) + sizeof(dirent->d_type);
 	offset = size = 0;
 
-	while(fd_table->offset < i->i_size && count > 0) {
-		if((block = bmap(i, fd_table->offset, FOR_READING)) < 0) {
+	while(f->offset < i->i_size && count > 0) {
+		if((block = bmap(i, f->offset, FOR_READING)) < 0) {
 			return block;
 		}
 		if(block) {
@@ -173,8 +173,8 @@ int ext2_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent
 				return -EIO;
 			}
 
-			doffset = fd_table->offset;
-			offset = fd_table->offset & (blksize - 1);	/* mod blksize */
+			doffset = f->offset;
+			offset = f->offset & (blksize - 1);	/* mod blksize */
 			while(offset < blksize) {
 				d = (struct ext2_dir_entry_2 *)(buf->data + offset);
 				if(d->inode) {
@@ -221,8 +221,8 @@ int ext2_readdir64(struct inode *i, struct fd *fd_table, struct dirent64 *dirent
 			}
 			brelse(buf);
 		}
-		fd_table->offset &= ~(blksize - 1);
-		fd_table->offset += offset;
+		f->offset &= ~(blksize - 1);
+		f->offset += offset;
 	}
 
 	return size;

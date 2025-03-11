@@ -135,7 +135,7 @@ static int lp_write_data(int minor, unsigned char c)
 	return 1;
 }
 
-int lp_open(struct inode *i, struct fd *fd_table)
+int lp_open(struct inode *i, struct fd *f)
 {
 	int minor;
 
@@ -153,7 +153,7 @@ int lp_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int lp_close(struct inode *i, struct fd *fd_table)
+int lp_close(struct inode *i, struct fd *f)
 {
 	int minor;
 
@@ -165,7 +165,7 @@ int lp_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int lp_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int lp_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int n;
 	int bytes_written, total_written;

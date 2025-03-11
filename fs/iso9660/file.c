@@ -59,16 +59,16 @@ struct fs_operations iso9660_file_fsop = {
 	NULL			/* release_superblock */
 };
 
-int iso9660_file_open(struct inode *i, struct fd *fd_table)
+int iso9660_file_open(struct inode *i, struct fd *f)
 {
-	if(fd_table->flags & (O_WRONLY | O_RDWR | O_TRUNC | O_APPEND)) {
+	if(f->flags & (O_WRONLY | O_RDWR | O_TRUNC | O_APPEND)) {
 		return -ENOENT;
 	}
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int iso9660_file_close(struct inode *i, struct fd *fd_table)
+int iso9660_file_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }

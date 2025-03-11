@@ -272,23 +272,23 @@ int unix_socketpair(struct socket *s1, struct socket *s2)
 	return 0;
 }
 
-int unix_send(struct socket *s, struct fd *fd_table, const char *buffer, __size_t count, int flags)
+int unix_send(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags)
 {
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return unix_write(s, fd_table, buffer, count);
+	return unix_write(s, f, buffer, count);
 }
 
-int unix_recv(struct socket *s, struct fd *fd_table, char *buffer, __size_t count, int flags)
+int unix_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags)
 {
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return unix_read(s, fd_table, buffer, count);
+	return unix_read(s, f, buffer, count);
 }
 
-int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
+int unix_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
 {
 	struct inode *i;
 	struct unix_info *u;
@@ -339,7 +339,7 @@ int unix_sendto(struct socket *s, struct fd *fd_table, const char *buffer, __siz
 	return count;
 }
 
-int unix_recvfrom(struct socket *s, struct fd *fd_table, char *buffer, __size_t count, int flags, struct sockaddr *addr, int *addrlen)
+int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, int *addrlen)
 {
 	struct unix_info *u, *up;
 	struct sockaddr_un *sun;
@@ -351,7 +351,7 @@ int unix_recvfrom(struct socket *s, struct fd *fd_table, char *buffer, __size_t 
 	lock_resource(&packet_resource);
 	while(!(p = peek_packet(u->packet_queue))) {
 		unlock_resource(&packet_resource);
-		if(!(fd_table->flags & O_NONBLOCK)) {
+		if(!(f->flags & O_NONBLOCK)) {
 			if(sleep(u, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
 			}
@@ -380,7 +380,7 @@ int unix_recvfrom(struct socket *s, struct fd *fd_table, char *buffer, __size_t 
 	return size;
 }
 
-int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t count)
+int unix_read(struct socket *s, struct fd *f, char *buffer, __size_t count)
 {
 	struct unix_info *u;
 	int bytes_read;
@@ -427,7 +427,7 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 			if(u->writeoff) {
 				break;
 			}
-			if(fd_table->flags & O_NONBLOCK) {
+			if(f->flags & O_NONBLOCK) {
 				return -EAGAIN;
 			}
 			if(sleep(u, PROC_INTERRUPTIBLE)) {
@@ -441,7 +441,7 @@ int unix_read(struct socket *s, struct fd *fd_table, char *buffer, __size_t coun
 	return bytes_read;
 }
 
-int unix_write(struct socket *s, struct fd *fd_table, const char *buffer, __size_t count)
+int unix_write(struct socket *s, struct fd *f, const char *buffer, __size_t count)
 {
 	struct unix_info *u, *up;
 	int bytes_written;
@@ -485,7 +485,7 @@ int unix_write(struct socket *s, struct fd *fd_table, const char *buffer, __size
 		}
 		wakeup(u->peer);
 		wakeup(&do_select);
-		if(!(fd_table->flags & O_NONBLOCK)) {
+		if(!(f->flags & O_NONBLOCK)) {
 			if(sleep(u, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
 			}

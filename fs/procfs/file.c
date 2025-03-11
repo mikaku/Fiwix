@@ -58,21 +58,21 @@ struct fs_operations procfs_file_fsop = {
 	NULL			/* release_superblock */
 };
 
-int procfs_file_open(struct inode *i, struct fd *fd_table)
+int procfs_file_open(struct inode *i, struct fd *f)
 {
-	if(fd_table->flags & (O_WRONLY | O_RDWR | O_TRUNC | O_APPEND)) {
+	if(f->flags & (O_WRONLY | O_RDWR | O_TRUNC | O_APPEND)) {
 		return -EINVAL;
 	}
-	fd_table->offset = 0;
+	f->offset = 0;
 	return 0;
 }
 
-int procfs_file_close(struct inode *i, struct fd *fd_table)
+int procfs_file_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int procfs_file_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	__size_t total_read;
 	unsigned int boffset, bytes, size;
@@ -92,25 +92,25 @@ int procfs_file_read(struct inode *i, struct fd *fd_table, char *buffer, __size_
 
 	size = d->data_fn(buf, (i->inode >> 12) & 0xFFFF);
 	blksize = i->sb->s_blocksize;
-	if(fd_table->offset > size) {
-		fd_table->offset = size;
+	if(f->offset > size) {
+		f->offset = size;
 	}
 
 	total_read = 0;
 
 	for(;;) {
-		count = (fd_table->offset + count > size) ? size - fd_table->offset : count;
+		count = (f->offset + count > size) ? size - f->offset : count;
 		if(!count) {
 			break;
 		}
 
-		boffset = fd_table->offset & (blksize - 1);	/* mod blksize */
+		boffset = f->offset & (blksize - 1);	/* mod blksize */
 		bytes = blksize - boffset;
 		bytes = MIN(bytes, count);
 		memcpy_b(buffer + total_read, buf + boffset, bytes);
 		total_read += bytes;
 		count -= bytes;
-		fd_table->offset += bytes;
+		f->offset += bytes;
 	}
 
 	kfree((unsigned int)buf);

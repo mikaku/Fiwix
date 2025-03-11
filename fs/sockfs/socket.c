@@ -14,12 +14,12 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_NET
-int sockfs_open(struct inode *i, struct fd *fd_table)
+int sockfs_open(struct inode *i, struct fd *f)
 {
 	return -ENXIO;
 }
 
-int sockfs_close(struct inode *i, struct fd *fd_table)
+int sockfs_close(struct inode *i, struct fd *f)
 {
 	struct socket *s;
 
@@ -28,20 +28,20 @@ int sockfs_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int sockfs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int sockfs_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	struct socket *s;
 
 	s = &i->u.sockfs.sock;
-	return s->ops->read(s, fd_table, buffer, count);
+	return s->ops->read(s, f, buffer, count);
 }
 
-int sockfs_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int sockfs_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	struct socket *s;
 
 	s = &i->u.sockfs.sock;
-	return s->ops->write(s, fd_table, buffer, count);
+	return s->ops->write(s, f, buffer, count);
 }
 
 __loff_t sockfs_llseek(struct inode *i, __loff_t offset)
@@ -49,7 +49,7 @@ __loff_t sockfs_llseek(struct inode *i, __loff_t offset)
         return -ESPIPE;
 }
 
-int sockfs_select(struct inode *i, struct fd *fd_table, int flag)
+int sockfs_select(struct inode *i, struct fd *f, int flag)
 {
 	struct socket *s;
 

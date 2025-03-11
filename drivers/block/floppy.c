@@ -493,7 +493,7 @@ void fdc_timer(unsigned int reason)
 	}
 }
 
-int fdc_open(struct inode *i, struct fd *fd_table)
+int fdc_open(struct inode *i, struct fd *f)
 {
 	unsigned char minor;
 
@@ -509,7 +509,7 @@ int fdc_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int fdc_close(struct inode *i, struct fd *fd_table)
+int fdc_close(struct inode *i, struct fd *f)
 {
 	unsigned char minor;
 
@@ -752,7 +752,7 @@ int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return sectors_written * BPS;
 }
 
-int fdc_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int fdc_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	unsigned char minor;
 	struct hd_geometry *geom;

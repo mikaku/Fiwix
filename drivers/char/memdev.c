@@ -373,41 +373,41 @@ static struct device memdev_device = {
 	NULL
 };
 
-int mem_open(struct inode *i, struct fd *fd_table)
+int mem_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int mem_close(struct inode *i, struct fd *fd_table)
+int mem_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int mem_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int mem_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);
-	if(fd_table->offset >= physical_memory) {
+	if(f->offset >= physical_memory) {
 		return 0;
 	}
-	count = MIN(count, physical_memory - fd_table->offset);
-	memcpy_b(buffer, (void *)P2V((unsigned int)fd_table->offset), count);
-	fd_table->offset += count;
+	count = MIN(count, physical_memory - f->offset);
+	memcpy_b(buffer, (void *)P2V((unsigned int)f->offset), count);
+	f->offset += count;
 	return count;
 }
 
-int mem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int mem_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
 	physical_memory = (kstat.physical_pages << PAGE_SHIFT);
-	if(fd_table->offset >= physical_memory) {
+	if(f->offset >= physical_memory) {
 		return 0;
 	}
-	count = MIN(count, physical_memory - fd_table->offset);
-	memcpy_b((void *)P2V((unsigned int)fd_table->offset), buffer, count);
-	fd_table->offset += count;
+	count = MIN(count, physical_memory - f->offset);
+	memcpy_b((void *)P2V((unsigned int)f->offset), buffer, count);
+	f->offset += count;
 	return count;
 }
 
@@ -416,38 +416,38 @@ __loff_t mem_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int kmem_open(struct inode *i, struct fd *fd_table)
+int kmem_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int kmem_close(struct inode *i, struct fd *fd_table)
+int kmem_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int kmem_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int kmem_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
 	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
-	if(P2V(fd_table->offset + count) < physical_memory) {
-		memcpy_b(buffer, (void *)P2V((unsigned int)fd_table->offset), count);
-		fd_table->offset += count;
+	if(P2V(f->offset + count) < physical_memory) {
+		memcpy_b(buffer, (void *)P2V((unsigned int)f->offset), count);
+		f->offset += count;
 	} else {
 		count = 0;
 	}
 	return count;
 }
 
-int kmem_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int kmem_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
 	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
-	if(P2V(fd_table->offset + count) < physical_memory) {
-		memcpy_b((void *)P2V((unsigned int)fd_table->offset), buffer, count);
-		fd_table->offset += count;
+	if(P2V(f->offset + count) < physical_memory) {
+		memcpy_b((void *)P2V((unsigned int)f->offset), buffer, count);
+		f->offset += count;
 	} else {
 		count = 0;
 	}
@@ -459,22 +459,22 @@ __loff_t kmem_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int null_open(struct inode *i, struct fd *fd_table)
+int null_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int null_close(struct inode *i, struct fd *fd_table)
+int null_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int null_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int null_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	return 0;
 }
 
-int null_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int null_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	return count;
 }
@@ -484,43 +484,43 @@ __loff_t null_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int port_open(struct inode *i, struct fd *fd_table)
+int port_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int port_close(struct inode *i, struct fd *fd_table)
+int port_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int port_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int port_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int n;
 
-	if(fd_table->offset >= 65535) {
+	if(f->offset >= 65535) {
 		return 0;
 	}
-	count = MIN(count, 65536 - fd_table->offset);
-	for(n = fd_table->offset; n < (fd_table->offset + count); n++, buffer++) {
+	count = MIN(count, 65536 - f->offset);
+	for(n = f->offset; n < (f->offset + count); n++, buffer++) {
 		*buffer = inport_b(n);
 	}
-	fd_table->offset += count;
+	f->offset += count;
 	return count;
 }
 
-int port_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int port_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int n;
 
-	if(fd_table->offset >= 65535) {
+	if(f->offset >= 65535) {
 		return 0;
 	}
-	count = MIN(count, 65536 - fd_table->offset);
-	for(n = fd_table->offset; n < (fd_table->offset + count); n++, buffer++) {
+	count = MIN(count, 65536 - f->offset);
+	for(n = f->offset; n < (f->offset + count); n++, buffer++) {
 		outport_b(n, *buffer);
 	}
-	fd_table->offset += count;
+	f->offset += count;
 	return count;
 }
 
@@ -529,23 +529,23 @@ __loff_t port_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int zero_open(struct inode *i, struct fd *fd_table)
+int zero_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int zero_close(struct inode *i, struct fd *fd_table)
+int zero_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int zero_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int zero_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	memset_b(buffer, 0, count);
 	return count;
 }
 
-int zero_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int zero_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	return count;
 }
@@ -556,23 +556,23 @@ __loff_t zero_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int full_open(struct inode *i, struct fd *fd_table)
+int full_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int full_close(struct inode *i, struct fd *fd_table)
+int full_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int full_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int full_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	memset_b(buffer, 0, count);
 	return count;
 }
 
-int full_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int full_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	return -ENOSPC;
 }
@@ -582,17 +582,17 @@ __loff_t full_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int urandom_open(struct inode *i, struct fd *fd_table)
+int urandom_open(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int urandom_close(struct inode *i, struct fd *fd_table)
+int urandom_close(struct inode *i, struct fd *f)
 {
 	return 0;
 }
 
-int urandom_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int urandom_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	int n;
 
@@ -604,7 +604,7 @@ int urandom_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t co
 	return count;
 }
 
-int urandom_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int urandom_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	return count;
 }
@@ -614,7 +614,7 @@ __loff_t urandom_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-int memdev_open(struct inode *i, struct fd *fd_table)
+int memdev_open(struct inode *i, struct fd *f)
 {
 	unsigned char minor;
 
@@ -647,7 +647,7 @@ int memdev_open(struct inode *i, struct fd *fd_table)
 		default:
 			return -ENXIO;
 	}
-	return i->fsop->open(i, fd_table);
+	return i->fsop->open(i, f);
 }
 
 /*

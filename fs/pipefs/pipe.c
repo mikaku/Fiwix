@@ -20,21 +20,21 @@
 
 static struct resource pipe_resource = { 0, 0 };
 
-int pipefs_close(struct inode *i, struct fd *fd_table)
+int pipefs_close(struct inode *i, struct fd *f)
 {
-	if((fd_table->flags & O_ACCMODE) == O_RDONLY) {
+	if((f->flags & O_ACCMODE) == O_RDONLY) {
 		if(!--i->u.pipefs.i_readers) {
 			wakeup(&do_select);
 			wakeup(&pipefs_write);
 		}
 	}
-	if((fd_table->flags & O_ACCMODE) == O_WRONLY) {
+	if((f->flags & O_ACCMODE) == O_WRONLY) {
 		if(!--i->u.pipefs.i_writers) {
 			wakeup(&do_select);
 			wakeup(&pipefs_read);
 		}
 	}
-	if((fd_table->flags & O_ACCMODE) == O_RDWR) {
+	if((f->flags & O_ACCMODE) == O_RDWR) {
 		if(!--i->u.pipefs.i_readers) {
 			wakeup(&do_select);
 			wakeup(&pipefs_write);
@@ -47,7 +47,7 @@ int pipefs_close(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t count)
+int pipefs_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	__size_t bytes_read;
 	__size_t n, limit;
@@ -82,7 +82,7 @@ int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t cou
 			break;
 		} else {
 			if(i->u.pipefs.i_writers) {
-				if(fd_table->flags & O_NONBLOCK) {
+				if(f->flags & O_NONBLOCK) {
 					return -EAGAIN;
 				}
 				if(sleep(&pipefs_read, PROC_INTERRUPTIBLE)) {
@@ -106,7 +106,7 @@ int pipefs_read(struct inode *i, struct fd *fd_table, char *buffer, __size_t cou
 	return bytes_read;
 }
 
-int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __size_t count)
+int pipefs_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	__size_t bytes_written;
 	__size_t n;
@@ -158,7 +158,7 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 
 		wakeup(&do_select);
 		wakeup(&pipefs_read);
-		if(!(fd_table->flags & O_NONBLOCK)) {
+		if(!(f->flags & O_NONBLOCK)) {
 			if(sleep(&pipefs_write, PROC_INTERRUPTIBLE)) {
 				return -EINTR;
 			}
@@ -169,7 +169,7 @@ int pipefs_write(struct inode *i, struct fd *fd_table, const char *buffer, __siz
 	return bytes_written;
 }
 
-int pipefs_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int pipefs_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	int errno;
 
@@ -191,7 +191,7 @@ __loff_t pipefs_llseek(struct inode *i, __loff_t offset)
 	return -ESPIPE;
 }
 
-int pipefs_select(struct inode *i, struct fd *fd_table, int flag)
+int pipefs_select(struct inode *i, struct fd *f, int flag)
 {
 	switch(flag) {
 		case SEL_R:

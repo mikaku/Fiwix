@@ -209,7 +209,7 @@ static void get_capacity(struct inode *i, struct ide *ide, struct ata_drv *drive
 	((unsigned int *)d->device_data)[MINOR(i->rdev)] = (__bswap32(lba) + 1) * (__bswap32(blocklen) / 1024);
 }
 
-int atapi_cd_open(struct inode *i, struct fd *fd_table)
+int atapi_cd_open(struct inode *i, struct fd *f)
 {
 	char *buffer;
 	int errcode;
@@ -277,7 +277,7 @@ int atapi_cd_open(struct inode *i, struct fd *fd_table)
 	return 0;
 }
 
-int atapi_cd_close(struct inode *i, struct fd *fd_table)
+int atapi_cd_close(struct inode *i, struct fd *f)
 {
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -309,7 +309,7 @@ int atapi_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	return setup_transfer(BLK_READ, dev, block, buffer, blksize);
 }
 
-int atapi_cd_ioctl(struct inode *i, struct fd *fd_table, int cmd, unsigned int arg)
+int atapi_cd_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct ide *ide;
 
