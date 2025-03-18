@@ -86,6 +86,7 @@ static void set_color(void *addr, int color)
 			b = (color & 0xFF) << 8;
 			addr16 = (unsigned short int *)addr;
 			*addr16 = (r & 0xf800) | ((g & 0xfc00) >> 5) | ((b & 0xf800) >> 11);
+			break;
 		case 15:
 			/* 1:5:5:5 */
 			r = ((color >> 16) & 0xFF) << 8;
@@ -281,7 +282,7 @@ void fbcon_show_cursor(struct vconsole *vc, int mode)
 void fbcon_get_curpos(struct vconsole *vc)
 {
 	/* not used */
-}	
+}
 
 void fbcon_write_screen(struct vconsole *vc, int from, int count, short int color)
 {
