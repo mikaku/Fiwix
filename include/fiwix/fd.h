@@ -30,6 +30,7 @@ struct fd {
 #else
 	__off_t offset;			/* r/w pointer position */
 #endif /* CONFIG_OFFSET64 */
+	void *private_data;		/* needed for tty driver */
 };
 
 #endif /* _FIWIX_FS_H */

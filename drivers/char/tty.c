@@ -448,6 +448,8 @@ int tty_open(struct inode *i, struct fd *f)
 	tty->count++;
 	tty->column = 0;
 
+	f->private_data = tty;
+
 	if(SESS_LEADER(current) && !current->ctty && !noctty_flag && !tty->sid) {
 		current->ctty = tty;
 		tty->sid = current->sid;
@@ -462,11 +464,7 @@ int tty_close(struct inode *i, struct fd *f)
 	struct tty *tty;
 	int errno;
 
-	if(!(tty = get_tty(i->rdev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		return -ENXIO;
-	}
-
+	tty = f->private_data;
 	if(tty->close) {
 		if((errno = tty->close(tty)) < 0) {
 			return errno;
@@ -496,10 +494,7 @@ int tty_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	struct callout_req creq;
 	int n;
 
-	if(!(tty = get_tty(i->rdev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		return -ENXIO;
-	}
+	tty = f->private_data;
 
 	/* only the foreground process group is allowed to read from the tty */
 	if(current->ctty == tty && current->pgid != tty->pgid) {
@@ -642,10 +637,7 @@ int tty_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 	struct tty *tty;
 	int n;
 
-	if(!(tty = get_tty(i->rdev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		return -ENXIO;
-	}
+	tty = f->private_data;
 
 	/* only the foreground process group is allowed to write to the tty */
 	if(current->ctty == tty && current->pgid != tty->pgid) {
@@ -705,10 +697,7 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 	struct tty *tty;
 	int errno;
 
-	if(!(tty = get_tty(i->rdev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		return -ENXIO;
-	}
+	tty = f->private_data;
 
 	switch(cmd) {
 		/*
@@ -984,6 +973,7 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			}
 			break;
 		}
+
 		default:
 			return vt_ioctl(tty, cmd, arg);
 	}
@@ -999,10 +989,7 @@ int tty_select(struct inode *i, struct fd *f, int flag)
 {
 	struct tty *tty;
 
-	if(!(tty = get_tty(i->rdev))) {
-		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		return 0;
-	}
+	tty = f->private_data;
 
 	switch(flag) {
 		case SEL_R:
