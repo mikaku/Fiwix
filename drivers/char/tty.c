@@ -22,6 +22,10 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#define SYSCON_DEV	MKDEV(SYSCON_MAJOR, 1)
+#define VCONSOLE_DEV	MKDEV(VCONSOLES_MAJOR, 0)
+#define TTY_DEV		MKDEV(SYSCON_MAJOR, 0)
+
 struct tty tty_table[NR_TTYS];
 extern short int current_cons;
 
@@ -207,17 +211,17 @@ struct tty *get_tty(__dev_t dev)
 	}
 
 	/* /dev/console = system console */
-	if(dev == MKDEV(SYSCON_MAJOR, 1)) {
+	if(dev == SYSCON_DEV) {
 		dev = (__dev_t)kparm_syscondev;
 	}
 
 	/* /dev/tty0 = current virtual console */
-	if(dev == MKDEV(VCONSOLES_MAJOR, 0)) {
+	if(dev == VCONSOLE_DEV) {
 		dev = MKDEV(VCONSOLES_MAJOR, current_cons);
 	}
 
 	/* /dev/tty = controlling TTY device */
-	if(dev == MKDEV(SYSCON_MAJOR, 0)) {
+	if(dev == TTY_DEV) {
 		if(!current->ctty) {
 			return NULL;
 		}
@@ -424,13 +428,13 @@ int tty_open(struct inode *i, struct fd *f)
 	 
 	noctty_flag = f->flags & O_NOCTTY;
 
-	if(MAJOR(i->rdev) == SYSCON_MAJOR && MINOR(i->rdev) == 0) {
+	if(i->rdev == TTY_DEV) {
 		if(!current->ctty) {
 			return -ENXIO;
 		}
 	}
 
-	if(MAJOR(i->rdev) == VCONSOLES_MAJOR && MINOR(i->rdev) == 0) {
+	if(i->rdev == VCONSOLE_DEV) {
 		noctty_flag = 1;
 	}
 
