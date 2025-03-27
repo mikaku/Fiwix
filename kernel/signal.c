@@ -88,9 +88,13 @@ int send_sig(struct proc *p, __sigset_t signum)
 			return 0;
 		}
 
-		/* SIGCHLD is ignored by default */
-		if(signum == SIGCHLD) {
-			return 0;
+		/* these signals with SIG_DFL are ignored */
+		switch(signum) {
+			case SIGCONT:
+			case SIGWINCH:
+			case SIGCHLD:
+			case SIGURG:
+				return 0;
 		}
 	}
 
