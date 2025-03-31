@@ -223,6 +223,10 @@ void check_rrip_inode(struct iso9660_directory_record *, struct inode *);
 int get_rrip_filename(struct iso9660_directory_record *, struct inode *, char *);
 int get_rrip_symlink(struct inode *, char *);
 
+/* fs_devpts.h prototypes */
+extern struct fs_operations devpts_fsop;
+extern struct fs_operations devpts_dir_fsop;
+
 
 /* generic VFS function prototypes */
 void inode_lock(struct inode *);

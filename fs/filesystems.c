@@ -9,9 +9,6 @@
 #include <fiwix/errno.h>
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
-#include <fiwix/fs_pipe.h>
-#include <fiwix/fs_iso9660.h>
-#include <fiwix/fs_proc.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -87,4 +84,9 @@ void fs_init(void)
 		printk("%s(): unable to register 'sockfs' filesystem.\n", __FUNCTION__);
 	}
 #endif /* CONFIG_NET */
+#ifdef CONFIG_UNIX98_PTYS
+	if(devpts_init()) {
+		printk("%s(): unable to register 'devpts' filesystem.\n", __FUNCTION__);
+	}
+#endif /* CONFIG_UNIX98_PTYS */
 }

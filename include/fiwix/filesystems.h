@@ -16,6 +16,7 @@
 /* special device numbers for nodev filesystems */
 enum {
 	FS_NODEV = 0xFFF0,
+	DEVPTS_DEV,
 	PIPE_DEV,
 	PROC_DEV,
 	SOCK_DEV,
@@ -178,5 +179,20 @@ void sockfs_ifree(struct inode *);
 int sockfs_read_superblock(__dev_t, struct superblock *);
 int sockfs_init(void);
 #endif /* CONFIG_NET */
+
+#ifdef CONFIG_UNIX98_PTYS
+/* devpts prototypes */
+int devpts_dir_open(struct inode *, struct fd *);
+int devpts_dir_close(struct inode *, struct fd *);
+int devpts_dir_read(struct inode *, struct fd *, char *, __size_t);
+int devpts_readdir(struct inode *, struct fd *, struct dirent *, __size_t);
+int devpts_lookup(const char *, struct inode *, struct inode **);
+int devpts_read_inode(struct inode *);
+void devpts_statfs(struct superblock *, struct statfs *);
+int devpts_ialloc(struct inode *, int);
+void devpts_ifree(struct inode *);
+int devpts_read_superblock(__dev_t, struct superblock *);
+int devpts_init(void);
+#endif /* CONFIG_UNIX98_PTYS */
 
 #endif /* _FIWIX_FILESYSTEMS_H */

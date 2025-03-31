@@ -49,6 +49,7 @@ OBJS = 	kernel/*.o \
 	kernel/syscalls/*.o \
 	mm/*.o \
 	fs/*.o \
+	fs/devpts/*.o \
 	fs/ext2/*.o \
 	fs/iso9660/*.o \
 	fs/minix/*.o \
