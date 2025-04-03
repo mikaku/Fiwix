@@ -20,6 +20,7 @@
 #include <fiwix/mm.h>
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
+#include <fiwix/pty.h>
 #include <fiwix/stdio.h>
 
 /* kswapd continues the kernel initialization */
@@ -31,6 +32,9 @@ int kswapd(void)
 	memdev_init();
 	serial_init();
 	lp_init();
+#ifdef CONFIG_UNIX98_PTYS
+	pty_init();
+#endif /* CONFIG_UNIX98_PTYS */
 
 	/* block devices */
 	ramdisk_init();

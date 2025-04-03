@@ -11,8 +11,8 @@
 #include <fiwix/types.h>
 #include <fiwix/fs.h>
 
-#define NR_BLKDEV	128	/* maximum number of block devices */
-#define NR_CHRDEV	128	/* maximum number of char devices */
+#define NR_BLKDEV	255	/* maximum number of block devices */
+#define NR_CHRDEV	255	/* maximum number of char devices */
 
 #define BLK_DEV		1	/* block device */
 #define CHR_DEV		2	/* character device */
@@ -37,6 +37,7 @@ extern struct device *chr_device_table[NR_CHRDEV];
 extern struct device *blk_device_table[NR_BLKDEV];
 
 int register_device(int, struct device *);
+void unregister_device(int, struct device *);
 struct device *get_device(int, __dev_t);
 int chr_dev_open(struct inode *, struct fd *);
 int blk_dev_open(struct inode *, struct fd *);

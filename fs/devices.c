@@ -141,7 +141,6 @@ int register_device(int type, struct device *new_d)
 
 	if(*d) {
 		if(&(*d)->minors == &new_d->minors || ((*d)->next && &(*d)->next->minors == &new_d->minors)) {
-			printk("WARNING: %s(): duplicated device major %d.\n", __FUNCTION__, new_d->major);
 			return 1;
 		}
 		do {
@@ -151,6 +150,41 @@ int register_device(int type, struct device *new_d)
 	*d = new_d;
 
 	return 0;
+}
+
+void unregister_device(int type, struct device *device)
+{
+	struct device **d, **tmp;
+	int n;
+
+	/* make sure there are not minors defined */
+	for(n = 0; n < 8; n++) {
+		if(device->minors[n]) {
+			return;
+		}
+	}
+
+	switch(type) {
+		case CHR_DEV:
+			d = &chr_device_table[device->major];
+			break;
+		default:
+			printk("WARNING: %s(): invalid device type %d.\n", __FUNCTION__, type);
+			return;
+	}
+	tmp = NULL;
+	while(*d) {
+		if(&(*d)->minors == &device->minors) {
+			if(!tmp) {
+				*d = (*d)->next;
+			} else {
+				*tmp = (*d)->next;
+			}
+			return;
+		}
+		tmp = d;
+		d = &(*d)->next;
+	}
 }
 
 struct device *get_device(int type, __dev_t dev)

@@ -24,6 +24,8 @@
 
 /* tty flags */
 #define TTY_HAS_LNEXT		0x01
+#define TTY_OTHER_CLOSED	0x02
+#define TTY_PTY_LOCK		0x04
 
 struct kbd_state {
 	char mode;
@@ -44,6 +46,7 @@ struct tty {
 	char tab_stop[132];
 	int column;
 	int flags;
+	struct tty *link;
 
 	/* tty driver operations */
 	void (*stop)(struct tty *);
@@ -59,6 +62,7 @@ struct tty {
 extern struct tty tty_table[];
 
 int register_tty(__dev_t);
+void unregister_tty(struct tty *);
 struct tty *get_tty(__dev_t);
 void disassociate_ctty(struct tty *);
 void termios_reset(struct tty *);

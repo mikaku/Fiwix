@@ -33,6 +33,8 @@ Features
    - QEMU PCI serial device support.
    - QEMU/Bochs Graphics Adapter support.
    - Intel PIIX3 PCI ISA IDE controller.
+ - UNIX98 pseudoterminals (pty) support.
+ - Virtual consoles support (up to 12).
  - Keyboard driver with Linux keymaps support.
  - PS/2 mouse support.
  - Framebuffer device support for VESA VBE 2.0+ compliant graphic cards.

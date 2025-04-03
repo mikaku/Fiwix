@@ -19,6 +19,8 @@
 #include <fiwix/process.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/kd.h>
+#include <fiwix/pty.h>
+#include <fiwix/fs_devpts.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -185,6 +187,7 @@ static void set_termio(struct tty *tty, struct termio *new_termio)
 
 int register_tty(__dev_t dev)
 {
+	struct tty *tty;
 	int n;
 
 	for(n = 0; n < NR_TTYS; n++) {
@@ -193,13 +196,31 @@ int register_tty(__dev_t dev)
 			return 1;
 		}
 		if(!tty_table[n].dev) {
-			tty_table[n].dev = dev;
-			tty_table[n].count = 0;
+			tty = &tty_table[n];
+			memset_b(tty, 0, sizeof(struct tty));
+			tty->dev = dev;
+			termios_reset(tty);
+			tty->winsize.ws_row = 25;
+			tty->winsize.ws_col = 80;
+			tty->winsize.ws_xpixel = 0;
+			tty->winsize.ws_ypixel = 0;
+			for(n = 0; n < MAX_TAB_COLS; n++) {
+				if(!(n % TAB_SIZE)) {
+					tty->tab_stop[n] = 1;
+				} else {
+					tty->tab_stop[n] = 0;
+				}
+			}
 			return 0;
 		}
 	}
 	printk("ERROR: %s(): tty table is full!\n", __FUNCTION__);
 	return 1;
+}
+
+void unregister_tty(struct tty *tty)
+{
+	memset_b(tty, 0, sizeof(struct tty));
 }
 
 struct tty *get_tty(__dev_t dev)
@@ -377,15 +398,21 @@ void do_cook(struct tty *tty)
 
 			if(tty->termios.c_iflag & IXON) {
 				if(ch == tty->termios.c_cc[VSTART]) {
-					tty->start(tty);
+					if(tty->start) {
+						tty->start(tty);
+					}
 					continue;
 				}
 				if(ch == tty->termios.c_cc[VSTOP]) {
-					tty->stop(tty);
+					if(tty->stop) {
+						tty->stop(tty);
+					}
 					continue;
 				}
 				if(tty->termios.c_iflag & IXANY) {
-					tty->start(tty);
+					if(tty->start) {
+						tty->start(tty);
+					}
 				}
 			}
 		}
@@ -413,7 +440,9 @@ void do_cook(struct tty *tty)
 		charq_putchar(&tty->cooked_q, ch);
 		tty->flags &= ~TTY_HAS_LNEXT;
 	}
-	tty->output(tty);
+	if(tty->output) {
+		tty->output(tty);
+	}
 	if(!(tty->termios.c_lflag & ICANON) || ((tty->termios.c_lflag & ICANON) && tty->canon_data)) {
 		wakeup(&do_select);
 	}
@@ -423,7 +452,9 @@ void do_cook(struct tty *tty)
 int tty_open(struct inode *i, struct fd *f)
 {
 	int noctty_flag;
-	struct tty *tty;
+	struct tty *tty, *otty;
+	struct inode *oi;
+	struct devpts_files *dp;
 	int errno;
 	 
 	noctty_flag = f->flags & O_NOCTTY;
@@ -444,6 +475,7 @@ int tty_open(struct inode *i, struct fd *f)
 		return -ENXIO;
 	}
 
+	errno = 0;
 	if(tty->open) {
 		if((errno = tty->open(tty)) < 0) {
 			return errno;
@@ -453,6 +485,28 @@ int tty_open(struct inode *i, struct fd *f)
 	tty->column = 0;
 
 	f->private_data = tty;
+
+#ifdef CONFIG_UNIX98_PTYS
+	if(i->rdev == PTMX_DEV) {
+		dp = (struct devpts_files *)tty->driver_data;
+		oi = (struct inode *)dp->inode;
+		if(!register_tty(oi->rdev)) {
+			otty = get_tty(oi->rdev);
+			otty->input = do_cook;
+			otty->output = pty_wakeup_read;
+			otty->open = pty_open;
+			otty->close = pty_close;
+			otty->driver_data = tty->driver_data;
+			otty->count++;
+			otty->flags |= TTY_PTY_LOCK;
+			otty->link = tty;
+			f->private_data = otty;
+		} else {
+			printk("WARNING: %s(): unable to register pty slave (%d,%d).\n", __FUNCTION__, MAJOR(oi->rdev), MINOR(oi->rdev));
+			return -ENOMEM;
+		}
+	}
+#endif /* CONFIG_UNIX98_PTYS */
 
 	if(SESS_LEADER(current) && !current->ctty && !noctty_flag && !tty->sid) {
 		current->ctty = tty;
@@ -523,6 +577,10 @@ int tty_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 			if(n) {
 				break;
 			}
+		}
+		if(tty->flags & TTY_OTHER_CLOSED) {
+			n = -EIO;
+			break;
 		}
 
 		if(tty->termios.c_lflag & ICANON) {
@@ -669,7 +727,9 @@ int tty_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 			}
 			n++;
 		}
-		tty->output(tty);
+		if(tty->output) {
+			tty->output(tty);
+		}
 		if(n == count) {
 			break;
 		}
@@ -826,10 +886,14 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 		case TCXONC:
 			switch(arg) {
 				case TCOOFF:
-					tty->stop(tty);
+					if(tty->stop) {
+						tty->stop(tty);
+					}
 					break;
 				case TCOON:
-					tty->start(tty);
+					if(tty->start) {
+						tty->start(tty);
+					}
 					break;
 				default:
 					return -EINVAL;
@@ -977,6 +1041,25 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			}
 			break;
 		}
+
+#ifdef CONFIG_UNIX98_PTYS
+		case TIOCGPTN:
+		{
+			unsigned int *val = (unsigned int *)arg;
+			*val = MINOR(tty->dev);
+			return 0;
+		}
+		case TIOCSPTLCK:
+		{
+			int val = *(unsigned int *)arg;
+			if(val) {
+				tty->flags |= TTY_PTY_LOCK;
+			} else {
+				tty->flags &= ~TTY_PTY_LOCK;
+			}
+			return 0;
+		}
+#endif /* CONFIG_UNIX98_PTYS */
 
 		default:
 			return vt_ioctl(tty, cmd, arg);
