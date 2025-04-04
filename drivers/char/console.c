@@ -508,12 +508,9 @@ void vconsole_reset(struct tty *tty)
 		}
 	}
 
-	termios_reset(tty);
+	tty_reset(tty);
 	vc->tty->winsize.ws_row = vc->lines - vc->top;
 	vc->tty->winsize.ws_col = vc->columns;
-	vc->tty->winsize.ws_xpixel = 0;
-	vc->tty->winsize.ws_ypixel = 0;
-	vc->tty->flags = 0;
 
 	init_vt(vc);
 	vc->flags &= ~CONSOLE_BLANKED;

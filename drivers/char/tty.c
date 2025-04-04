@@ -185,6 +185,16 @@ static void set_termio(struct tty *tty, struct termio *new_termio)
 	memcpy_b(&tty->termios, &new_termios, sizeof(struct termios));
 }
 
+void tty_reset(struct tty *tty)
+{
+	termios_reset(tty);
+	tty->winsize.ws_row = 25;
+	tty->winsize.ws_col = 80;
+	tty->winsize.ws_xpixel = 0;
+	tty->winsize.ws_ypixel = 0;
+	tty->flags = 0;
+}
+
 int register_tty(__dev_t dev)
 {
 	struct tty *tty;
@@ -198,12 +208,8 @@ int register_tty(__dev_t dev)
 		if(!tty_table[n].dev) {
 			tty = &tty_table[n];
 			memset_b(tty, 0, sizeof(struct tty));
+			tty_reset(tty);
 			tty->dev = dev;
-			termios_reset(tty);
-			tty->winsize.ws_row = 25;
-			tty->winsize.ws_col = 80;
-			tty->winsize.ws_xpixel = 0;
-			tty->winsize.ws_ypixel = 0;
 			for(n = 0; n < MAX_TAB_COLS; n++) {
 				if(!(n % TAB_SIZE)) {
 					tty->tab_stop[n] = 1;

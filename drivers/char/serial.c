@@ -278,16 +278,6 @@ static void serial_deltab(struct tty *tty)
 	}
 }
 
-static void serial_reset(struct tty *tty)
-{
-	termios_reset(tty);
-	tty->winsize.ws_row = 25;
-	tty->winsize.ws_col = 80;
-	tty->winsize.ws_xpixel = 0;
-	tty->winsize.ws_ypixel = 0;
-	tty->flags = 0;
-}
-
 static void serial_errors(struct serial *s, int status)
 {
 	struct tty *tty;
@@ -564,13 +554,13 @@ static int register_serial(struct serial *s, int minor)
 			tty->stop = serial_stop;
 			tty->start = serial_start;
 			tty->deltab = serial_deltab;
-			tty->reset = serial_reset;
+			tty->reset = tty_reset;
 			tty->input = do_cook;
 			tty->output = serial_write;
 			tty->open = serial_open;
 			tty->close = serial_close;
 			tty->set_termios = serial_set_termios;
-			serial_reset(tty);
+			tty_reset(tty);
 			for(n = 0; n < MAX_TAB_COLS; n++) {
 				if(!(n % TAB_SIZE)) {
 					tty->tab_stop[n] = 1;

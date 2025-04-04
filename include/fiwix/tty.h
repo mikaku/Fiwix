@@ -61,6 +61,7 @@ struct tty {
 };
 extern struct tty tty_table[];
 
+void tty_reset(struct tty *);
 int register_tty(__dev_t);
 void unregister_tty(struct tty *);
 struct tty *get_tty(__dev_t);
