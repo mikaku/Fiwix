@@ -116,7 +116,7 @@ struct procfs_dir_entry *get_procfs_by_inode(struct inode *i)
 	struct procfs_dir_entry *d;
 
 	inode = i->inode;
-	for(lev = 0; procfs_array[lev]; lev++) {
+	for(lev = 0; procfs_array[lev][0].inode; lev++) {
 		if(lev == PROC_PID_LEV) {	/* PID entries */
 			if((i->inode & 0xF0000000) == PROC_PID_INO) {
 				inode = i->inode & 0xF0000FFF;
