@@ -13,8 +13,6 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_UNIX98_PTYS
-extern struct devpts_files *devpts_list;
-
 int devpts_lookup(const char *name, struct inode *dir, struct inode **i_res)
 {
 	__ino_t inode;

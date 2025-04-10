@@ -15,8 +15,6 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_UNIX98_PTYS
-extern struct devpts_files *devpts_list;
-
 struct fs_operations devpts_dir_fsop = {
 	0,
 	0,
@@ -103,7 +101,8 @@ int devpts_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_
 				sprintk(numstr, "%d", offset - 2);
 				name = numstr;
 			} else {
-				break;
+				offset++;
+				continue;
 			}
 		}
 		name_len = strlen(name);
