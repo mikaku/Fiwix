@@ -548,8 +548,7 @@ static int register_serial(struct serial *s, int minor)
 				sp = &(*sp)->next;
 			} while(*sp);
 		}
-		if(!register_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor))) {
-			tty = get_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor));
+		if((tty = register_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor)))) {
 			tty->driver_data = (void *)s;
 			tty->stop = serial_stop;
 			tty->start = serial_start;

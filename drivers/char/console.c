@@ -985,8 +985,7 @@ void console_init(void)
 	}
 
 	for(n = 1; n <= NR_VCONSOLES; n++) {
-		if(!register_tty(MKDEV(VCONSOLES_MAJOR, n))) {
-			tty = get_tty(MKDEV(VCONSOLES_MAJOR, n));
+		if((tty = register_tty(MKDEV(VCONSOLES_MAJOR, n)))) {
 			tty->driver_data = (void *)&vc[n];
 			tty->stop = vconsole_stop;
 			tty->start = vconsole_start;

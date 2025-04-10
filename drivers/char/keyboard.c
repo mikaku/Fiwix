@@ -556,7 +556,6 @@ void irq_keyboard(int num, struct sigcontext *sc)
 
 void irq_keyboard_bh(struct sigcontext *sc)
 {
-	int n;
 	struct tty *tty;
 	struct vconsole *vc;
 	char value;
@@ -598,21 +597,22 @@ void irq_keyboard_bh(struct sigcontext *sc)
 		sysrq(sysrq_op);
 	}
 
-	tty = &tty_table[0];
-	for(n = 0; n < NR_VCONSOLES; n++, tty++) {
-		if(!tty->read_q.count) {
-			continue;
+	for(tty = tty_table; tty; tty = tty->next) {
+		if(MAJOR(tty->dev) == VCONSOLES_MAJOR && MINOR(tty->dev) < NR_VCONSOLES) {
+			if(!tty->read_q.count) {
+				continue;
+			}
+			if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
+				wakeup(&tty->read_q);
+				continue;
+			}
+			if(lock_area(AREA_TTY_READ)) {
+				keyboard_bh.flags |= BH_ACTIVE;
+				continue;
+			}
+			tty->input(tty);
+			unlock_area(AREA_TTY_READ);
 		}
-		if(tty->kbd.mode == K_RAW || tty->kbd.mode == K_MEDIUMRAW) {
-			wakeup(&tty->read_q);
-			continue;
-		}
-		if(lock_area(AREA_TTY_READ)) {
-			keyboard_bh.flags |= BH_ACTIVE;
-			continue;
-		}
-		tty->input(tty);
-		unlock_area(AREA_TTY_READ);
 	}
 }
 

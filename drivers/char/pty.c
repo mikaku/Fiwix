@@ -193,10 +193,10 @@ int pty_close(struct tty *tty)
 	wakeup(&pty_read);
 	wakeup(&do_select);
 	if(MAJOR(tty->dev) == PTY_SLAVE_MAJOR) {
-		dp = (struct devpts_files *)tty->driver_data;
 		minor = MINOR(tty->dev);
 		CLEAR_MINOR(pty_slave_device.minors, minor);
 		unregister_device(CHR_DEV, &pty_slave_device);
+		dp = (struct devpts_files *)tty->driver_data;
 		i = (struct inode *)dp->inode;
 		if(tty->count < 2) {
 			if(tty->link) {
@@ -292,8 +292,7 @@ void pty_init(void)
 	struct tty *tty;
 
 	SET_MINOR(pty_master_device.minors, PTY_MASTER_MINOR);
-	if(!register_tty(MKDEV(PTY_MASTER_MAJOR, PTY_MASTER_MINOR))) {
-		tty = get_tty(MKDEV(PTY_MASTER_MAJOR, PTY_MASTER_MINOR));
+	if((tty = register_tty(MKDEV(PTY_MASTER_MAJOR, PTY_MASTER_MINOR)))) {
 		tty->open = pty_open;
 		tty->close = pty_close;
 		if(register_device(CHR_DEV, &pty_master_device)) {

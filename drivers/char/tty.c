@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/kernel.h>
+#include <fiwix/asm.h>
 #include <fiwix/ioctl.h>
 #include <fiwix/tty.h>
 #include <fiwix/ctype.h>
@@ -21,6 +22,7 @@
 #include <fiwix/kd.h>
 #include <fiwix/pty.h>
 #include <fiwix/fs_devpts.h>
+#include <fiwix/mm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -28,7 +30,7 @@
 #define VCONSOLE_DEV	MKDEV(VCONSOLES_MAJOR, 0)
 #define TTY_DEV		MKDEV(SYSCON_MAJOR, 0)
 
-struct tty tty_table[NR_TTYS];
+struct tty *tty_table;
 extern short int current_cons;
 
 static void wait_vtime_off(unsigned int arg)
@@ -195,43 +197,72 @@ void tty_reset(struct tty *tty)
 	tty->flags = 0;
 }
 
-int register_tty(__dev_t dev)
+struct tty *register_tty(__dev_t dev)
 {
-	struct tty *tty;
+	unsigned long int flags;
+	struct tty *tty, *t;
 	int n;
 
-	for(n = 0; n < NR_TTYS; n++) {
-		if(tty_table[n].dev == dev) {
-			printk("ERROR: %s(): tty device %d,%d already registered!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
-			return 1;
-		}
-		if(!tty_table[n].dev) {
-			tty = &tty_table[n];
-			memset_b(tty, 0, sizeof(struct tty));
-			tty_reset(tty);
-			tty->dev = dev;
-			for(n = 0; n < MAX_TAB_COLS; n++) {
-				if(!(n % TAB_SIZE)) {
-					tty->tab_stop[n] = 1;
-				} else {
-					tty->tab_stop[n] = 0;
-				}
+	if(!(tty = (struct tty *)kmalloc(sizeof(struct tty)))) {
+		return NULL;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if((t = tty_table)) {
+		for(;;) {
+			if(t->dev == dev) {
+				printk("ERROR: %s(): tty device %d,%d already registered!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
+				RESTORE_FLAGS(flags);
+				kfree((unsigned int)tty);
+				return NULL;
 			}
-			return 0;
+			if(t->next) {
+				t = t->next;
+			} else {
+				break;
+			}
+		}
+		t->next = tty;
+	} else {
+		tty_table = tty;
+	}
+	RESTORE_FLAGS(flags);
+
+	memset_b(tty, 0, sizeof(struct tty));
+	tty_reset(tty);
+	tty->dev = dev;
+	for(n = 0; n < MAX_TAB_COLS; n++) {
+		if(!(n % TAB_SIZE)) {
+			tty->tab_stop[n] = 1;
+		} else {
+			tty->tab_stop[n] = 0;
 		}
 	}
-	printk("ERROR: %s(): tty table is full!\n", __FUNCTION__);
-	return 1;
+	return tty;
 }
 
 void unregister_tty(struct tty *tty)
 {
-	memset_b(tty, 0, sizeof(struct tty));
+	unsigned long int flags;
+	struct tty *t;
+
+	SAVE_FLAGS(flags); CLI();
+	if(tty == tty_table) {
+		tty_table = tty->next;
+	} else {
+		t = tty_table;
+		while(t->next != tty) {
+			t = t->next;
+		}
+		t->next = tty->next;
+	}
+	kfree((unsigned int)tty);
+	RESTORE_FLAGS(flags);
 }
 
 struct tty *get_tty(__dev_t dev)
 {
-	int n;
+	struct tty *tty;
 
 	if(!dev) {
 		return NULL;
@@ -255,9 +286,9 @@ struct tty *get_tty(__dev_t dev)
 		dev = current->ctty->dev;
 	}
 
-	for(n = 0; n < NR_TTYS; n++) {
-		if(tty_table[n].dev == dev) {
-			return &tty_table[n];
+	for(tty = tty_table; tty; tty = tty->next) {
+		if(tty->dev == dev) {
+			return tty;
 		}
 	}
 	return NULL;
@@ -496,8 +527,7 @@ int tty_open(struct inode *i, struct fd *f)
 	if(i->rdev == PTMX_DEV) {
 		dp = (struct devpts_files *)tty->driver_data;
 		oi = (struct inode *)dp->inode;
-		if(!register_tty(oi->rdev)) {
-			otty = get_tty(oi->rdev);
+		if((otty = register_tty(oi->rdev))) {
 			otty->input = do_cook;
 			otty->output = pty_wakeup_read;
 			otty->open = pty_open;
@@ -1107,5 +1137,5 @@ int tty_select(struct inode *i, struct fd *f, int flag)
 void tty_init(void)
 {
 	charq_init();
-	memset_b(tty_table, 0, sizeof(tty_table));
+	tty_table = NULL;
 }

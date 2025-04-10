@@ -15,8 +15,6 @@
 #include <fiwix/console.h>
 #include <fiwix/serial.h>
 
-#define NR_TTYS		NR_VCONSOLES + NR_SERIAL
-
 #define TAB_SIZE	8
 #define MAX_TAB_COLS	132	/* maximum number of tab stops */
 
@@ -47,6 +45,7 @@ struct tty {
 	int column;
 	int flags;
 	struct tty *link;
+	struct tty *next;
 
 	/* tty driver operations */
 	void (*stop)(struct tty *);
@@ -59,10 +58,10 @@ struct tty {
 	int (*close)(struct tty *);
 	void (*set_termios)(struct tty *);
 };
-extern struct tty tty_table[];
+extern struct tty *tty_table;
 
 void tty_reset(struct tty *);
-int register_tty(__dev_t);
+struct tty *register_tty(__dev_t);
 void unregister_tty(struct tty *);
 struct tty *get_tty(__dev_t);
 void disassociate_ctty(struct tty *);
