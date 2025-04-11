@@ -1078,6 +1078,17 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			break;
 		}
 
+		case TIOCINQ:
+		{
+			int *val = (int *)arg;
+			if(tty->termios.c_lflag & ICANON) {
+				*val = tty->cooked_q.count;
+			} else {
+				*val = tty->read_q.count;
+			}
+			break;
+		}
+
 #ifdef CONFIG_UNIX98_PTYS
 		case TIOCGPTN:
 		{
