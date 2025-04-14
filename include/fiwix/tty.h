@@ -56,6 +56,7 @@ struct tty {
 	void (*output)(struct tty *);
 	int (*open)(struct tty *);
 	int (*close)(struct tty *);
+	int (*ioctl)(struct tty *, struct fd *, int cmd, unsigned int);
 	void (*set_termios)(struct tty *);
 };
 extern struct tty *tty_table;

@@ -532,6 +532,7 @@ int tty_open(struct inode *i, struct fd *f)
 			otty->output = pty_wakeup_read;
 			otty->open = pty_open;
 			otty->close = pty_close;
+			otty->ioctl = pty_ioctl;
 			otty->driver_data = tty->driver_data;
 			otty->count++;
 			otty->flags |= TTY_PTY_LOCK;
@@ -798,6 +799,7 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 	int errno;
 
 	tty = f->private_data;
+	errno = 0;
 
 	switch(cmd) {
 		/*
@@ -1032,16 +1034,10 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 				return errno;
 			}
 			changed = 0;
-			if(tty->winsize.ws_row != ws->ws_row) {
-				changed = 1;
-			}
-			if(tty->winsize.ws_col != ws->ws_col) {
-				changed = 1;
-			}
-			if(tty->winsize.ws_xpixel != ws->ws_xpixel) {
-				changed = 1;
-			}
-			if(tty->winsize.ws_ypixel != ws->ws_ypixel) {
+			if(tty->winsize.ws_row != ws->ws_row ||
+			   tty->winsize.ws_col != ws->ws_col ||
+			   tty->winsize.ws_xpixel != ws->ws_xpixel ||
+			   tty->winsize.ws_ypixel != ws->ws_ypixel) {
 				changed = 1;
 			}
 			tty->winsize.ws_row = ws->ws_row;
@@ -1077,7 +1073,6 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			}
 			break;
 		}
-
 		case TIOCINQ:
 		{
 			int *val = (int *)arg;
@@ -1088,30 +1083,13 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			}
 			break;
 		}
-
-#ifdef CONFIG_UNIX98_PTYS
-		case TIOCGPTN:
-		{
-			unsigned int *val = (unsigned int *)arg;
-			*val = MINOR(tty->dev);
-			return 0;
-		}
-		case TIOCSPTLCK:
-		{
-			int val = *(unsigned int *)arg;
-			if(val) {
-				tty->flags |= TTY_PTY_LOCK;
-			} else {
-				tty->flags &= ~TTY_PTY_LOCK;
-			}
-			return 0;
-		}
-#endif /* CONFIG_UNIX98_PTYS */
-
 		default:
-			return vt_ioctl(tty, cmd, arg);
+			errno = vt_ioctl(tty, cmd, arg);
+			if(tty->ioctl) {
+				errno = tty->ioctl(tty, f, cmd, arg);
+			}
 	}
-	return 0;
+	return errno;
 }
 
 __loff_t tty_llseek(struct inode *i, __loff_t offset)

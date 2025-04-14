@@ -12,6 +12,7 @@
 #include <fiwix/filesystems.h>
 #include <fiwix/fs_devpts.h>
 #include <fiwix/stat.h>
+#include <fiwix/ioctl.h>
 #include <fiwix/sleep.h>
 #include <fiwix/sched.h>
 #include <fiwix/stdio.h>
@@ -261,6 +262,31 @@ int pty_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 	tty->input(tty);
 	wakeup(&do_select);
 	return n;
+}
+
+int pty_ioctl(struct tty *tty, struct fd *f, int cmd, unsigned int arg)
+{
+	switch(cmd) {
+		case TIOCGPTN:
+		{
+			unsigned int *val = (unsigned int *)arg;
+			*val = MINOR(tty->dev);
+			break;
+		}
+		case TIOCSPTLCK:
+		{
+			int val = *(unsigned int *)arg;
+			if(val) {
+				tty->flags |= TTY_PTY_LOCK;
+			} else {
+				tty->flags &= ~TTY_PTY_LOCK;
+			}
+			break;
+		}
+		default:
+			return -EINVAL;
+	}
+	return 0;
 }
 
 int pty_select(struct inode *i, struct fd *f, int flag)

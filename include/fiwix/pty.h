@@ -21,6 +21,7 @@ int pty_open(struct tty *);
 int pty_close(struct tty *);
 int pty_read(struct inode *, struct fd *, char *, __size_t);
 int pty_write(struct inode *, struct fd *, const char *, __size_t);
+int pty_ioctl(struct tty *, struct fd *, int, unsigned int);
 int pty_select(struct inode *, struct fd *, int);
 void pty_init(void);
 
