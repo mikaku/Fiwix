@@ -18,8 +18,6 @@
 #define TAB_SIZE	8
 #define MAX_TAB_COLS	132	/* maximum number of tab stops */
 
-#define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : '\0')
-
 /* tty flags */
 #define TTY_HAS_LNEXT		0x01
 #define TTY_OTHER_CLOSED	0x02
