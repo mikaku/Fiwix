@@ -221,7 +221,8 @@ int pty_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 
 	n = 0;
 	while(n < count) {
-		if((ch = charq_getchar(&tty->write_q))) {
+		if(tty->write_q.count > 0) {
+			ch = charq_getchar(&tty->write_q);
 			buffer[n++] = ch;
 			continue;
 		}
