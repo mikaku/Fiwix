@@ -8,8 +8,8 @@
 #ifndef _FIWIX_CHARQ_H
 #define _FIWIX_CHARQ_H
 
-#define CBSIZE		32	/* number of characters in cblock */
-#define NR_CB_QUEUE	8	/* number of cblocks per queue */
+#define CBSIZE		1024	/* number of characters in cblock */
+#define NR_CB_QUEUE	1	/* number of cblocks per queue */
 
 #define LAST_CHAR(q)	((q)->tail ? (q)->tail->data[(q)->tail->end_off - 1] : '\0')
 

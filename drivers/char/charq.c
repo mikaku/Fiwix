@@ -23,7 +23,7 @@
  *  (cblock)          (cblock)               (cblock)
  */
 
-#define CB_POOL_SIZE	128	/* number of cblocks in the central pool */
+#define CB_POOL_SIZE	64	/* number of cblocks in the central pool */
 
 struct cblock cblock_pool[CB_POOL_SIZE];
 struct cblock *cblock_pool_head;
