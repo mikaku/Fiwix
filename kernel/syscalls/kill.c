@@ -23,7 +23,7 @@ int sys_kill(__pid_t pid, __sigset_t signum)
 	printk("(pid %d) sys_kill(%d, %d)\n", current->pid, pid, signum);
 #endif /*__DEBUG__ */
 
-	if(signum < 1 || signum > NSIG) {
+	if(signum > NSIG) {
 		return -EINVAL;
 	}
 	if(pid == -1) {
