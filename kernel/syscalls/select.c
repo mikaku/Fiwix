@@ -20,12 +20,15 @@ static int check_fds(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds)
 	int n, bit;
 	unsigned int set;
 
-	n = bit = 0;
-	while(bit < nfds) {
+	n = 0;
+	for(;;) {
 		bit = n * __NFDBITS;
+		if(bit >= nfds) {
+			break;
+		}
 		set = rfds->fds_bits[n] | wfds->fds_bits[n] | efds->fds_bits[n];
 		while(set) {
-			if(__FD_ISSET(bit, rfds)) {
+			if(__FD_ISSET(bit, rfds) || __FD_ISSET(bit, wfds) || __FD_ISSET(bit, efds)) {
 				CHECK_UFD(bit);
 			}
 			set >>= 1;
