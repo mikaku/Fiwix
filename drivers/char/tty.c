@@ -343,6 +343,40 @@ void termios_reset(struct tty *tty)
 	tty->termios.c_cc[VEOL2]    = 0;	
 }
 
+void tty_deltab(struct tty *tty)
+{
+	unsigned short int col, n, count;
+	struct cblock *cb;
+	unsigned char ch;
+
+	cb = tty->cooked_q.head;
+	col = count = 0;
+
+	while(cb) {
+		for(n = 0; n < cb->end_off; n++) {
+			if(n >= cb->start_off) {
+				ch = cb->data[n];
+				if(ch == '\t') {
+					while(!tty->tab_stop[++col]);
+				} else {
+					col++;
+					if(ISCNTRL(ch) && !ISSPACE(ch) && tty->termios.c_lflag & ECHOCTL) {
+						col++;
+					}
+				}
+				col %= tty->winsize.ws_col;
+			}
+		}
+		cb = cb->next;
+	}
+	count = tty->column - col;
+
+	while(count--) {
+		charq_putchar(&tty->write_q, '\b');
+		tty->column--;
+	}
+}
+
 void do_cook(struct tty *tty)
 {
 	int n;
@@ -528,15 +562,20 @@ int tty_open(struct inode *i, struct fd *f)
 		dp = (struct devpts_files *)tty->driver_data;
 		oi = (struct inode *)dp->inode;
 		if((otty = register_tty(oi->rdev))) {
+			otty->count++;
+			otty->driver_data = tty->driver_data;
+			otty->flags |= TTY_PTY_LOCK;
+			otty->link = tty;
+			/* FIXME
+			otty->stop =
+			otty->start =
+			*/
+			otty->deltab = tty_deltab;
 			otty->input = do_cook;
 			otty->output = pty_wakeup_read;
 			otty->open = pty_open;
 			otty->close = pty_close;
 			otty->ioctl = pty_ioctl;
-			otty->driver_data = tty->driver_data;
-			otty->count++;
-			otty->flags |= TTY_PTY_LOCK;
-			otty->link = tty;
 			f->private_data = otty;
 		} else {
 			printk("WARNING: %s(): unable to register pty slave (%d,%d).\n", __FUNCTION__, MAJOR(oi->rdev), MINOR(oi->rdev));

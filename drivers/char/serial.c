@@ -244,40 +244,6 @@ static void serial_start(struct tty *tty)
 	RESTORE_FLAGS(flags);
 }
 
-static void serial_deltab(struct tty *tty)
-{
-	unsigned short int col, n, count;
-	struct cblock *cb;
-	unsigned char ch;
-
-	cb = tty->cooked_q.head;
-	col = count = 0;
-
-	while(cb) {
-		for(n = 0; n < cb->end_off; n++) {
-			if(n >= cb->start_off) {
-				ch = cb->data[n];
-				if(ch == '\t') {
-					while(!tty->tab_stop[++col]);
-				} else {
-					col++;
-					if(ISCNTRL(ch) && !ISSPACE(ch) && tty->termios.c_lflag & ECHOCTL) {
-						col++;
-					}
-				}
-				col %= 80;
-			}
-		}
-		cb = cb->next;
-	}
-	count = tty->column - col;
-
-	while(count--) {
-		charq_putchar(&tty->write_q, '\b');
-		tty->column--;
-	}
-}
-
 static void serial_errors(struct serial *s, int status)
 {
 	struct tty *tty;
@@ -552,7 +518,7 @@ static int register_serial(struct serial *s, int minor)
 			tty->driver_data = (void *)s;
 			tty->stop = serial_stop;
 			tty->start = serial_start;
-			tty->deltab = serial_deltab;
+			tty->deltab = tty_deltab;
 			tty->reset = tty_reset;
 			tty->input = do_cook;
 			tty->output = serial_write;

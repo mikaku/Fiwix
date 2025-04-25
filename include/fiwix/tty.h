@@ -65,6 +65,7 @@ void unregister_tty(struct tty *);
 struct tty *get_tty(__dev_t);
 void disassociate_ctty(struct tty *);
 void termios_reset(struct tty *);
+void tty_deltab(struct tty *);
 void do_cook(struct tty *);
 int tty_open(struct inode *, struct fd *);
 int tty_close(struct inode *, struct fd *);
