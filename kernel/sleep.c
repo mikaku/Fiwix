@@ -126,6 +126,7 @@ void wakeup(void *address)
 		if((*h)->sleep_address == address) {
 			(*h)->sleep_address = NULL;
 			(*h)->flags &= ~PF_NOTINTERRUPT;
+			(*h)->cpu_count = (*h)->priority;
 			runnable(*h);
 			need_resched = 1;
 			if((*h)->next_sleep) {
