@@ -49,7 +49,8 @@
 #define DEV_RESET_OK		0xAA	/* self-test passed */
 #define DEV_ACK			0xFA	/* acknowledge */
 
-#define PS2_TIMEOUT		600000
+#define PS2_READ_TIMEOUT	250000
+#define PS2_WRITE_TIMEOUT	500000
 
 extern volatile unsigned char ack;
 

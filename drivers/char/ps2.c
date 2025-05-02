@@ -7,6 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/config.h>
 #include <fiwix/ps2.h>
 #include <fiwix/keyboard.h>
@@ -34,7 +35,7 @@ static int is_ready_to_read(void)
 {
 	int n;
 
-	for(n = 0; n < PS2_TIMEOUT; n++) {
+	for(n = 0; n < PS2_READ_TIMEOUT; n++) {
 		if(ack) {
 			return 1;
 		}
@@ -51,7 +52,7 @@ static int is_ready_to_write(void)
 {
 	int n;
 
-	for(n = 0; n < PS2_TIMEOUT; n++) {
+	for(n = 0; n < PS2_WRITE_TIMEOUT; n++) {
 		if(!(inport_b(PS2_STATUS) & PS2_STAT_INBUSY)) {
 			return 1;
 		}
@@ -142,25 +143,27 @@ void ps2_init(void)
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
 	config = ps2_read(PS2_DATA);
 
-	/* set controller configuration (disabling IRQs) */
-	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
-	ps2_write(PS2_DATA, config & ~(0x01 | 0x02));
+	if(!kparms.ps2_noreset) {
+		/* set controller configuration (disabling IRQs) */
+		ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
+		ps2_write(PS2_DATA, config & ~(0x01 | 0x02));
 
-	/* PS/2 controller self-test */
-	ps2_write(PS2_COMMAND, PS2_CMD_SELF_TEST);
-	if((errno = ps2_read(PS2_DATA)) != 0x55) {
-		printk("WARNING: %s(): PS/2 controller returned 0x%x in self-test (expected 0x55).\n", __FUNCTION__, errno);
-		return;
-	} else {
-		supp_ports = 1;
+		/* PS/2 controller self-test */
+		ps2_write(PS2_COMMAND, PS2_CMD_SELF_TEST);
+		if((errno = ps2_read(PS2_DATA)) != 0x55) {
+			printk("WARNING: %s(): PS/2 controller not returned 0x55 after self-test (was 0x%x). Try with the parameter 'ps2_noreset=1'.\n", __FUNCTION__, errno);
+			return;
+		} else {
+			supp_ports = 1;
+		}
+
+		/*
+		 * This sets again the controller configuration since the previous
+		 * step may also reset the PS/2 controller to its power-on defaults.
+		 */
+		ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
+		ps2_write(PS2_DATA, config);
 	}
-
-	/*
-	 * This sets again the controller configuration since the previous
-	 * step may also reset the PS/2 controller to its power-on defaults.
-	 */
-	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
-	ps2_write(PS2_DATA, config);
 
 	/* double-check if we have a second channel */
 	if(config & 0x20) {

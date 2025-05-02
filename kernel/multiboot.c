@@ -23,6 +23,10 @@
 #include <fiwix/sysconsole.h>
 
 static struct kernel_params_value kparamval_table[] = {
+	{ "ps2_noreset=",
+	   { "0", "1" },
+	   { 0, 1 }
+	},
 #ifdef CONFIG_BGA
 	{ "bga=",
 	   { "640x480x32", "800x600x32", "1024x768x32" },
@@ -97,6 +101,15 @@ static int check_param(struct kernel_params_value *kpv, const char *value)
 {
 	int n;
 
+	if(!strcmp(kpv->name, "ps2_noreset=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(atoi(kpv->value[n]), atoi(value)) {
+				kparms.ps2_noreset = atoi(value);
+				return 0;
+			}
+		}
+		return 1;
+	}
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 	if(!strcmp(kpv->name, "bga=")) {

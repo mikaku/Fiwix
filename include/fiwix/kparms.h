@@ -12,6 +12,7 @@
 #define CMDL_NUM_VALUES	30	/* max. values of cmdline parameter */
 
 struct kernel_params {
+	int ps2_noreset;
 	char bgaresolution[15 + 1];
 	char initrd[DEVNAME_MAX + 1];
 	int memsize;
