@@ -8,6 +8,7 @@
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/limits.h>
+#include <fiwix/kparms.h>
 #include <fiwix/fs.h>
 #include <fiwix/system.h>
 #include <fiwix/version.h>
@@ -34,21 +35,9 @@
 #include <fiwix/kexec.h>
 #include <fiwix/sysconsole.h>
 
-int kparm_memsize;
-int kparm_extmemsize;
-int kparm_rootdev;
-int kparm_ramdisksize;
-char kparm_rootfstype[10];
-char kparm_rootdevname[DEVNAME_MAX + 1];
-char kparm_initrd[DEVNAME_MAX + 1];
-int kparm_syscondev = 0;
-char kparm_bgaresolution[15];
-int kparm_ro;
-
+struct kernel_params kparms;
+struct kernel_stat kstat;
 unsigned int _last_data_addr;
-char *init_args;
-
-char kernel_cmdline[NAME_MAX + 1];
 
 struct new_utsname sys_utsname = {
 	UTS_SYSNAME,
@@ -59,19 +48,17 @@ struct new_utsname sys_utsname = {
 	UTS_DOMAINNAME,
 };
 
-struct kernel_stat kstat;
-
 static void set_default_values(void)
 {
 	/* filesystem is ext2 */
-	if(!kparm_rootfstype[0]) {
-		strcpy(kparm_rootfstype, "ext2");
+	if(!kparms.rootfstype[0]) {
+		strcpy(kparms.rootfstype, "ext2");
 	}
 
 	/* console is /dev/tty0 */
-	if(!kparm_syscondev) {
-		kparm_syscondev = MKDEV(VCONSOLES_MAJOR, 0);
-		add_sysconsoledev(kparm_syscondev);
+	if(!kparms.syscondev) {
+		kparms.syscondev = MKDEV(VCONSOLES_MAJOR, 0);
+		add_sysconsoledev(kparms.syscondev);
 	}
 }
 

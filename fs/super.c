@@ -7,6 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/types.h>
 #include <fiwix/errno.h>
 #include <fiwix/fs.h>
@@ -221,26 +222,26 @@ int mount_root(void)
 	 * check if '_rootdev' is a device successfully registered.
 	 */
 
-	if(!kparm_rootdev) {
+	if(!kparms.rootdev) {
 		PANIC("root device not defined.\n");
 	}
 
-	if(!(fs = get_filesystem(kparm_rootfstype))) {
-		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'ext2'.\n", __FUNCTION__, kparm_rootfstype);
+	if(!(fs = get_filesystem(kparms.rootfstype))) {
+		printk("WARNING: %s(): '%s' is not a registered filesystem. Defaulting to 'ext2'.\n", __FUNCTION__, kparms.rootfstype);
 		if(!(fs = get_filesystem("ext2"))) {
 			PANIC("ext2 filesystem is not registered!\n");
 		}
 	}
 
-	if(!(mp = add_mount_point(kparm_rootdev, "/dev/root", "/"))) {
+	if(!(mp = add_mount_point(kparms.rootdev, "/dev/root", "/"))) {
 		PANIC("unable to get a free mount point.\n");
 	}
 
-	if(kparm_ro) {
+	if(kparms.ro) {
 		mp->sb.flags = MS_RDONLY;
 	}
-	if(fs->fsop->read_superblock(kparm_rootdev, &mp->sb)) {
-		PANIC("unable to mount root filesystem on %s.\n", kparm_rootdevname);
+	if(fs->fsop->read_superblock(kparms.rootdev, &mp->sb)) {
+		PANIC("unable to mount root filesystem on %s.\n", kparms.rootdevname);
 	}
 
 	mp->sb.root->mount_point = mp->sb.root;

@@ -7,6 +7,7 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/config.h>
 #include <fiwix/bga.h>
 #include <fiwix/pci.h>
@@ -44,7 +45,7 @@ void bga_init(void)
 	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
 		return;
 	}
-	if(!(*kparm_bgaresolution)) {
+	if(!(*kparms.bgaresolution)) {
 		return;
 	}
 

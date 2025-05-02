@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/asm.h>
 #include <fiwix/ioctl.h>
 #include <fiwix/tty.h>
@@ -270,7 +271,7 @@ struct tty *get_tty(__dev_t dev)
 
 	/* /dev/console = system console */
 	if(dev == SYSCON_DEV) {
-		dev = (__dev_t)kparm_syscondev;
+		dev = (__dev_t)kparms.syscondev;
 	}
 
 	/* /dev/tty0 = current virtual console */
@@ -542,7 +543,7 @@ int tty_open(struct inode *i, struct fd *f)
 
 	if(!(tty = get_tty(i->rdev))) {
 		printk("%s(): oops! (%x)\n", __FUNCTION__, i->rdev);
-		printk("_syscondev = %x\n", kparm_syscondev);
+		printk("_syscondev = %x\n", kparms.syscondev);
 		return -ENXIO;
 	}
 

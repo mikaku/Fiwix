@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/system.h>
 #include <fiwix/types.h>
 #include <fiwix/process.h>
@@ -691,7 +692,7 @@ int data_proc_pid_mountinfo(char *buffer, __pid_t pid)
 			flag = mp->sb.flags & MS_RDONLY ? "ro" : "rw";
 			devname = mp->devname;
 			if(!strcmp(devname, "/dev/root")) {
-				devname = kparm_rootdevname;
+				devname = kparms.rootdevname;
 			}
 			size += sprintk(buffer + size, "%d 0 %d:%d %s %s %s - %s %s %s\n", n, MAJOR(mp->dev), MINOR(mp->dev), "/", mp->dirname, flag, mp->fs->name, devname, flag);
 		}

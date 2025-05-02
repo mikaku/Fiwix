@@ -22,6 +22,7 @@
 
 #define INIT_TRAMPOLINE_SIZE	256	/* max. size of init_trampoline() */
 
+char *init_args;
 char *init_argv[] = { INIT_PROGRAM, NULL, NULL };
 char *init_envp[] = { "HOME=/", "TERM=linux", NULL };
 

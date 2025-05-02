@@ -22,20 +22,88 @@
 #include <fiwix/fbcon.h>
 #include <fiwix/sysconsole.h>
 
+static struct kernel_params_value kparamval_table[] = {
+#ifdef CONFIG_BGA
+	{ "bga=",
+	   { "640x480x32", "800x600x32", "1024x768x32" },
+	   { 0 }
+	},
+#endif /* CONFIG_BGA */
+	{ "console=",
+	   { "/dev/tty0", "/dev/tty1", "/dev/tty2", "/dev/tty3", "/dev/tty4",
+	     "/dev/tty5", "/dev/tty6", "/dev/tty7", "/dev/tty8", "/dev/tty9",
+	     "/dev/tty10", "/dev/tty11", "/dev/tty12",
+	     "/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3"
+	   },
+	   { 0x400, 0x401, 0x402, 0x403, 0x404,
+	     0x405, 0x406, 0x407, 0x408, 0x409,
+	     0x40A, 0x40B, 0x40C,
+	     0x440, 0x441, 0x442, 0x443
+	   }
+	},
+	{ "initrd=",
+	   { 0 },
+	   { 0 },
+	},
+#ifdef CONFIG_KEXEC
+	{ "kexec_proto=",
+	   { "multiboot1", "linux" },
+	   { 1, 2 },
+	},
+	{ "kexec_size=",
+	   { 0 },
+	   { 0 },
+	},
+	{ "kexec_cmdline=",
+	   { 0 },
+	   { 0 },
+	},
+#endif /* CONFIG_KEXEC */
+	{ "ramdisksize=",
+	   { 0 },
+	   { 0 },
+	},
+	{ "ro",
+	   { 0 },
+	   { 0 },
+	},
+	{ "root=",
+	   { "/dev/ram0", "/dev/fd0", "/dev/fd1",
+	     "/dev/hda", "/dev/hda1", "/dev/hda2", "/dev/hda3", "/dev/hda4",
+	     "/dev/hdb", "/dev/hdb1", "/dev/hdb2", "/dev/hdb3", "/dev/hdb4",
+	     "/dev/hdc", "/dev/hdc1", "/dev/hdc2", "/dev/hdc3", "/dev/hdc4",
+	     "/dev/hdd", "/dev/hdd1", "/dev/hdd2", "/dev/hdd3", "/dev/hdd4",
+	   },
+	   { 0x100, 0x200, 0x201,
+	     0x300, 0x301, 0x302, 0x303, 0x304,
+	     0x340, 0x341, 0x342, 0x343, 0x344,
+	     0x1600, 0x1601, 0x1602, 0x1603, 0x1604,
+	     0x1640, 0x1641, 0x1642, 0x1643, 0x1644,
+	   }
+	},
+	{ "rootfstype=",
+	   { "minix", "ext2", "iso9660" },
+	   { 0 }
+	},
+
+	{ NULL }
+};
+
+char kernel_cmdline[NAME_MAX + 1];
 Elf32_Shdr *symtab, *strtab;
 
 /* check the validity of a command line parameter */
-static int check_parm(struct kparms *parm, const char *value)
+static int check_param(struct kernel_params_value *kpv, const char *value)
 {
 	int n;
 
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
-	if(!strcmp(parm->name, "bga=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				strncpy(kparm_bgaresolution, value, 14);
-				kparm_bgaresolution[14] = '\0';
+	if(!strcmp(kpv->name, "bga=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(!strcmp(kpv->value[n], value)) {
+				strncpy(kparms.bgaresolution, value, 14);
+				kparms.bgaresolution[14] = '\0';
 				return 0;
 			}
 		}
@@ -43,49 +111,49 @@ static int check_parm(struct kparms *parm, const char *value)
 	}
 #endif /* CONFIG_BGA */
 #endif /* CONFIG_PCI */
-	if(!strcmp(parm->name, "console=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				if(parm->sysval[n]) {
-					if(add_sysconsoledev(parm->sysval[n])) {
-						kparm_syscondev = parm->sysval[n];
+	if(!strcmp(kpv->name, "console=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(!strcmp(kpv->value[n], value)) {
+				if(kpv->sysval[n]) {
+					if(add_sysconsoledev(kpv->sysval[n])) {
+						kparms.syscondev = kpv->sysval[n];
 					} else {
 						printk("WARNING: console device '%s' exceeds NR_SYSCONSOLES.\n", value);
 					}
 					return 0;
 				}
-				printk("WARNING: device name for '%s' is not defined!\n", parm->name);
+				printk("WARNING: device name for '%s' is not defined!\n", kpv->name);
 			}
 		}
 		return 1;
 	}
-	if(!strcmp(parm->name, "initrd=")) {
+	if(!strcmp(kpv->name, "initrd=")) {
 		if(value[0]) {
-			strncpy(kparm_initrd, value, DEVNAME_MAX);
+			strncpy(kparms.initrd, value, DEVNAME_MAX);
 			return 0;
 		}
 	}
 #ifdef CONFIG_KEXEC
-	if(!strcmp(parm->name, "kexec_proto=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				if(parm->sysval[n]) {
-					kexec_proto = parm->sysval[n];
+	if(!strcmp(kpv->name, "kexec_proto=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(!strcmp(kpv->value[n], value)) {
+				if(kpv->sysval[n]) {
+					kexec_proto = kpv->sysval[n];
 					return 0;
 				}
-				printk("WARNING: kexec protocol '%s' is not defined!\n", parm->name);
+				printk("WARNING: kexec protocol '%s' is not defined!\n", kpv->name);
 			}
 		}
 		return 1;
 	}
-	if(!strcmp(parm->name, "kexec_size=")) {
+	if(!strcmp(kpv->name, "kexec_size=")) {
 		if(value[0]) {
 			kexec_size = atoi(value);
 			return 0;
 		}
 		return 1;
 	}
-	if(!strcmp(parm->name, "kexec_cmdline=")) {
+	if(!strcmp(kpv->name, "kexec_cmdline=")) {
 		if(value[0]) {
 			/* copy the provided cmdline and also remove quotes */
 			strncpy(kexec_cmdline, value + 1, MIN(strlen(value) - 2, NAME_MAX));
@@ -94,35 +162,35 @@ static int check_parm(struct kparms *parm, const char *value)
 		return 1;
 	}
 #endif /* CONFIG_KEXEC */
-	if(!strcmp(parm->name, "ramdisksize=")) {
-		kparm_ramdisksize = atoi(value);
+	if(!strcmp(kpv->name, "ramdisksize=")) {
+		kparms.ramdisksize = atoi(value);
 		ramdisk_minors = RAMDISK_DRIVES;
 		return 0;
 	}
-	if(!strcmp(parm->name, "ro")) {
-		kparm_ro = 1;
+	if(!strcmp(kpv->name, "ro")) {
+		kparms.ro = 1;
 		return 0;
 	}
-	if(!strcmp(parm->name, "root=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				kparm_rootdev = parm->sysval[n];
-				strncpy(kparm_rootdevname, value, DEVNAME_MAX);
+	if(!strcmp(kpv->name, "root=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(!strcmp(kpv->value[n], value)) {
+				kparms.rootdev = kpv->sysval[n];
+				strncpy(kparms.rootdevname, value, DEVNAME_MAX);
 				return 0;
 			}
 		}
 		return 1;
 	}
-	if(!strcmp(parm->name, "rootfstype=")) {
-		for(n = 0; parm->value[n]; n++) {
-			if(!strcmp(parm->value[n], value)) {
-				strncpy(kparm_rootfstype, value, sizeof(kparm_rootfstype));
+	if(!strcmp(kpv->name, "rootfstype=")) {
+		for(n = 0; kpv->value[n]; n++) {
+			if(!strcmp(kpv->value[n], value)) {
+				strncpy(kparms.rootfstype, value, sizeof(kparms.rootfstype));
 				return 0;
 			}
 		}
 		return 1;
 	}
-	printk("WARNING: the parameter '%s' looks valid but it's not defined!\n", parm->name);
+	printk("WARNING: the parameter '%s' looks valid but it's not defined!\n", kpv->name);
 	return 0;
 }
 
@@ -145,10 +213,10 @@ static int parse_arg(const char *arg)
 		value++;
 	}
 
-	for(n = 0; parm_table[n].name; n++) {
-		if(!strncmp(arg, parm_table[n].name, value ? value - arg : strlen(arg))) {
-			if(check_parm(&parm_table[n], value)) {
-				printk("WARNING: invalid value '%s' in the '%s' parameter.\n", value, parm_table[n].name);
+	for(n = 0; kparamval_table[n].name; n++) {
+		if(!strncmp(arg, kparamval_table[n].name, value ? value - arg : strlen(arg))) {
+			if(check_param(&kparamval_table[n], value)) {
+				printk("WARNING: invalid value '%s' in the '%s' parameter.\n", value, kparamval_table[n].name);
 			}
 			return 0;
 		}
@@ -216,8 +284,8 @@ static void parse_bgaresolution(void)
 	n = 0;
 	for(;;) {
 		p = &str[0];
-		while(kparm_bgaresolution[n] && kparm_bgaresolution[n] != 'x') {
-			*p = kparm_bgaresolution[n];
+		while(kparms.bgaresolution[n] && kparms.bgaresolution[n] != 'x') {
+			*p = kparms.bgaresolution[n];
 			p++;
 			n++;
 		}
@@ -307,8 +375,8 @@ void multiboot(unsigned int magic, unsigned int info)
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", magic);
 		memset_b(&mbi, 0, sizeof(struct multiboot_info));
-		kparm_memsize = 640;
-		kparm_extmemsize = 3072;
+		kparms.memsize = 640;
+		kparms.extmemsize = 3072;
 		bios_map_init(NULL, 0);
 		video.columns = 80;
 		video.lines = 25;
@@ -326,8 +394,8 @@ void multiboot(unsigned int magic, unsigned int info)
 	if(!(mbi.flags & MULTIBOOT_INFO_MEMORY)) {
 		printk("WARNING: values in mem_lower and mem_upper are not valid!\n");
 	}
-	kparm_memsize = (unsigned int)mbi.mem_lower;
-	kparm_extmemsize = (unsigned int)mbi.mem_upper;
+	kparms.memsize = (unsigned int)mbi.mem_lower;
+	kparms.extmemsize = (unsigned int)mbi.mem_upper;
 
 
 	if(mbi.flags & MULTIBOOT_INFO_CMDLINE) {
@@ -358,7 +426,7 @@ void multiboot(unsigned int magic, unsigned int info)
 
 		mod = (struct multiboot_mod_list *)mbi.mods_addr;
 		for(n = 0; n < mbi.mods_count; n++, mod++) {
-			if(!strcmp((char *)mod->cmdline, kparm_initrd)) {
+			if(!strcmp((char *)mod->cmdline, kparms.initrd)) {
 				printk("initrd    0x%08x-0x%08x file='%s' size=%dKB\n", mod->mod_start, mod->mod_end, mod->cmdline, (mod->mod_end - mod->mod_start) / 1024);
 				size = mod->mod_end - mod->mod_start;
 				ramdisk_table[0].addr = (char *)mod->mod_start;
@@ -407,7 +475,7 @@ void multiboot(unsigned int magic, unsigned int info)
 	}
 
 #ifdef CONFIG_BGA
-	if(*kparm_bgaresolution) {
+	if(*kparms.bgaresolution) {
 		video.flags = VPF_VESAFB;
 		parse_bgaresolution();
 		video.fb_char_width = 8;

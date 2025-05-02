@@ -9,6 +9,7 @@
 #include <fiwix/kernel.h>
 #include <fiwix/asm.h>
 #include <fiwix/multiboot1.h>
+#include <fiwix/kparms.h>
 #include <fiwix/mm.h>
 #include <fiwix/mman.h>
 #include <fiwix/bios.h>
@@ -384,7 +385,7 @@ void mem_init(void)
 
 	/* reserve memory space for RAMdisk drives */
 	last_ramdisk = 0;
-	if(kparm_ramdisksize > 0 || ramdisk_table[0].addr) {
+	if(kparms.ramdisksize > 0 || ramdisk_table[0].addr) {
 		/*
 		 * If the 'initrd=' parameter was supplied, then the first
 		 * RAMdisk drive was already assigned to the initrd image.
@@ -394,15 +395,15 @@ void mem_init(void)
 			last_ramdisk = 1;
 		}
 		for(; last_ramdisk < ramdisk_minors; last_ramdisk++) {
-			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparm_ramdisksize * 1024))) {
-				kparm_ramdisksize = 0;
+			if(!is_addr_in_bios_map(V2P(_last_data_addr) + (kparms.ramdisksize * 1024))) {
+				kparms.ramdisksize = 0;
 				ramdisk_minors -= RAMDISK_DRIVES;
 				printk("WARNING: RAMdisk drive disabled (not enough physical memory).\n");
 				break;
 			}
 			ramdisk_table[last_ramdisk].addr = (char *)_last_data_addr;
-			ramdisk_table[last_ramdisk].size = kparm_ramdisksize;
-			_last_data_addr += kparm_ramdisksize * 1024;
+			ramdisk_table[last_ramdisk].size = kparms.ramdisksize;
+			_last_data_addr += kparms.ramdisksize * 1024;
 		}
 	}
 

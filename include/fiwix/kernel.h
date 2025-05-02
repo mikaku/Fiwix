@@ -38,16 +38,6 @@ extern char *init_args;
 extern Elf32_Shdr *symtab, *strtab;
 extern unsigned int _last_data_addr;
 
-extern int kparm_memsize;
-extern int kparm_extmemsize;
-extern int kparm_rootdev;
-extern int kparm_ramdisksize;
-extern char kparm_rootfstype[10];
-extern char kparm_rootdevname[DEVNAME_MAX + 1];
-extern char kparm_initrd[DEVNAME_MAX + 1];
-extern int kparm_syscondev;
-extern char kparm_bgaresolution[15];
-extern int kparm_ro;
 extern int kexec_proto;
 extern int kexec_size;
 extern char kexec_cmdline[NAME_MAX + 1];
