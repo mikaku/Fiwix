@@ -35,7 +35,7 @@ static int is_ready_to_read(void)
 {
 	int n;
 
-	for(n = 0; n < PS2_READ_TIMEOUT; n++) {
+	for(n = 0; n < PS2_TIMEOUT; n++) {
 		if(ack) {
 			return 1;
 		}
@@ -52,7 +52,7 @@ static int is_ready_to_write(void)
 {
 	int n;
 
-	for(n = 0; n < PS2_WRITE_TIMEOUT; n++) {
+	for(n = 0; n < PS2_TIMEOUT; n++) {
 		if(!(inport_b(PS2_STATUS) & PS2_STAT_INBUSY)) {
 			return 1;
 		}
