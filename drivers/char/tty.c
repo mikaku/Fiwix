@@ -737,17 +737,17 @@ int tty_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 					}
 				}
 			} else {
-				if(tty->cooked_q.count > 0) {
-					if(min < tty->termios.c_cc[VMIN] || !tty->termios.c_cc[VMIN]) {
-						if(n < count) {
-							ch = charq_getchar(&tty->cooked_q);
-							buffer[n++] = ch;
-							if(--tty->canon_data < 0) {
-								tty->canon_data = 0;
-							}
+				while(tty->cooked_q.count > 0) {
+					if(n < count) {
+						ch = charq_getchar(&tty->cooked_q);
+						buffer[n++] = ch;
+						if(--tty->canon_data < 0) {
+							tty->canon_data = 0;
 						}
-						min++;
+					} else {
+						break;
 					}
+					min++;
 				}
 				if(min >= tty->termios.c_cc[VMIN]) {
 					break;
