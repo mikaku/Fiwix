@@ -46,7 +46,7 @@ static void proc_list(void)
 		printk("%d    %5d  %5d  %5d %s ",
 			p->uid,
 			p->pid,
-			p->ppid->pid,
+			p->ppid ? p->ppid->pid : 0,
 			p->rss << 2,
 			pstate[p->state]);
 		if(p->state == PROC_SLEEPING) {
@@ -58,7 +58,7 @@ static void proc_list(void)
 		p = p->next;
 	}
 
-	printk("PIDs in running queue: ");
+	printk("List of PIDs in running queue: ");
 	FOR_EACH_PROCESS_RUNNING(p) {
 		printk("%d ", p->pid);
 		p = p->next_run;
