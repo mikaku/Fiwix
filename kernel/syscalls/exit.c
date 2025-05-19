@@ -109,7 +109,6 @@ void do_exit(int exit_code)
 	}
 
 	not_runnable(current, PROC_ZOMBIE);
-	need_resched = 1;
 	do_sched();
 }
 
