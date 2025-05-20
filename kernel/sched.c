@@ -49,6 +49,11 @@ void do_sched(void)
 	int count;
 	struct proc *p, *selected;
 
+	/* let the current running process consume its time slice */
+	if(!need_resched && current->state == PROC_RUNNING && current->cpu_count > 0) {
+		return;
+	}
+
 	need_resched = 0;
 	for(;;) {
 		count = -1;
