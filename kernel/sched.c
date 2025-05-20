@@ -50,7 +50,7 @@ void do_sched(void)
 	struct proc *p, *selected;
 
 	/* let the current running process consume its time slice */
-	if(!need_resched && current->state == PROC_RUNNING && current->cpu_count > 0) {
+	if(current->state == PROC_RUNNING && current->cpu_count > 0) {
 		return;
 	}
 
