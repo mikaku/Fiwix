@@ -698,15 +698,24 @@ int reclaim_buffers(void)
 {
 	struct buffer *buf;
 	int size, found, reclaimed;
-	unsigned int flags;
+	unsigned int flags, mark;
 
 	found = reclaimed = 0;
 	size = BLKSIZE_1K;
+	mark = kstat.uptime;
 
 	/* iterate through all buffer sizes */
 	STI();
 	for(;;) {
 		if((buf = get_free_buffer(NO_GROW, size))) {
+			if(buf->mark == mark) {
+				SAVE_FLAGS(flags); CLI();
+				buf->flags &= ~BUFFER_LOCKED;
+				buf->mark = 0;
+				append_on_free_list(buf);
+				RESTORE_FLAGS(flags);
+				goto next;
+			}
 			found++;
 			if(buf->flags & BUFFER_DIRTY) {
 				if(!sync_one_buffer(buf)) {
@@ -722,6 +731,7 @@ int reclaim_buffers(void)
 				 */
 				SAVE_FLAGS(flags); CLI();
 				buf->flags &= ~BUFFER_LOCKED;
+				buf->mark = mark;
 				append_on_free_list(buf);
 				RESTORE_FLAGS(flags);
 				continue;
@@ -735,6 +745,7 @@ int reclaim_buffers(void)
 			}
 			continue;
 		}
+next:
 		size <<= 1;
 		if(size > PAGE_SIZE) {
 			if(!found) {
@@ -754,8 +765,6 @@ int reclaim_buffers(void)
 	 */
 	if(reclaimed) {
 		wakeup(&get_free_page);
-	} else {
-		printk("WARNING: %s(): no more buffers on free lists!\n", __FUNCTION__);
 	}
 	return reclaimed;
 }

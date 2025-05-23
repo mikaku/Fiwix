@@ -26,6 +26,7 @@ struct buffer {
 	int size;			/* block size (in bytes) */
 	int flags;
 	char *data;			/* block contents */
+	unsigned int mark;		/* a mark to identify a buffer */
 	struct buffer *prev;
 	struct buffer *next;
 	struct buffer *prev_hash;
