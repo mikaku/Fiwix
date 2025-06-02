@@ -86,7 +86,9 @@ int do_select(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds, fd_set *res_rf
 		if(count || !current->timeout || current->sigpending & ~current->sigblocked) {
 			break;
 		}
-		sleep(&do_select, PROC_INTERRUPTIBLE);
+		if(sleep(&do_select, PROC_INTERRUPTIBLE)) {
+			return -EINTR;
+		}
 	}
 
 	return count;
