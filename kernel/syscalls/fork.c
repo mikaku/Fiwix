@@ -89,7 +89,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->ppid = current;
 	child->flags = 0;
 	child->children = 0;
-	child->cpu_count = child->priority;
+	child->cpu_count = (current->cpu_count >>= 1);
 	child->start_time = CURRENT_TICKS;
 	child->sleep_address = NULL;
 
