@@ -468,6 +468,138 @@ static void set_current_fdd_type(int minor)
 	}
 }
 
+static int setup_transfer(int mode, __dev_t dev, __blk_t block, char *buffer, int blksize)
+{
+	unsigned char minor;
+	unsigned int sectors_io;
+	int cyl, head, sector;
+	int retries;
+	struct callout_req creq;
+	struct device *d;
+	char *op;
+
+	minor = MINOR(dev);
+	if(!TEST_MINOR(floppy_device.minors, minor)) {
+		return -ENXIO;
+	}
+
+	if(!blksize) {
+		if(!(d = get_device(BLK_DEV, dev))) {
+			return -EINVAL;
+		}
+		blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
+	}
+	blksize = blksize ? blksize : BLKSIZE_1K;
+
+	lock_resource(&floppy_resource);
+	set_current_fdd_type(minor);
+
+	if(mode == BLK_READ) {
+		op = "fdc_read";
+	} else {
+		op = "fdc_write";
+	}
+
+	if(fdc_block2chs(block, blksize, &cyl, &head, &sector)) {
+		printk("WARNING: %s(): fd%d: invalid block number %d on %s device %d,%d.\n", op, current_fdd, block, floppy_device.name, MAJOR(dev), MINOR(dev));
+		unlock_resource(&floppy_resource);
+		return -EINVAL;
+	}
+
+	for(retries = 0; retries < MAX_FDC_ERR; retries++) {
+		if(need_reset) {
+			fdc_reset();
+		}
+		if(fdc_motor_on()) {
+			printk("%s(): %s disk was changed in device %d,%d!\n", op, floppy_device.name, MAJOR(dev), MINOR(dev));
+			invalidate_buffers(dev);
+			fdd_status[current_fdd].recalibrated = 0;
+		}
+
+		if(fdc_seek(cyl, head)) {
+			printk("WARNING: %s(): fd%d: seek error on %s device %d,%d.\n", op, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
+			continue;
+		}
+
+		if(mode == BLK_READ) {
+			start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_WRITE | DMA_MODE_SINGLE);
+			fdc_wait_interrupt = FDC_READ;
+			fdc_out(FDC_READ);
+		} else {
+			start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_READ | DMA_MODE_SINGLE);
+			memcpy_b((void *)fdc_transfer_area, buffer, blksize);
+			fdc_wait_interrupt = FDC_WRITE;
+			fdc_out(FDC_WRITE);
+		}
+		fdc_out((head << 2) | current_fdd);
+		fdc_out(cyl);
+		fdc_out(head);
+		fdc_out(sector);
+		fdc_out(2);	/* sector size is 512 bytes */
+		fdc_out(current_fdd_type->spt);
+		fdc_out(current_fdd_type->gpl1);
+		fdc_out(0xFF);	/* sector size is 512 bytes */
+
+		if(need_reset) {
+			printk("WARNING: %s(): fd%d: needs reset on %s device %d,%d.\n", op, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
+			continue;
+		}
+		creq.fn = fdc_timer;
+		creq.arg = FDC_TR_DEFAULT;
+		add_callout(&creq, WAIT_FDC);
+		/* avoid sleep if interrupt already happened */
+		if(fdc_wait_interrupt) {
+			sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
+		}
+		if(fdc_timeout) {
+			need_reset = 1;
+			printk("WARNING: %s(): fd%d: timeout on %s device %d,%d.\n", op, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
+			continue;
+		}
+		del_callout(&creq);
+		fdc_get_results();
+		if(mode == BLK_WRITE) {
+			if(fdc_results[ST1] & ST1_NW) {
+				unlock_resource(&floppy_resource);
+				fdc_motor_off();
+				return -EROFS;
+			}
+		}
+		if(fdc_results[ST0] & (ST0_IC | ST0_UC | ST0_NR)) {
+			need_reset = 1;
+			continue;
+		}
+		break;
+	}
+
+	if(retries >= MAX_FDC_ERR) {
+		printk("WARNING: %s(): fd%d: error on %s device %d,%d,\n", op, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
+		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
+		unlock_resource(&floppy_resource);
+		fdc_motor_off();
+		return -EIO;
+	}
+
+	fdc_motor_off();
+	sectors_io = (fdc_results[ST_CYL] - cyl) * (current_fdd_type->heads * current_fdd_type->spt);
+	sectors_io += (fdc_results[ST_HEAD] - head) * current_fdd_type->spt;
+	sectors_io += fdc_results[ST_SECTOR] - sector;
+	if(sectors_io * BPS != blksize) {
+		printk("WARNING: %s(): fd%d: error on %s device %d,%d (%d sectors I/O),\n", op, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev), sectors_io);
+		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
+		unlock_resource(&floppy_resource);
+		fdc_motor_off();
+		return -EIO;
+	}
+
+	if(mode == BLK_READ) {
+		memcpy_b(buffer, (void *)fdc_transfer_area, blksize);
+	}
+
+	unlock_resource(&floppy_resource);
+	return sectors_io * BPS;
+}
+
 void irq_floppy(int num, struct sigcontext *sc)
 {
 	if(!fdc_wait_interrupt) {
@@ -528,228 +660,12 @@ int fdc_close(struct inode *i, struct fd *f)
 
 int fdc_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	unsigned char minor;
-	unsigned int sectors_read;
-	int cyl, head, sector;
-	int retries;
-	struct callout_req creq;
-	struct device *d;
-
-	minor = MINOR(dev);
-	if(!TEST_MINOR(floppy_device.minors, minor)) {
-		return -ENXIO;
-	}
-
-	if(!blksize) {
-		if(!(d = get_device(BLK_DEV, dev))) {
-			return -EINVAL;
-		}
-		blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
-	}
-	blksize = blksize ? blksize : BLKSIZE_1K;
-
-	lock_resource(&floppy_resource);
-	set_current_fdd_type(minor);
-
-	if(fdc_block2chs(block, blksize, &cyl, &head, &sector)) {
-		printk("WARNING: %s(): fd%d: invalid block number %d on %s device %d,%d.\n", __FUNCTION__, current_fdd, block, floppy_device.name, MAJOR(dev), MINOR(dev));
-		unlock_resource(&floppy_resource);
-		return -EINVAL;
-	}
-
-	for(retries = 0; retries < MAX_FDC_ERR; retries++) {
-		if(need_reset) {
-			fdc_reset();
-		}
-		if(fdc_motor_on()) {
-			printk("%s(): %s disk was changed in device %d,%d!\n", __FUNCTION__, floppy_device.name, MAJOR(dev), MINOR(dev));
-			invalidate_buffers(dev);
-			fdd_status[current_fdd].recalibrated = 0;
-		}
-
-		if(fdc_seek(cyl, head)) {
-			printk("WARNING: %s(): fd%d: seek error on %s device %d,%d during read operation.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-
-		start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_WRITE | DMA_MODE_SINGLE);
-
-		/* send READ command */
-		fdc_wait_interrupt = FDC_READ;
-		fdc_out(FDC_READ);
-		fdc_out((head << 2) | current_fdd);
-		fdc_out(cyl);
-		fdc_out(head);
-		fdc_out(sector);
-		fdc_out(2);	/* sector size is 512 bytes */
-		fdc_out(current_fdd_type->spt);
-		fdc_out(current_fdd_type->gpl1);
-		fdc_out(0xFF);	/* sector size is 512 bytes */
-
-		if(need_reset) {
-			printk("WARNING: %s(): fd%d: needs reset on %s device %d,%d during read operation.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-		creq.fn = fdc_timer;
-		creq.arg = FDC_TR_DEFAULT;
-		add_callout(&creq, WAIT_FDC);
-		/* avoid sleep if interrupt already happened */
-		if(fdc_wait_interrupt) {
-			sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
-		}
-		if(fdc_timeout) {
-			need_reset = 1;
-			printk("WARNING: %s(): fd%d: timeout on %s device %d,%d.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-		del_callout(&creq);
-		fdc_get_results();
-		if(fdc_results[ST0] & (ST0_IC | ST0_UC | ST0_NR)) {
-			need_reset = 1;
-			continue;
-		}
-		break;
-	}
-
-	if(retries >= MAX_FDC_ERR) {
-		printk("WARNING: %s(): fd%d: error on %s device %d,%d during read operation,\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
-		unlock_resource(&floppy_resource);
-		fdc_motor_off();
-		return -EIO;
-	}
-
-	fdc_motor_off();
-	sectors_read = (fdc_results[ST_CYL] - cyl) * (current_fdd_type->heads * current_fdd_type->spt);
-	sectors_read += (fdc_results[ST_HEAD] - head) * current_fdd_type->spt;
-	sectors_read += fdc_results[ST_SECTOR] - sector;
-	if(sectors_read * BPS != blksize) {
-		printk("WARNING: %s(): fd%d: read error on %s device %d,%d (%d sectors read).\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev), sectors_read);
-		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
-		unlock_resource(&floppy_resource);
-		fdc_motor_off();
-		return -EIO;
-	}
-
-	memcpy_b(buffer, (void *)fdc_transfer_area, blksize);
-
-	unlock_resource(&floppy_resource);
-	return sectors_read * BPS;
+	return setup_transfer(BLK_READ, dev, block, buffer, blksize);
 }
 
 int fdc_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 {
-	unsigned char minor;
-	unsigned int sectors_written;
-	int cyl, head, sector;
-	int retries;
-	struct callout_req creq;
-	struct device *d;
-
-	minor = MINOR(dev);
-	if(!TEST_MINOR(floppy_device.minors, minor)) {
-		return -ENXIO;
-	}
-
-	if(!blksize) {
-		if(!(d = get_device(BLK_DEV, dev))) {
-			return -EINVAL;
-		}
-		blksize = ((unsigned int *)d->blksize)[MINOR(dev)];
-	}
-	blksize = blksize ? blksize : BLKSIZE_1K;
-
-	lock_resource(&floppy_resource);
-	set_current_fdd_type(minor);
-
-	if(fdc_block2chs(block, blksize, &cyl, &head, &sector)) {
-		printk("WARNING: %s(): fd%d: invalid block number %d on %s device %d,%d.\n", __FUNCTION__, current_fdd, block, floppy_device.name, MAJOR(dev), MINOR(dev));
-		unlock_resource(&floppy_resource);
-		return -EINVAL;
-	}
-
-	for(retries = 0; retries < MAX_FDC_ERR; retries++) {
-		if(need_reset) {
-			fdc_reset();
-		}
-		if(fdc_motor_on()) {
-			printk("%s(): %s disk was changed in device %d,%d!\n", __FUNCTION__, floppy_device.name, MAJOR(dev), MINOR(dev));
-			invalidate_buffers(dev);
-			fdd_status[current_fdd].recalibrated = 0;
-		}
-
-		if(fdc_seek(cyl, head)) {
-			printk("WARNING: %s(): fd%d: seek error on %s device %d,%d during write operation.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-
-		start_dma(FLOPPY_DMA, fdc_transfer_area, blksize, DMA_MODE_READ | DMA_MODE_SINGLE);
-		memcpy_b((void *)fdc_transfer_area, buffer, blksize);
-
-		/* send WRITE command */
-		fdc_wait_interrupt = FDC_WRITE;
-		fdc_out(FDC_WRITE);
-		fdc_out((head << 2) | current_fdd);
-		fdc_out(cyl);
-		fdc_out(head);
-		fdc_out(sector);
-		fdc_out(2);	/* sector size is 512 bytes */
-		fdc_out(current_fdd_type->spt);
-		fdc_out(current_fdd_type->gpl1);
-		fdc_out(0xFF);	/* sector size is 512 bytes */
-
-		if(need_reset) {
-			printk("WARNING: %s(): fd%d: needs reset on %s device %d,%d during write operation.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-		creq.fn = fdc_timer;
-		creq.arg = FDC_TR_DEFAULT;
-		add_callout(&creq, WAIT_FDC);
-		/* avoid sleep if interrupt already happened */
-		if(fdc_wait_interrupt) {
-			sleep(&irq_floppy, PROC_UNINTERRUPTIBLE);
-		}
-		if(fdc_timeout) {
-			need_reset = 1;
-			printk("WARNING: %s(): fd%d: timeout on %s device %d,%d.\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-			continue;
-		}
-		del_callout(&creq);
-		fdc_get_results();
-		if(fdc_results[ST1] & ST1_NW) {
-			unlock_resource(&floppy_resource);
-			fdc_motor_off();
-			return -EROFS;
-		}
-		if(fdc_results[ST0] & (ST0_IC | ST0_UC | ST0_NR)) {
-			need_reset = 1;
-			continue;
-		}
-		break;
-	}
-
-	if(retries >= MAX_FDC_ERR) {
-		printk("WARNING: %s(): fd%d: error on %s device %d,%d during write operation,\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev));
-		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
-		unlock_resource(&floppy_resource);
-		fdc_motor_off();
-		return -EIO;
-	}
-
-	fdc_motor_off();
-	sectors_written = (fdc_results[ST_CYL] - cyl) * (current_fdd_type->heads * current_fdd_type->spt);
-	sectors_written += (fdc_results[ST_HEAD] - head) * current_fdd_type->spt;
-	sectors_written += fdc_results[ST_SECTOR] - sector;
-	if(sectors_written * BPS != blksize) {
-		printk("WARNING: %s(): fd%d: write error on %s device %d,%d (%d sectors written).\n", __FUNCTION__, current_fdd, floppy_device.name, MAJOR(dev), MINOR(dev), sectors_written);
-		printk("\tblock=%d, sector=%d, cylinder/head=%d/%d\n", block, sector, cyl, head);
-		unlock_resource(&floppy_resource);
-		fdc_motor_off();
-		return -EIO;
-	}
-
-	unlock_resource(&floppy_resource);
-	return sectors_written * BPS;
+	return setup_transfer(BLK_WRITE, dev, block, buffer, blksize);
 }
 
 int fdc_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
