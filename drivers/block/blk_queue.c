@@ -86,7 +86,7 @@ void run_blk_request(struct device *d)
 			return;
 		}
 		br->status = BR_PROCESSING;
-		if(!(errno = br->fn(br->buffer->dev, br->buffer->block, br->buffer->data, br->buffer->size))) {
+		if(!(errno = br->fn(br->dev, br->block, br->buffer->data, br->size))) {
 			return;
 		}
 		br->errno = errno;
