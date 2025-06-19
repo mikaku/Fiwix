@@ -280,32 +280,6 @@ static int get_dma(struct ata_drv *drive)
 	return dma;
 }
 
-/*
-static int get_udma(struct ata_drv *drive)
-{
-	int udma;
-
-	if(drive->ident.fields_validity & ATA_HAS_UDMA) {
-		if((drive->ident.ultradma >> 13) & 1) {
-			udma = 5;
-		} else if((drive->ident.ultradma >> 12) & 1) {
-			udma = 4;
-		} else if((drive->ident.ultradma >> 11) & 1) {
-			udma = 3;
-		} else if((drive->ident.ultradma >> 10) & 1) {
-			udma = 2;
-		} else if((drive->ident.ultradma >> 9) & 1) {
-			udma = 1;
-		} else {
-			udma = 0;
-		}
-	} else {
-		udma = -1;
-	}
-	return udma;
-}
-*/
-
 static int get_ata(struct ata_drv *drive)
 {
 	int ata;
@@ -330,7 +304,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	unsigned int cyl, hds, sect;
 	__loff_t size;
 	int ksize, nrsectors;
-	/*int udma, udma_speed[] = { 16, 25, 33, 44, 66, 100 };*/
 
 	if(!(drive->flags & (DRIVE_IS_DISK | DRIVE_IS_CDROM))) {
 		return;
@@ -348,7 +321,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 
 	drive->pio_mode = get_piomode(drive);
 	drive->dma_mode = get_dma(drive);
-	/*udma = get_udma(drive);*/
 
 	size = (__loff_t)drive->nr_sects * BPS;
 	size = size >> 10;
@@ -402,12 +374,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk("\t\t\t\tmodel=%s\n", drive->ident.model_number);
 		printk("\t\t\t\tcache=%dKB\n", drive->ident.buffer_cache >> 1);
 	}
-
-	/*
-	if(udma >= 0) {
-		printk(" UDMA%d(%d)", udma, udma_speed[udma]);
-	}
-	*/
 
 	/* default common values for 'xfer' */
 	drive->xfer.copy_read_fn = inport_sw;
