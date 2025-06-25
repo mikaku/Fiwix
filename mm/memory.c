@@ -87,15 +87,14 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		/* 4MB of memory assumed */
-		memksize = 4096;
+		memksize = 4096 - 1024;	/* mem_upper */
 	} else {
 		mbi = (struct multiboot_info *)(PAGE_OFFSET + info);
 		if(!(mbi->flags & MULTIBOOT_INFO_MEMORY)) {
 			/* 4MB of memory assumed */
-			memksize = 4096;
+			memksize = 4096 - 1024;	/* mem_upper */
 		} else {
-			/* we need to add the first 1MB to memksize */
-			memksize = (unsigned int)mbi->mem_upper + 1024;
+			memksize = (unsigned int)mbi->mem_upper;
 			/* CONFIG_VM_SPLIT22 marks the maximum physical memory supported */
 			if(memksize > ((0xFFFFFFFF - PAGE_OFFSET) / 1024)) {
 				memksize = (0xFFFFFFFF - PAGE_OFFSET) / 1024;
@@ -103,7 +102,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 		}
 	}
 
-	addr = PAGE_OFFSET + (memksize * 1024) - memksize;
+	addr = PAGE_OFFSET + (memksize * 1024);
 	addr = PAGE_ALIGN(addr);
 
 	kpage_dir = (unsigned int *)addr;
@@ -113,7 +112,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 	pgtbl = (unsigned int *)addr;
 	memset_b(pgtbl, 0, memksize);
 
-	for(n = 0; n < memksize / sizeof(unsigned int); n++) {
+	for(n = 0; n < (memksize + 1024) / sizeof(unsigned int); n++) {
 		pgtbl[n] = (n << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW;
 		if(!(n % 1024)) {
 			pd = n / 1024;
