@@ -15,7 +15,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define NR_BUCKETS		((NR_PROCS * 10) / 100)	/* 10% of NR_PROCS */
+#define NR_BUCKETS		(NR_PROCS >= 10 ? (NR_PROCS * 10) / 100 : 1)
 #define SLEEP_HASH(addr)	((addr) % (NR_BUCKETS))
 
 struct proc *sleep_hash_table[NR_BUCKETS];
