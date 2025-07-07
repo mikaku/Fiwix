@@ -271,7 +271,7 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	__blk_t block;
 	__size_t total_read;
 	__loff_t device_size;
-	int blksize;
+	int n, blksize, blksize_bits;
 	unsigned int boffset, bytes;
 	struct buffer *buf;
 	struct device *d;
@@ -290,13 +290,17 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
+	for(n = blksize, blksize_bits = 0; n != 1; n >>= 1) {
+		blksize_bits++;
+	}
+
 	count = (f->offset + count > device_size) ? device_size - f->offset : count;
 	if(!count || f->offset > device_size) {
 		return 0;
 	}
 	while(count) {
 		boffset = f->offset & (blksize - 1);	/* mod blksize */
-		block = (f->offset / blksize);
+		block = (f->offset >> blksize_bits);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;
 		}
@@ -316,7 +320,7 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 	__blk_t block;
 	__size_t total_written;
 	__loff_t device_size;
-	int blksize;
+	int n, blksize, blksize_bits;
 	unsigned int boffset, bytes;
 	struct buffer *buf;
 	struct device *d;
@@ -335,13 +339,17 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
+	for(n = blksize, blksize_bits = 0; n != 1; n >>= 1) {
+		blksize_bits++;
+	}
+
 	count = (f->offset + count > device_size) ? device_size - f->offset : count;
 	if(!count || f->offset > device_size) {
 		return -ENOSPC;
 	}
 	while(count) {
 		boffset = f->offset & (blksize - 1);	/* mod blksize */
-		block = (f->offset / blksize);
+		block = (f->offset >> blksize_bits);
 		if(!(buf = bread(i->rdev, block, blksize))) {
 			return -EIO;
 		}

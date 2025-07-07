@@ -13,9 +13,10 @@
 
 #define NR_BLKDEV	255	/* maximum number of block devices */
 #define NR_CHRDEV	255	/* maximum number of char devices */
-
 #define BLK_DEV		1	/* block device */
 #define CHR_DEV		2	/* character device */
+#define MAX_MINORS	256	/* maximum number of minors per device */
+#define MINOR_BITS	(MAX_MINORS / (sizeof(unsigned int) * 8))
 
 #define SET_MINOR(minors, bit)   ((minors[(bit) / 32]) |= (1 << ((bit) % 32)))
 #define CLEAR_MINOR(minors, bit) ((minors[(bit) / 32]) &= ~(1 << ((bit) % 32)))
@@ -24,7 +25,7 @@
 struct device {
 	char *name;
 	unsigned char major;
-	unsigned int minors[8];		/* bitmap of 256 bits */
+	unsigned int minors[MINOR_BITS];/* bitmap of MAX_MINORS bits */
 	unsigned int *blksize;		/* default minor blocksizes, in KB */
 	void *device_data;		/* mostly used for minor sizes, in KB */
 	struct fs_operations *fsop;

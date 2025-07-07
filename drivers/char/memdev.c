@@ -365,7 +365,7 @@ static struct device memdev_device = {
 	"mem",
 	MEMDEV_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
+	NULL,
 	NULL,
 	&memdev_driver_fsop,
 	NULL,

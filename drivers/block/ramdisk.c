@@ -67,8 +67,8 @@ static struct device ramdisk_device = {
 	"ramdisk",
 	RAMDISK_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
-	0,
+	NULL,
+	NULL,
 	&ramdisk_driver_fsop,
 	NULL,
 	NULL,
@@ -201,10 +201,10 @@ void ramdisk_init(void)
 	struct ramdisk *ramdisk;
 
 	if(ramdisk_minors) {
-		ramdisk_device.blksize = (unsigned int *)kmalloc(1024);
-		ramdisk_device.device_data = (unsigned int *)kmalloc(1024);
-		memset_b(ramdisk_device.blksize, 0, 1024);
-		memset_b(ramdisk_device.device_data, 0, 1024);
+		ramdisk_device.blksize = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+		ramdisk_device.device_data = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+		memset_l(ramdisk_device.blksize, 0, MAX_MINORS);
+		memset_l(ramdisk_device.device_data, 0, MAX_MINORS);
 		for(n = 0; n < ramdisk_minors; n++) {
 			SET_MINOR(ramdisk_device.minors, n);
 			ramdisk = get_ramdisk(n);

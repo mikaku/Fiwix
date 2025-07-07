@@ -71,7 +71,7 @@ static struct device serial_device = {
 	"ttyS",
 	SERIAL_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
+	NULL,
 	NULL,
 	&serial_driver_fsop,
 	NULL,

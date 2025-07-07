@@ -20,13 +20,16 @@
   the kernel with newer GCC versions. [#97]
 - Removed the dir_write method from the ext2 and minix filesystems.
 - Removed a condition in do_sched() because it has no effect.
-- Removed an unneeded assignment to need_resched in do_exit().
+- Removed an unneeded assignment to need_resched in do_exit() and reduced the
+  abuse of using need_resched because it costs excessive context switches.
 - Renamed the functions *_dir_readdir() and *_dir_readdir64() to *_readdir()
   and *_readdir64().
 - Renamed all *fd_table function arguments to avoid shadowing the global
   fd_table array.
 - Simplified a do.while() in reclaim_siblings() also with small improvements in
   reclaim_buffers().
+- Reverted 49393d0 and fixed 'memksize' in all cases to be able to boot again on
+  systems with 4MiB of memory.
 - Fixed ext2_balloc() and ext2_ialloc() to return -ENOSPC when there is not
   space on device.
 - Fixed fs.h to include fd.h when CONFIG_NET is not set.
@@ -48,7 +51,13 @@
 - Fixed a long standing bug in tty_read() that always returned VMIN bytes
   regardless of the amount of data available.
 - Fixed a possible null pointer dereference in proc_list().
-- Small fixes and cosmetic changes.
+- Fixed a long standing bug in sys_select() that didn't return -EINTR if it was
+  interrupted by a signal.
+- Fixed sys_fork() to share the remaining CPU time of the parent with the new
+  child.
+- Fixed to avoid a division by zero in SLEEP_HASH() macro when NR_PROCS is less
+  than 10.
+- Small fixes, code cleanup and cosmetic changes.
 
 
 1.6.0 - 15-Nov-2024

@@ -89,8 +89,8 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		"ide0",
 		IDE0_MAJOR,
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
-		0,
-		0,
+		NULL,
+		NULL,
 		&ata_driver_fsop,
 		NULL,
 		NULL,
@@ -100,8 +100,8 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		"ide1",
 		IDE1_MAJOR,
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
-		0,
-		0,
+		NULL,
+		NULL,
 		&ata_driver_fsop,
 		NULL,
 		NULL,
@@ -818,10 +818,10 @@ int ata_channel_init(struct ide *ide)
 	errno = ata_softreset(ide);
 	devices = 0;
 
-	ide_device[ide->channel].blksize = (unsigned int *)kmalloc(1024);
-	ide_device[ide->channel].device_data = (unsigned int *)kmalloc(1024);
-	memset_b(ide_device[ide->channel].device_data, 0, 1024);
-	memset_b(ide_device[ide->channel].blksize, 0, 1024);
+	ide_device[ide->channel].blksize = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+	ide_device[ide->channel].device_data = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+	memset_l(ide_device[ide->channel].blksize, 0, MAX_MINORS);
+	memset_l(ide_device[ide->channel].device_data, 0, MAX_MINORS);
 
 	for(drv_num = IDE_MASTER; drv_num <= IDE_SLAVE; drv_num++) {
 		/*

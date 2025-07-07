@@ -62,7 +62,7 @@ static struct device lp_device = {
 	"lp",
 	LP_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
+	NULL,
 	NULL,
 	&lp_driver_fsop,
 	NULL,

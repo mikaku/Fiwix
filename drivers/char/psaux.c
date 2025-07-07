@@ -68,7 +68,7 @@ static struct device psaux_device = {
 	"psaux",
 	PSAUX_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
+	NULL,
 	NULL,
 	&psaux_driver_fsop,
 	NULL,

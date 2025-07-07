@@ -121,8 +121,8 @@ static struct device floppy_device = {
 	"floppy",
 	FDC_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
-	0,
+	NULL,
+	NULL,
 	&fdc_driver_fsop,
 	NULL,
 	NULL,
@@ -749,10 +749,10 @@ void floppy_init(void)
 		master = 4;
 	}
 
-	floppy_device.blksize = (unsigned int *)kmalloc(1024);
-	floppy_device.device_data = (unsigned int *)kmalloc(1024);
-	memset_b(floppy_device.blksize, 0, 1024);
-	memset_b(floppy_device.device_data, 0, 1024);
+	floppy_device.blksize = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+	floppy_device.device_data = (unsigned int *)kmalloc(MAX_MINORS * sizeof(unsigned int));
+	memset_l(floppy_device.blksize, 0, MAX_MINORS);
+	memset_l(floppy_device.device_data, 0, MAX_MINORS);
 
 	if(master) {
 		if(!register_irq(FLOPPY_IRQ, &irq_config_floppy)) {
