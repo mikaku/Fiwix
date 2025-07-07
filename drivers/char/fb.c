@@ -71,9 +71,11 @@ static struct device fb_device = {
 	"fb",
 	FB_MAJOR,
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
-	0,
+	NULL,
 	NULL,
 	&fb_driver_fsop,
+	NULL,
+	NULL,
 	NULL
 };
 
