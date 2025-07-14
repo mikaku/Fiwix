@@ -353,22 +353,21 @@ static struct buffer *get_free_buffer(int mode, int size)
 	 */
 	if(!buf || (buf && buf->dev)) {
 		if(mode == GROW_IF_NEEDED) {
-			if(kstat.free_pages > (kstat.min_free_pages + 1)) {
+			if(kstat.free_pages) {
 				if((buf = create_buffers(size))) {
 					return buf;
 				}
 			}
-			buf = buffer_head[index];
 		}
-	}
-	if(!buf) {
-		/* no more buffers in this free list */
-		return NULL;
 	}
 
 	for(;;) {
 		SAVE_FLAGS(flags); CLI();
-		buf = buffer_head[index];
+		if(!(buf = buffer_head[index])) {
+			/* no more buffers in this free list */
+			RESTORE_FLAGS(flags);
+			return NULL;
+		}
 		if(buf->flags & BUFFER_LOCKED) {
 			sleep(&buffer_wait, PROC_UNINTERRUPTIBLE);
 		} else {
@@ -558,7 +557,6 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 		}
 		brelse(buf);
 	}
-	
 	printk("WARNING: %s(): returning NULL!\n", __FUNCTION__);
 	return NULL;
 }
