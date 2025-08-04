@@ -74,6 +74,11 @@ int procfs_read_inode(struct inode *i)
 		default:
 			PANIC("invalid inode (%d) mode %08o.\n", i->inode, i->i_mode);
 	}
+	switch(i->inode) {
+		case PROC_KMSG_INO:
+			i->fsop = &procfs_kmsg_fsop;
+			break;
+	}
 	return 0;
 }
 

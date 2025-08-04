@@ -11,6 +11,7 @@
 #include <fiwix/types.h>
 
 #define PROC_ROOT_INO		1	/* root inode */
+#define PROC_KMSG_INO		12	/* /proc/kmsg inode */
 #define PROC_SUPER_MAGIC	0x9FA0	/* same as in Linux */
 
 #define PROC_PID_INO		0x40000000	/* base for PID inodes */
@@ -19,7 +20,7 @@
 #define PROC_FD_INO		0x50000000	/* base for FD inodes */
 #define PROC_FD_LEV		2	/* array level for FDs */
 
-#define PROC_ARRAY_ENTRIES	22
+#define PROC_ARRAY_ENTRIES	23
 
 enum pid_dir_inodes {
 	PROC_PID_FD = PROC_PID_INO + 1001,
@@ -50,6 +51,7 @@ struct procfs_dir_entry {
 };
 
 extern struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1];
+extern struct fs_operations procfs_kmsg_fsop;
 
 int data_proc_buddyinfo(char *, __pid_t);
 int data_proc_cmdline(char *, __pid_t);

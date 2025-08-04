@@ -10,6 +10,8 @@
 #include <fiwix/syslog.h>
 #include <fiwix/tty.h>
 #include <fiwix/sysconsole.h>
+#include <fiwix/syscalls.h>
+#include <fiwix/sleep.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/stdarg.h>
@@ -86,6 +88,8 @@ static void puts(char *buffer, int msg_level)
 		log_new_chars = log_new_chars < LOG_BUF_LEN ? log_new_chars + 1 : log_new_chars;
 		l++;
 	}
+	wakeup(&sys_syslog);
+	wakeup(&do_select);
 }
 
 /*
