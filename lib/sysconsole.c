@@ -9,6 +9,7 @@
 #include <fiwix/tty.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/syslog.h>
 
 struct sysconsole sysconsole_table[NR_SYSCONSOLES];
 
@@ -41,4 +42,6 @@ void register_console(struct tty *tty)
 void sysconsole_init(void)
 {
 	memset_b(sysconsole_table, 0, sizeof(sysconsole_table));
+	memset_b(log_buf, 0, sizeof(log_buf));
+	log_read = log_write = log_size = log_new_chars = 0;
 }

@@ -116,7 +116,7 @@
 #define SYS_fstatfs		100
 #define SYS_ioperm		101
 #define SYS_socketcall 		102
-/* #define SYS_syslog */
+#define SYS_syslog		103
 #define SYS_setitimer		104
 #define SYS_getitimer		105
 #define SYS_newstat		106

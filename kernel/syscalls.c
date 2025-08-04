@@ -295,7 +295,7 @@ void *syscall_table[] = {
 	sys_fstatfs,			/* 100 */
 	sys_ioperm,
 	sys_socketcall,
-	NULL,	/* sys_syslog */
+	sys_syslog,
 	sys_setitimer,
 	sys_getitimer,			/* 105 */
 	sys_newstat,

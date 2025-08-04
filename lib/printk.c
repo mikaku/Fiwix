@@ -7,55 +7,84 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/syslog.h>
 #include <fiwix/tty.h>
 #include <fiwix/sysconsole.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/stdarg.h>
 
-#define LOG_BUF_LEN	4096
 #define MAX_BUF		1024	/* printk() and sprintk() size limit */
 
 static char buf[MAX_BUF];
-static char log_buf[LOG_BUF_LEN];
-static unsigned int log_count;
+static char newline = 1;
+char log_buf[LOG_BUF_LEN];	/* circular buffer */
+unsigned int log_read, log_write, log_size, log_new_chars;
+int console_loglevel = DEFAULT_CONSOLE_LOGLEVEL;
 
-static void puts(char *buffer)
+static void puts(char *buffer, int msg_level)
 {
 	struct tty *tty;
-	int n, syscon;
+	int n;
+	char *p, *l;
 
-	while(*buffer) {
 #ifdef CONFIG_QEMU_DEBUGCON
-		if(kstat.flags & KF_HAS_DEBUGCON) {
-			outport_b(QEMU_DEBUG_PORT, *buffer);
+	if(kstat.flags & KF_HAS_DEBUGCON) {
+		p = buffer;
+		while(*p) {
+			if(p == buffer && strlen(buffer) > 3) {
+				if(p[0] == '<' &&
+				   p[1] >= '0' && p[1] <= '7' &&
+				   p[2] == '>') {
+					p = p + 3;
+				}
+			}
+			if(msg_level < console_loglevel) {
+				outport_b(QEMU_DEBUG_PORT, *(p++));
+			}
 		}
+	}
 #endif /* CONFIG_QEMU_DEBUGCON */
 
-		for(n = 0, syscon = 0; n < NR_SYSCONSOLES; n++) {
-			if(!sysconsole_table[n].dev) {
-				continue;
-			}
-
-			if(sysconsole_table[n].dev == MKDEV(VCONSOLES_MAJOR, 0)) {
-				tty = get_tty(MKDEV(VCONSOLES_MAJOR, 0));
-			} else {
-				tty = sysconsole_table[n].tty;
-			}
-			if(tty) {
-				charq_putchar(&tty->write_q, *buffer);
-
-				/* kernel messages must be shown immediately */
-				tty->output(tty);
-				syscon = 1;
-			}
+	tty = NULL;
+	for(n = 0; n < NR_SYSCONSOLES; n++) {
+		if(!sysconsole_table[n].dev) {
+			continue;
 		}
-		if(!syscon) {
-			if(log_count < LOG_BUF_LEN) {
-				log_buf[log_count++] = *buffer;
-			}
+
+		if(sysconsole_table[n].dev == MKDEV(VCONSOLES_MAJOR, 0)) {
+			tty = get_tty(MKDEV(VCONSOLES_MAJOR, 0));
+		} else {
+			tty = sysconsole_table[n].tty;
 		}
-		buffer++;
+	}
+
+	l = p = buffer;
+	while(*l) {
+		if(tty && *p) {
+			if(p == buffer && strlen(buffer) > 3) {
+				if(p[0] == '<' &&
+				   p[1] >= '0' && p[1] <= '7' &&
+				   p[2] == '>') {
+					p = p + 3;
+				}
+			}
+			if(msg_level < console_loglevel) {
+				charq_putchar(&tty->write_q, *p);
+			}
+			tty->output(tty);
+			p++;
+		}
+		log_write &= LOG_BUF_LEN - 1;
+		log_buf[log_write++] = *l;
+		if(log_size < LOG_BUF_LEN) {
+			log_size++;
+		} else {
+			log_read++;
+			log_read &= LOG_BUF_LEN - 1;
+		}
+		log_new_chars = log_new_chars < LOG_BUF_LEN ? log_new_chars + 1 : log_new_chars;
+		l++;
 	}
 }
 
@@ -84,22 +113,18 @@ static void puts(char *buffer)
  *	-	the numeric result is left-justified
  *		(default is right-justified)
  */
-static void do_printk(char *buffer, const char *format, va_list args)
+static int do_printk(char *buffer, const char *format, va_list args)
 {
 	char sw_neg, in_identifier, n_pad, lf, sw_l;
-	char ch_pad, basecase, c;
-	char str[] = {
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0
-	};
+	char str[32 + 1], ch_pad, basecase, c;
 	char nullstr[7] = { '<', 'N', 'U', 'L', 'L', '>', '\0' };
 	char *ptr_s, *p;
-	int num, count;
+	int num, count, level_found;
 	char simplechar;
 	unsigned int unum, digit;
 	long long int lnum;
 	unsigned long long int lunum;
+	static char msg_level = -1;
 
 	sw_neg = in_identifier = n_pad = lf = sw_l = 0;
 	count = 0;
@@ -107,12 +132,41 @@ static void do_printk(char *buffer, const char *format, va_list args)
 	ch_pad = ' ';
 	p = NULL;
 
+	/*
+	 * Checks the log level (e.g: <4>) on every new line and adds the
+	 * level mark (if needed), but only if the caller function was printk().
+	 */
+	if(newline == 1) {
+		if(msg_level < 0 && buffer == buf) {
+			level_found = 0;
+			if(strlen(format) > 3) {
+				if(format[0] == '<' &&
+				   format[1] >= '0' && format[1] <= '7' &&
+				   format[2] == '>') {
+					msg_level = format[1] - '0';
+					level_found = 1;
+				}
+			}
+			if(!level_found) {
+				msg_level = DEFAULT_MESSAGE_LOGLEVEL;
+				*(buffer++) = '<';
+				*(buffer++) = msg_level + '0';
+				*(buffer++) = '>';
+			}
+		}
+		newline = 0;
+	}
+
 	/* assumes buffer has a maximum size of MAX_BUF */
 	while((c = *(format++)) && count < MAX_BUF) {
 		if(!in_identifier) {
-			memset_b(str, 0, 32);
+			memset_b(str, 0, sizeof(str));
 		}
 		if((c != '%') && !in_identifier) {
+			if(c == '\n') {
+				newline = 1;
+				msg_level = -1;
+			}
 			*(buffer++) = c;
 		} else {
 			in_identifier = 1;
@@ -395,22 +449,30 @@ static void do_printk(char *buffer, const char *format, va_list args)
 		count++;
 	}
 	*buffer = 0;
+	return msg_level;
 }
 
 void flush_log_buf(struct tty *tty)
 {
-	char *buffer;
-	int count;
+	int n;
+	static char msg_level = -1;
 
-	buffer = &log_buf[0];
-	count = log_count;
-	while(count) {
-		if(charq_putchar(&tty->write_q, *buffer) < 0) {
-			tty->output(tty);
-			continue;
+	n = log_read;
+	while(n < log_size) {
+		if(msg_level < 0) {
+			msg_level = log_buf[n + 1] - '0';
+			n = n + 3;
 		}
-		count--;
-		buffer++;
+		if(msg_level < console_loglevel) {
+			if(charq_putchar(&tty->write_q, log_buf[n]) < 0) {
+				tty->output(tty);
+				continue;
+			}
+		}
+		if(log_buf[n] == '\n') {
+			msg_level = -1;
+		}
+		n++;
 	}
 	tty->output(tty);
 }
@@ -418,10 +480,11 @@ void flush_log_buf(struct tty *tty)
 void printk(const char *format, ...)
 {
 	va_list args;
+	int msg_level;
 
 	va_start(args, format);
-	do_printk(buf, format, args);
-	puts(buf);
+	msg_level = do_printk(buf, format, args);
+	puts(buf, msg_level);
 	va_end(args);
 }
 
@@ -431,6 +494,7 @@ int sprintk(char *buffer, const char *format, ...)
 
 	va_start(args, format);
 	do_printk(buffer, format, args);
+	newline = 1;
 	va_end(args);
 	return strlen(buffer);
 }

@@ -128,6 +128,7 @@ int sys_statfs(const char *, struct statfs *);
 int sys_fstatfs(unsigned int, struct statfs *);
 int sys_ioperm(unsigned int, unsigned int, int);
 int sys_socketcall(int, unsigned int *);
+int sys_syslog(int, char *, int);
 int sys_setitimer(int, const struct itimerval *, struct itimerval *);
 int sys_getitimer(int, struct itimerval *);
 int sys_newstat(const char *, struct new_stat *);
