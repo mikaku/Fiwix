@@ -102,7 +102,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 		}
 	}
 
-	addr = PAGE_OFFSET + (memksize * 1024);
+	addr = PAGE_OFFSET + (memksize * 1024) - memksize;
 	addr = PAGE_ALIGN(addr);
 
 	kpage_dir = (unsigned int *)addr;
