@@ -91,12 +91,12 @@ int ipc_has_perms(struct ipc_perm *perm, int mode)
  * This configuration option should only be used if you need to execute a
  * Linux 2.0 binary and, for some reason, you cannot rebuild it on FiwixOS.
  */
-int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, long fifth)
+int sys_ipc(unsigned int call, int first, int second, int third, void *ptr, int fifth)
 {
 	struct sysvipc_args orig_args, *args;
 	struct ipc_kludge {
 		struct msgbuf *msgp;
-		long msgtyp;
+		int msgtyp;
 	} tmp;
 	int version, errno;
 	union semun *arg;

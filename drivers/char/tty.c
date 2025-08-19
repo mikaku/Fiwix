@@ -200,7 +200,7 @@ void tty_reset(struct tty *tty)
 
 struct tty *register_tty(__dev_t dev)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct tty *tty, *t;
 	int n;
 
@@ -244,7 +244,7 @@ struct tty *register_tty(__dev_t dev)
 
 void unregister_tty(struct tty *tty)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct tty *t;
 
 	SAVE_FLAGS(flags); CLI();

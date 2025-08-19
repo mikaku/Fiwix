@@ -20,7 +20,7 @@
 /* append the request into the queue */
 void add_blk_request(struct blk_request *br)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct blk_request *h;
 	struct device *d;
 
@@ -69,7 +69,7 @@ int do_blk_request(struct device *d, void *fn, struct buffer *buf)
 
 void run_blk_request(struct device *d)
 {
-	unsigned long int flags;
+	unsigned int flags;
 	struct blk_request *br, *brh;
 	int errno;
 
