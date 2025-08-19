@@ -136,21 +136,17 @@ static void scan_bus(void)
 				printk("\t%04x:%04x %04x%02x", vendor_id, device_id, class, (int)prog_if);
 
 				name = pci_get_strclass(class);
-				if(!name) {
-					printk(" - %s\n", "Unknown");
-				} else {
-					printk(" - %s\n", name);
-					memset_b(&pci_dev, 0, sizeof(struct pci_device));
-					pci_dev.bus = b;
-					pci_dev.dev = d;
-					pci_dev.func = f;
-					pci_dev.vendor_id = vendor_id;
-					pci_dev.device_id = device_id;
-					pci_dev.class = class;
-					pci_dev.header = header;
-					pci_dev.irq = irq;
-					add_pci_device(b, d, f, &pci_dev);
-				}
+				printk(" - %s\n", name ? name : "Unknown");
+				memset_b(&pci_dev, 0, sizeof(struct pci_device));
+				pci_dev.bus = b;
+				pci_dev.dev = d;
+				pci_dev.func = f;
+				pci_dev.vendor_id = vendor_id;
+				pci_dev.device_id = device_id;
+				pci_dev.class = class;
+				pci_dev.header = header;
+				pci_dev.irq = irq;
+				add_pci_device(b, d, f, &pci_dev);
 				if(!f && !(header & 0x80)) {
 					break;	/* no more functions in this device */
 				}
