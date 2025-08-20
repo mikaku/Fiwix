@@ -652,23 +652,38 @@ void invalidate_buffers(__dev_t dev)
 static int reclaim_siblings(struct buffer *buf)
 {
 	struct buffer *orig, *tmp;
+	unsigned int flags;
 
 	orig = buf;
 
 	if(buf->first_sibling) {
 		buf = buf->first_sibling;
 	}
-	/* abort if one of the siblings is locked or dirty */
+	/* abort if one of the siblings is locked */
 	do {
 		if(buf != orig) {
-			if(buf->flags & (BUFFER_LOCKED | BUFFER_DIRTY)) {
+			if(buf->flags & BUFFER_LOCKED) {
 				return 1;
 			}
 		}
 		buf = buf->next_sibling;
 	} while(buf);
 
-	/* OK, all siblings are eligible to be freed up */
+	/* OK, all siblings are eligible to be freed up, let's lock them all */
+	buf = orig;
+	if(buf->first_sibling) {
+		buf = buf->first_sibling;
+	}
+	SAVE_FLAGS(flags); CLI();
+	do {
+		if(buf != orig) {
+			buf->flags |= BUFFER_LOCKED;
+		}
+		buf = buf->next_sibling;
+	} while(buf);
+	RESTORE_FLAGS(flags);
+
+	/* now free them up */
 	buf = orig;
 	if(buf->first_sibling) {
 		buf = buf->first_sibling;
@@ -677,6 +692,13 @@ static int reclaim_siblings(struct buffer *buf)
 		if(buf == orig) {
 			buf = buf->next_sibling;
 			continue;
+		}
+		if(buf->flags & BUFFER_DIRTY) {
+			if(!sync_one_buffer(buf)) {
+				remove_from_dirty_list(buf);
+			} else {
+				/* FIXME: undo all locks and give up */
+			}
 		}
 		tmp = buf;
 		buf = buf->next_sibling;
