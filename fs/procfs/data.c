@@ -517,21 +517,19 @@ int data_proc_pid_fd(char *buffer, __pid_t pid, __ino_t inode)
 int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 {
 	int n, size;
-	char *arg;
-	char **argv;
-	unsigned int addr, offset;
+	char *arg, **argv;
+	unsigned int addr,offset;
 	struct proc *p;
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		for(n = 0; n < p->argc && (p->argv + n); n++) {
-			argv = p->argv + n;
-			offset = (int)argv & ~PAGE_MASK;
-			addr = get_mapped_addr(p, (int)argv) & PAGE_MASK;
-			addr = P2V(addr);
-			argv = (char **)(addr + offset);
-			offset = (int)argv[0] & ~PAGE_MASK;
-			addr = get_mapped_addr(p, (int)argv[0]) & PAGE_MASK;
+		offset = (int)p->argv & ~PAGE_MASK;
+		addr = get_mapped_addr(p, (int)p->argv) & PAGE_MASK;
+		addr = P2V(addr);
+		argv = (char **)(addr + offset);
+		for(n = 0; n < p->argc && (int)argv[n]; n++) {
+			offset = (int)argv[n] & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)argv[n]) & PAGE_MASK;
 			addr = P2V(addr);
 			arg = (char *)(addr + offset);
 			if(size + strlen(arg) < (PAGE_SIZE - 1)) {
@@ -568,21 +566,19 @@ int data_proc_pid_cwd(char *buffer, __pid_t pid)
 int data_proc_pid_environ(char *buffer, __pid_t pid)
 {
 	int n, size;
-	char *env;
-	char **envp;
+	char *env, **envp;
 	unsigned int addr, offset;
 	struct proc *p;
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-		for(n = 0; n < p->envc && (p->envp + n); n++) {
-			envp = p->envp + n;
-			offset = (int)envp & ~PAGE_MASK;
-			addr = get_mapped_addr(p, (int)envp) & PAGE_MASK;
-			addr = P2V(addr);
-			envp = (char **)(addr + offset);
-			offset = (int)envp[0] & ~PAGE_MASK;
-			addr = get_mapped_addr(p, (int)envp[0]) & PAGE_MASK;
+		offset = (int)p->envp & ~PAGE_MASK;
+		addr = get_mapped_addr(p, (int)p->envp) & PAGE_MASK;
+		addr = P2V(addr);
+		envp = (char **)(addr + offset);
+		for(n = 0; n < p->envc && (int)envp[n]; n++) {
+			offset = (int)envp[n] & ~PAGE_MASK;
+			addr = get_mapped_addr(p, (int)envp[n]) & PAGE_MASK;
 			addr = P2V(addr);
 			env = (char *)(addr + offset);
 			if(size + strlen(env) < (PAGE_SIZE - 1)) {
