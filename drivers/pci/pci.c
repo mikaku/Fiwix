@@ -13,11 +13,10 @@
 #include <fiwix/mm.h>
 
 #ifdef CONFIG_PCI
-
 struct pci_device *pci_device_table = NULL;
 
 /* supported device classes only */
-static const char *pci_get_strclass(unsigned short int class)
+static const char *get_strclass(unsigned short int class)
 {
 	switch(class) {
 		case PCI_CLASS_STORAGE_IDE:		return "IDE interface";
@@ -27,7 +26,7 @@ static const char *pci_get_strclass(unsigned short int class)
 	return NULL;
 }
 
-static const char *pci_get_strvendor_id(unsigned short int vendor_id)
+static const char *get_strvendor_id(unsigned short int vendor_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(vendor_id) {
@@ -39,7 +38,7 @@ static const char *pci_get_strvendor_id(unsigned short int vendor_id)
 	return NULL;
 }
 
-static const char *pci_get_strdevice_id(unsigned short int device_id)
+static const char *get_strdevice_id(unsigned short int device_id)
 {
 #ifdef CONFIG_PCI_NAMES
 	switch(device_id) {
@@ -88,14 +87,7 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 		return;
 	}
 
-	pci_dev->command = pci_read_short(bus, dev, func, PCI_COMMAND);
-	pci_dev->status = pci_read_short(bus, dev, func, PCI_STATUS);
-	pci_dev->rev = pci_read_char(bus, dev, func, PCI_REVISION_ID);
-	pci_dev->prog_if = pci_read_char(bus, dev, func, PCI_PROG_IF);
-	/* BARs are special, they must be handled by the driver */
-	pci_dev->pin = pci_read_char(bus, dev, func, PCI_INTERRUPT_PIN);
 	*pdt = *pci_dev;
-
 	if(!pci_device_table) {
 		pci_device_table = pdt;
 	} else {
@@ -107,25 +99,32 @@ static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_de
 
 static void scan_bus(void)
 {
-	int b, d, f;
+	int n, b, d, f;
 	unsigned int vendor_id, device_id, class;
-	unsigned char header, irq, prog_if;
-	struct pci_device pci_dev;
+	unsigned char hdr_type, irq, prog_if;
+	struct pci_device pci_dev, *pd;
 	const char *name;
+	unsigned int reg, addr, val;
+	unsigned short int cmd;
 
 	for(b = 0; b < PCI_MAX_BUS; b++) {
 		for(d = 0; d < PCI_MAX_DEV; d++) {
 			for(f = 0; f < PCI_MAX_FUNC; f++) {
-				vendor_id = pci_read_short(b, d, f, PCI_VENDOR_ID);
+				memset_b(&pci_dev, 0, sizeof(struct pci_device));
+				pci_dev.bus = b;
+				pci_dev.dev = d;
+				pci_dev.func = f;
+
+				vendor_id = pci_read_short(&pci_dev, PCI_VENDOR_ID);
 				if(!vendor_id || vendor_id == 0xFFFF) {
 					continue;
 				}
 
-				device_id = pci_read_short(b, d, f, PCI_DEVICE_ID);
-				prog_if = pci_read_char(b, d, f, PCI_PROG_IF);
-				class = pci_read_short(b, d, f, PCI_CLASS_DEVICE);
-				header = pci_read_char(b, d, f, PCI_HEADER_TYPE);
-				irq = pci_read_char(b, d, f, PCI_INTERRUPT_LINE);
+				device_id = pci_read_short(&pci_dev, PCI_DEVICE_ID);
+				prog_if = pci_read_char(&pci_dev, PCI_PROG_IF);
+				class = pci_read_short(&pci_dev, PCI_CLASS_DEVICE);
+				hdr_type = pci_read_char(&pci_dev, PCI_HEADER_TYPE);
+				irq = pci_read_char(&pci_dev, PCI_INTERRUPT_LINE);
 
 				printk("\t  b:%02x d:%02x f:%d", b, d, f);
 				if(irq) {
@@ -134,106 +133,136 @@ static void scan_bus(void)
 					printk("     -");
 				}
 				printk("\t%04x:%04x %04x%02x", vendor_id, device_id, class, (int)prog_if);
-
-				name = pci_get_strclass(class);
+				name = get_strclass(class);
 				printk(" - %s\n", name ? name : "Unknown");
-				memset_b(&pci_dev, 0, sizeof(struct pci_device));
-				pci_dev.bus = b;
-				pci_dev.dev = d;
-				pci_dev.func = f;
 				pci_dev.vendor_id = vendor_id;
 				pci_dev.device_id = device_id;
 				pci_dev.class = class;
-				pci_dev.header = header;
+				pci_dev.hdr_type = hdr_type;
 				pci_dev.irq = irq;
+
+				pci_dev.command = pci_read_short(&pci_dev, PCI_COMMAND);
+				pci_dev.status = pci_read_short(&pci_dev, PCI_STATUS);
+				pci_dev.rev = pci_read_char(&pci_dev, PCI_REVISION_ID);
+				pci_dev.prog_if = prog_if;
+				pci_dev.cline_size = pci_read_char(&pci_dev, PCI_CACHE_LINE_SIZE);
+				pci_dev.latency = pci_read_char(&pci_dev, PCI_LATENCY_TIMER);
+				pci_dev.bist = pci_read_char(&pci_dev, PCI_BIST);
+				pci_dev.pin = pci_read_char(&pci_dev, PCI_INTERRUPT_PIN);
+				pci_dev.min_gnt = pci_read_char(&pci_dev, PCI_MIN_GRANT);
+				pci_dev.max_lat = pci_read_char(&pci_dev, PCI_MAX_LATENCY);
+
 				add_pci_device(b, d, f, &pci_dev);
-				if(!f && !(header & 0x80)) {
+				if(!f && !(hdr_type & 0x80)) {
 					break;	/* no more functions in this device */
 				}
 			}
 		}
 	}
+
+	/* get BARs */
+	pd = pci_device_table;
+	while(pd) {
+		/* only normal PCI devices (bridges are not supported) */
+		if(pd->hdr_type != PCI_HEADER_TYPE_NORMAL) {
+			pd = pd->next;
+			continue;
+		}
+
+		/* disable I/O space and address space */
+		cmd = pci_read_short(pd, PCI_COMMAND);
+		pci_write_short(pd, PCI_COMMAND, cmd & ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER));
+
+		/* read up to 6 BARs */
+		for(n = 0; n < 6; n++) {
+			reg = PCI_BASE_ADDR_0 + (n * 4);
+
+			/* save the original value */
+			addr = pci_read_long(pd, reg);
+
+			pci_write_long(pd, reg, ~0);
+			val = pci_read_long(pd, reg);
+
+			/* restore the original value */
+			pci_write_long(pd, reg, addr);
+
+			if(!val || val == 0xFFFFFFFF) {
+				continue;
+			}
+
+			if(addr & PCI_BASE_ADDR_SPACE_IO) {
+				addr &= PCI_BASE_ADDR_IO_MASK;
+				pd->flags[n] |= PCI_F_ADDR_SPACE_IO;
+				val = (~(val & ~0x1)) + 1;
+			} else {
+				/* memory mapped */
+				if(addr & PCI_BASE_ADDR_MEM_PREF) {
+					pd->flags[n] |= PCI_F_ADDR_SPACE_PREFET;
+				}
+				if((addr & PCI_BASE_ADDR_TYPE_MASK) == PCI_BASE_ADDR_TYPE_32) {
+					pd->flags[n] |= PCI_F_ADDR_MEM_32;
+				} 
+				if((addr & PCI_BASE_ADDR_TYPE_MASK) == PCI_BASE_ADDR_TYPE_64) {
+					pd->flags[n] |= PCI_F_ADDR_MEM_64;
+				} 
+				addr &= PCI_BASE_ADDR_MEM_MASK;
+				pd->flags[n] |= PCI_F_ADDR_SPACE_MEM;
+				val = (~(val & ~0xF)) + 1;
+			}
+			pd->bar[n] = addr;
+			pd->size[n] = val;
+		}
+
+		/* restore I/O space and address space */
+		pci_write_short(pd, PCI_COMMAND, cmd);
+
+		pd = pd->next;
+	}
 }
 
-unsigned char pci_read_char(int bus, int dev, int func, int offset)
+unsigned char pci_read_char(struct pci_device *pci_dev, int offset)
 {
 	unsigned char retval;
 
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	retval = inport_l(PCI_DATA) >> ((offset & 3) * 8) & 0xFF;
 	return retval;
 }
 
-unsigned short int pci_read_short(int bus, int dev, int func, int offset)
+unsigned short int pci_read_short(struct pci_device *pci_dev, int offset)
 {
 	unsigned short int retval;
 
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8) & 0xFFFF;
 	return retval;
 }
 
-unsigned int pci_read_long(int bus, int dev, int func, int offset)
+unsigned int pci_read_long(struct pci_device *pci_dev, int offset)
 {
 	unsigned int retval;
 
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	retval = inport_l(PCI_DATA) >> ((offset & 2) * 8);
 	return retval;
 }
 
-void pci_write_char(int bus, int dev, int func, int offset, unsigned char buf)
+void pci_write_char(struct pci_device *pci_dev, int offset, unsigned char buf)
 {
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	outport_b(PCI_DATA, buf);
 }
 
-void pci_write_short(int bus, int dev, int func, int offset, unsigned short int buf)
+void pci_write_short(struct pci_device *pci_dev, int offset, unsigned short int buf)
 {
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	outport_w(PCI_DATA, buf);
 }
 
-void pci_write_long(int bus, int dev, int func, int offset, unsigned int buf)
+void pci_write_long(struct pci_device *pci_dev, int offset, unsigned int buf)
 {
-	outport_l(PCI_ADDRESS, get_addr(bus, dev, func, offset));
+	outport_l(PCI_ADDRESS, get_addr(pci_dev->bus, pci_dev->dev, pci_dev->func, offset));
 	outport_l(PCI_DATA, buf);
-}
-
-unsigned int pci_get_barsize(struct pci_device *pci_dev, int bar)
-{
-	int bus, dev, func;
-	unsigned int tmp, retval;
-
-	bus = pci_dev->bus;
-	dev = pci_dev->dev;
-	func = pci_dev->func;
-
-	/* disable I/O space and address space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER));
-
-	/* backup original value */
-	tmp = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-
-	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), ~0);
-	retval = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-
-	/* restore original value */
-	pci_write_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4), tmp);
-
-	/* enable I/O space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
-
-	/* evaluate size */
-	if(tmp & 1) {
-		/* port I/O */
-		retval = (~(retval & ~0x1)) + 1;
-	} else {
-		/* memory mapped */
-		retval = (~(retval & ~0xF)) + 1;
-	}
-
-	return retval;
 }
 
 void pci_show_desc(struct pci_device *pci_dev)
@@ -242,9 +271,9 @@ void pci_show_desc(struct pci_device *pci_dev)
 
 	printk("\t\t\t\tpci=b:%02x d:%02x f:%d, rev=0x%02x\n", pci_dev->bus, pci_dev->dev, pci_dev->func, pci_dev->rev);
 	printk("\t\t\t\t");
-	name = pci_get_strdevice_id(pci_dev->device_id);
+	name = get_strdevice_id(pci_dev->device_id);
 	printk("desc=%s ", name);
-	name = pci_get_strvendor_id(pci_dev->vendor_id);
+	name = get_strvendor_id(pci_dev->vendor_id);
 	printk("(%s)\n", name);
 }
 
@@ -253,7 +282,6 @@ struct pci_device *pci_get_device(unsigned short int vendor_id, unsigned short i
 	struct pci_device *pdt;
 
 	pdt = pci_device_table;
-
 	while(pdt) {
 		if(pdt->vendor_id == vendor_id && pdt->device_id == device_id) {
 			return pdt;
@@ -274,5 +302,4 @@ void pci_init(void)
 	printk("     -\tbus range=0-%d, configuration type=1\n", PCI_MAX_BUS - 1);
 	scan_bus();
 }
-
 #endif /* CONFIG_PCI */

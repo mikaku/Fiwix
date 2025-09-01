@@ -31,20 +31,34 @@
 #define PCI_REVISION_ID		0x08	/*  8 bits */
 #define PCI_PROG_IF		0x09	/*  8 bits */
 #define PCI_CLASS_DEVICE	0x0A	/* 16 bits (class + subclass) */
+#define PCI_CACHE_LINE_SIZE	0x0C	/*  8 bits */
 #define PCI_LATENCY_TIMER	0x0D	/*  8 bits */
+
 #define PCI_HEADER_TYPE		0x0E	/*  8 bits */
-#define PCI_BASE_ADDRESS_0	0x10	/* 32 bits */
-#define PCI_BASE_ADDRESS_1	0x14	/* 32 bits (header 0 and 1 only) */
-#define PCI_BASE_ADDRESS_2	0x18	/* 32 bits (header 0 only) */
-#define PCI_BASE_ADDRESS_3	0x1C	/* 32 bits */
-#define PCI_BASE_ADDRESS_4	0x20	/* 32 bits */
-#define PCI_BASE_ADDRESS_5	0x24	/* 32 bits */
-#define PCI_INTERRUPT_LINE	0x3C	/*  8 bits */
-#define PCI_INTERRUPT_PIN	0x3D	/*  8 bits */
+#define PCI_HEADER_TYPE_NORMAL	0x00	/* standard header */
+
+#define PCI_BIST		0x0F	/*  8 bits */
+#define PCI_BASE_ADDR_0		0x10	/* 32 bits */
+#define PCI_BASE_ADDR_1		0x14	/* 32 bits (header 0 and 1 only) */
+#define PCI_BASE_ADDR_2		0x18	/* 32 bits (header 0 only) */
+#define PCI_BASE_ADDR_3		0x1C	/* 32 bits */
+#define PCI_BASE_ADDR_4		0x20	/* 32 bits */
+#define PCI_BASE_ADDR_5		0x24	/* 32 bits */
 
 #define PCI_BASE_ADDR_SPACE	0x01	/* 0 = memory, 1 = I/O */
 #define PCI_BASE_ADDR_SPACE_MEM	0x00
 #define PCI_BASE_ADDR_SPACE_IO	0x01
+#define PCI_BASE_ADDR_TYPE_MASK	0x06	/* base register size (32bit/64bit) */
+#define PCI_BASE_ADDR_TYPE_32	0x00	/* 32 bit address */
+#define PCI_BASE_ADDR_TYPE_64	0x04	/* 64 bit address */
+#define PCI_BASE_ADDR_MEM_PREF	0x08	/* prefetchable memory */
+#define PCI_BASE_ADDR_MEM_MASK	0xFFFFFFF0
+#define PCI_BASE_ADDR_IO_MASK	0xFFFFFFFC
+
+#define PCI_INTERRUPT_LINE	0x3C	/*  8 bits */
+#define PCI_INTERRUPT_PIN	0x3D	/*  8 bits */
+#define PCI_MIN_GRANT		0x3E	/*  8 bits */
+#define PCI_MAX_LATENCY		0x3F	/*  8 bits */
 
 /* bus mastering */
 #define BM_COMMAND		0x00	/* command register primary */
@@ -62,10 +76,16 @@
 					/* 0x40: drive 1 is DMA capable */
 #define BM_STATUS_SIMPLEX	0x80	/* simplex only */
 
+/* flags */
+#define PCI_F_ADDR_SPACE_IO	0x01
+#define PCI_F_ADDR_SPACE_MEM	0x02
+#define PCI_F_ADDR_MEM_32	0x04	/* 32 bit address */
+#define PCI_F_ADDR_MEM_64	0x08	/* 64 bit address */
+#define PCI_F_ADDR_SPACE_PREFET	0x10	/* prefetchable memory */
+
 struct pci_supported_devices {
 	unsigned short int vendor_id;
 	unsigned short int device_id;
-	int bars;
 };
 
 struct pci_device {
@@ -79,23 +99,28 @@ struct pci_device {
 	unsigned char rev;
 	unsigned char prog_if;
 	unsigned short int class;
-	unsigned char header;
+	unsigned char cline_size;
+	unsigned char latency;
+	unsigned char hdr_type;
+	unsigned char bist;
 	unsigned int bar[6];
 	unsigned char irq;
 	unsigned char pin;
+	unsigned char min_gnt;
+	unsigned char max_lat;
 	unsigned int size[6];
+	unsigned int flags[6];
 	struct pci_device *prev;
 	struct pci_device *next;
 };
 extern struct pci_device *pci_device_table;
 
-unsigned char pci_read_char(int, int, int, int);
-unsigned short int pci_read_short(int, int, int, int);
-unsigned int pci_read_long(int, int, int, int);
-void pci_write_char(int, int, int, int, unsigned char);
-void pci_write_short(int, int, int, int, unsigned short int);
-void pci_write_long(int, int, int, int, unsigned int);
-unsigned int pci_get_barsize(struct pci_device *, int);
+unsigned char pci_read_char(struct pci_device *, int);
+unsigned short int pci_read_short(struct pci_device *, int);
+unsigned int pci_read_long(struct pci_device *, int);
+void pci_write_char(struct pci_device *, int, unsigned char);
+void pci_write_short(struct pci_device *, int, unsigned short int);
+void pci_write_long(struct pci_device *, int, unsigned int);
 void pci_show_desc(struct pci_device *);
 struct pci_device *pci_get_device(unsigned short int, unsigned short int);
 void pci_init(void);

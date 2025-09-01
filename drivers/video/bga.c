@@ -19,7 +19,7 @@
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_BOCHS, PCI_DEVICE_ID_BGA, 2 },
+	{ PCI_VENDOR_ID_BOCHS, PCI_DEVICE_ID_BGA },
 	{ 0, 0 }
 };
 
@@ -38,8 +38,7 @@ static unsigned short int bga_read_register(unsigned short int cmd)
 void bga_init(void)
 {
 	struct pci_device *pci_dev;
-	int bus, dev, func, bar;
-	unsigned int size;
+	unsigned short int cmd;
 	int xres, yres, bpp;
 
 	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
@@ -47,18 +46,6 @@ void bga_init(void)
 	}
 	if(!(*kparms.bgaresolution)) {
 		return;
-	}
-
-	bus = pci_dev->bus;
-	dev = pci_dev->dev;
-	func = pci_dev->func;
-
-	for(bar = 0; bar < supported[0].bars; bar++) {
-		pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + bar) & ~0xF;
-		if(pci_dev->bar[bar]) {
-			size = pci_get_barsize(pci_dev, bar);
-			pci_dev->size[bar] = size;
-		}
 	}
 
 	/* prepare to switch to the resolution requested */
@@ -78,7 +65,8 @@ void bga_init(void)
 	}
 
 	/* enable I/O space and memory space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+	cmd = (pci_dev->command | PCI_COMMAND_IO | PCI_COMMAND_MEMORY);
+	pci_write_short(pci_dev, PCI_COMMAND, cmd);
 
 	video.pci_dev = pci_dev;
 	video.address = (unsigned int *)pci_dev->bar[0];

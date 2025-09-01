@@ -14,7 +14,7 @@
 
 #ifdef CONFIG_PCI
 static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1, 5 },	/* 82371SB PIIX3 [Natoma/Triton II] */
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1 },	/* 82371SB PIIX3 [Natoma/Triton II] */
 	{ 0, 0 }
 };
 
@@ -50,8 +50,7 @@ int ata_pci(struct ide *ide)
 {
 	struct pci_device *pci_dev;
 	struct pci_supported_devices *supp;
-	int bus, dev, func, bar;
-	int channel, found;
+	int bar, channel, found;
 	int size;
 
 	supp = (struct pci_supported_devices *)&supported;
@@ -67,37 +66,23 @@ int ata_pci(struct ide *ide)
 		return 0;
 	}
 
-	bus = pci_dev->bus;
-	dev = pci_dev->dev;
-	func = pci_dev->func;
-
-	for(bar = 0; bar < supported[0].bars; bar++) {
-		pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-		if(pci_dev->bar[bar]) {
-			pci_dev->size[bar] = pci_get_barsize(pci_dev, bar);
-		}
-	}
-
 	/* enable I/O space */
-	pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
+	pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
 
 	for(found = 0, channel = 0; channel < NR_IDE_CTRLS; channel++, ide++) {
 		bar = channel * 2;
-		printk("ide%d	  ", channel);
-		if(pci_dev->bar[bar]) {
-			if((pci_dev->bar[bar] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM ||
-			   (pci_dev->bar[bar + 1] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
-				printk("MMIO-based BAR registers are not supported, channel discarded.\n");
-				continue;
-			}
+		if(pci_dev->flags[bar] & PCI_F_ADDR_SPACE_MEM) {
+			printk("MMIO-based BAR registers are not supported.\n");
+			continue;
 		}
+		printk("ide%d	  ", channel);
 		found++;
 		ide_table_init(ide, channel);
 		size = IDE_BASE_LEN;
 		if(pci_dev->bar[bar]) {
 			if(pci_dev->prog_if & 0xF) {
-				ide->base = pci_dev->bar[bar] & 0xFFFC;
-				ide->ctrl = pci_dev->bar[bar + 1] & 0xFFFC;
+				ide->base = pci_dev->bar[bar];
+				ide->ctrl = pci_dev->bar[bar + 1];
 				ide->irq = pci_dev->irq;
 				size = pci_dev->size[bar];
 			}
@@ -124,19 +109,19 @@ int ata_pci(struct ide *ide)
 			*/
 		}
 		if(pci_dev->prog_if & 0x80) {
-			ide->bm = (pci_dev->bar[4] + (channel * 8)) & 0xFFFC;
+			ide->bm = (pci_dev->bar[4] + (channel * 8));
 			printk("\t\t\t\tbus master DMA at 0x%x\n", ide->bm);
 			/* enable I/O space and bus master */
-			pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER));
+			pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER));
 			ide->pci_dev = pci_dev;
 
 			/* set PCI Latency Timer and transfers timing */
 			switch(pci_dev->device_id) {
 				case PCI_DEVICE_ID_INTEL_82371SB_1:
-					pci_write_char(bus, dev, func, PCI_LATENCY_TIMER, 64);
+					pci_write_char(pci_dev, PCI_LATENCY_TIMER, 64);
 					/* from the book 'FYSOS: Media Storage Devices', Appendix F */
-					pci_write_short(bus, dev, func, 0x40, 0xA344);
-					pci_write_short(bus, dev, func, 0x42, 0xA344);
+					pci_write_short(pci_dev, 0x40, 0xA344);
+					pci_write_short(pci_dev, 0x42, 0xA344);
 					break;
 			}
 		}

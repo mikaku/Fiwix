@@ -119,7 +119,7 @@ static int baud_table[] = {
 
 #ifdef CONFIG_PCI
 static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_REDHAT, PCI_DEVICE_ID_QEMU_16550A, 2 },
+	{ PCI_VENDOR_ID_REDHAT, PCI_DEVICE_ID_QEMU_16550A },
 	{ 0, 0 }
 };
 #endif /* CONFIG_PCI */
@@ -551,26 +551,15 @@ static int serial_pci(int minor)
 {
 	struct pci_device *pci_dev;
 	struct serial *s;
-	int bus, dev, func;
-	int n, bar;
+	unsigned short int cmd;
+	int n;
 
 	for(n = 0; (supported[n].vendor_id && supported[n].device_id) && minor < NR_SERIAL; n++) {
 		if(!(pci_dev = pci_get_device(supported[n].vendor_id, supported[n].device_id))) {
 			continue;
 		}
 
-		bus = pci_dev->bus;
-		dev = pci_dev->dev;
-		func = pci_dev->func;
-
-		for(bar = 0; bar < supported[n].bars; bar++) {
-			pci_dev->bar[bar] = pci_read_long(bus, dev, func, PCI_BASE_ADDRESS_0 + (bar * 4));
-			if(pci_dev->bar[bar]) {
-				pci_dev->size[bar] = pci_get_barsize(pci_dev, bar);
-			}
-		}
-
-		if((pci_dev->bar[0] & PCI_BASE_ADDR_SPACE) == PCI_BASE_ADDR_SPACE_MEM) {
+		if(pci_dev->flags[0] & PCI_F_ADDR_SPACE_MEM) {
 			printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
 			continue;
 		}
@@ -579,9 +568,10 @@ static int serial_pci(int minor)
 		}
 
 		/* enable I/O space */
-		pci_write_short(bus, dev, func, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
+		cmd = (pci_dev->command | PCI_COMMAND_IO);
+		pci_write_short(pci_dev, PCI_COMMAND, cmd);
 
-		s->ioaddr = (pci_dev->bar[0] &= ~1);
+		s->ioaddr = pci_dev->bar[0];
 		s->iosize = pci_dev->size[0];
 		s->irq = pci_dev->irq;
 		if(!register_serial(s, minor)) {
