@@ -20,7 +20,7 @@
 #define PROC_FD_INO		0x50000000	/* base for FD inodes */
 #define PROC_FD_LEV		2	/* array level for FDs */
 
-#define PROC_ARRAY_ENTRIES	23
+#define PROC_ARRAY_ENTRIES	24
 
 enum pid_dir_inodes {
 	PROC_PID_FD = PROC_PID_INO + 1001,
@@ -65,6 +65,7 @@ int data_proc_locks(char *, __pid_t);
 int data_proc_meminfo(char *, __pid_t);
 int data_proc_mounts(char *, __pid_t);
 int data_proc_partitions(char *, __pid_t);
+int data_proc_pci(char *, __pid_t);
 int data_proc_rtc(char *, __pid_t);
 int data_proc_self(char *, __pid_t);
 int data_proc_stat(char *, __pid_t);

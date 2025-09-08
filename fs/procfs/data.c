@@ -27,6 +27,7 @@
 #include <fiwix/utsname.h>
 #include <fiwix/version.h>
 #include <fiwix/socket.h>
+#include <fiwix/pci.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
@@ -320,6 +321,52 @@ int data_proc_partitions(char *buffer, __pid_t pid)
 		}
 	}
 	return size;
+}
+
+int data_proc_pci(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_PCI
+	int size, n;
+	struct pci_device *pd;
+
+	size = sprintk(buffer, "PCI devices found:\n");
+	pd = pci_device_table;
+
+	while(pd) {
+		size += sprintk(buffer + size, "  Bus %2d, device %3d, function %2d:\n", pd->bus, pd->dev, pd->func);
+		size += sprintk(buffer + size, "    Class %04x: PCI device %04x:%04x (rev %d).\n", pd->class, pd->vendor_id, pd->device_id, pd->rev);
+		if(pd->irq) {
+			size += sprintk(buffer + size, "      IRQ %d.\n", pd->irq);
+		}
+		if(pd->hdr_type == PCI_HEADER_TYPE_NORMAL) {
+			for(n = 0; n < 6; n++) {
+				if(pd->bar[n]) {
+					if(pd->flags[n] & PCI_BASE_ADDR_SPACE_IO) {
+						size += sprintk(buffer + size, "      I/O at 0x%x [0x%x].\n", pd->bar[n], pd->bar[n] + (pd->size[n] - 1));
+					} else {
+						if(pd->flags[n] & PCI_F_ADDR_SPACE_PREFET) {
+							size += sprintk(buffer + size, "      Prefetchable ");
+						} else {
+							size += sprintk(buffer + size, "      Non-prefetchable ");
+						}
+						if(pd->flags[n] & PCI_F_ADDR_MEM_32) {
+							size += sprintk(buffer + size, "32");
+						} else if(pd->flags[n] & PCI_F_ADDR_MEM_64) {
+							size += sprintk(buffer + size, "64");
+						} else {
+							size += sprintk(buffer + size, "??");
+						}
+						size += sprintk(buffer + size, " bit memory at 0x%x [0x%x].\n", pd->bar[n], pd->bar[n] + (pd->size[n] - 1));
+					}
+				}
+			}
+		}
+		pd = pd->next;
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_PCI */
 }
 
 int data_proc_rtc(char *buffer, __pid_t pid)

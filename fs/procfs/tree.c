@@ -44,11 +44,12 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 15,            REG,    1, 0, 7,  "meminfo",    data_proc_meminfo },
 	{ 16,            REG,    1, 0, 6,  "mounts",     data_proc_mounts },
 	{ 17,            REG,    1, 0, 10, "partitions", data_proc_partitions },
-	{ 18,            REG,    1, 0, 3,  "rtc",        data_proc_rtc },
-	{ 19,            LNK,    1, 0, 4,  "self",       data_proc_self },
-	{ 20,            REG,    1, 0, 4,  "stat",       data_proc_stat },
-	{ 21,            REG,    1, 0, 6,  "uptime",     data_proc_uptime },
-	{ 22,            REG,    1, 0, 7,  "version",    data_proc_fullversion },
+	{ 18,            REG,    1, 0, 3,  "pci",        data_proc_pci },
+	{ 19,            REG,    1, 0, 3,  "rtc",        data_proc_rtc },
+	{ 20,            LNK,    1, 0, 4,  "self",       data_proc_self },
+	{ 21,            REG,    1, 0, 4,  "stat",       data_proc_stat },
+	{ 22,            REG,    1, 0, 6,  "uptime",     data_proc_uptime },
+	{ 23,            REG,    1, 0, 7,  "version",    data_proc_fullversion },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
    {	/* [1] /PID/ */
