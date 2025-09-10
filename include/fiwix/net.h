@@ -44,7 +44,7 @@ struct socket {
 	struct socket *queue_head;	/* first connection in queue */
 	struct socket *next_queue;	/* next connection in queue */
 	union {
-		struct unix_info unix;
+		struct unix_info unix_info;
 	} u;
 };
 

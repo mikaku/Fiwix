@@ -78,7 +78,7 @@ int unix_create(struct socket *s)
 {
 	struct unix_info *u;
 
-	u = &s->u.unix;
+	u = &s->u.unix_info;
 	memset_b(u, 0, sizeof(struct unix_info));
 	u->count = 1;
 	u->socket = s;
@@ -90,7 +90,7 @@ void unix_free(struct socket *s)
 {
 	struct unix_info *u;
 
-	u = &s->u.unix;
+	u = &s->u.unix_info;
 	if(!(--u->count)) {
 		if(u->data) {
 			kfree((unsigned int)u->data);
@@ -134,31 +134,31 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
                 return -EINVAL;
 	}
 
-	if(s->u.unix.sun) {
+	if(s->u.unix_info.sun) {
 		return -EINVAL;
 	}
-	if(!(s->u.unix.sun = (struct sockaddr_un *)kmalloc(sizeof(struct sockaddr_un)))) {
+	if(!(s->u.unix_info.sun = (struct sockaddr_un *)kmalloc(sizeof(struct sockaddr_un)))) {
 		return -ENOMEM;
 	}
-	memset_b(s->u.unix.sun, 0, sizeof(struct sockaddr_un));
-	memcpy_b(s->u.unix.sun, su, addrlen);
-	s->u.unix.sun_len = addrlen;
+	memset_b(s->u.unix_info.sun, 0, sizeof(struct sockaddr_un));
+	memcpy_b(s->u.unix_info.sun, su, addrlen);
+	s->u.unix_info.sun_len = addrlen;
 
 	errno = do_mknod((char *)su->sun_path, S_IFSOCK | (S_IRWXU | S_IRWXG | S_IRWXO), 0);
 	if(errno < 0) {
-		kfree((unsigned int)s->u.unix.sun);
-		s->u.unix.sun = NULL;
+		kfree((unsigned int)s->u.unix_info.sun);
+		s->u.unix_info.sun = NULL;
 		if(errno == -EEXIST) {
 			errno = -EADDRINUSE;
 		}
 		return errno;
 	}
 	if((errno = namei(su->sun_path, &i, NULL, FOLLOW_LINKS))) {
-		kfree((unsigned int)s->u.unix.sun);
-		s->u.unix.sun = NULL;
+		kfree((unsigned int)s->u.unix_info.sun);
+		s->u.unix_info.sun = NULL;
 		return errno;
 	}
-	s->u.unix.inode = i;
+	s->u.unix_info.inode = i;
 	return errno;
 }
 
@@ -204,8 +204,8 @@ int unix_accept(struct socket *sc, struct socket *nss)
 {
 	struct unix_info *uc, *us;
 
-	uc = &sc->u.unix;
-	us = &nss->u.unix;
+	uc = &sc->u.unix_info;
+	us = &nss->u.unix_info;
 
 	if(!(uc->data = (char *)kmalloc(PIPE_BUF))) {
 		return -ENOMEM;
@@ -235,10 +235,10 @@ int unix_getname(struct socket *s, struct sockaddr *addr, int *addrlen, int call
 	len = *addrlen;
 
 	if(call == SYS_GETSOCKNAME) {
-		u = &s->u.unix;
+		u = &s->u.unix_info;
 	} else {
 		/* SYS_GETPEERNAME */
-		u = s->u.unix.peer;
+		u = s->u.unix_info.peer;
 	}
 	if(len > u->sun_len) {
 		len = u->sun_len;
@@ -256,8 +256,8 @@ int unix_socketpair(struct socket *s1, struct socket *s2)
 {
 	struct unix_info *u1, *u2;
 
-	u1 = &s1->u.unix;
-	u2 = &s2->u.unix;
+	u1 = &s1->u.unix_info;
+	u2 = &s2->u.unix_info;
 
 	if(!(u1->data = (char *)kmalloc(PIPE_BUF))) {
 		return -ENOMEM;
@@ -346,7 +346,7 @@ int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, 
 	struct packet *p;
 	int size;
 
-	u = &s->u.unix;
+	u = &s->u.unix_info;
 
 	lock_resource(&packet_resource);
 	while(!(p = peek_packet(u->packet_queue))) {
@@ -372,7 +372,7 @@ int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, 
 	}
 	unlock_resource(&packet_resource);
 
-	up = &p->socket->u.unix;
+	up = &p->socket->u.unix_info;
 	sun = (struct sockaddr_un *)addr;
 	sun->sun_family = AF_UNIX;
 	memcpy_b(sun->sun_path, up->sun->sun_path, up->sun_len);
@@ -386,7 +386,7 @@ int unix_read(struct socket *s, struct fd *f, char *buffer, __size_t count)
 	int bytes_read;
 	int n, limit;
 
-	u = &s->u.unix;
+	u = &s->u.unix_info;
 	bytes_read = 0;
 
 	while(count) {
@@ -447,8 +447,8 @@ int unix_write(struct socket *s, struct fd *f, const char *buffer, __size_t coun
 	int bytes_written;
 	int n, limit;
 
-	u = &s->u.unix;
-	up = s->u.unix.peer;
+	u = &s->u.unix_info;
+	up = s->u.unix_info.peer;
 	bytes_written = 0;
 
 	while(bytes_written < count) {
@@ -507,8 +507,8 @@ int unix_select(struct socket *s, int flag)
 		return 0;
 	}
 
-	u = &s->u.unix;
-	up = s->u.unix.peer;
+	u = &s->u.unix_info;
+	up = s->u.unix_info.peer;
 
 	switch(flag) {
 		case SEL_R:

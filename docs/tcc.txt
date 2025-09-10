@@ -37,6 +37,5 @@ These commands will build Fiwix with tcc:
 
 echo "#undef CONFIG_OFFSET64" > include/fiwix/custom_config.h
 echo "#undef CONFIG_PRINTK64" >> include/fiwix/custom_config.h
-echo "#undef CONFIG_NET" >> include/fiwix/custom_config.h
 make clean
 make CCEXE="tcc" CONFFLAGS="-DCUSTOM_CONFIG_H"
