@@ -462,7 +462,7 @@ int data_proc_unix(char *buffer, __pid_t pid)
 		s = u->socket;
 		fd = s->fd;
 		size += sprintk(buffer + size, "%08x: %08d %08d %08x %04d %02d % 5d %s\n",
-			&s->u.unix,
+			&s->u.unix_info,
 			u->count,	/* FIXME s->fd->count, */
 			0,
 			s->flags,
