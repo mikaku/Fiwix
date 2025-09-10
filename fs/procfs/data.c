@@ -478,6 +478,42 @@ int data_proc_unix(char *buffer, __pid_t pid)
 #endif /* CONFIG_NET */
 }
 
+int data_proc_pci_devices(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_PCI
+	int size, n;
+	struct pci_device *pd;
+
+	size = 0;
+	pd = pci_device_table;
+
+	while(pd) {
+		size += sprintk(buffer + size, "%02x%02x\t%04x%04x\t%x",
+			pd->bus,
+			PCI_DEVFN(pd->dev, pd->func),
+			pd->vendor_id,
+			pd->device_id,
+			pd->irq);
+		for(n = 0; n < 6;n ++) {
+			size += sprintk(buffer + size, "\t%08x", pd->obar[n]);
+		}
+		size += sprintk(buffer + size, "\t%08x", 0);
+		for(n = 0; n < 6;n ++) {
+			size += sprintk(buffer + size, "\t%08x", pd->size[n]);
+		}
+		size += sprintk(buffer + size, "\t%08x", 0);
+		if(pd->name) {
+			size += sprintk(buffer + size, " %s", pd->name);
+		}
+		size += sprintk(buffer + size, "\n");
+		pd = pd->next;
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_PCI */
+}
+
 int data_proc_buffernr(char *buffer, __pid_t pid)
 {
 	return sprintk(buffer, "%d\n", kstat.nr_buffers);

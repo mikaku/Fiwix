@@ -83,6 +83,8 @@
 #define PCI_F_ADDR_MEM_64	0x08	/* 64 bit address */
 #define PCI_F_ADDR_SPACE_PREFET	0x10	/* prefetchable memory */
 
+#define PCI_DEVFN(dev,func)	((((dev) & 0x1f) << 3) | ((func) & 0x07))
+
 struct pci_supported_devices {
 	unsigned short int vendor_id;
 	unsigned short int device_id;
@@ -103,6 +105,7 @@ struct pci_device {
 	unsigned char latency;
 	unsigned char hdr_type;
 	unsigned char bist;
+	unsigned int obar[6];	/* original address */
 	unsigned int bar[6];
 	unsigned char irq;
 	unsigned char pin;
@@ -110,6 +113,7 @@ struct pci_device {
 	unsigned char max_lat;
 	unsigned int size[6];
 	unsigned int flags[6];
+	const char *name;
 	struct pci_device *prev;
 	struct pci_device *next;
 };

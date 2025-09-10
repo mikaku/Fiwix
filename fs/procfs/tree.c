@@ -26,33 +26,34 @@
  * the PROC_ARRAY_ENTRIES value defined in fs_proc.h.
  */
 struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
-   {	/* [0] / */
+   {	/* [lev 0] / */
 	{ 1,     DIR,    2, 0, 1,  ".",   NULL },
 	{ 2,     DIR,    2, 0, 2,  "..",  NULL },
-	{ 3,     DIR,    2, 3, 3,  "net", NULL },
-	{ 4,     DIR,    4, 4, 3,  "sys", NULL },
-	{ 5,             REG,    1, 0, 9,  "buddyinfo",  data_proc_buddyinfo },
-	{ 6,             REG,    1, 0, 7,  "cmdline",    data_proc_cmdline },
-	{ 7,             REG,    1, 0, 7,  "cpuinfo",    data_proc_cpuinfo },
-	{ 8,             REG,    1, 0, 7,  "devices",    data_proc_devices },
-	{ 9,             REG,    1, 0, 3,  "dma",        data_proc_dma },
-	{ 10,            REG,    1, 0, 11, "filesystems",data_proc_filesystems },
-	{ 11,            REG,    1, 0, 10, "interrupts", data_proc_interrupts },
+	{ 3,     DIR,    3, 3, 3,  "bus", NULL },
+	{ 4,     DIR,    2, 4, 3,  "net", NULL },
+	{ 5,     DIR,    4, 5, 3,  "sys", NULL },
+	{ 6,             REG,    1, 0, 9,  "buddyinfo",  data_proc_buddyinfo },
+	{ 7,             REG,    1, 0, 7,  "cmdline",    data_proc_cmdline },
+	{ 8,             REG,    1, 0, 7,  "cpuinfo",    data_proc_cpuinfo },
+	{ 9,             REG,    1, 0, 7,  "devices",    data_proc_devices },
+	{ 10,            REG,    1, 0, 3,  "dma",        data_proc_dma },
+	{ 11,            REG,    1, 0, 11, "filesystems",data_proc_filesystems },
+	{ 12,            REG,    1, 0, 10, "interrupts", data_proc_interrupts },
 	{ PROC_KMSG_INO, REGUSR, 1, 0, 4,  "kmsg",       NULL },
-	{ 13,            REG,    1, 0, 7,  "loadavg",    data_proc_loadavg },
-	{ 14,            REG,    1, 0, 5,  "locks",      data_proc_locks },
-	{ 15,            REG,    1, 0, 7,  "meminfo",    data_proc_meminfo },
-	{ 16,            REG,    1, 0, 6,  "mounts",     data_proc_mounts },
-	{ 17,            REG,    1, 0, 10, "partitions", data_proc_partitions },
-	{ 18,            REG,    1, 0, 3,  "pci",        data_proc_pci },
-	{ 19,            REG,    1, 0, 3,  "rtc",        data_proc_rtc },
-	{ 20,            LNK,    1, 0, 4,  "self",       data_proc_self },
-	{ 21,            REG,    1, 0, 4,  "stat",       data_proc_stat },
-	{ 22,            REG,    1, 0, 6,  "uptime",     data_proc_uptime },
-	{ 23,            REG,    1, 0, 7,  "version",    data_proc_fullversion },
+	{ 14,            REG,    1, 0, 7,  "loadavg",    data_proc_loadavg },
+	{ 15,            REG,    1, 0, 5,  "locks",      data_proc_locks },
+	{ 16,            REG,    1, 0, 7,  "meminfo",    data_proc_meminfo },
+	{ 17,            REG,    1, 0, 6,  "mounts",     data_proc_mounts },
+	{ 18,            REG,    1, 0, 10, "partitions", data_proc_partitions },
+	{ 19,            REG,    1, 0, 3,  "pci",        data_proc_pci },
+	{ 20,            REG,    1, 0, 3,  "rtc",        data_proc_rtc },
+	{ 21,            LNK,    1, 0, 4,  "self",       data_proc_self },
+	{ 22,            REG,    1, 0, 4,  "stat",       data_proc_stat },
+	{ 23,            REG,    1, 0, 6,  "uptime",     data_proc_uptime },
+	{ 24,            REG,    1, 0, 7,  "version",    data_proc_fullversion },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
-   {	/* [1] /PID/ */
+   {	/* [lev 1] /PID/ */
 	{ 1000,  DIR,  2, 1, 1,  ".",   NULL },
 	{ 1,     DIR,  2, 0, 2,  "..",  NULL },
 	{ PROC_PID_FD,      DIRFD,  2, 2, 2,  "fd",       NULL },
@@ -69,44 +70,56 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
 
-   {	/* [2] /PID/fd/ */
+   {	/* [lev 2] /PID/fd/ */
 	{ 2000,  DIRFD,  2, 2, 1,  ".",   NULL },
 	{ 1000,  DIR,    2, 2, 2,  "..",  NULL },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
 
-   {	/* [3] /net/ */
-	{ 3,     DIR,  2, 3, 1,  ".",   NULL },
-	{ 1,     DIR,  2, 0, 2,  "..",  NULL },
-	{ 3001,  REG,  1, 3, 4, "unix", data_proc_unix },
-	{ 0, 0, 0, 0, 0, NULL, NULL }
-   },
-   {	/* [4] /sys/ */
-	{ 4,     DIR,  2, 4, 1,  ".",       NULL },
+   {	/* [lev 3] /bus/ */
+	{ 3,     DIR,  3, 3, 1,  ".",       NULL },
 	{ 1,     DIR,  2, 0, 2,  "..",      NULL },
-	{ 4001,  DIR,  2, 5, 6,  "kernel",  NULL },
-	{ 4002,  DIR,  2, 6, 2,  "vm",      NULL },
+	{ 3001,  DIR,  2, 6, 3,  "pci",     NULL },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
-   {	/* [4001] /sys/kernel/ */
-	{ 4001,  DIR,  2, 5, 1,  ".",   NULL },
-	{ 4,     DIR,  2, 3, 2,  "..",  NULL },
-	{ 5001,  REG,  1, 5, 9,  "buffer-nr",  data_proc_buffernr },
-	{ 5002,  REG,  1, 5, 10, "domainname", data_proc_domainname },
-	{ 5003,  REG,  1, 5, 8,  "file-max",   data_proc_filemax },
-	{ 5004,  REG,  1, 5, 7,  "file-nr",    data_proc_filenr },
-	{ 5005,  REG,  1, 5, 8,  "hostname",   data_proc_hostname },
-	{ 5006,  REG,  1, 5, 9,  "inode-max",  data_proc_inodemax },
-	{ 5007,  REG,  1, 5, 8,  "inode-nr",   data_proc_inodenr },
-	{ 5008,  REG,  1, 5, 9,  "osrelease",  data_proc_osrelease },
-	{ 5009,  REG,  1, 5, 6,  "ostype",     data_proc_ostype },
-	{ 5010,  REG,  1, 5, 7,  "version",    data_proc_version },
+   {	/* [lev 4] /net/ */
+	{ 4,     DIR,  2, 4, 1,  ".",   NULL },
+	{ 1,     DIR,  2, 0, 2,  "..",  NULL },
+	{ 4001,  REG,  1, 4, 4, "unix", data_proc_unix },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
-   {	/* [4002] /sys/vm/ */
-	{ 4002,  DIR,  2, 6, 1,  ".",   NULL },
-	{ 4,     DIR,  2, 3, 2,  "..",  NULL },
-	{ 6001,  REG,  1, 6, 22, "dirty_background_ratio", data_proc_dirty_background_ratio },
+   {	/* [lev 5] /sys/ */
+	{ 5,     DIR,  2, 5, 1,  ".",       NULL },
+	{ 1,     DIR,  2, 0, 2,  "..",      NULL },
+	{ 5001,  DIR,  2, 7, 6,  "kernel",  NULL },
+	{ 5002,  DIR,  2, 8, 2,  "vm",      NULL },
+	{ 0, 0, 0, 0, 0, NULL, NULL }
+   },
+   {	/* [3001] /bus/pci/ */
+	{ 3001,  DIR,  2, 4, 1,  ".",   NULL },
+	{ 3,     DIR,  3, 3, 2,  "..",  NULL },
+	{ 6001,  REG,  1, 6, 7,  "devices", data_proc_pci_devices },
+	{ 0, 0, 0, 0, 0, NULL, NULL }
+   },
+   {	/* [5001] /sys/kernel/ */
+	{ 5001,  DIR,  2, 7, 1,  ".",   NULL },
+	{ 5,     DIR,  2, 3, 2,  "..",  NULL },
+	{ 7001,  REG,  1, 7, 9,  "buffer-nr",  data_proc_buffernr },
+	{ 7002,  REG,  1, 7, 10, "domainname", data_proc_domainname },
+	{ 7003,  REG,  1, 7, 8,  "file-max",   data_proc_filemax },
+	{ 7004,  REG,  1, 7, 7,  "file-nr",    data_proc_filenr },
+	{ 7005,  REG,  1, 7, 8,  "hostname",   data_proc_hostname },
+	{ 7006,  REG,  1, 7, 9,  "inode-max",  data_proc_inodemax },
+	{ 7007,  REG,  1, 7, 8,  "inode-nr",   data_proc_inodenr },
+	{ 7008,  REG,  1, 7, 9,  "osrelease",  data_proc_osrelease },
+	{ 7009,  REG,  1, 7, 6,  "ostype",     data_proc_ostype },
+	{ 7010,  REG,  1, 7, 7,  "version",    data_proc_version },
+	{ 0, 0, 0, 0, 0, NULL, NULL }
+   },
+   {	/* [5002] /sys/vm/ */
+	{ 5002,  DIR,  2, 8, 1,  ".",   NULL },
+	{ 5,     DIR,  2, 3, 2,  "..",  NULL },
+	{ 8001,  REG,  1, 8, 22, "dirty_background_ratio", data_proc_dirty_background_ratio },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    }
 };

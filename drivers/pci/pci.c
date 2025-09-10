@@ -13,7 +13,7 @@
 #include <fiwix/mm.h>
 
 #ifdef CONFIG_PCI
-struct pci_device *pci_device_table = NULL;
+struct pci_device *pci_device_table;
 
 /* supported device classes only */
 static const char *get_strclass(unsigned short int class)
@@ -79,7 +79,7 @@ static int is_mechanism_1_supported(void)
 	return 0;
 }
 
-static void add_pci_device(int bus, int dev, int func, struct pci_device *pci_dev)
+static void add_pci_device(struct pci_device *pci_dev)
 {
 	struct pci_device *pdt;
 
@@ -103,7 +103,6 @@ static void scan_bus(void)
 	unsigned int vendor_id, device_id, class;
 	unsigned char hdr_type, irq, prog_if;
 	struct pci_device pci_dev, *pd;
-	const char *name;
 	unsigned int reg, addr, val;
 	unsigned short int cmd;
 
@@ -133,14 +132,13 @@ static void scan_bus(void)
 					printk("     -");
 				}
 				printk("\t%04x:%04x %04x%02x", vendor_id, device_id, class, (int)prog_if);
-				name = get_strclass(class);
-				printk(" - %s\n", name ? name : "Unknown");
+				pci_dev.name = get_strclass(class);
+				printk(" - %s\n", pci_dev.name ? pci_dev.name : "Unknown");
 				pci_dev.vendor_id = vendor_id;
 				pci_dev.device_id = device_id;
 				pci_dev.class = class;
 				pci_dev.hdr_type = hdr_type;
 				pci_dev.irq = irq;
-
 				pci_dev.command = pci_read_short(&pci_dev, PCI_COMMAND);
 				pci_dev.status = pci_read_short(&pci_dev, PCI_STATUS);
 				pci_dev.rev = pci_read_char(&pci_dev, PCI_REVISION_ID);
@@ -152,7 +150,7 @@ static void scan_bus(void)
 				pci_dev.min_gnt = pci_read_char(&pci_dev, PCI_MIN_GRANT);
 				pci_dev.max_lat = pci_read_char(&pci_dev, PCI_MAX_LATENCY);
 
-				add_pci_device(b, d, f, &pci_dev);
+				add_pci_device(&pci_dev);
 				if(!f && !(hdr_type & 0x80)) {
 					break;	/* no more functions in this device */
 				}
@@ -190,6 +188,7 @@ static void scan_bus(void)
 				continue;
 			}
 
+			pd->obar[n] = addr;
 			if(addr & PCI_BASE_ADDR_SPACE_IO) {
 				addr &= PCI_BASE_ADDR_IO_MASK;
 				pd->flags[n] |= PCI_F_ADDR_SPACE_IO;
@@ -298,6 +297,7 @@ void pci_init(void)
 		return;
 	}
 
+	pci_device_table = NULL;
 	printk("pci       0x%04x-0x%04x", PCI_ADDRESS, PCI_DATA + sizeof(unsigned int) - 1);
 	printk("     -\tbus range=0-%d, configuration type=1\n", PCI_MAX_BUS - 1);
 	scan_bus();
