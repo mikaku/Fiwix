@@ -111,8 +111,8 @@ struct pci_device {
 	unsigned char pin;
 	unsigned char min_gnt;
 	unsigned char max_lat;
-	unsigned int size[6];
-	unsigned int flags[6];
+	char size[6];
+	char flags[6];
 	const char *name;
 	struct pci_device *prev;
 	struct pci_device *next;
