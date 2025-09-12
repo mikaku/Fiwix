@@ -707,6 +707,22 @@ int fdc_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			}
 			*(int *)arg = size * 2;
 			break;
+		case BLKSSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			*(int *)arg = 512;
+			break;
+		case BLKBSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			*(int *)arg = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
+			break;
+		case BLKFLSBUF:
+			sync_buffers(i->rdev);
+			invalidate_buffers(i->rdev);
+			break;
 		default:
 			return -EINVAL;
 	}

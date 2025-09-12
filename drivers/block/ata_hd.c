@@ -337,6 +337,7 @@ int ata_hd_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 	struct ata_drv *drive;
 	struct partition *part;
 	struct hd_geometry *geom;
+	struct device *d;
 	int errno;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
@@ -374,6 +375,19 @@ int ata_hd_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			} else {
 				*(int *)arg = (unsigned int)drive->part_table[minor - 1].nr_sects;
 			}
+			break;
+		case BLKSSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			*(int *)arg = 512;
+			break;
+		case BLKBSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			d = ide->device;
+			*(int *)arg = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
 			break;
 		case BLKFLSBUF:
 			sync_buffers(i->rdev);

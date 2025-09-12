@@ -5,11 +5,16 @@
 #ifndef _FIWIX_IOCTL_H
 #define _FIWIX_IOCTL_H
 
-#define HDIO_GETGEO	0x0301		/* get device geometry */
+#define HDIO_GETGEO	0x0301	/* get device geometry */
 
-#define BLKRRPART	0x125F		/* re-read partition table */
-#define BLKGETSIZE	0x1260		/* return device size */
-#define BLKFLSBUF	0x1261		/* flush buffer cache */
+#define BLKROSET	0x125D	/* set device read-only (0 = read-write) */
+#define BLKROGET	0x125E	/* get read-only status (0 = read_write) */
+#define BLKRRPART	0x125F	/* re-read partition table */
+#define BLKGETSIZE	0x1260	/* return device size */
+#define BLKFLSBUF	0x1261	/* flush buffer cache */
+#define BLKSSZGET	0x1268	/* get block device sector size */
+#define BLKBSZGET       0x1270	/* get device block size */
+#define BLKBSZSET       0x1271	/* set device block size */
 
 /* 0x54 is just a magic number to make these relatively unique ('T') */
 #define TCGETS		0x5401

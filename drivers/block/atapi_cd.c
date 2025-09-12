@@ -8,6 +8,7 @@
 #include <fiwix/asm.h>
 #include <fiwix/buffer.h>
 #include <fiwix/atapi.h>
+#include <fiwix/ioctl.h>
 #include <fiwix/atapi_cd.h>
 #include <fiwix/devices.h>
 #include <fiwix/mm.h>
@@ -312,12 +313,27 @@ int atapi_cd_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 int atapi_cd_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 {
 	struct ide *ide;
+	struct device *d;
+	int errno;
 
 	if(!(ide = get_ide_controller(i->rdev))) {
 		return -EINVAL;
 	}
 
 	switch(cmd) {
+		case BLKSSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			*(int *)arg = 2048;
+			break;
+		case BLKBSZGET:
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(unsigned int)))) {
+				return errno;
+			}
+			d = ide->device;
+			*(int *)arg = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
+			break;
 		default:
 			return -EINVAL;
 			break;
