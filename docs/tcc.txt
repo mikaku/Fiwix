@@ -30,8 +30,8 @@ This change is specific to Fiwix and so it is unlikely to be incorporated
 into the standard tcc compiler in the future.
 
 
-Note that tcc does not support certain constructs used by CONFIG_OFFSET64,
-CONFIG_PRINTK64, or CONFIG_NET, so you muse undefine these options.
+Note that tcc does not support certain constructs used by CONFIG_OFFSET64
+or CONFIG_PRINTK64, so you must undefine these options.
 
 These commands will build Fiwix with tcc:
 
