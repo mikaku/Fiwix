@@ -98,6 +98,7 @@ static int opost(struct tty *tty, unsigned char ch)
 				if(tty->column > 0) {
 					tty->column--;
 				}
+				break;
 			default:
 				if(tty->termios.c_oflag & OLCUC) {
 					ch = TOUPPER(ch);
