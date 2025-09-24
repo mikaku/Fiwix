@@ -164,6 +164,9 @@ static void del_vma_region(struct vma *vma)
 	}
 	RESTORE_FLAGS(flags);
 
+	if(vma->inode) {
+		iput(vma->inode);
+	}
 	kfree((unsigned int)tmp);
 }
 
@@ -206,9 +209,6 @@ static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length
 	}
 
 	if(vma->start == start) {
-		if(vma->inode) {
-			iput(vma->inode);
-		}
 		del_vma_region(vma);
 	} else {
 		vma->end = start;
