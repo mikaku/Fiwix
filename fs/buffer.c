@@ -19,33 +19,19 @@
 #include <fiwix/stat.h>
 #include <fiwix/blk_queue.h>
 
-#define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define NR_BUF_HASH		(buffer_hash_table_size / sizeof(unsigned int))
+#define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define BUFHEAD_INDEX(size)	((size / BLKSIZE_1K) - 1)
 
 #define NO_GROW		0
 #define GROW_IF_NEEDED	1
 
 struct buffer *buffer_table;		/* buffer pool */
+struct buffer **buffer_hash_table;
 
 /* [0] = 1KB, [1] = 2KB, [2] = unused, [3] = 4KB */
 struct buffer *buffer_head[4];		/* heads of free list */
 struct buffer *buffer_dirty_head[4];	/* heads of dirty list */
-
-/*
- * hash table
- * +--------+  +--------------+  +--------------+  +--------------+
- * | index  |  |prev|data|next|  |prev|data|next|  |prev|data|next|
- * |   0   --> | /  |    | --->  <--- |    | --->  <--- |    |  / |
- * +--------+  +--------------+  +--------------+  +--------------+
- * +--------+  +--------------+  +--------------+  +--------------+
- * | index  |  |prev|data|next|  |prev|data|next|  |prev|data|next|
- * |   1   --> | /  |    | --->  <--- |    | --->  <--- |    |  / |
- * +--------+  +--------------+  +--------------+  +--------------+
- *              (buffer)          (buffer)          (buffer)
- *    ...
- */
-struct buffer **buffer_hash_table;
 
 static struct resource sync_resource = { 0, 0 };
 
@@ -340,20 +326,20 @@ static struct buffer *get_free_buffer(int mode, int size)
 {
 	unsigned int flags;
 	struct buffer *buf;
-	int index;
+	int index, min;
 
 	index = BUFHEAD_INDEX(size);
 	buf = buffer_head[index];
 
 	/*
 	 * We check buf->dev to see if this buffer has been already used
-	 * and, if that's the case, then we know that there aren't more
-	 * unused buffers, so let's try to create new buffers instead of
-	 * reusing them.
+	 * and, if so, then we know that there aren't more unused buffers,
+	 * so let's try to create new ones instead of reusing them.
 	 */
 	if(!buf || (buf && buf->dev)) {
 		if(mode == GROW_IF_NEEDED) {
-			if(kstat.free_pages) {
+			min = (kstat.total_mem_pages * FREE_PAGES_RATIO) / 100;
+			if(kstat.free_pages > min) {
 				if((buf = create_buffers(size))) {
 					return buf;
 				}
