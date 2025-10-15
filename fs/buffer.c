@@ -588,7 +588,7 @@ void sync_buffers(__dev_t dev)
 			if(first == buf) {
 				insert_on_dirty_list(buf);
 				buf->flags &= ~BUFFER_LOCKED;
-				wakeup(&buffer_wait);
+				flushed = 1;
 				break;
 			}
 			if(!dev || buf->dev == dev) {
@@ -597,7 +597,7 @@ void sync_buffers(__dev_t dev)
 					buf->flags &= ~BUFFER_LOCKED;
 					continue;
 				}
-				flushed++;
+				flushed = 1;
 			} else {
 				if(!first) {
 					first = buf;
@@ -656,11 +656,11 @@ static int reclaim_siblings(struct buffer *buf)
 	} while(buf);
 
 	/* OK, all siblings are eligible to be freed up, let's lock them all */
+	SAVE_FLAGS(flags); CLI();
 	buf = orig;
 	if(buf->first_sibling) {
 		buf = buf->first_sibling;
 	}
-	SAVE_FLAGS(flags); CLI();
 	do {
 		if(buf != orig) {
 			buf->flags |= BUFFER_LOCKED;
@@ -801,7 +801,6 @@ int kbdflushd(void)
 					if(first == buf) {
 						insert_on_dirty_list(buf);
 						buf->flags &= ~BUFFER_LOCKED;
-						wakeup(&buffer_wait);
 						break;
 					}
 				} else {
@@ -811,11 +810,9 @@ int kbdflushd(void)
 				if(sync_one_buffer(buf)) {
 					insert_on_dirty_list(buf);
 					buf->flags &= ~BUFFER_LOCKED;
-					wakeup(&buffer_wait);
 					continue;
 				}
 				buf->flags &= ~BUFFER_LOCKED;
-				wakeup(&buffer_wait);
 				flushed++;
 
 				if(flushed == NR_BUF_RECLAIM) {
@@ -823,9 +820,13 @@ int kbdflushd(void)
 						break;
 					}
 					flushed = 0;
+					wakeup(&buffer_wait);
 					do_sched();
 				}
 			}
+		}
+		if(flushed) {
+			wakeup(&buffer_wait);
 		}
 		unlock_resource(&sync_resource);
 	}
