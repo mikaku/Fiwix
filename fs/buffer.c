@@ -801,6 +801,7 @@ int kbdflushd(void)
 					if(first == buf) {
 						insert_on_dirty_list(buf);
 						buf->flags &= ~BUFFER_LOCKED;
+						wakeup(&buffer_wait);
 						break;
 					}
 				} else {
@@ -810,9 +811,11 @@ int kbdflushd(void)
 				if(sync_one_buffer(buf)) {
 					insert_on_dirty_list(buf);
 					buf->flags &= ~BUFFER_LOCKED;
+					wakeup(&buffer_wait);
 					continue;
 				}
 				buf->flags &= ~BUFFER_LOCKED;
+				wakeup(&buffer_wait);
 				flushed++;
 
 				if(flushed == NR_BUF_RECLAIM) {
@@ -824,9 +827,6 @@ int kbdflushd(void)
 					do_sched();
 				}
 			}
-		}
-		if(flushed) {
-			wakeup(&buffer_wait);
 		}
 		unlock_resource(&sync_resource);
 	}
