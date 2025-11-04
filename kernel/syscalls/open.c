@@ -84,6 +84,18 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 				return -EACCES;
 			}
 		}
+		if(IS_RDONLY_FS(dir)) {
+			if(!i || S_ISREG(i->i_mode)) {
+				if(flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
+					iput(i);
+					iput(dir);
+					free_name(tmp_name);
+					return -EROFS;
+				}
+				flags &= ~(O_RDWR | O_WRONLY | O_TRUNC);
+				flags |= O_RDONLY;
+			}
+		}
 		if(errno) {	/* assumes -ENOENT */
 			if(dir->fsop && dir->fsop->create) {
 				errno = dir->fsop->create(dir, basename, flags, mode, &i);
@@ -104,11 +116,19 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 			free_name(tmp_name);
 			return errno;
 		}
-		if(S_ISDIR(i->i_mode) && (flags & (O_RDWR | O_WRONLY | O_TRUNC))) {
-			iput(i);
-			iput(dir);
-			free_name(tmp_name);
-			return -EISDIR;
+		if(flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
+			if(S_ISDIR(i->i_mode)) {
+				iput(i);
+				iput(dir);
+				free_name(tmp_name);
+				return -EISDIR;
+			}
+			if(S_ISREG(i->i_mode) && IS_RDONLY_FS(dir)) {
+				iput(i);
+				iput(dir);
+				free_name(tmp_name);
+				return -EROFS;
+			}
 		}
 		mode = 0;
 	}

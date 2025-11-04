@@ -28,7 +28,7 @@ int sys_write(unsigned int ufd, const char *buf, int count)
 	if((errno = check_user_area(VERIFY_READ, buf, count))) {
 		return errno;
 	}
-	if(fd_table[current->fd[ufd]].flags & O_RDONLY) {
+	if(!(fd_table[current->fd[ufd]].flags & (O_RDWR | O_WRONLY))) {
 		return -EBADF;
 	}
 	if(!count) {
