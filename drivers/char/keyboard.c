@@ -606,7 +606,7 @@ void irq_keyboard_bh(struct sigcontext *sc)
 				wakeup(&tty->read_q);
 				continue;
 			}
-			if(lock_area(AREA_TTY_READ)) {
+			if(!can_lock_area(AREA_TTY_READ)) {
 				keyboard_bh.flags |= BH_ACTIVE;
 				continue;
 			}

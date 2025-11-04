@@ -30,7 +30,7 @@ void wakeup_proc(struct proc *);
 
 void lock_resource(struct resource *);
 void unlock_resource(struct resource *);
-int lock_area(unsigned int);
+int can_lock_area(unsigned int);
 int unlock_area(unsigned int);
 
 void sleep_init(void);

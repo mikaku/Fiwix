@@ -345,7 +345,7 @@ void do_callouts_bh(struct sigcontext *sc)
 		if(callout_head->expires) {
 			break;
 		}
-		if(lock_area(AREA_CALLOUT)) {
+		if(!can_lock_area(AREA_CALLOUT)) {
 			break;
 		}
 		fn = callout_head->fn;

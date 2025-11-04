@@ -485,7 +485,7 @@ void irq_serial_bh(struct sigcontext *sc)
 	while(s) {
 		tty = s->tty;
 		if(tty->read_q.count) {
-			if(!lock_area(AREA_SERIAL_READ)) {
+			if(can_lock_area(AREA_SERIAL_READ)) {
 				tty->input(tty);
 				unlock_area(AREA_SERIAL_READ);
 			} else {

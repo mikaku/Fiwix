@@ -217,7 +217,7 @@ void unlock_resource(struct resource *resource)
 	RESTORE_FLAGS(flags);
 }
 
-int lock_area(unsigned int type)
+int can_lock_area(unsigned int type)
 {
 	unsigned int flags;
 	int retval;
@@ -227,7 +227,7 @@ int lock_area(unsigned int type)
 	area |= type;
 	RESTORE_FLAGS(flags);
 
-	return retval;
+	return !retval;
 }
 
 int unlock_area(unsigned int type)
