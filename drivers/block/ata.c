@@ -262,7 +262,7 @@ static int get_piomode(struct ata_drv *drive)
 	return piomode;
 }
 
-static int get_dma(struct ata_drv *drive)
+static int get_mdma(struct ata_drv *drive)
 {
 	int dma;
 
@@ -320,7 +320,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	}
 
 	drive->pio_mode = get_piomode(drive);
-	drive->dma_mode = get_dma(drive);
+	drive->dma_mode = get_mdma(drive);
 
 	size = (__loff_t)drive->nr_sects * BPS;
 	size = size >> 10;
@@ -409,7 +409,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 				drive->xfer.bm_command = BM_COMMAND;
 				drive->xfer.bm_status = BM_STATUS;
 				drive->xfer.bm_prd_addr = BM_PRD_ADDRESS;
-				printk(", DMA%d", drive->dma_mode);
+				printk(", MDMA%d", drive->dma_mode);
 			}
 		}
 	}
@@ -478,7 +478,7 @@ static int ata_softreset(struct ide *ide)
 		}
 	}
 
-	/* select drive 0 (don't care of ATA_STAT_BSY bit) */
+	/* select drive 1 (don't care of ATA_STAT_BSY bit) */
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE + (1 << 4));
 	ata_delay();
 
