@@ -213,6 +213,7 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 {
 	unsigned int cr2;
 	struct vma *vma;
+	int panic;
 
 	GET_CR2(cr2);
 	if((vma = find_vma_region(cr2))) {
@@ -302,7 +303,10 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 		}
 	}
 
-	dump_registers(trap, sc);
+	panic = dump_registers(trap, sc);
 	show_vma_regions(current);
+	if(panic) {
+		PANIC("");
+	}
 	do_exit(SIGTERM);
 }
