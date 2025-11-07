@@ -33,7 +33,7 @@ Features
    - QEMU PCI serial device support.
    - QEMU/Bochs Graphics Adapter support.
    - Intel PIIX3 PCI ISA IDE controller.
- - UNIX98 pseudoterminals (pty) support.
+ - UNIX98 pseudoterminals (pty) and devpts filesystem support.
  - Virtual consoles support (up to 12).
  - Keyboard driver with Linux keymaps support.
  - PS/2 mouse support.
@@ -50,7 +50,7 @@ Features
 
 Compiling
 ---------
-The command needed to build the Fiwix kernel is `make clean ; make`.  This will create the files **fiwix** (the kernel itself) and **System.map.gz** (the symbol table) in the root directory of the source code tree.
+The command needed to build the Fiwix kernel is `make clean ; make`.  This will create two the files in the root directory of the source code tree: **fiwix** (the kernel itself) and **System.map.gz** (the symbol table).
 
 Before compiling you might want to tweak the kernel configuration by changing the default values in `include/fiwix/config.h` and `include/fiwix/limits.h`.
 
