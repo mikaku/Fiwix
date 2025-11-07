@@ -1,4 +1,4 @@
-1.7.0 - DD-MMM-2025
+1.7.0 - DD-Nov-2025
 ===================
 - Added support for UNIX98 pseudoterminals (pty).
 - Added support for the devpts filesystem.
@@ -68,6 +68,12 @@
   data_proc_pid_environ() functions that led to the kernel panic.
 - Fixed an accidental fall through in opost().
 - Fixed a missing iput() when freeing or merging a vma region.
+- Fixed get_free_buffer() to not create new buffers if free memory pages are
+  lower than minimal.
+- Fixed inefficient code by reducing excessive calls to wakeup(&buffer_wait) in
+  fs/buffer.c.
+- Fixed a bug in sys_open() that allowed to create a file on a read-only
+  filesystem.
 - Small fixes, code cleanup and cosmetic changes.
 
 
