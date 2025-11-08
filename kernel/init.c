@@ -58,7 +58,7 @@ void init_init(void)
 
 	/* INIT process starts with the current (kernel) Page Directory */
 	if(!(pgdir = (void *)kmalloc(PAGE_SIZE))) {
-        PANIC("init: failed to allocate page directory");
+        PANIC("%s(): failed to allocate page directory.", __FUNCTION__);
     }
 	init->rss++;
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
@@ -100,7 +100,7 @@ void init_init(void)
 
 	/* setup the stack */
 	if(!(init->tss.esp0 = kmalloc(PAGE_SIZE))) {
-        PANIC("init: failed to allocate stack");
+        PANIC("%s(): failed to allocate stack.\n", __FUNCTION__);
     }
 	init->tss.esp0 += PAGE_SIZE - 4;
 	init->rss++;
