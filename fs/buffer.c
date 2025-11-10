@@ -534,7 +534,6 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 			return buf;
 		}
 		if(!(d = get_device(BLK_DEV, dev))) {
-			printk("WARNING: %s(): device major %d not found!\n", __FUNCTION__, MAJOR(dev));
 			return NULL;
 		}
 		if(do_blk_request(d, d->fsop->read_block, buf) == size) {
