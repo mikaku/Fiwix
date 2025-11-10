@@ -79,34 +79,28 @@ int ata_pci(struct ide *ide)
 		found++;
 		ide_table_init(ide, channel);
 		size = IDE_BASE_LEN;
-		if(pci_dev->bar[bar]) {
-			if(pci_dev->prog_if & 0xF) {
-				ide->base = pci_dev->bar[bar];
-				ide->ctrl = pci_dev->bar[bar + 1];
-				ide->irq = pci_dev->irq;
-				size = pci_dev->size[bar];
-			}
-		}
 		printk("0x%04x-0x%04x    %d\t", ide->base, ide->base + size, ide->irq);
 		switch(pci_dev->prog_if & 0xF) {
 			case 0:
 				printk("ISA controller in compatibility mode-only\n");
 				break;
-			/*
-			case 0x5:
-				printk("PCI controller in native mode-only\n");
-				break;
-			*/
 			case 0xA:
 				printk("ISA controller in compatibility mode,\n");
 				printk("\t\t\t\tsupports both channels switched to PCI native mode\n");
 				break;
-			/*
+			case 0x5:
 			case 0xF:
-				printk("PCI controller in native mode,\n");
-				printk("\t\t\t\tsupports both channels switched to ISA compatibility mode\n");
+				if((pci_dev->prog_if & 0xF) == 0x5) {
+					printk("PCI controller in native mode-only\n");
+				} else {
+					printk("PCI controller in native mode,\n");
+					printk("\t\t\t\tsupports both channels switched to ISA compatibility mode\n");
+				}
+				ide->base = pci_dev->bar[bar];
+				ide->ctrl = pci_dev->bar[bar + 1];
+				ide->irq = pci_dev->irq;
+				size = pci_dev->size[bar];
 				break;
-			*/
 		}
 		if(pci_dev->prog_if & 0x80) {
 			ide->bm = (pci_dev->bar[4] + (channel * 8));
