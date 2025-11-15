@@ -1,4 +1,4 @@
-1.7.0 - DD-Nov-2025
+1.7.0 - 15-Nov-2025
 ===================
 - Added support for UNIX98 pseudoterminals (pty).
 - Added support for the devpts filesystem.
@@ -37,6 +37,7 @@
   systems with 4MiB of memory.
 - Reverted 39c0097 because an existing bug prevents a complete installation on
   systems with less than 64MiB of memory.
+- Update LICENSE file with additional contributor information.
 - Fixed ext2_balloc() and ext2_ialloc() to return -ENOSPC when there is not
   space on device.
 - Fixed fs.h to include fd.h when CONFIG_NET is not set.
