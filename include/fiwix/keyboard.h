@@ -87,6 +87,7 @@
 #define GRAVE		(0x00 + DEAD_KEYS)
 #define ACUTE		(0x01 + DEAD_KEYS)
 #define CIRCM		(0x02 + DEAD_KEYS)
+#define TILDE		(0x03 + DEAD_KEYS)
 #define DIERE		(0x04 + DEAD_KEYS)
 
 #define SHIFT		(0x00 + SHIFT_KEYS)
