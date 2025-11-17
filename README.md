@@ -16,7 +16,7 @@ Features
  - BSD file locking mechanism (POSIX restricted to file and advisory only).
  - Virtual memory splits (user/kernel): 3GB/1GB and 2GB/2GB.
  - Demand paging with Copy-On-Write feature.
- - Linux 2.0 ABI system calls compatibility (mostly).
+ - Linux 2.0 i386 ABI system calls compatibility (mostly).
  - ELF-i386 executable format support (statically and dynamically linked).
  - Round Robin based scheduler algorithm (no priorities yet).
  - VFS abstraction layer.
@@ -95,5 +95,5 @@ Credits
 -------
 Fiwix was created by [Jordi Sanfeliu](https://www.fibranet.cat).  
 You can contact me at [jordi@fibranet.cat](mailto:jordi@fibranet.cat).
-See also the CREDITS file.
+See also the LICENSE file for a list of contributors.
 
