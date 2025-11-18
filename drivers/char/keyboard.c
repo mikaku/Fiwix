@@ -80,7 +80,7 @@ static struct bh keyboard_bh = { 0, &irq_keyboard_bh, NULL };
 static struct interrupt irq_config_keyboard = { 0, "keyboard", &irq_keyboard, NULL };
 
 struct diacritic *diacr;
-static char *diacr_chars = "`'^ \"";
+static char *diacr_chars = "`'^~\"";
 struct diacritic grave_table[NR_DIACR] = {
 	{ 'A', '\300' },
 	{ 'E', '\310' },
@@ -116,6 +116,14 @@ struct diacritic circm_table[NR_DIACR] = {
 	{ 'i', '\356' },
 	{ 'o', '\364' },
 	{ 'u', '\373' },
+};
+struct diacritic tilde_table[NR_DIACR] = {
+	{ 'A', '\303' },
+	{ 'N', '\321' },
+	{ 'O', '\325' },
+	{ 'a', '\343' },
+	{ 'n', '\361' },
+	{ 'o', '\365' },
 };
 struct diacritic diere_table[NR_DIACR] = {
 	{ 'A', '\304' },
@@ -492,6 +500,10 @@ void irq_keyboard(int num, struct sigcontext *sc)
 					case CIRCM ^ DEAD_KEYS:
 						deadkey = 3;
 						diacr = circm_table;
+						break;
+					case TILDE ^ DEAD_KEYS:
+						deadkey = 4;
+						diacr = tilde_table;
 						break;
 					case DIERE ^ DEAD_KEYS:
 						deadkey = 5;
