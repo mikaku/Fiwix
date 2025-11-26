@@ -273,9 +273,6 @@ struct ata_xfer {
 	int write_cmd;
 	char copy_raw_factor;		/* 2 for 16bit, 4 for 32bit */
 	struct prd prd_table;		/* Physical Region Descriptor table */
-	unsigned char bm_command;	/* bus master command register */
-	unsigned char bm_status;	/* bus master status register */
-	unsigned char bm_prd_addr;	/* bus master PRD table address */
 };
 
 struct ata_drv {

@@ -500,7 +500,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	if(drive->flags & DRIVE_HAS_DMA) {
 		drive->read_fn = drive->write_fn = dma_transfer;
 		drive->read_end_fn = drive->write_end_fn = dma_transfer_end;
-		outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_DRVDMA << drive->num);
+		outport_b(ide->bm + BM_STATUS, BM_STATUS_DRVDMA << drive->num);
 	}
 #endif /* CONFIG_PCI */
 

@@ -25,7 +25,7 @@ void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int dat
 	prd_table->addr = (unsigned int)V2P(buffer);
 	prd_table->size = datalen;
 	prd_table->eot = PRDT_MARK_END;
-	outport_l(ide->bm + drive->xfer.bm_prd_addr, V2P((unsigned int)prd_table));
+	outport_l(ide->bm + BM_PRD_ADDRESS, V2P((unsigned int)prd_table));
 
 	/* clear Error and Interrupt bits */
 	outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_ERROR | BM_STATUS_INTR);
@@ -33,17 +33,17 @@ void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int dat
 
 void ata_start_dma(struct ide *ide, struct ata_drv *drive, int mode)
 {
-	outport_b(ide->bm + drive->xfer.bm_command, BM_COMMAND_START | mode);
+	outport_b(ide->bm + BM_COMMAND, BM_COMMAND_START | mode);
 }
 
 void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
 {
 	int status;
 
-	inport_b(ide->bm + drive->xfer.bm_status);	/* extra read */
-	status = inport_b(ide->bm + drive->xfer.bm_status);
-	outport_b(ide->bm + drive->xfer.bm_command, 0);	/* stop bus master */
-	outport_b(ide->bm + drive->xfer.bm_status, status);
+	inport_b(ide->bm + BM_STATUS);	/* extra read */
+	status = inport_b(ide->bm + BM_STATUS);
+	outport_b(ide->bm + BM_COMMAND, 0);	/* stop bus master */
+	outport_b(ide->bm + BM_STATUS, staus);
 }
 
 int ata_pci(struct ide *ide)

@@ -406,9 +406,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 				drive->flags |= DRIVE_HAS_DMA;
 				drive->xfer.read_cmd = ATA_READ_DMA;
 				drive->xfer.write_cmd = ATA_WRITE_DMA;
-				drive->xfer.bm_command = BM_COMMAND;
-				drive->xfer.bm_status = BM_STATUS;
-				drive->xfer.bm_prd_addr = BM_PRD_ADDRESS;
 				printk(", MDMA%d", drive->dma_mode);
 			}
 		}
