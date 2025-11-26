@@ -28,7 +28,7 @@ void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int dat
 	outport_l(ide->bm + BM_PRD_ADDRESS, V2P((unsigned int)prd_table));
 
 	/* clear Error and Interrupt bits */
-	outport_b(ide->bm + drive->xfer.bm_status, BM_STATUS_ERROR | BM_STATUS_INTR);
+	outport_b(ide->bm + BM_STATUS, BM_STATUS_ERROR | BM_STATUS_INTR);
 }
 
 void ata_start_dma(struct ide *ide, struct ata_drv *drive, int mode)
@@ -43,7 +43,7 @@ void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
 	inport_b(ide->bm + BM_STATUS);	/* extra read */
 	status = inport_b(ide->bm + BM_STATUS);
 	outport_b(ide->bm + BM_COMMAND, 0);	/* stop bus master */
-	outport_b(ide->bm + BM_STATUS, staus);
+	outport_b(ide->bm + BM_STATUS, status);
 }
 
 int ata_pci(struct ide *ide)
