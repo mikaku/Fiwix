@@ -67,7 +67,7 @@ multiboot_header:			/* multiboot header */
 	/* checksum */
 	.long	-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
-	/* no used */
+	/* not used */
 	.long	0			/* header_addr */
 	.long	0			/* load_addr */
 	.long	0			/* load_end_addr */
