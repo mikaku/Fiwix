@@ -438,13 +438,24 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		((unsigned int *)d->device_data)[1 << IDE_SLAVE_MSF] = drive->nr_sects / 2;
 	}
 
-	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_NIEN);
+	/* prepare for an interrupt */
+	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
 	if(drive->flags & DRIVE_HAS_RW_MULTIPLE) {
 		/* read/write in 4KB blocks (8 sectors) as maximum */
 		outport_b(ide->base + ATA_SECCNT, MIN(PAGE_SIZE / ATA_HD_SECTSIZE, drive->multi));
+		outport_b(ide->base + ATA_DRVHD, drive->num << 4);
 		outport_b(ide->base + ATA_COMMAND, ATA_SET_MULTIPLE_MODE);
 		ata_wait400ns(ide);
-		while(inport_b(ide->base + ATA_STATUS) & ATA_STAT_BSY);
+		status = inport_b(ide->base + ATA_STATUS);
+		if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
+			printk("WARNING: %s(): error while setting R/W multiple mode.\n", __FUNCTION__);
+			printk("\t");
+			ata_error(ide, status);
+			printk("\n");
+		}
+	}
+	if(ide->wait_interrupt) {
+		sleep(ide, PROC_UNINTERRUPTIBLE);
 	}
 	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_DRQ);
 

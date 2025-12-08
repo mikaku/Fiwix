@@ -334,7 +334,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	}
 
 	printk("%s\t\t\t\t", drive->dev_name);
-	swap_asc_word(drive->ident.model_number, 40);
 	printk("%s %s ", ide->name, drive->name);
 
 	if(!(drive->flags & DRIVE_IS_ATAPI)) {
@@ -349,6 +348,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk(" CFA");
 	}
 
+	swap_asc_word(drive->ident.model_number, 40);
 	if(drive->flags & DRIVE_IS_DISK) {
 		if(ksize) {
 			printk(" disk drive %dKB\n", ksize);
@@ -444,7 +444,9 @@ static int ata_softreset(struct ide *ide)
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
 	ata_delay();
 
-	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_SRST | ATA_DEVCTR_NIEN);
+	/* prepare for an interrupt */
+	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
+	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_SRST);
 	ata_delay();
 	outport_b(ide->ctrl + ATA_DEV_CTRL, 0);
 	ata_delay();
@@ -452,7 +454,6 @@ static int ata_softreset(struct ide *ide)
 	/* select drive 0 (don't care of ATA_STAT_BSY bit) */
 	outport_b(ide->base + ATA_DRVHD, ATA_CHS_MODE);
 	ata_delay();
-	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
 	if(ide->wait_interrupt) {
 		sleep(ide, PROC_UNINTERRUPTIBLE);
 	}
