@@ -11,8 +11,8 @@
 #ifdef CONFIG_PCI
 #include <fiwix/ata.h>
 
-void ata_setup_dma(struct ide *, struct ata_drv *, char *, int);
-void ata_start_dma(struct ide *, struct ata_drv *, int);
+void ata_setup_dma(struct ide *, struct ata_drv *, char *, int, int);
+void ata_start_dma(struct ide *, struct ata_drv *);
 void ata_stop_dma(struct ide *, struct ata_drv *);
 int ata_pci(struct ide *);
 #endif /* CONFIG_PCI */

@@ -265,10 +265,10 @@ static int dma_transfer(struct ide *ide, struct ata_drv *drive, struct xfer_data
 		return -EIO;
 	}
 
-	ata_setup_dma(ide, drive, xd->buffer, xd->datalen);
-	ata_start_dma(ide, drive, xd->bm_cmd);
+	ata_setup_dma(ide, drive, xd->buffer, xd->datalen, xd->bm_cmd);
 	ata_set_timeout(ide, WAIT_FOR_DISK, 0);
 	outport_b(ide->base + ATA_COMMAND, xd->cmd);
+	ata_start_dma(ide, drive);
 	return 0;
 }
 

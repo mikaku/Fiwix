@@ -18,22 +18,29 @@ static struct pci_supported_devices supported[] = {
 	{ 0, 0 }
 };
 
-void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int datalen)
+void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int datalen, int mode)
 {
+	int value;
 	struct prd *prd_table = &drive->xfer.prd_table;
 
 	prd_table->addr = (unsigned int)V2P(buffer);
 	prd_table->size = datalen;
 	prd_table->eot = PRDT_MARK_END;
 	outport_l(ide->bm + BM_PRD_ADDRESS, V2P((unsigned int)prd_table));
+	value = inport_b(ide->bm + BM_COMMAND);
+	outport_b(ide->bm + BM_COMMAND, value | mode);
 
 	/* clear Error and Interrupt bits */
-	outport_b(ide->bm + BM_STATUS, BM_STATUS_ERROR | BM_STATUS_INTR);
+	value = inport_b(ide->bm + BM_STATUS);
+	outport_b(ide->bm + BM_STATUS, value | BM_STATUS_ERROR | BM_STATUS_INTR);
 }
 
-void ata_start_dma(struct ide *ide, struct ata_drv *drive, int mode)
+void ata_start_dma(struct ide *ide, struct ata_drv *drive)
 {
-	outport_b(ide->bm + BM_COMMAND, BM_COMMAND_START | mode);
+	int value;
+
+	value = inport_b(ide->bm + BM_COMMAND);
+	outport_b(ide->bm + BM_COMMAND, value | BM_COMMAND_START);
 }
 
 void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
