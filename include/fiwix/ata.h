@@ -117,6 +117,8 @@
 
 /* ATA_SET_FEATURES subcommands */
 #define ATA_SET_XFERMODE	0x03	/* set transfer mode */
+#define ATA_SET_XFERMODE_UDMA	0x40
+#define ATA_SET_XFERMODE_PIO	0x08
 
 /* ATAPI commands */
 #define ATAPI_IDENTIFY_PACKET	0xA1	/* identify ATAPI device */
@@ -138,7 +140,7 @@
 
 /* capabilities */
 #define ATA_SUPPORTS_CFA	0x848A
-#define ATA_HAS_DMA		0x100	/* device supports Multi-word DMA */
+#define ATA_HAS_DMA		0x100	/* device supports DMA */
 #define ATA_HAS_LBA		0x200
 #define ATA_MIN_LBA		16514064/* sectors limit for using CHS */
 
@@ -287,7 +289,7 @@ struct ata_drv {
 	short int lba_factor;
 	unsigned int nr_sects;		/* total sectors (LBA) */
 	int pio_mode;
-	int dma_mode;
+	int udma_mode;
 	int multi;
 	struct fs_operations *fsop;
 	struct ata_drv_ident ident;

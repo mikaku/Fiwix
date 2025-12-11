@@ -413,7 +413,7 @@ __loff_t ata_hd_llseek(struct inode *i, __loff_t offset)
 
 int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 {
-	int n, status;
+	int n, status, value;
 	__dev_t rdev;
 	struct device *d;
 	struct partition *part;
@@ -448,7 +448,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		ata_wait400ns(ide);
 		status = inport_b(ide->base + ATA_STATUS);
 		if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
-			printk("WARNING: %s(): error while setting R/W multiple mode.\n", __FUNCTION__);
+			printk("WARNING: %s(): error while setting multiple mode.\n", __FUNCTION__);
 			printk("\t");
 			ata_error(ide, status);
 			printk("\n");
@@ -459,7 +459,6 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	}
 	outport_b(ide->ctrl + ATA_DEV_CTRL, ATA_DEVCTR_DRQ);
 
-	/* setup the transfer mode */
 	for(;;) {
 		status = inport_b(ide->base + ATA_STATUS);
 		if(!(status & ATA_STAT_BSY)) {
@@ -471,32 +470,30 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		printk("WARNING: %s(): %s: drive not ready.\n", __FUNCTION__, drive->dev_name);
 	}
 
-	/* default transfer mode */
 	drive->read_fn = pio_read;
 	drive->write_fn = pio_write;
 	drive->read_end_fn = pio_read_end;
 	drive->write_end_fn = pio_write_end;
 
+	/* setup the transfer mode */
 	outport_b(ide->base + ATA_FEATURES, ATA_SET_XFERMODE);
 	if(drive->flags & DRIVE_HAS_DMA) {
-		outport_b(ide->base + ATA_SECCNT, 0x20 | drive->dma_mode);
+		value = (ATA_SET_XFERMODE_UDMA | drive->udma_mode);
 	} else {
 		if(drive->pio_mode > 2) {
-			outport_b(ide->base + ATA_SECCNT, 0x08 | drive->pio_mode);
+			value = ATA_SET_XFERMODE_PIO | drive->pio_mode;
 		} else {
-			outport_b(ide->base + ATA_SECCNT, 0x00);
+			/* PIO default mode */
+			value = 0;
 		}
 	}
-	outport_b(ide->base + ATA_SECTOR, 0);
-	outport_b(ide->base + ATA_LCYL, 0);
-	outport_b(ide->base + ATA_HCYL, 0);
+	outport_b(ide->base + ATA_SECCNT, value);
 	outport_b(ide->base + ATA_DRVHD, drive->num << 4);
 	ata_set_timeout(ide, WAIT_FOR_DISK, WAKEUP_AND_RETURN);
 	outport_b(ide->base + ATA_COMMAND, ATA_SET_FEATURES);
 	if(ide->wait_interrupt) {
 		sleep(ide, PROC_UNINTERRUPTIBLE);
 	}
-	while(!(inport_b(ide->base + ATA_STATUS) & ATA_STAT_RDY));
 	ata_wait400ns(ide);
 	status = inport_b(ide->base + ATA_STATUS);
 	if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {

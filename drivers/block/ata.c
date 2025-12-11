@@ -262,22 +262,26 @@ static int get_piomode(struct ata_drv *drive)
 	return piomode;
 }
 
-static int get_mdma(struct ata_drv *drive)
+static int get_udma(struct ata_drv *drive)
 {
-	int dma;
+	int n, udma;
 
-	dma = 0;
+	udma = 0;
 
-	if(drive->ident.multiword_dma & 7) {
-		if(drive->ident.multiword_dma & 2) {
-			dma = 1;
-		}
-		if(drive->ident.multiword_dma & 4) {
-			dma = 2;
+	/*
+	 * The support for DMA is only for drives which already have UDMA
+	 * enabled (by BIOS).
+	 */
+	if(drive->ident.ultradma >> 8) {
+		for(n = 7; n >= 0; n--) {
+			if((drive->ident.ultradma >> 8) & (1 << n)) {
+				udma = n;
+				break;
+			}
 		}
 	}
 
-	return dma;
+	return udma;
 }
 
 static int get_ata(struct ata_drv *drive)
@@ -320,7 +324,7 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	}
 
 	drive->pio_mode = get_piomode(drive);
-	drive->dma_mode = get_mdma(drive);
+	drive->udma_mode = get_udma(drive);
 
 	size = (__loff_t)drive->nr_sects * BPS;
 	size = size >> 10;
@@ -402,11 +406,11 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 #ifdef CONFIG_PCI
 	if(ide->pci_dev) {
 		if(drive->flags & DRIVE_IS_DISK) {
-			if(drive->ident.capabilities & ATA_HAS_DMA) {
+			if(drive->ident.capabilities & ATA_HAS_DMA && drive->ident.ultradma) {
 				drive->flags |= DRIVE_HAS_DMA;
 				drive->xfer.read_cmd = ATA_READ_DMA;
 				drive->xfer.write_cmd = ATA_WRITE_DMA;
-				printk(", MDMA%d", drive->dma_mode);
+				printk(", UDMA%d", drive->udma_mode);
 			}
 		}
 	}
