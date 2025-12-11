@@ -404,8 +404,8 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	}
 
 #ifdef CONFIG_PCI
-	if(ide->pci_dev) {
-		if(drive->flags & DRIVE_IS_DISK) {
+	if(ide->pci_dev && (drive->flags & DRIVE_IS_DISK)) {
+		if(!(drive->flags & DRIVE_IS_CFA)) {
 			if(drive->ident.capabilities & ATA_HAS_DMA && drive->ident.ultradma) {
 				drive->flags |= DRIVE_HAS_DMA;
 				drive->xfer.read_cmd = ATA_READ_DMA;
