@@ -448,7 +448,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 		ata_wait400ns(ide);
 		status = inport_b(ide->base + ATA_STATUS);
 		if(status & (ATA_STAT_ERR | ATA_STAT_DWF)) {
-			printk("WARNING: %s(): error while setting multiple mode.\n", __FUNCTION__);
+			printk("WARNING: %s(): error while setting R/W multiple mode.\n", __FUNCTION__);
 			printk("\t");
 			ata_error(ide, status);
 			printk("\n");
@@ -508,7 +508,8 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	if(drive->flags & DRIVE_HAS_DMA) {
 		drive->read_fn = drive->write_fn = dma_transfer;
 		drive->read_end_fn = drive->write_end_fn = dma_transfer_end;
-		outport_b(ide->bm + BM_STATUS, BM_STATUS_DRVDMA << drive->num);
+		value = inport_b(ide->bm + BM_STATUS);
+		outport_b(ide->bm + BM_STATUS, value | (BM_STATUS_DRVDMA << drive->num));
 	}
 #endif /* CONFIG_PCI */
 
