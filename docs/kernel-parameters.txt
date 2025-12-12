@@ -10,6 +10,8 @@ console=	Set the output console device.
 		Options: /dev/tty[1..12], /dev/ttyS[0..3]
 		Serial consoles have fixed settings: 9600,N,8,1
 
+ide_nodma	Disable DMA in all ATA drives.
+
 initrd=		Optional ramdisk image file which will be loaded by GRUB.
 
 kexec_proto=	The boot method of the new kernel.

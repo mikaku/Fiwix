@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/asm.h>
+#include <fiwix/kparms.h>
 #include <fiwix/ata.h>
 #include <fiwix/pci.h>
 #include <fiwix/mm.h>
@@ -109,21 +110,23 @@ int ata_pci(struct ide *ide)
 				size = pci_dev->size[bar];
 				break;
 		}
-		if(pci_dev->bar[4] && (pci_dev->prog_if & 0x80)) {
-			ide->bm = (pci_dev->bar[4] + (channel * 8));
-			printk("\t\t\t\tbus master DMA at 0x%x\n", ide->bm);
-			/* enable I/O space and bus master */
-			pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER));
-			ide->pci_dev = pci_dev;
+		if(!(kparms.flags & KPARMS_IDE_NODMA)) {
+			if(pci_dev->bar[4] && (pci_dev->prog_if & 0x80)) {
+				ide->bm = (pci_dev->bar[4] + (channel * 8));
+				printk("\t\t\t\tbus master DMA at 0x%x\n", ide->bm);
+				/* enable I/O space and bus master */
+				pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER));
+				ide->pci_dev = pci_dev;
 
-			/* set PCI Latency Timer and transfers timing */
-			switch(pci_dev->device_id) {
-				case PCI_DEVICE_ID_INTEL_82371SB_1:
-					pci_write_char(pci_dev, PCI_LATENCY_TIMER, 64);
-					/* from the book 'FYSOS: Media Storage Devices', Appendix F */
-					pci_write_short(pci_dev, 0x40, 0xA344);
-					pci_write_short(pci_dev, 0x42, 0xA344);
-					break;
+				/* set PCI Latency Timer and transfers timing */
+				switch(pci_dev->device_id) {
+					case PCI_DEVICE_ID_INTEL_82371SB_1:
+						pci_write_char(pci_dev, PCI_LATENCY_TIMER, 64);
+						/* from the book 'FYSOS: Media Storage Devices', Appendix F */
+						pci_write_short(pci_dev, 0x40, 0xA344);
+						pci_write_short(pci_dev, 0x42, 0xA344);
+						break;
+				}
 			}
 		}
 

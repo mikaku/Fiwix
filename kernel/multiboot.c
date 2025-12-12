@@ -41,6 +41,10 @@ static struct kernel_params_value kparamval_table[] = {
 	     0x440, 0x441, 0x442, 0x443
 	   }
 	},
+	{ "ide_nodma",
+	   { 0 },
+	   { 0 }
+	},
 	{ "initrd=",
 	   { 0 },
 	   { 0 }
@@ -101,10 +105,6 @@ static int check_param(struct kernel_params_value *kpv, const char *value)
 {
 	int n;
 
-	if(!strcmp(kpv->name, "ps2_noreset")) {
-		kparms.flags |= KPARMS_PS2_NORESET;
-		return 0;
-	}
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
 	if(!strcmp(kpv->name, "bga=")) {
@@ -134,6 +134,10 @@ static int check_param(struct kernel_params_value *kpv, const char *value)
 			}
 		}
 		return 1;
+	}
+	if(!strcmp(kpv->name, "ide_nodma")) {
+		kparms.flags |= KPARMS_IDE_NODMA;
+		return 0;
 	}
 	if(!strcmp(kpv->name, "initrd=")) {
 		if(value[0]) {
@@ -170,6 +174,10 @@ static int check_param(struct kernel_params_value *kpv, const char *value)
 		return 1;
 	}
 #endif /* CONFIG_KEXEC */
+	if(!strcmp(kpv->name, "ps2_noreset")) {
+		kparms.flags |= KPARMS_PS2_NORESET;
+		return 0;
+	}
 	if(!strcmp(kpv->name, "ramdisksize=")) {
 		kparms.ramdisksize = atoi(value);
 		ramdisk_minors = RAMDISK_DRIVES;
