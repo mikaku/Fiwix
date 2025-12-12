@@ -1,3 +1,24 @@
+1.8.0 - DD-MMM-2026
+===================
+- Added support for tilde dead key. [#102]
+- Added generic PCI Bus-Master DMA support on ATA disks.
+- Added the 'flags' entry in the 'kernel_params' structure to group all toggle-
+  type parameters.
+- Added the new kernel parameter 'ide_nodma' to disable DMA in all ATA drives.
+- Changed the 'ps2_noreset' to a toggle parameter.
+- Removed the file CREDITS because the LICENSE file already contains the list of
+  contributors.
+- Fixed the ATA disk initialitzation to reduce the number of messages like
+  'unexpected interrupt'.
+- Fixed the DMA functionality in ATA disks to use UDMA since the support for the
+  Multiword DMA is not always assured in all cases.
+- Fixed ata_hd_init() to preserve the current value of Status in Bus-Master
+  register while setting DMA.
+- Fixed ata_setup_dma() and ata_start_dma() to preserve the current register
+  status before writing a new value.
+- Small fixes, code cleanup and cosmetic changes.
+
+
 1.7.0 - 15-Nov-2025
 ===================
 - Added support for UNIX98 pseudoterminals (pty).
