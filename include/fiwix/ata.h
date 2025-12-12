@@ -139,7 +139,6 @@
 #define ASC_NO_MEDIUM		0x3A
 
 /* capabilities */
-#define ATA_SUPPORTS_CFA	0x848A
 #define ATA_HAS_DMA		0x100	/* device supports DMA */
 #define ATA_HAS_LBA		0x200
 #define ATA_MIN_LBA		16514064/* sectors limit for using CHS */
@@ -160,13 +159,12 @@
 
 /* ATA drive flags */
 #define DRIVE_IS_ATAPI		0x01
-#define DRIVE_IS_CFA		0x02
-#define DRIVE_IS_DISK		0x04
-#define DRIVE_IS_CDROM		0x08
-#define DRIVE_REQUIRES_LBA	0x10
-#define DRIVE_HAS_RW_MULTIPLE	0x20
-#define DRIVE_HAS_DMA		0x40
-#define DRIVE_HAS_DATA32	0x80
+#define DRIVE_IS_DISK		0x02
+#define DRIVE_IS_CDROM		0x04
+#define DRIVE_REQUIRES_LBA	0x08
+#define DRIVE_HAS_RW_MULTIPLE	0x10
+#define DRIVE_HAS_DMA		0x20
+#define DRIVE_HAS_DATA32	0x40
 
 #define PRDT_MARK_END		0x8000
 #define WAKEUP_AND_RETURN	1

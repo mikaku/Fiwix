@@ -347,11 +347,6 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 		printk("ATAPI");
 	}
 
-	if(drive->ident.gen_config == ATA_SUPPORTS_CFA) {
-		drive->flags |= DRIVE_IS_CFA;
-		printk(" CFA");
-	}
-
 	swap_asc_word(drive->ident.model_number, 40);
 	if(drive->flags & DRIVE_IS_DISK) {
 		if(ksize) {
@@ -404,9 +399,9 @@ static void show_capabilities(struct ide *ide, struct ata_drv *drive)
 	}
 
 #ifdef CONFIG_PCI
-	if(ide->pci_dev && (drive->flags & DRIVE_IS_DISK)) {
-		if(!(drive->flags & DRIVE_IS_CFA)) {
-			if(drive->ident.capabilities & ATA_HAS_DMA && drive->ident.ultradma) {
+	if(drive->ident.capabilities & ATA_HAS_DMA && drive->ident.ultradma) {
+		if(ide->pci_dev && ide->pci_dev->bar[4] > 0) {
+			if(drive->flags & DRIVE_IS_DISK) {
 				drive->flags |= DRIVE_HAS_DMA;
 				drive->xfer.read_cmd = ATA_READ_DMA;
 				drive->xfer.write_cmd = ATA_WRITE_DMA;

@@ -109,7 +109,7 @@ int ata_pci(struct ide *ide)
 				size = pci_dev->size[bar];
 				break;
 		}
-		if(pci_dev->prog_if & 0x80) {
+		if(pci_dev->bar[4] && (pci_dev->prog_if & 0x80)) {
 			ide->bm = (pci_dev->bar[4] + (channel * 8));
 			printk("\t\t\t\tbus master DMA at 0x%x\n", ide->bm);
 			/* enable I/O space and bus master */
