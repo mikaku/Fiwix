@@ -21,6 +21,8 @@ kexec_size=	Size of the memory space to be reserved to allocate the new
 kexec_cmdline=	Command line to be passed to the new kernel (enclosed in double
 		quotes).
 
+ps2_noreset	Disable PS/2 controller reset.
+
 ramdisksize=	Enable the RAM disk drive and configure its size (in KiB).
 
 ro		Mount root device as read-only on boot.

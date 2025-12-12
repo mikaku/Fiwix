@@ -11,8 +11,10 @@
 #define CMDL_ARG_LEN	100	/* max. length of cmdline argument */
 #define CMDL_NUM_VALUES	30	/* max. values of cmdline parameter */
 
+#define KPARMS_PS2_NORESET	0x02	/* disable PS/2 controller reset */
+
 struct kernel_params {
-	int ps2_noreset;
+	int flags;
 	char bgaresolution[15 + 1];
 	char initrd[DEVNAME_MAX + 1];
 	int memsize;

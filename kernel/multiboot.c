@@ -23,10 +23,6 @@
 #include <fiwix/sysconsole.h>
 
 static struct kernel_params_value kparamval_table[] = {
-	{ "ps2_noreset=",
-	   { "0", "1" },
-	   { 0, 1 }
-	},
 #ifdef CONFIG_BGA
 	{ "bga=",
 	   { "640x480x32", "800x600x32", "1024x768x32" },
@@ -47,29 +43,33 @@ static struct kernel_params_value kparamval_table[] = {
 	},
 	{ "initrd=",
 	   { 0 },
-	   { 0 },
+	   { 0 }
 	},
 #ifdef CONFIG_KEXEC
 	{ "kexec_proto=",
 	   { "multiboot1", "linux" },
-	   { 1, 2 },
+	   { 1, 2 }
 	},
 	{ "kexec_size=",
 	   { 0 },
-	   { 0 },
+	   { 0 }
 	},
 	{ "kexec_cmdline=",
 	   { 0 },
-	   { 0 },
+	   { 0 }
 	},
 #endif /* CONFIG_KEXEC */
+	{ "ps2_noreset",
+	   { 0 },
+	   { 0 }
+	},
 	{ "ramdisksize=",
 	   { 0 },
-	   { 0 },
+	   { 0 }
 	},
 	{ "ro",
 	   { 0 },
-	   { 0 },
+	   { 0 }
 	},
 	{ "root=",
 	   { "/dev/ram0", "/dev/fd0", "/dev/fd1",
@@ -101,14 +101,9 @@ static int check_param(struct kernel_params_value *kpv, const char *value)
 {
 	int n;
 
-	if(!strcmp(kpv->name, "ps2_noreset=")) {
-		for(n = 0; kpv->value[n]; n++) {
-			if(atoi(kpv->value[n]), atoi(value)) {
-				kparms.ps2_noreset = atoi(value);
-				return 0;
-			}
-		}
-		return 1;
+	if(!strcmp(kpv->name, "ps2_noreset")) {
+		kparms.flags |= KPARMS_PS2_NORESET;
+		return 0;
 	}
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA

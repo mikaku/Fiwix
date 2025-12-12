@@ -143,7 +143,7 @@ void ps2_init(void)
 	ps2_write(PS2_COMMAND, PS2_CMD_RECV_CONFIG);
 	config = ps2_read(PS2_DATA);
 
-	if(!kparms.ps2_noreset) {
+	if(!(kparms.flags & KPARMS_PS2_NORESET)) {
 		/* set controller configuration (disabling IRQs) */
 		ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 		ps2_write(PS2_DATA, config & ~(0x01 | 0x02));
@@ -151,7 +151,7 @@ void ps2_init(void)
 		/* PS/2 controller self-test */
 		ps2_write(PS2_COMMAND, PS2_CMD_SELF_TEST);
 		if((errno = ps2_read(PS2_DATA)) != 0x55) {
-			printk("WARNING: %s(): PS/2 controller not returned 0x55 after self-test (was 0x%x). Try with the parameter 'ps2_noreset=1'.\n", __FUNCTION__, errno);
+			printk("WARNING: %s(): PS/2 controller not returned 0x55 after self-test (was 0x%x), try with the parameter 'ps2_noreset'.\n", __FUNCTION__, errno);
 			return;
 		} else {
 			supp_ports = 1;
