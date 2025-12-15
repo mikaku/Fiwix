@@ -117,13 +117,6 @@ static int baud_table[] = {
 	0
 };
 
-#ifdef CONFIG_PCI
-static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_REDHAT, PCI_DEVICE_ID_QEMU_16550A },
-	{ 0, 0 }
-};
-#endif /* CONFIG_PCI */
-
 static struct serial *serial_active = NULL;
 static struct bh serial_bh = { 0, &irq_serial_bh, NULL };
 
@@ -547,42 +540,51 @@ static int register_serial(struct serial *s, int minor)
 }
 
 #ifdef CONFIG_PCI
+static int setup_serial_device(int minor, struct pci_device *pci_dev)
+{
+	struct serial *s;
+	unsigned short int cmd;
+
+	if(pci_dev->flags[0] & PCI_F_ADDR_SPACE_MEM) {
+		printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
+		return minor;
+	}
+	if(!(s = get_serial_slot())) {
+		return minor;
+	}
+
+	/* enable I/O space */
+	cmd = (pci_dev->command | PCI_COMMAND_IO);
+	pci_write_short(pci_dev, PCI_COMMAND, cmd);
+
+	s->ioaddr = pci_dev->bar[0];
+	s->iosize = pci_dev->size[0];
+	s->irq = pci_dev->irq;
+	if(!register_serial(s, minor)) {
+		pci_show_desc(pci_dev);
+		if(!register_irq(s->irq, &irq_config_serial2)) {
+			enable_irq(s->irq);
+		}
+		minor++;
+	}
+	return minor;
+}
+
 static int serial_pci(int minor)
 {
 	struct pci_device *pci_dev;
-	struct serial *s;
-	unsigned short int cmd;
-	int n;
 
-	for(n = 0; (supported[n].vendor_id && supported[n].device_id) && minor < NR_SERIAL; n++) {
-		if(!(pci_dev = pci_get_device(supported[n].vendor_id, supported[n].device_id))) {
+	pci_dev = pci_device_table;
+	while(pci_dev) {
+		if(pci_dev->class == PCI_CLASS_COMMUNICATION_SERIAL) {
+			minor = setup_serial_device(minor, pci_dev);
+		}
+		if(minor < NR_SERIAL) {
+			pci_dev = pci_dev->next;
 			continue;
 		}
-
-		if(pci_dev->flags[0] & PCI_F_ADDR_SPACE_MEM) {
-			printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
-			continue;
-		}
-		if(!(s = get_serial_slot())) {
-			return minor;
-		}
-
-		/* enable I/O space */
-		cmd = (pci_dev->command | PCI_COMMAND_IO);
-		pci_write_short(pci_dev, PCI_COMMAND, cmd);
-
-		s->ioaddr = pci_dev->bar[0];
-		s->iosize = pci_dev->size[0];
-		s->irq = pci_dev->irq;
-		if(!register_serial(s, minor)) {
-			pci_show_desc(pci_dev);
-			if(!register_irq(s->irq, &irq_config_serial2)) {
-				enable_irq(s->irq);
-			}
-			minor++;
-		}
+		break;
 	}
-
 	return minor;
 }
 #endif /* CONFIG_PCI */

@@ -126,7 +126,6 @@ void pci_write_char(struct pci_device *, int, unsigned char);
 void pci_write_short(struct pci_device *, int, unsigned short int);
 void pci_write_long(struct pci_device *, int, unsigned int);
 void pci_show_desc(struct pci_device *);
-struct pci_device *pci_get_device(unsigned short int, unsigned short int);
 void pci_init(void);
 
 #endif /* _FIWIX_PCI_H */

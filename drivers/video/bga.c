@@ -18,11 +18,6 @@
 
 #ifdef CONFIG_PCI
 #ifdef CONFIG_BGA
-static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_BOCHS, PCI_DEVICE_ID_BGA },
-	{ 0, 0 }
-};
-
 static void bga_write_register(int index, int data)
 {
 	outport_w(VBE_DISPI_IOPORT_INDEX, index);
@@ -35,17 +30,13 @@ static unsigned short int bga_read_register(unsigned short int cmd)
 	return inport_w(VBE_DISPI_IOPORT_DATA);
 }
 
-void bga_init(void)
+static int setup_bga_device(struct pci_device *pci_dev)
 {
-	struct pci_device *pci_dev;
 	unsigned short int cmd;
 	int xres, yres, bpp;
 
-	if(!(pci_dev = pci_get_device(supported[0].vendor_id, supported[0].device_id))) {
-		return;
-	}
 	if(!(*kparms.bgaresolution)) {
-		return;
+		return 0;
 	}
 
 	/* prepare to switch to the resolution requested */
@@ -61,7 +52,7 @@ void bga_init(void)
 
 	if(xres != video.fb_width || yres != video.fb_height || bpp != video.fb_bpp) {
 		printk("WARNING: %s(): resolution %dx%dx%d is not valid.\n", __FUNCTION__, video.fb_width, video.fb_height, video.fb_bpp);
-		return;
+		return 0;
 	}
 
 	/* enable I/O space and memory space */
@@ -93,6 +84,24 @@ void bga_init(void)
 	map_kaddr(kpage_dir, (unsigned int)video.address, (unsigned int)video.address + video.memsize, 0, PAGE_PRESENT | PAGE_RW);
 
 	bga_write_register(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED);
+	return 1;
+}
+
+void bga_init(void)
+{
+	struct pci_device *pci_dev;
+
+	pci_dev = pci_device_table;
+
+	while(pci_dev) {
+		if(pci_dev->class == PCI_CLASS_DISPLAY_VGA) {
+			if(setup_bga_device(pci_dev)) {
+				/* only one device is supported */
+				break;
+			}
+		}
+		pci_dev = pci_dev->next;
+	}
 }
 #endif /* CONFIG_BGA */
 #endif /* CONFIG_PCI */

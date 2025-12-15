@@ -14,65 +14,10 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_PCI
-static struct pci_supported_devices supported[] = {
-	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371SB_1 },	/* 82371SB PIIX3 [Natoma/Triton II] */
-	{ 0, 0 }
-};
-
-void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int datalen, int mode)
+int setup_ata_device(struct ide *ide, struct pci_device *pci_dev)
 {
-	int value;
-	struct prd *prd_table = &drive->xfer.prd_table;
-
-	prd_table->addr = (unsigned int)V2P(buffer);
-	prd_table->size = datalen;
-	prd_table->eot = PRDT_MARK_END;
-	outport_l(ide->bm + BM_PRD_ADDRESS, V2P((unsigned int)prd_table));
-	value = inport_b(ide->bm + BM_COMMAND);
-	outport_b(ide->bm + BM_COMMAND, value | mode);
-
-	/* clear Error and Interrupt bits */
-	value = inport_b(ide->bm + BM_STATUS);
-	outport_b(ide->bm + BM_STATUS, value | BM_STATUS_ERROR | BM_STATUS_INTR);
-}
-
-void ata_start_dma(struct ide *ide, struct ata_drv *drive)
-{
-	int value;
-
-	value = inport_b(ide->bm + BM_COMMAND);
-	outport_b(ide->bm + BM_COMMAND, value | BM_COMMAND_START);
-}
-
-void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
-{
-	int status;
-
-	inport_b(ide->bm + BM_STATUS);	/* extra read */
-	status = inport_b(ide->bm + BM_STATUS);
-	outport_b(ide->bm + BM_COMMAND, 0);	/* stop bus master */
-	outport_b(ide->bm + BM_STATUS, status);
-}
-
-int ata_pci(struct ide *ide)
-{
-	struct pci_device *pci_dev;
-	struct pci_supported_devices *supp;
 	int bar, channel, found;
 	int size;
-
-	supp = (struct pci_supported_devices *)&supported;
-	pci_dev = NULL;
-
-	while(supp->vendor_id && supp->device_id) {
-		if((pci_dev = pci_get_device(supp->vendor_id, supp->device_id))) {
-			break;
-		}
-		supp++;
-	}
-	if(!supp->vendor_id && !supp->device_id) {
-		return 0;
-	}
 
 	/* enable I/O space */
 	pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | PCI_COMMAND_IO);
@@ -117,16 +62,6 @@ int ata_pci(struct ide *ide)
 				/* enable I/O space and bus master */
 				pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER));
 				ide->pci_dev = pci_dev;
-
-				/* set PCI Latency Timer and transfers timing */
-				switch(pci_dev->device_id) {
-					case PCI_DEVICE_ID_INTEL_82371SB_1:
-						pci_write_char(pci_dev, PCI_LATENCY_TIMER, 64);
-						/* from the book 'FYSOS: Media Storage Devices', Appendix F */
-						pci_write_short(pci_dev, 0x40, 0xA344);
-						pci_write_short(pci_dev, 0x42, 0xA344);
-						break;
-				}
 			}
 		}
 
@@ -135,7 +70,61 @@ int ata_pci(struct ide *ide)
 			printk("\t\t\t\tno drives detected\n");
 		}
 	}
+	return found;
+}
 
+void ata_setup_dma(struct ide *ide, struct ata_drv *drive, char *buffer, int datalen, int mode)
+{
+	int value;
+	struct prd *prd_table = &drive->xfer.prd_table;
+
+	prd_table->addr = (unsigned int)V2P(buffer);
+	prd_table->size = datalen;
+	prd_table->eot = PRDT_MARK_END;
+	outport_l(ide->bm + BM_PRD_ADDRESS, V2P((unsigned int)prd_table));
+	value = inport_b(ide->bm + BM_COMMAND);
+	outport_b(ide->bm + BM_COMMAND, value | mode);
+
+	/* clear Error and Interrupt bits */
+	value = inport_b(ide->bm + BM_STATUS);
+	outport_b(ide->bm + BM_STATUS, value | BM_STATUS_ERROR | BM_STATUS_INTR);
+}
+
+void ata_start_dma(struct ide *ide, struct ata_drv *drive)
+{
+	int value;
+
+	value = inport_b(ide->bm + BM_COMMAND);
+	outport_b(ide->bm + BM_COMMAND, value | BM_COMMAND_START);
+}
+
+void ata_stop_dma(struct ide *ide, struct ata_drv *drive)
+{
+	int status;
+
+	inport_b(ide->bm + BM_STATUS);	/* extra read */
+	status = inport_b(ide->bm + BM_STATUS);
+	outport_b(ide->bm + BM_COMMAND, 0);	/* stop bus master */
+	outport_b(ide->bm + BM_STATUS, status);
+}
+
+int ata_pci(struct ide *ide)
+{
+	struct pci_device *pci_dev;
+	int found;
+
+	pci_dev = pci_device_table;
+	found = 0;
+
+	while(pci_dev) {
+		if(pci_dev->class == PCI_CLASS_STORAGE_IDE) {
+			if((found = setup_ata_device(ide, pci_dev))) {
+				/* only one device is supported */
+				break;
+			}
+		}
+		pci_dev = pci_dev->next;
+	}
 	return found;
 }
 #endif /* CONFIG_PCI */
