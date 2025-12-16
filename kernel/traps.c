@@ -305,6 +305,7 @@ void stack_backtrace(void)
 int dump_registers(unsigned int trap, struct sigcontext *sc)
 {
 	unsigned int cr2;
+	int errno;
 
 	printk("\n");
 	if(trap == 14) {	/* Page Fault */
@@ -318,7 +319,17 @@ int dump_registers(unsigned int trap, struct sigcontext *sc)
 		printk("\n");
 	}
 
-	printk("Process '%s' with pid %d", current->argv0, current->pid);
+	errno = 0;
+	if(current) {
+		printk("Process '%s' with pid %d", current->argv0, current->pid);
+		/* panic if the exception has been in kernel mode */
+		if(current->flags & PF_KPROC || sc->cs == KERNEL_CS) {
+			errno = 1;
+		}
+	} else {
+		printk("['current' is NULL!]");
+		errno = 1;
+	}
 	if(sc->cs == KERNEL_CS) {
 		printk(" in '%s()'", elf_lookup_symbol(sc->eip));
 	}
@@ -333,10 +344,5 @@ int dump_registers(unsigned int trap, struct sigcontext *sc)
 		stack_backtrace();
 	}
 
-	/* panics if the exception has been in kernel mode */
-	if(current->flags & PF_KPROC || sc->cs == KERNEL_CS) {
-		return 1;
-	}
-
-	return 0;
+	return errno;
 }

@@ -30,6 +30,10 @@ void show_vma_regions(struct proc *p)
 	unsigned int n;
 	int count;
 
+	if(!p) {
+		return;
+	}
+
 	vma = p->vma_table;
 	n = 0;
 	printk("num  address range         flag offset     dev   inode      mod section cnt\n");
