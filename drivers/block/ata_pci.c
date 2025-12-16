@@ -14,7 +14,7 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_PCI
-int setup_ata_device(struct ide *ide, struct pci_device *pci_dev)
+static int setup_ata_device(struct ide *ide, struct pci_device *pci_dev)
 {
 	int bar, channel, found;
 	int size;
