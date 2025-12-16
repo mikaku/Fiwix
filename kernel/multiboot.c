@@ -22,6 +22,8 @@
 #include <fiwix/fbcon.h>
 #include <fiwix/sysconsole.h>
 
+char bios_data[256];
+
 static struct kernel_params_value kparamval_table[] = {
 #ifdef CONFIG_BGA
 	{ "bga=",
@@ -387,6 +389,9 @@ void multiboot(unsigned int magic, unsigned int info)
 	memset_b(&video, 0, sizeof(struct video_parms));
 	memset_b(&ramdisk_table, 0, sizeof(ramdisk_table));
 	ramdisk_minors = 0;
+
+	/* save the BIOS Data Area (BDA) */
+	memcpy_b(bios_data, (unsigned char *)(PAGE_OFFSET + 0x400), 256);
 
 	if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		printk("WARNING: invalid multiboot magic number: 0x%x. Assuming 4MB of RAM.\n", magic);

@@ -11,6 +11,7 @@
 #include <fiwix/vgacon.h>
 #include <fiwix/console.h>
 #include <fiwix/timer.h>
+#include <fiwix/bios.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -313,11 +314,11 @@ void vgacon_cursor_blink(unsigned int arg)
 
 void vgacon_init(void)
 {
-	short int *bios_data;
+	short int *hw_detected;;
 
-	/* get the VGA type from the BIOS equipment information */
-	bios_data = (short int *)(PAGE_OFFSET + 0x410);
-	if((*bios_data & 0x30) == 0x30) {
+	/* find out the VGA type from the BIOS Data Area */
+	hw_detected = (short int *)(bios_data + 0x10);
+	if((*hw_detected & 0x30) == 0x30) {
 		/* monochrome = 0x30 */
 		video.address = (void *)MONO_ADDR + PAGE_OFFSET;
 		video.port = MONO_6845_ADDR;
