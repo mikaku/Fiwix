@@ -82,7 +82,6 @@ int devpts_ialloc(struct inode *i, int mode)
 	i->i_mode = mode | S_IRUSR | S_IWUSR;
 	i->dev = sb->dev;
 	i->rdev = MKDEV(0, 0);
-	i->fsop = &devpts_fsop;
 	i->inode = DEVPTS_ROOT_INO + 1 + n;
 	i->count = 1;
 	i->fsop = &def_chr_fsop;
