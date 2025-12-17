@@ -308,13 +308,12 @@ void inode_unlock(struct inode *i)
 
 struct inode *ialloc(struct superblock *sb, int mode)
 {
-	int errno;
 	struct inode *i;
 
 	if((i = get_free_inode())) {
 		i->sb = sb;
 		i->rdev = sb->dev;
-		if((errno = i->sb->fsop->ialloc(i, mode))) {
+		if(i->sb->fsop->ialloc(i, mode)) {
 			i->count = 1;
 			i->sb = NULL;
 			iput(i);

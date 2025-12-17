@@ -173,7 +173,6 @@ void sync_superblocks(__dev_t dev)
 {
 	struct superblock *sb;
 	struct mount *mp;
-	int errno;
 
 	mp = mount_table;
 
@@ -182,7 +181,7 @@ void sync_superblocks(__dev_t dev)
 		if(!dev || mp->dev == dev) {
 			sb = &mp->sb;
 			if((sb->state & SUPERBLOCK_DIRTY) && !(sb->flags & MS_RDONLY)) {
-				if((errno = sb->fsop->write_superblock(sb))) {
+				if(sb->fsop->write_superblock(sb)) {
 					printk("WARNING: %s(): I/O error on device %d,%d while syncing superblock.\n", __FUNCTION__, MAJOR(sb->dev), MINOR(sb->dev));
 				}
 			}
