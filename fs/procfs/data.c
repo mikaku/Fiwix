@@ -813,7 +813,6 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 	int text, data, stack, mmap;
 
 	size = text = data = stack = mmap = 0;
-	vma_start = vma_end = 0;
 
 	if((p = get_proc_by_pid(pid))) {
 		vma = p->vma_table;
