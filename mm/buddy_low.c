@@ -122,9 +122,7 @@ static struct bl_head *allocate(int size)
 		if(block->prev) {
 			block->prev->next = block->next;
 		}
-		if(block == freelist[level]) {
-			freelist[level] = block->next;
-		}
+		freelist[level] = block->next;
 	} else {
 		/* split a bigger block */
 		block = allocate(bl_blocksize[level + 1]);
