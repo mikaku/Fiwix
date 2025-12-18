@@ -373,7 +373,7 @@ int socketpair(int domain, int type, int protocol, int sockfd[2])
 int send(int sd, const void *buf, __size_t len, int flags)
 {
 	struct socket *s;
-	struct fd fd_table;
+	struct fd fdt;
 	int errno;
 
 #ifdef __DEBUG__
@@ -387,14 +387,14 @@ int send(int sd, const void *buf, __size_t len, int flags)
 	if((errno = check_user_area(VERIFY_READ, buf, len))) {
 		return errno;
 	}
-	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
-	return s->ops->send(s, &fd_table, buf, len, flags);
+	fdt.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	return s->ops->send(s, &fdt, buf, len, flags);
 }
 
 int recv(int sd, void *buf, __size_t len, int flags)
 {
 	struct socket *s;
-	struct fd fd_table;
+	struct fd fdt;
 	int errno;
 
 #ifdef __DEBUG__
@@ -408,14 +408,14 @@ int recv(int sd, void *buf, __size_t len, int flags)
 	if((errno = check_user_area(VERIFY_WRITE, buf, len))) {
 		return errno;
 	}
-	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
-	return s->ops->recv(s, &fd_table, buf, len, flags);
+	fdt.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	return s->ops->recv(s, &fdt, buf, len, flags);
 }
 
 int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockaddr *addr, int addrlen)
 {
 	struct socket *s;
-	struct fd fd_table;
+	struct fd fdt;
 	int errno;
 
 #ifdef __DEBUG__
@@ -429,14 +429,14 @@ int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockad
 	if((errno = check_user_area(VERIFY_READ, buf, len))) {
 		return errno;
 	}
-	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
-	return s->ops->sendto(s, &fd_table, buf, len, flags, addr, addrlen);
+	fdt.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	return s->ops->sendto(s, &fdt, buf, len, flags, addr, addrlen);
 }
 
 int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, int *addrlen)
 {
 	struct socket *s;
-	struct fd fd_table;
+	struct fd fdt;
 	char ret_addr[108];
 	int errno, ret_len, bytes_read;
 
@@ -451,9 +451,9 @@ int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, 
 	if((errno = check_user_area(VERIFY_WRITE, buf, len))) {
 		return errno;
 	}
-	fd_table.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
+	fdt.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
 	memset_b(ret_addr, 0, 108);
-	if((errno = s->ops->recvfrom(s, &fd_table, buf, len, flags, (struct sockaddr *)ret_addr, &ret_len)) < 0) {
+	if((errno = s->ops->recvfrom(s, &fdt, buf, len, flags, (struct sockaddr *)ret_addr, &ret_len)) < 0) {
 		return errno;
 	}
 	bytes_read = errno;
