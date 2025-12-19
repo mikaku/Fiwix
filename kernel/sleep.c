@@ -116,11 +116,12 @@ void wakeup(void *address)
 {
 	unsigned int flags;
 	struct proc **h;
-	int i;
+	int i, found;
 
 	SAVE_FLAGS(flags); CLI();
 	i = SLEEP_HASH((unsigned int)address);
 	h = &sleep_hash_table[i];
+	found = 0;
 
 	while(*h) {
 		if((*h)->sleep_address == address) {
@@ -128,7 +129,7 @@ void wakeup(void *address)
 			(*h)->flags &= ~PF_NOTINTERRUPT;
 			(*h)->cpu_count = (*h)->priority;
 			runnable(*h);
-			need_resched = 1;
+			found = 1;
 			if((*h)->next_sleep) {
 				(*h)->next_sleep->prev_sleep = (*h)->prev_sleep;
 			}
@@ -143,6 +144,9 @@ void wakeup(void *address)
 		h = &(*h)->next_sleep;
 	}
 	RESTORE_FLAGS(flags);
+	if(found) {
+		need_resched = 1;
+	}
 }
 
 void wakeup_proc(struct proc *p)
