@@ -817,12 +817,10 @@ int kbdflushd(void)
 				wakeup(&buffer_wait);
 				flushed++;
 
-				if(flushed == NR_BUF_RECLAIM) {
+				if(flushed >= NR_BUF_RECLAIM) {
 					if(kstat.nr_dirty_buffers < kstat.max_dirty_buffers) {
 						break;
 					}
-					flushed = 0;
-					wakeup(&buffer_wait);
 					do_sched();
 				}
 			}
