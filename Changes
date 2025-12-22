@@ -1,11 +1,12 @@
 1.8.0 - DD-MMM-2026
 ===================
-- Added support for tilde dead key. [#102]
 - Added generic PCI Bus-Master DMA support on ATA disks.
+- Added support for tilde dead key. [#102]
 - Added the 'flags' entry in the 'kernel_params' structure to group all toggle-
   type parameters.
 - Added the new kernel parameter 'ide_nodma' to disable DMA in all ATA drives.
 - Changed the 'ps2_noreset' to a toggle parameter.
+- Changed the way how device drivers find PCI-type devices.
 - Removed the file CREDITS because the LICENSE file already contains the list of
   contributors.
 - Fixed the ATA disk initialitzation to reduce the number of messages like
@@ -16,7 +17,13 @@
   register while setting DMA.
 - Fixed ata_setup_dma() and ata_start_dma() to preserve the current register
   status before writing a new value.
-- Small fixes, code cleanup and cosmetic changes.
+- Fixed to save the BIOS Data Area (256 bytes) to prevent it from being
+  clobbered by the early use of the first memory page.
+- Fixed dump_registers() to be able to show the registres on an early kernel
+  panic.
+- Fixed wakeup() to avoid flagging 'need_resched' on every iteration and thus
+  saving extra context switchings.
+- Small fixes and improvements, code cleanup and cosmetic changes.
 
 
 1.7.0 - 15-Nov-2025
