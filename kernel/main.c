@@ -34,6 +34,7 @@
 #include <fiwix/ipc.h>
 #include <fiwix/kexec.h>
 #include <fiwix/sysconsole.h>
+#include <fiwix/net.h>
 
 struct kernel_params kparms;
 struct kernel_stat kstat;
@@ -76,7 +77,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	}
 #endif /* CONFIG_QEMU_DEBUGCON */
 
-	printk("                    Fiwix kernel v%s for i386 architecture\n", UTS_RELEASE);
+	printk("                       Fiwix v%s for i386 architecture\n", UTS_RELEASE);
 	printk("                     Copyright (c) 2018-2025, Jordi Sanfeliu\n");
 	printk("\n");
 #ifdef __TINYC__
@@ -195,7 +196,7 @@ void stop_kernel(void)
 	cpu_idle();
 }
 
-void cpu_idle()
+void cpu_idle(void)
 {
 	for(;;) {
 		if(need_resched) {
