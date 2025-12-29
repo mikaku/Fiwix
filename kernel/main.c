@@ -81,12 +81,8 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	printk("\n");
 #ifdef __TINYC__
 	printk("             (built on %s with tcc)\n", UTS_VERSION);
-#elif defined(__clang__)
-	printk("             (built on %s with Clang %s)\n", UTS_VERSION, __VERSION__);
-#elif defined(__GNUC__)
-	printk("             (built on %s with GCC %s)\n", UTS_VERSION, __VERSION__);
 #else
-	printk("             (built on %s with unknown compiler %s)\n", UTS_VERSION);
+	printk("             (built on %s with GCC %s)\n", UTS_VERSION, __VERSION__);
 #endif
 	printk("\n");
 	printk("DEVICE    ADDRESS         IRQ   COMMENT\n");
