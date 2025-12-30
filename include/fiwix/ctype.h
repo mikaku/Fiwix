@@ -28,6 +28,7 @@ extern unsigned char _ctype[];
 #define ISPUNCT(ch)	((_ctype + 1)[ch] & _P)
 #define ISCNTRL(ch)	((_ctype + 1)[ch] & _C)
 #define ISXDIGIT(ch)	((_ctype + 1)[ch] & (_N | _X))
+#define ISPRINT(ch)	((_ctype + 1)[ch] & (_P | _U | _L | _N | _S))
 
 #define ISASCII(ch)	((unsigned) ch <= 0x7F)
 #define TOASCII(ch)	((unsigned) ch & 0x7F)
