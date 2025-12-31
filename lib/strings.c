@@ -279,7 +279,6 @@ void memset_l(void *dest, unsigned int value, unsigned int count)
 	}
 }
 
-#ifdef __TINYC__
 void *memmove(void *dest, void const *src, int count)
 {
 	if (dest < src) {
@@ -296,4 +295,3 @@ void *memmove(void *dest, void const *src, int count)
 	}
 	return dest;
 }
-#endif
