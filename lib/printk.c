@@ -108,7 +108,7 @@ static void puts(char *buffer, int msg_level)
  * --------------------------------------------------------
  *  	l	long long int arguments
  *
- * flags
+ * flags (e.g: %05d or %-6s)
  * --------------------------------------------------------
  *	0	result is padded with zeros (e.g.: '%06d')
  *		(maximum value is 32)
@@ -116,6 +116,8 @@ static void puts(char *buffer, int msg_level)
  *		(maximum value is 32)
  *	-	the numeric result is left-justified
  *		(default is right-justified)
+ *		the string is right-justified
+ *		(default is left-justified)
  */
 static int do_printk(char *buffer, const char *format, va_list args)
 {
@@ -398,11 +400,17 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					if(ptr_s == NULL) {
 					  	ptr_s = (char *)nullstr;
 					}
+					if(lf) {
+						while(num-- > 0 && count < MAX_BUF) {
+							*(buffer++) = ' ';
+							count++;
+						}
+					}
 					while((c = *(ptr_s++)) && count < MAX_BUF) {
 						*(buffer++) = c;
 						count++;
 					}
-					while(num-- && count < MAX_BUF) {
+					while(num-- > 0 && count < MAX_BUF) {
 						*(buffer++) = ' ';
 						count++;
 					}
