@@ -145,6 +145,31 @@ int strlen(const char *str)
 	return n;
 }
 
+char *strchr(const char *str, int c)
+{
+	while(*str) {
+		if(*str == (char)c) {
+			break;
+		}
+		str++;
+	}
+	return (char *)str;
+}
+
+char *strrchr(const char *str, int c)
+{
+	int len;
+
+	if((len = strlen(str))) {
+		while(--len) {
+			if(str[len] == (char)c) {
+				break;
+			}
+		}
+	}
+	return (char *)(str + len);
+}
+
 char *get_basename(const char *path)
 {
 	char *basename;
