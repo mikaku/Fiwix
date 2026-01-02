@@ -1,5 +1,5 @@
 /*
- * fiwix/lib/strings.c
+ * fiwix/lib/string.c
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
  * Distributed under the terms of the Fiwix License.
