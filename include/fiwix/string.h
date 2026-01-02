@@ -38,5 +38,7 @@ void memcpy_l(void *, const void *, unsigned int);
 void memset_b(void *, unsigned char, unsigned int);
 void memset_w(void *, unsigned short int, unsigned int);
 void memset_l(void *, unsigned int, unsigned int);
+int memcmp(const void *, const void *, unsigned int);
+void *memmove(void *, void const *, int);
 
 #endif /* _INCLUDE_STRING_H */
