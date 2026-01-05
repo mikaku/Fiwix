@@ -36,7 +36,7 @@ static struct fs_operations fb_driver_fsop = {
 	fb_llseek,
 	NULL,			/* readdir */
 	NULL,			/* readdir64 */
-	fb_mmap,		/* mmap */
+	fb_mmap,
 	NULL,			/* select */
 
 	NULL,			/* readlink */
