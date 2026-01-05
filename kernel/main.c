@@ -31,10 +31,8 @@
 #include <fiwix/keyboard.h>
 #include <fiwix/sched.h>
 #include <fiwix/mm.h>
-#include <fiwix/ipc.h>
 #include <fiwix/kexec.h>
 #include <fiwix/sysconsole.h>
-#include <fiwix/net.h>
 
 struct kernel_params kparms;
 struct kernel_stat kstat;
@@ -113,14 +111,6 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	sched_init();
 	inode_init();
 	fd_init();
-
-#ifdef CONFIG_SYSVIPC
-	ipc_init();
-#endif /* CONFIG_SYSVIPC */
-
-#ifdef CONFIG_NET
-	net_init();
-#endif /* CONFIG_NET */
 
 	/*
 	 * IDLE is now the current process (created manually as PID 0),

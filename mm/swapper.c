@@ -7,9 +7,11 @@
 
 #include <fiwix/asm.h>
 #include <fiwix/kernel.h>
+#include <fiwix/config.h>
 #include <fiwix/process.h>
 #include <fiwix/sleep.h>
 #include <fiwix/sched.h>
+#include <fiwix/ipc.h>
 #include <fiwix/memdev.h>
 #include <fiwix/serial.h>
 #include <fiwix/lp.h>
@@ -21,12 +23,17 @@
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
 #include <fiwix/pty.h>
+#include <fiwix/net.h>
 #include <fiwix/stdio.h>
 
 /* kswapd continues the kernel initialization */
 int kswapd(void)
 {
 	STI();
+
+#ifdef CONFIG_SYSVIPC
+	ipc_init();
+#endif /* CONFIG_SYSVIPC */
 
 	/* char devices */
 	memdev_init();
@@ -35,6 +42,11 @@ int kswapd(void)
 #ifdef CONFIG_UNIX98_PTYS
 	pty_init();
 #endif /* CONFIG_UNIX98_PTYS */
+
+	/* network */
+#ifdef CONFIG_NET
+	net_init();
+#endif /* CONFIG_NET */
 
 	/* block devices */
 	ramdisk_init();
