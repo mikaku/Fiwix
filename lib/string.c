@@ -232,10 +232,10 @@ int atoi(const char *str)
 void memcpy_b(void *dest, const void *src, unsigned int count)
 {
 	unsigned char *d;
-	unsigned char *s;
+	const unsigned char *s;
 
 	d = (unsigned char *)dest;
-	s = (unsigned char *)src;
+	s = (const unsigned char *)src;
 	while(count--) {
 		*d = *s;
 		d++;
@@ -246,10 +246,10 @@ void memcpy_b(void *dest, const void *src, unsigned int count)
 void memcpy_w(void *dest, const void *src, unsigned int count)
 {
 	unsigned short int *d;
-	unsigned short int *s;
+	const unsigned short int *s;
 
 	d = (unsigned short int *)dest;
-	s = (unsigned short int *)src;
+	s = (const unsigned short int *)src;
 	while(count--) {
 		*d = *s;
 		d++;
@@ -260,10 +260,10 @@ void memcpy_w(void *dest, const void *src, unsigned int count)
 void memcpy_l(void *dest, const void *src, unsigned int count)
 {
 	unsigned int *d;
-	unsigned int *s;
+	const unsigned int *s;
 
 	d = (unsigned int *)dest;
-	s = (unsigned int *)src;
+	s = (const unsigned int *)src;
 	while(count--) {
 		*d = *s;
 		d++;
@@ -306,11 +306,11 @@ void memset_l(void *dest, unsigned int value, unsigned int count)
 
 int memcmp(const void *str1, const void *str2, unsigned int count)
 {
-	unsigned char *s1;
-	unsigned char *s2;
+	const unsigned char *s1;
+	const unsigned char *s2;
 
-	s1 = (unsigned char *)str1;
-	s2 = (unsigned char *)str2;
+	s1 = (const unsigned char *)str1;
+	s2 = (const unsigned char *)str2;
 	while(count--) {
 		if(*s1 != *s2) {
 			return s1 < s2 ? -1 : 1;
