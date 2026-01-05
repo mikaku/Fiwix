@@ -10,6 +10,7 @@
 #include <fiwix/mm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/ctype.h>
 
 /* convert from big-endian to little-endian (word swap) */
 void swap_asc_word(char *str, int len)
@@ -168,6 +169,52 @@ char *strrchr(const char *str, int c)
 		}
 	}
 	return (char *)(str + len);
+}
+
+int strtol(const char *nptr, char **endptr, int base)
+{
+	int neg, value;
+
+	value = neg = 0;
+	while(ISSPACE((int)*nptr)) {
+		nptr++;
+	}
+	if(*nptr == '-') {
+		neg = 1;
+		nptr++;
+	} else if(*nptr == '+') {
+		nptr++;
+	}
+	if(!base) {
+		if(*nptr == '0') {
+			base = 8;
+			nptr++;
+			if(*nptr == 'x' || *nptr == 'X') {
+				base = 16;
+				nptr++;
+			}
+		} else {
+			base = 10;
+		}
+	}
+	while(*nptr) {
+		if(ISXDIGIT((int)*nptr)) {
+			if(ISDIGIT((int)*nptr)) {
+				if((*nptr - '0') < base) {
+					value = (value * base) + (*nptr - '0');
+				}
+			} else {
+				value = (value * base) + (TOUPPER((*nptr - 'A') + 10));
+			}
+		} else {
+			break;
+		}
+		nptr++;
+	}
+	if(endptr) {
+		*endptr = (char *)nptr;
+	}
+	return neg ? -value : value;
 }
 
 char *get_basename(const char *path)

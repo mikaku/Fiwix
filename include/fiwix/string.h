@@ -30,6 +30,7 @@ char *strncat(char *, const char *, __ssize_t);
 int strlen(const char *);
 char *strchr(const char *, int);
 char *strrchr(const char *, int);
+int strtol(const char *, char **, int);
 char *get_basename(const char *);
 char *remove_trailing_slash(char *);
 int is_dir(const char *);
