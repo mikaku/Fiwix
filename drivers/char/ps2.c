@@ -127,9 +127,9 @@ void ps2_init(void)
 {
 	int errno;
 	unsigned char config, config2;
-	char type, supp_ports, iface;
+	char type, supp_ports;
 
-	type = supp_ports = iface = 0;
+	type = supp_ports = 0;
 
 	/* disable device(s) */
 	ps2_write(PS2_COMMAND, PS2_CMD_DISABLE_CH1);
@@ -210,12 +210,7 @@ void ps2_init(void)
 	ps2_write(PS2_COMMAND, PS2_CMD_SEND_CONFIG);
 	ps2_write(PS2_DATA, config);
 
-	/* get current interface */
-	ps2_clear_buffer();
-	ps2_write(PS2_COMMAND, PS2_CMD_GET_IFACE);
-	iface = ps2_read(PS2_DATA) & 0x01;
-
-	printk("ps/2      0x%04x,0x%04x     -\t%s type=%d, channels=%d\n", PS2_DATA, PS2_COMMAND, iface == 1 ? "(MCA) PS/2" : "(ISA) AT", type, supp_ports);
+	printk("ps/2      0x%04x,0x%04x     -\tcontroller type=%d, channels=%d\n", PS2_DATA, PS2_COMMAND, type, supp_ports);
 
 	/* enable device(s) */
 	ps2_write(PS2_COMMAND, PS2_CMD_ENABLE_CH1);

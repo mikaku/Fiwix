@@ -30,7 +30,6 @@
 #define PS2_CMD_TEST_CH1	0xAB	/* test interface first channel */
 #define PS2_CMD_DISABLE_CH1	0xAD	/* disable first channel */
 #define PS2_CMD_ENABLE_CH1	0xAE	/* enable first channel */
-#define PS2_CMD_GET_IFACE	0xCA	/* get the current interface */
 #define PS2_CMD_CH2_PREFIX	0xD4	/* second channel (mouse) prefix */
 #define PS2_CMD_HOTRESET	0xFE	/* Hot Reset */
 
