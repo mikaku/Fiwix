@@ -543,7 +543,7 @@ void vconsole_write(struct tty *tty)
 
 		if(vc->esc) {
 			if(vc->sbracket) {
-				if(IS_NUMERIC(ch)) {
+				if(ISDIGIT(ch)) {
 					numeric = 1;
 					if(vc->semicolon) {
 						vc->parmv2 *= 10;

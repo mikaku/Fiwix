@@ -17,9 +17,6 @@
 #define MIN(a,b)	((a) < (b) ? (a) : (b))
 #define MAX(a,b)	((a) > (b) ? (a) : (b))
 
-#define IS_NUMERIC(c)	((c) >= '0' && (c) <= '9')
-#define IS_SPACE(c)	((c) == ' ')
-
 void swap_asc_word(char *, int);
 int strcmp(const char *, const char *);
 int strncmp(const char *, const char *, __ssize_t);

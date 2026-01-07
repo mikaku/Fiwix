@@ -264,16 +264,7 @@ int is_dir(const char *path)
 
 int atoi(const char *str)
 {
-	int n;
-
-	n = 0;
-	while(IS_SPACE(*str)) {
-		str++;
-	}
-	while(IS_NUMERIC(*str)) {
-		n = (n * 10) + (*str++ - '0');
-	}
-	return n;
+	return strtol(str, (char **)NULL, 10);
 }
 
 void memcpy_b(void *dest, const void *src, unsigned int count)
