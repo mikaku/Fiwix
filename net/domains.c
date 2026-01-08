@@ -31,6 +31,7 @@ struct proto_ops unix_ops = {
 	unix_recvfrom,
 	unix_read,
 	unix_write,
+	unix_ioctl,
 	unix_select,
 	unix_shutdown,
 	unix_setsockopt,

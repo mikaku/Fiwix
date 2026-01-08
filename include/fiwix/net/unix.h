@@ -46,6 +46,7 @@ int unix_sendto(struct socket *, struct fd *, const char *, __size_t, int, const
 int unix_recvfrom(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, int *);
 int unix_read(struct socket *, struct fd *, char *, __size_t);
 int unix_write(struct socket *, struct fd *, const char *, __size_t);
+int unix_ioctl(struct socket *, struct fd *, int, unsigned int);
 int unix_select(struct socket *, int);
 int unix_shutdown(struct socket *, int);
 int unix_setsockopt(struct socket *, int, int, const void *, unsigned int);

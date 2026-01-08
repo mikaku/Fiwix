@@ -68,6 +68,7 @@ struct proto_ops {
 	int (*recvfrom)(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, int *);
 	int (*read)(struct socket *, struct fd *, char *, __size_t);
 	int (*write)(struct socket *, struct fd *, const char *, __size_t);
+	int (*ioctl)(struct socket *, struct fd *, int, unsigned int);
 	int (*select)(struct socket *, int);
 	int (*shutdown)(struct socket *, int);
 	int (*setsockopt)(struct socket *, int, int, const void *, unsigned int);

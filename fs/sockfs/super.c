@@ -26,7 +26,7 @@ struct fs_operations sockfs_fsop = {
 	sockfs_close,
 	sockfs_read,
 	sockfs_write,
-	NULL, 			/* ioctl */
+	sockfs_ioctl,
 	sockfs_llseek,
 	NULL,			/* readdir */
 	NULL,			/* readdir64 */

@@ -496,6 +496,18 @@ int unix_write(struct socket *s, struct fd *f, const char *buffer, __size_t coun
 	return bytes_written;
 }
 
+int unix_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
+{
+	int errno;
+
+	switch(cmd) {
+		default:
+			errno = dev_ioctl(cmd, (void *)arg);
+			break;
+	}
+	return errno;
+}
+
 int unix_select(struct socket *s, int flag)
 {
 	struct unix_info *u, *up;

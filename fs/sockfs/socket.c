@@ -44,6 +44,14 @@ int sockfs_write(struct inode *i, struct fd *f, const char *buffer, __size_t cou
 	return s->ops->write(s, f, buffer, count);
 }
 
+int sockfs_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
+{
+	struct socket *s;
+
+	s = &i->u.sockfs.sock;
+	return s->ops->ioctl(s, f, cmd, arg);
+}
+
 __loff_t sockfs_llseek(struct inode *i, __loff_t offset)
 {
         return -ESPIPE;

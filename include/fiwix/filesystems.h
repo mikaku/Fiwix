@@ -172,6 +172,7 @@ int sockfs_open(struct inode *, struct fd *);
 int sockfs_close(struct inode *, struct fd *);
 int sockfs_read(struct inode *, struct fd *, char *, __size_t);
 int sockfs_write(struct inode *, struct fd *, const char *, __size_t);
+int sockfs_ioctl(struct inode *, struct fd *, int, unsigned int);
 __loff_t sockfs_llseek(struct inode *, __loff_t);
 int sockfs_select(struct inode *, struct fd *, int);
 int sockfs_ialloc(struct inode *, int);
