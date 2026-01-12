@@ -803,30 +803,18 @@ int data_proc_pid_root(char *buffer, __pid_t pid)
 
 int data_proc_pid_stat(char *buffer, __pid_t pid)
 {
-	int size, vma_start, vma_end;
 	unsigned int esp, eip;
 	int signum, mask;
 	__sigset_t sigignored, sigcaught;
 	struct proc *p;
 	struct sigcontext *sc;
 	struct vma *vma;
-	int text, data, stack, mmap;
+	int size, text, data, stack, mmap;
 
 	size = text = data = stack = mmap = 0;
 
 	if((p = get_proc_by_pid(pid))) {
 		vma = p->vma_table;
-
-		/*
-		 * This assumes that the first entry in the vma_table
-		 * contains the program's inode.
-		 */
-		vma_start = vma_end = 0;
-		if(vma) {
-			vma_start = vma->start;
-			vma_end = vma->end;
-		}
-
 		while(vma) {
 			switch(vma->s_type) {
 				case P_TEXT:
@@ -883,8 +871,8 @@ int data_proc_pid_stat(char *buffer, __pid_t pid)
 			text + data + stack + mmap,
 			p->rss,
 			0x7FFFFFFF,		/* rlim */
-			vma_start,		/* startcode */
-			vma_end,		/* endcode */
+			p->entry_address & PAGE_MASK,
+			p->end_code,
 			PAGE_OFFSET - 1,	/* startstack */
 			esp,			/* kstkesp */
 			eip,			/* kstkeip */

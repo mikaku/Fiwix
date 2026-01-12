@@ -501,6 +501,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 			if(elf32_ph->p_flags & PF_X) {
 				prot |= PROT_EXEC;
 				type = P_TEXT;
+				current->end_code = start + length;
 			}
 			errno = do_mmap(i, start, length, prot, MAP_PRIVATE | MAP_FIXED, offset, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {

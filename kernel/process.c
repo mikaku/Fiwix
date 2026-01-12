@@ -287,6 +287,8 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 		release_proc(p);
 		return NULL;
 	}
+	p->entry_address = PAGE_OFFSET;
+	p->end_code = (int)_end;
 	p->tss.esp0 += PAGE_SIZE - 4;
 	p->rss++;
 	p->tss.cr3 = V2P((unsigned int)kpage_dir);

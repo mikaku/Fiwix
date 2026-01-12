@@ -129,6 +129,7 @@ struct proc {
 	struct inode *root;
 	struct inode *pwd;		/* process working directory */
 	unsigned int entry_address;
+	unsigned int end_code;
 	char argv0[NAME_MAX + 1];
 	int argc;
 	char **argv;
