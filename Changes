@@ -5,10 +5,15 @@
 - Added the 'flags' entry in the 'kernel_params' structure to group all toggle-
   type parameters.
 - Added the new kernel parameter 'ide_nodma' to disable DMA in all ATA drives.
+- Added support to be able to right-justify strings in printk().
+- Added support for some new functions in lib/string.c.
 - Changed the 'ps2_noreset' to a toggle parameter.
 - Changed the way how device drivers find PCI-type devices.
+- Moved ipc_init() and net_init() initialization into kswpad() to make sure the
+  'current' process stucture is completely setup.
 - Removed the file CREDITS because the LICENSE file already contains the list of
   contributors.
+- Reimplemented atoi() to rely on strtol().
 - Fixed the ATA disk initialitzation to reduce the number of messages like
   'unexpected interrupt'.
 - Fixed the DMA functionality in ATA disks to use UDMA since the support for the
@@ -23,6 +28,9 @@
   panic.
 - Fixed wakeup() to avoid flagging 'need_resched' on every iteration and thus
   saving extra context switchings.
+- Fixed ps2_init() to no use anymore the command 0xCA (to get the current
+  interface) as it is not a standardized command.
+- Fixed the start_code and end_code values in '/proc/<PID>/stat' file.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
