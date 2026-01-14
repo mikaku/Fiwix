@@ -96,9 +96,10 @@ void invalidate_tlb(void);
 #define NOP() __asm__ __volatile__ ("nop":::"memory")
 #define HLT() __asm__ __volatile__ ("hlt":::"memory")
 
-#define GET_CR2(cr2) __asm__ __volatile__ ("movl %%cr2, %0" : "=r" (cr2));
-#define GET_ESP(esp) __asm__ __volatile__ ("movl %%esp, %0" : "=r" (esp));
-#define SET_ESP(esp) __asm__ __volatile__ ("movl %0, %%esp" :: "r" (esp));
+#define GET_CR2(cr2)	__asm__ __volatile__ ("movl %%cr2, %0" : "=r" (cr2));
+#define GET_ESP(esp)	__asm__ __volatile__ ("movl %%esp, %0" : "=r" (esp));
+#define SET_ESP(esp)	__asm__ __volatile__ ("movl %0, %%esp" :: "r" (esp));
+#define GET_GS(gs)	__asm__ __volatile__ ("movl %%gs, %0" : "=r" (gs));
 
 #define SAVE_FLAGS(flags)			\
 	__asm__ __volatile__(			\

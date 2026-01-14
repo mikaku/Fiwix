@@ -5,6 +5,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
 #include <fiwix/types.h>
 #include <fiwix/syscalls.h>
 #include <fiwix/mm.h>
@@ -24,7 +25,13 @@ static int verify_address(int type, const void *addr, unsigned int size)
 	}
 #else
 	struct vma *vma;
-	unsigned int start;
+	unsigned int start, gs;
+
+	/* no need to verify anything if the caller is the kernel */
+	GET_GS(gs);
+	if(gs == KERNEL_DS) {
+		return 0;
+	}
 
 	/*
 	 * The vma_table of the INIT process is not setup yet when it
