@@ -58,7 +58,7 @@ int strcmp(const char *str1, const char *str2)
 
 int strncmp(const char *str1, const char *str2, __ssize_t n)
 {
-	while(n > 0) {
+	while(n > 0 && *str1) {
 		if(*str1 != *str2) {
 			return 1;
 		}
@@ -312,7 +312,7 @@ void memcpy_l(void *dest, const void *src, unsigned int count)
 void memset_b(void *dest, unsigned char value, unsigned int count)
 {
 	unsigned char *d;
-	
+
 	d = (unsigned char *)dest;
 	while(count--) {
 		*d = value;
@@ -323,7 +323,7 @@ void memset_b(void *dest, unsigned char value, unsigned int count)
 void memset_w(void *dest, unsigned short int value, unsigned int count)
 {
 	unsigned short int *d;
-	
+
 	d = (unsigned short int *)dest;
 	while(count--) {
 		*d = value;
@@ -334,7 +334,7 @@ void memset_w(void *dest, unsigned short int value, unsigned int count)
 void memset_l(void *dest, unsigned int value, unsigned int count)
 {
 	unsigned int *d;
-	
+
 	d = (unsigned int *)dest;
 	while(count--) {
 		*d = value;
