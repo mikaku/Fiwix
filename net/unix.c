@@ -12,6 +12,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/socket.h>
 #include <fiwix/net.h>
+#include <fiwix/netdevice.h>
 #include <fiwix/net/unix.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/sched.h>
