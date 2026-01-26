@@ -201,14 +201,39 @@ int unix_connect(struct socket *sc, const struct sockaddr *addr, int addrlen)
 	return 0;
 }
 
-int unix_accept(struct socket *sc, struct socket *nss)
+int unix_accept(struct socket *ss, struct sockaddr *addr, int *addrlen)
 {
+	int ufd;
+	struct socket *sc, *nss;
 	struct unix_info *uc, *us;
+	int errno;
+
+	while(!(sc = get_socket_from_queue(ss))) {
+		if(ss->fd->flags & O_NONBLOCK) {
+			return -EAGAIN;
+		}
+		if(sleep(ss, PROC_INTERRUPTIBLE)) {
+			return -EINTR;
+		}
+	}
+
+	nss = NULL;
+	if((ufd = sock_alloc(&nss)) < 0) {
+		return ufd;
+	}
+	nss->type = ss->type;
+	nss->ops = ss->ops;
+	if((errno = nss->ops->create(nss)) < 0) {
+		sock_free(nss);
+		return errno;
+	}
+
 
 	uc = &sc->u.unix_info;
 	us = &nss->u.unix_info;
 
 	if(!(uc->data = (char *)kmalloc(PIPE_BUF))) {
+		sock_free(nss);
 		return -ENOMEM;
 	}
 	us->data = uc->data;
@@ -222,7 +247,10 @@ int unix_accept(struct socket *sc, struct socket *nss)
 	nss->state = SS_CONNECTED;
 	wakeup(sc);
 	wakeup(&do_select);
-	return 0;
+	if(addr) {
+		nss->ops->getname(nss, addr, addrlen, SYS_GETPEERNAME);
+	}
+	return ufd;
 }
 
 int unix_getname(struct socket *s, struct sockaddr *addr, int *addrlen, int call)

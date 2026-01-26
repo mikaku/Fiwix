@@ -59,7 +59,7 @@ struct proto_ops {
 	void (*free)(struct socket *);
 	int (*bind)(struct socket *, const struct sockaddr *, int);
 	int (*connect)(struct socket *, const struct sockaddr *, int);
-	int (*accept)(struct socket *, struct socket *);
+	int (*accept)(struct socket *, struct sockaddr *, int *);
 	int (*getname)(struct socket *, struct sockaddr *, int *, int);
 	int (*socketpair)(struct socket *, struct socket *);
 	int (*send)(struct socket *, struct fd *, const char *, __size_t, int);
@@ -78,8 +78,10 @@ struct proto_ops {
 
 int assign_proto(struct socket *, int);
 
-void sock_free(struct socket *);
+struct socket *get_socket_from_queue(struct socket *);
 int insert_socket_to_queue(struct socket *, struct socket *);
+int sock_alloc(struct socket **);
+void sock_free(struct socket *);
 int socket(int, int, int);
 int bind(int, struct sockaddr *, int);
 int listen(int, int);

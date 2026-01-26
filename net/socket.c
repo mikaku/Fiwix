@@ -37,7 +37,15 @@ static int check_sd(int sd)
 	return 0;
 }
 
-static struct socket *remove_socket_from_queue(struct socket *ss)
+static struct socket *get_socket(int fd)
+{
+	struct inode *i;
+
+	i = fd_table[current->fd[fd]].inode;
+	return &i->u.sockfs.sock;
+}
+
+struct socket *get_socket_from_queue(struct socket *ss)
 {
 	unsigned int flags;
 	struct socket *sc;
@@ -54,7 +62,33 @@ static struct socket *remove_socket_from_queue(struct socket *ss)
 	return sc;
 }
 
-static int sock_alloc(struct socket **s)
+/* append a socket to the list of pending connections */
+int insert_socket_to_queue(struct socket *ss, struct socket *sc)
+{
+	unsigned int flags;
+	struct socket *s;
+
+	if(ss->queue_len + 1 > ss->queue_limit) {
+		printk("WARNING: backlog exceeded!\n");
+		return -ECONNREFUSED;
+	}
+
+	SAVE_FLAGS(flags); CLI();
+	if((s = ss->queue_head)) {
+		while(s->next_queue) {
+			s = s->next_queue;
+		}
+		s->next_queue = sc;
+	} else {
+		ss->queue_head = sc;
+	}
+	RESTORE_FLAGS(flags);
+
+	ss->queue_len++;
+	return 0;
+}
+
+int sock_alloc(struct socket **s)
 {
 	int fd, ufd;
 	struct filesystems *fs;
@@ -87,14 +121,6 @@ static int sock_alloc(struct socket **s)
 	return ufd;
 }
 
-static struct socket *get_socket_from_fd(int fd)
-{
-	struct inode *i;
-
-	i = fd_table[current->fd[fd]].inode;
-	return &i->u.sockfs.sock;
-}
-
 void sock_free(struct socket *s)
 {
 	int fd, ufd, n;
@@ -124,32 +150,6 @@ void sock_free(struct socket *s)
 		s->ops->free(s);
 	}
 	wakeup(s);
-}
-
-/* append a socket to the list of pending connections */
-int insert_socket_to_queue(struct socket *ss, struct socket *sc)
-{
-	unsigned int flags;
-	struct socket *s;
-
-	if(ss->queue_len + 1 > ss->queue_limit) {
-		printk("WARNING: backlog exceeded!\n");
-		return -ECONNREFUSED;
-	}
-
-	SAVE_FLAGS(flags); CLI();
-	if((s = ss->queue_head)) {
-		while(s->next_queue) {
-			s = s->next_queue;
-		}
-		s->next_queue = sc;
-	} else {
-		ss->queue_head = sc;
-	}
-	RESTORE_FLAGS(flags);
-
-	ss->queue_len++;
-	return 0;
 }
 
 int socket(int domain, int type, int protocol)
@@ -194,7 +194,7 @@ int bind(int sd, struct sockaddr *addr, int addrlen)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	if((errno = check_user_area(VERIFY_READ, addr, addrlen))) {
 		return errno;
 	}
@@ -213,7 +213,7 @@ int listen(int sd, int backlog)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	ss = get_socket_from_fd(sd);
+	ss = get_socket(sd);
 	if(ss->type != SOCK_STREAM) {
 		return -EOPNOTSUPP;
 	}
@@ -235,7 +235,7 @@ int connect(int sd, struct sockaddr *addr, int addrlen)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	sc = get_socket_from_fd(sd);
+	sc = get_socket(sd);
 	if((errno = check_user_area(VERIFY_READ, addr, addrlen))) {
 		return errno;
 	}
@@ -244,8 +244,7 @@ int connect(int sd, struct sockaddr *addr, int addrlen)
 
 int accept(int sd, struct sockaddr *addr, int *addrlen)
 {
-	int ufd;
-	struct socket *ss, *sc, *nss;
+	struct socket *ss;
 	int errno;
 
 #ifdef __DEBUG__
@@ -255,40 +254,14 @@ int accept(int sd, struct sockaddr *addr, int *addrlen)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	ss = get_socket_from_fd(sd);
+	ss = get_socket(sd);
 	if(!(ss->flags & SO_ACCEPTCONN)) {
 		return -EINVAL;
 	}
 	if(ss->type != SOCK_STREAM) {
 		return -EOPNOTSUPP;
 	}
-	while(!(sc = remove_socket_from_queue(ss))) {
-		if(fd_table[current->fd[sd]].flags & O_NONBLOCK) {
-			return -EAGAIN;
-		}
-		if(sleep(ss, PROC_INTERRUPTIBLE)) {
-			return -EINTR;
-		}
-	}
-
-	nss = NULL;
-	if((ufd = sock_alloc(&nss)) < 0) {
-		return ufd;
-	}
-	nss->type = ss->type;
-	nss->ops = ss->ops;
-	if((errno = nss->ops->create(nss)) < 0) {
-		sock_free(nss);
-		return errno;
-	}
-	if((errno = sc->ops->accept(sc, nss)) < 0) {
-		sock_free(nss);
-		return errno;
-	}
-	if(addr) {
-		nss->ops->getname(nss, addr, addrlen, SYS_GETPEERNAME);
-	}
-	return ufd;
+	return ss->ops->accept(ss, addr, addrlen);
 }
 
 int getname(int sd, struct sockaddr *addr, int *addrlen, int call)
@@ -307,7 +280,7 @@ int getname(int sd, struct sockaddr *addr, int *addrlen, int call)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	return s->ops->getname(s, addr, addrlen, call);
 }
 
@@ -383,7 +356,7 @@ int send(int sd, const void *buf, __size_t len, int flags)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	if((errno = check_user_area(VERIFY_READ, buf, len))) {
 		return errno;
 	}
@@ -404,7 +377,7 @@ int recv(int sd, void *buf, __size_t len, int flags)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	if((errno = check_user_area(VERIFY_WRITE, buf, len))) {
 		return errno;
 	}
@@ -425,7 +398,7 @@ int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockad
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	if((errno = check_user_area(VERIFY_READ, buf, len))) {
 		return errno;
 	}
@@ -447,7 +420,7 @@ int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, 
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	if((errno = check_user_area(VERIFY_WRITE, buf, len))) {
 		return errno;
 	}
@@ -478,7 +451,7 @@ int shutdown(int sd, int how)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	return s->ops->shutdown(s, how);
 }
 
@@ -494,7 +467,7 @@ int setsockopt(int sd, int level, int optname, const void *optval, socklen_t opt
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	return s->ops->setsockopt(s, level, optname, optval, optlen);
 }
 
@@ -510,7 +483,7 @@ int getsockopt(int sd, int level, int optname, void *optval, socklen_t *optlen)
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
-	s = get_socket_from_fd(sd);
+	s = get_socket(sd);
 	return s->ops->getsockopt(s, level, optname, optval, optlen);
 }
 #endif /* CONFIG_NET */

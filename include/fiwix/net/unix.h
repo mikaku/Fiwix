@@ -37,7 +37,7 @@ int unix_create(struct socket *);
 void unix_free(struct socket *);
 int unix_bind(struct socket *, const struct sockaddr *, int);
 int unix_connect(struct socket *, const struct sockaddr *, int);
-int unix_accept(struct socket *, struct socket *);
+int unix_accept(struct socket *, struct sockaddr *, int *);
 int unix_getname(struct socket *, struct sockaddr *, int *, int);
 int unix_socketpair(struct socket *, struct socket *);
 int unix_send(struct socket *, struct fd *, const char *, __size_t, int);
