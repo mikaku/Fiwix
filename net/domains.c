@@ -9,7 +9,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/net.h>
 #include <fiwix/socket.h>
-#include <fiwix/stdio.h>
+#include <fiwix/string.h>
 
 #ifdef CONFIG_NET
 struct domain_table domains[] = {
@@ -21,6 +21,7 @@ struct proto_ops unix_ops = {
 	unix_create,
 	unix_free,
         unix_bind,
+	NULL,			/* listen */
         unix_connect,
 	unix_accept,
 	unix_getname,

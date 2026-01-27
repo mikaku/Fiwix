@@ -220,7 +220,11 @@ int listen(int sd, int backlog)
 	ss->flags |= SO_ACCEPTCONN;
 	backlog = backlog < 0 ? 0 : backlog;
 	ss->queue_limit = MIN(backlog, SOMAXCONN);
-	return 0;
+	if(ss->ops->listen) {
+		return ss->ops->listen(ss, backlog);
+	} else {
+		return 0;
+	}
 }
 
 int connect(int sd, struct sockaddr *addr, int addrlen)

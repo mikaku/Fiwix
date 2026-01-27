@@ -58,6 +58,7 @@ struct proto_ops {
 	int (*create)(struct socket *);
 	void (*free)(struct socket *);
 	int (*bind)(struct socket *, const struct sockaddr *, int);
+	int (*listen)(struct socket *, int);
 	int (*connect)(struct socket *, const struct sockaddr *, int);
 	int (*accept)(struct socket *, struct sockaddr *, int *);
 	int (*getname)(struct socket *, struct sockaddr *, int *, int);
