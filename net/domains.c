@@ -21,7 +21,7 @@ struct proto_ops unix_ops = {
 	unix_create,
 	unix_free,
         unix_bind,
-	NULL,			/* listen */
+	unix_listen,
         unix_connect,
 	unix_accept,
 	unix_getname,

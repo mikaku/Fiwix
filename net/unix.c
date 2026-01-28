@@ -163,6 +163,11 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 	return errno;
 }
 
+int unix_listen(struct socket *s, int backlog)
+{
+	return -EOPNOTSUPP;
+}
+
 int unix_connect(struct socket *sc, const struct sockaddr *addr, int addrlen)
 {
 	struct inode *i;

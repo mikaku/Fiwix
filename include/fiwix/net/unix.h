@@ -36,6 +36,7 @@ extern struct proto_ops unix_ops;
 int unix_create(struct socket *);
 void unix_free(struct socket *);
 int unix_bind(struct socket *, const struct sockaddr *, int);
+int unix_listen(struct socket *, int);
 int unix_connect(struct socket *, const struct sockaddr *, int);
 int unix_accept(struct socket *, struct sockaddr *, int *);
 int unix_getname(struct socket *, struct sockaddr *, int *, int);
