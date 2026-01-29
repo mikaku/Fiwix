@@ -55,7 +55,7 @@ struct domain_table {
 };
 
 struct proto_ops {
-	int (*create)(struct socket *);
+	int (*create)(struct socket *, int, int, int);
 	void (*free)(struct socket *);
 	int (*bind)(struct socket *, const struct sockaddr *, int);
 	int (*listen)(struct socket *, int);

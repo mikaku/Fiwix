@@ -175,7 +175,7 @@ int socket(int domain, int type, int protocol)
 		sock_free(s);
 		return -EINVAL;
 	}
-	if((errno = s->ops->create(s)) < 0) {
+	if((errno = s->ops->create(s, domain, type, protocol)) < 0) {
 		sock_free(s);
 		return errno;
 	}
@@ -313,7 +313,7 @@ int socketpair(int domain, int type, int protocol, int sockfd[2])
 		sock_free(s1);
 		return -EINVAL;
 	}
-	if((errno = s1->ops->create(s1)) < 0) {
+	if((errno = s1->ops->create(s1, domain, type, protocol)) < 0) {
 		sock_free(s1);
 		return errno;
 	}
@@ -326,7 +326,7 @@ int socketpair(int domain, int type, int protocol, int sockfd[2])
 	}
 	s2->type = type;
 	assign_proto(s2, domain);
-	if((errno = s2->ops->create(s2)) < 0) {
+	if((errno = s2->ops->create(s2, domain, type, protocol)) < 0) {
 		sock_free(s1);
 		sock_free(s2);
 		return errno;

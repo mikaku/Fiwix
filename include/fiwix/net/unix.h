@@ -33,7 +33,7 @@ extern struct unix_info *unix_socket_head;
 
 extern struct proto_ops unix_ops;
 
-int unix_create(struct socket *);
+int unix_create(struct socket *, int, int, int);
 void unix_free(struct socket *);
 int unix_bind(struct socket *, const struct sockaddr *, int);
 int unix_listen(struct socket *, int);

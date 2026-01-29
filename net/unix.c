@@ -75,7 +75,7 @@ static struct unix_info *lookup_unix_socket(char *path, struct inode *i)
 	return NULL;
 }
 
-int unix_create(struct socket *s)
+int unix_create(struct socket *s, int domain, int type, int protocol)
 {
 	struct unix_info *u;
 
@@ -165,7 +165,7 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 
 int unix_listen(struct socket *s, int backlog)
 {
-	return -EOPNOTSUPP;
+	return 0;
 }
 
 int unix_connect(struct socket *sc, const struct sockaddr *addr, int addrlen)
@@ -228,7 +228,7 @@ int unix_accept(struct socket *ss, struct sockaddr *addr, int *addrlen)
 	}
 	nss->type = ss->type;
 	nss->ops = ss->ops;
-	if((errno = nss->ops->create(nss)) < 0) {
+	if((errno = nss->ops->create(nss, 0, 0, 0)) < 0) {
 		sock_free(nss);
 		return errno;
 	}
