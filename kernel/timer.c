@@ -230,28 +230,28 @@ int setitimer(int which, const struct itimerval *new_value, struct itimerval *ol
 	return 0;
 }
 
-unsigned int mktime(struct mt *mt)
+unsigned int mktime(struct tm *tm)
 {
 	int n, total_days;
 	unsigned int seconds;
 
 	total_days = 0;
 
-	for(n = UNIX_EPOCH; n < mt->mt_year; n++) {
+	for(n = UNIX_EPOCH; n < tm->tm_year; n++) {
 		total_days += DAYS_PER_YEAR(n);
 	}
-	for(n = 0; n < (mt->mt_month - 1); n++) {
+	for(n = 0; n < (tm->tm_month - 1); n++) {
 		total_days += month[n];
 		if(n == 1) {
-			total_days += LEAP_YEAR(mt->mt_year) ? 1 : 0;
+			total_days += LEAP_YEAR(tm->tm_year) ? 1 : 0;
 		}
 	}
 
-	total_days += (mt->mt_day - 1);
+	total_days += (tm->tm_mday - 1);
 	seconds = total_days * SECS_PER_DAY;
-	seconds += mt->mt_hour * SECS_PER_HOUR;
-	seconds += mt->mt_min * SECS_PER_MIN;
-	seconds += mt->mt_sec;
+	seconds += tm->tm_hour * SECS_PER_HOUR;
+	seconds += tm->tm_min * SECS_PER_MIN;
+	seconds += tm->tm_sec;
 	return seconds;
 }
 
@@ -361,19 +361,19 @@ void do_callouts_bh(struct sigcontext *sc)
 void get_system_time(void)
 {
 	short int cmos_century;
-	struct mt mt;
+	struct tm tm;
 		  
 	/* read date and time from CMOS */
-	mt.mt_sec = cmos_read_date(CMOS_SEC);
-	mt.mt_min = cmos_read_date(CMOS_MIN);
-	mt.mt_hour = cmos_read_date(CMOS_HOUR);
-	mt.mt_day = cmos_read_date(CMOS_DAY);
-	mt.mt_month = cmos_read_date(CMOS_MONTH);
-	mt.mt_year = cmos_read_date(CMOS_YEAR);
+	tm.tm_sec = cmos_read_date(CMOS_SEC);
+	tm.tm_min = cmos_read_date(CMOS_MIN);
+	tm.tm_hour = cmos_read_date(CMOS_HOUR);
+	tm.tm_mday = cmos_read_date(CMOS_DAY);
+	tm.tm_month = cmos_read_date(CMOS_MONTH);
+	tm.tm_year = cmos_read_date(CMOS_YEAR);
 	cmos_century = cmos_read_date(CMOS_CENTURY);
-	mt.mt_year += cmos_century * 100;
+	tm.tm_year += cmos_century * 100;
 
-	kstat.boot_time = CURRENT_TIME = mktime(&mt);
+	kstat.boot_time = CURRENT_TIME = mktime(&tm);
 }
 
 void set_system_time(__time_t t)

@@ -32,18 +32,21 @@ struct itimerval {
 	struct timeval it_value;
 };
 
-struct mt {
-	int mt_sec;
-	int mt_min;
-	int mt_hour;
-	int mt_day;
-	int mt_month;
-	int mt_year;
+struct tm {
+	int tm_sec;	/* seconds */
+	int tm_min;	/* minutes */
+	int tm_hour;	/* hour */
+	int tm_mday;	/* day of the month */
+	int tm_month;	/* month */
+	int tm_year;	/* year */
+	int tm_wday;	/* day of the week */
+	int tm_yday;	/* day of the year */
+	int tm_isdst;	/* daylight savings flag */
 };
 
 unsigned int tv2ticks(const struct timeval *);
 void ticks2tv(int, struct timeval *);
 int setitimer(int, const struct itimerval *, struct itimerval *);
-unsigned int mktime(struct mt *);
+unsigned int mktime(struct tm *);
 
 #endif /* _FIWIX_TIME_H */

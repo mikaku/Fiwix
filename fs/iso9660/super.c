@@ -95,22 +95,22 @@ int isonum_733(char *p)
 /* return a date and time format */
 unsigned int isodate(const char *p)
 {
-	struct mt mt;
+	struct tm tm;
 
 	if(!p[0]) {
 		return 0;
 	}
 
-	mt.mt_sec = p[5];
-	mt.mt_min = p[4];
-	mt.mt_hour = p[3];
-	mt.mt_day = p[2];
-	mt.mt_month = p[1];
-	mt.mt_year = p[0];
-	mt.mt_year += 1900;
-	mt.mt_min += p[6] * 15;
+	tm.tm_sec = p[5];
+	tm.tm_min = p[4];
+	tm.tm_hour = p[3];
+	tm.tm_mday = p[2];
+	tm.tm_month = p[1];
+	tm.tm_year = p[0];
+	tm.tm_year += 1900;
+	tm.tm_min += p[6] * 15;
 
-	return mktime(&mt);
+	return mktime(&tm);
 }
 
 /* return a clean filename */
