@@ -510,3 +510,23 @@ int sprintk(char *buffer, const char *format, ...)
 	va_end(args);
 	return strlen(buffer);
 }
+
+int snprintk(char *str, unsigned int size, const char *format, ...)
+{
+        va_list args;
+        char *buffer;
+
+	if(size > MAX_BUF) {
+		PANIC("size too big.");
+	}
+        if(!(buffer = (char *)kmalloc(MAX_BUF))) {
+                return;
+        }
+        va_start(args, format);
+        sprintk(buffer, format, args);
+        va_end(args);
+        strncpy(str, buffer, size);
+        str[size - 1] = '\0';
+        kfree((unsigned int)buffer);
+	return strlen(str);
+}

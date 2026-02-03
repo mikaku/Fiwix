@@ -13,5 +13,6 @@
 void flush_log_buf(struct tty *);
 void printk(const char *, ...);
 int sprintk(char *, const char *, ...);
+int snprintk(char *, unsigned int, const char *, ...);
 
 #endif /* _INCLUDE_STDIO_H */
