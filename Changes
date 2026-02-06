@@ -29,8 +29,15 @@
 - Fixed wakeup() to avoid flagging 'need_resched' on every iteration and thus
   saving extra context switchings.
 - Fixed ps2_init() to no use anymore the command 0xCA (to get the current
-  interface) as it is not a standardized command.
+  interface) as it is not an standardized command.
 - Fixed the start_code and end_code values in '/proc/<PID>/stat' file.
+- Fixed a bad vma address calculation in verify_address().
+- Fixed verify_address() to not verify pointer addresses when calling system
+  calls from the kernel.
+- Fixed strncmp() to actually compare only the first (at most) n bytes of str1
+  and str2.
+- Fixed the inode count in mmap() functions.
+- Fixed a possible infinite loop in do_munmap().
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
