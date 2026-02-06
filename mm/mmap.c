@@ -119,6 +119,9 @@ static void insert_vma_region(struct vma *vma)
 		}
 		vmat->prev = vma;
 	}
+	if(vma->inode) {
+		vma->inode->count++;
+	}
 
 	if(vma != vma->prev && vma->start >= vma->prev->start && vma->start <= vma->prev->end) {
 		merge_vma_regions(vma->prev, vma);
@@ -133,6 +136,9 @@ static void add_vma_region(struct vma *vma)
 	if(!current->vma_table) {
 		current->vma_table = vma;
 		current->vma_table->prev = vma;
+		if(vma->inode) {
+			vma->inode->count++;
+		}
 	} else {
 		insert_vma_region(vma);
 	}
@@ -168,9 +174,6 @@ static void del_vma_region(struct vma *vma)
 	}
 	RESTORE_FLAGS(flags);
 
-	if(vma->inode) {
-		iput(vma->inode);
-	}
 	kfree((unsigned int)tmp);
 }
 
@@ -213,6 +216,9 @@ static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length
 	}
 
 	if(vma->start == start) {
+		if(vma->inode) {
+			iput(vma->inode);
+		}
 		del_vma_region(vma);
 	} else {
 		vma->end = start;
@@ -467,7 +473,6 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 			default:
 				return -EINVAL;
 		}
-		i->count++;
 
 	/* anonymous mapping */
 	} else {
@@ -513,6 +518,8 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	vma->object = (struct shmid_ds *)object;
 #endif /* CONFIG_SYSVIPC */
 
+	do_munmap(start, length);   /* clear old maps */
+
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {
 			free_vma_region(vma, start, length);
@@ -551,7 +558,6 @@ int do_munmap(unsigned int addr, __size_t length)
 			addr += size;
 		}
 	}
-
 	return 0;
 }
 
