@@ -544,19 +544,20 @@ int do_munmap(unsigned int addr, __size_t length)
 	length = PAGE_ALIGN(length);
 
 	while(length) {
-		if((vma = find_vma_region(addr))) {
-			if((addr + length) > vma->end) {
-				size = vma->end - addr;
-			} else {
-				size = length;
-			}
-
-			free_vma_pages(vma, addr, size);
-			invalidate_tlb();
-			free_vma_region(vma, addr, size);
-			length -= size;
-			addr += size;
+		if(!(vma = find_vma_region(addr))) {
+			break;
 		}
+		if((addr + length) > vma->end) {
+			size = vma->end - addr;
+		} else {
+			size = length;
+		}
+
+		free_vma_pages(vma, addr, size);
+		invalidate_tlb();
+		free_vma_region(vma, addr, size);
+		length -= size;
+		addr += size;
 	}
 	return 0;
 }
