@@ -14,6 +14,7 @@
 #include <fiwix/socket.h>
 #include <fiwix/fd.h>
 #include <fiwix/net/unix.h>
+#include <fiwix/net/ipv4.h>
 
 #define SYS_SOCKET	1
 #define SYS_BIND	2
@@ -37,6 +38,7 @@ struct socket {
 	short int state;
 	int flags;
 	struct fd *fd;
+	int fd_ext;			/* fd of external TCP/IP API */
 	short int type;
 	struct proto_ops *ops;
 	int queue_len;			/* number of connections in queue */
@@ -45,6 +47,7 @@ struct socket {
 	struct socket *next_queue;	/* next connection in queue */
 	union {
 		struct unix_info unix_info;
+		struct ipv4_info ipv4_info;
 	} u;
 };
 

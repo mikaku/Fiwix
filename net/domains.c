@@ -14,15 +14,16 @@
 #ifdef CONFIG_NET
 struct domain_table domains[] = {
         { AF_UNIX, "AF_UNIX", &unix_ops },
+        { AF_INET, "AF_INET", &ipv4_ops },
         { 0, 0, 0 }
 };
 
 struct proto_ops unix_ops = {
 	unix_create,
 	unix_free,
-        unix_bind,
+	unix_bind,
 	unix_listen,
-        unix_connect,
+	unix_connect,
 	unix_accept,
 	unix_getname,
 	unix_socketpair,
@@ -37,7 +38,30 @@ struct proto_ops unix_ops = {
 	unix_shutdown,
 	unix_setsockopt,
 	unix_getsockopt,
-        unix_init,
+	unix_init,
+};
+
+struct proto_ops ipv4_ops = {
+	ipv4_create,
+	ipv4_free,
+	ipv4_bind,
+	ipv4_listen,
+	ipv4_connect,
+	ipv4_accept,
+	ipv4_getname,
+	ipv4_socketpair,
+	ipv4_send,
+	ipv4_recv,
+	ipv4_sendto,
+	ipv4_recvfrom,
+	ipv4_read,
+	ipv4_write,
+	ipv4_ioctl,
+	ipv4_select,
+	ipv4_shutdown,
+	ipv4_setsockopt,
+	ipv4_getsockopt,
+	ipv4_init,
 };
 
 int assign_proto(struct socket *so, int domain)
@@ -67,5 +91,8 @@ void net_init(void)
 		ops->init();
 		d++;
 	}
+
+	/* call to the external TCP/IP API */
+	ext_init();
 }
 #endif /* CONFIG_NET */

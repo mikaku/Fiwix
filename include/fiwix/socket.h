@@ -12,8 +12,15 @@
 
 #include <fiwix/types.h>
 
-/* domains (families) */
-#define AF_UNIX		1	/* UNIX domain socket */
+/* supported address families (domains) */
+#define AF_UNIX		1		/* UNIX domain socket */
+#define AF_LOCAL	AF_UNIX		/* POSIX name for AF_UNIX */
+#define AF_INET		2		/* IPv4 Internet domain socket */
+
+/* protocol families */
+#define PF_UNIX		AF_UNIX
+#define PF_LOCAL	AF_LOCAL
+#define PF_INET		AF_INET
 
 /* types */
 #define SOCK_STREAM	1
