@@ -15,6 +15,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/stdarg.h>
+#include <fiwix/mm.h>
 
 #define MAX_BUF		1024	/* printk() and sprintk() size limit */
 
@@ -517,10 +518,11 @@ int snprintk(char *str, unsigned int size, const char *format, ...)
         char *buffer;
 
 	if(size > MAX_BUF) {
-		PANIC("size too big.");
+		printk("%(): size %d too big, truncating to MAX_BUF (%d bytes).", __FUNCTION__, size, MAX_BUF - 1);
+		size = MAX_BUF - 1;
 	}
         if(!(buffer = (char *)kmalloc(MAX_BUF))) {
-                return;
+                return 0;
         }
         va_start(args, format);
         sprintk(buffer, format, args);
