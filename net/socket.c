@@ -242,7 +242,7 @@ int connect(int sd, struct sockaddr *addr, int addrlen)
 	return sc->ops->connect(sc, addr, addrlen);
 }
 
-int accept(int sd, struct sockaddr *addr, int *addrlen)
+int accept(int sd, struct sockaddr *addr, unsigned int *addrlen)
 {
 	struct socket *ss;
 	int errno;
@@ -264,7 +264,7 @@ int accept(int sd, struct sockaddr *addr, int *addrlen)
 	return ss->ops->accept(ss, addr, addrlen);
 }
 
-int getname(int sd, struct sockaddr *addr, int *addrlen, int call)
+int getname(int sd, struct sockaddr *addr, unsigned int *addrlen, int call)
 {
 	struct socket *s;
 	int errno;

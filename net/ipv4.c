@@ -103,7 +103,7 @@ int ipv4_connect(struct socket *s, const struct sockaddr *addr, int addrlen)
 	return ext_connect(s->fd_ext, addr, addrlen);
 }
 
-int ipv4_accept(struct socket *s, struct sockaddr *addr, int *addrlen)
+int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 {
 	int fd, ufd;
 	struct socket *sc;
@@ -129,7 +129,7 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, int *addrlen)
 	return ufd;
 }
 
-int ipv4_getname(struct socket *s, struct sockaddr *addr, int *addrlen, int call)
+int ipv4_getname(struct socket *s, struct sockaddr *addr, unsigned int *addrlen, int call)
 {
 	return -EOPNOTSUPP;
 }

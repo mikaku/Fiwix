@@ -206,7 +206,7 @@ int unix_connect(struct socket *sc, const struct sockaddr *addr, int addrlen)
 	return 0;
 }
 
-int unix_accept(struct socket *ss, struct sockaddr *addr, int *addrlen)
+int unix_accept(struct socket *ss, struct sockaddr *addr, unsigned int *addrlen)
 {
 	int ufd;
 	struct socket *sc, *nss;
@@ -258,7 +258,7 @@ int unix_accept(struct socket *ss, struct sockaddr *addr, int *addrlen)
 	return ufd;
 }
 
-int unix_getname(struct socket *s, struct sockaddr *addr, int *addrlen, int call)
+int unix_getname(struct socket *s, struct sockaddr *addr, unsigned int *addrlen, int call)
 {
 	struct unix_info *u;
 	int len, errno;
