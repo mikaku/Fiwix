@@ -48,17 +48,17 @@ int sys_socketcall(int call, unsigned int *args)
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 3))) {
 				return errno;
 			}
-			return accept(args[0], (struct sockaddr *)args[1], (int *)args[2]);
+			return accept(args[0], (struct sockaddr *)args[1], (unsigned int *)args[2]);
 		case SYS_GETSOCKNAME:
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 3))) {
 				return errno;
 			}
-			return getname(args[0], (struct sockaddr *)args[1], (int *)args[2], SYS_GETSOCKNAME);
+			return getname(args[0], (struct sockaddr *)args[1], (unsigned int *)args[2], SYS_GETSOCKNAME);
 		case SYS_GETPEERNAME:
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 3))) {
 				return errno;
 			}
-			return getname(args[0], (struct sockaddr *)args[1], (int *)args[2], SYS_GETPEERNAME);
+			return getname(args[0], (struct sockaddr *)args[1], (unsigned int *)args[2], SYS_GETPEERNAME);
 		case SYS_SOCKETPAIR:
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 4))) {
 				return errno;
