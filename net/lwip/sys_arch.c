@@ -265,8 +265,12 @@ void *my_calloc(__size_t n, __size_t size)
 
 u32_t sys_now(void)
 {
+	u32_t now;
+
 	/* Based on gettimeofday syscall */
-	return ((CURRENT_TICKS % HZ) * 1000) / HZ;
+	now = ((CURRENT_TICKS % HZ) * 1000) / HZ;
+	now += (gettimeoffset() / 10);
+	return now;
 }
 
 /* CRITICAL SECTIONS */
