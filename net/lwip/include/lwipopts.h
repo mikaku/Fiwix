@@ -98,9 +98,4 @@
 #define LWIP_HAVE_LOOPIF 1
 #define LWIP_NETIF_LOOPBACK 1
 
-
-/* Fiwix does not provide a mutex datastructure. */
-#define LWIP_COMPAT_MUTEX 1
-#define LWIP_COMPAT_MUTEX_ALLOWED 1
-
 #endif /* _LWIP_LWIPOPTS_H */

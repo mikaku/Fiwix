@@ -25,6 +25,7 @@ typedef struct mailbox {
 	int valid;
 } sys_mbox_t;
 
+typedef struct mutex sys_mutex_t;
 typedef struct proc *sys_thread_t;
 typedef int sys_prot_t; /* not actually used */
 

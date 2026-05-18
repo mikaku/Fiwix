@@ -260,6 +260,30 @@ void unlock_resource(struct resource *resource)
 	RESTORE_FLAGS(flags);
 }
 
+void mutex_lock(struct mutex *lock)
+{
+	if(current != lock->holder) {
+		lock_resource(&lock->sem);
+		lock->holder = current;
+		lock->recursive_count = 1;
+	} else {
+		lock->recursive_count++;
+	}
+}
+
+void mutex_unlock(struct mutex *lock)
+{
+	if(current != lock->holder) {
+		PANIC("attempting to unlock a not owned mutex.", __FUNCTION__);
+		return;
+	}
+
+	if(--lock->recursive_count == 0) {
+		lock->holder = NULL;
+		unlock_resource(&lock->sem);
+	}
+}
+
 int can_lock_area(unsigned int type)
 {
 	unsigned int flags;

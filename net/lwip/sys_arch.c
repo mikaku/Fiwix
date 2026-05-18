@@ -16,11 +16,8 @@ static struct resource protect_lk;
 
 err_t sys_sem_new(sys_sem_t *sem, u8_t count)
 {
-	if(current->pid == 2) {
-		return ERR_OK;
-	}
 	memset_b(sem, 0, sizeof(struct semaphore));
-	sem->sem.locked = count;
+	sem->sem.locked = 1;
 	sem->valid = 1;
 	return ERR_OK;
 }
@@ -68,6 +65,24 @@ int sys_sem_valid(sys_sem_t *sem)
 void sys_sem_set_invalid(sys_sem_t *sem)
 {
 	sem->valid = 0;
+}
+
+/* MUTEXES */
+
+err_t sys_mutex_new(sys_mutex_t *mutex)
+{
+	memset_b(mutex, 0, sizeof(struct mutex));
+	return ERR_OK;
+}
+
+void sys_mutex_lock(sys_mutex_t *mutex)
+{
+	return mutex_lock(mutex);
+}
+
+void sys_mutex_unlock(sys_mutex_t *mutex)
+{
+	return mutex_unlock(mutex);
 }
 
 /* MAILBOXES */
