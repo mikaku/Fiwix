@@ -148,7 +148,11 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 	}
 
 	lock_resource(&mbox->lock);
-	*msg = mbox_dofetch(mbox);
+	if(msg != NULL) {
+		*msg = mbox_dofetch(mbox);
+	} else {
+		mbox_dofetch(mbox);	/* discarded */
+	}
 	if(mbox->length > 0) {
 		unlock_resource(&mbox->empty);
 	}
@@ -159,11 +163,11 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
-	lock_resource(&mbox->lock);
 	if(mbox->empty.locked) {
 		unlock_resource(&mbox->lock);
 		return SYS_MBOX_EMPTY;
 	}
+	lock_resource(&mbox->lock);
 	lock_resource(&mbox->empty);
 
 	*msg = mbox_dofetch(mbox);
@@ -177,6 +181,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 
 void sys_mbox_free(sys_mbox_t *mbox)
 {
+	lock_resource(&mbox->lock);
 	if(mbox->length != 0) {
 		printf("ERROR: lwIP mailboxes: mailbox still had mail in it\n");
 	}
@@ -190,7 +195,9 @@ int sys_mbox_valid(sys_mbox_t *mbox)
 
 void sys_mbox_set_invalid(sys_mbox_t *mbox)
 {
+	lock_resource(&mbox->lock);
 	mbox->valid = 0;
+	unlock_resource(&mbox->lock);
 }
 
 static void mbox_dopost(sys_mbox_t *mbox, void *msg)
