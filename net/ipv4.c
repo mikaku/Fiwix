@@ -21,28 +21,28 @@
 
 #ifdef CONFIG_NET
 /* lwIP prototypes */
-int lwip_accept(int, struct sockaddr *, socklen_t *);
+int lwip_socket(int, int, int);
+int lwip_close(int);
 int lwip_bind(int, const struct sockaddr *, socklen_t);
+int lwip_listen(int, int backlog);
+int lwip_connect(int, const struct sockaddr *, socklen_t);
+int lwip_accept(int, struct sockaddr *, socklen_t *);
+__ssize_t lwip_send(int, const void *, __size_t, int);
+__ssize_t lwip_recv(int, void *, __size_t, int);
+__ssize_t lwip_sendto(int, const void *, __size_t, int, const struct sockaddr *, socklen_t);
+__ssize_t lwip_recvfrom(int, void *, __size_t, int, struct sockaddr *, socklen_t *);
+__ssize_t lwip_read(int, void *, __size_t);
+__ssize_t lwip_write(int, const void *, __size_t);
+int lwip_ioctl(int, long, void *);
 int lwip_shutdown(int, int);
-int lwip_getpeername (int, struct sockaddr *, socklen_t *);
-int lwip_getsockname (int, struct sockaddr *, socklen_t *);
 int lwip_getsockopt (int, int, int, void *, socklen_t *);
 int lwip_setsockopt (int, int, int, const void *, socklen_t);
- int lwip_close(int);
-int lwip_connect(int, const struct sockaddr *, socklen_t);
-int lwip_listen(int, int backlog);
-__ssize_t lwip_recv(int, void *, __size_t, int);
-__ssize_t lwip_read(int, void *, __size_t);
 __ssize_t lwip_readv(int, const struct iovec *, int);
-__ssize_t lwip_recvfrom(int, void *, __size_t, int, struct sockaddr *, socklen_t *);
 __ssize_t lwip_recvmsg(int, struct msghdr *, int);
-__ssize_t lwip_send(int, const void *, __size_t, int);
 __ssize_t lwip_sendmsg(int, const struct msghdr *, int);
-__ssize_t lwip_sendto(int, const void *, __size_t, int, const struct sockaddr *, socklen_t);
-int lwip_socket(int, int, int);
-__ssize_t lwip_write(int, const void *, __size_t);
 __ssize_t lwip_writev(int, const struct iovec *, int);
-int lwip_ioctl(int, long, void *);
+int lwip_getpeername (int, struct sockaddr *, socklen_t *);
+int lwip_getsockname (int, struct sockaddr *, socklen_t *);
 
 
 struct ipv4_info *ipv4_socket_head;
