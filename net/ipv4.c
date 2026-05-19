@@ -218,17 +218,17 @@ int ipv4_select(struct socket *s, int flag)
 
 int ipv4_shutdown(struct socket *s, int how)
 {
-	return -EOPNOTSUPP;
+	return lwip_shutdown(s->fd_lwip, how);
 }
 
 int ipv4_setsockopt(struct socket *s, int level, int optname, const void *optval, socklen_t optlen)
 {
-	return -EOPNOTSUPP;
+	return lwip_setsockopt(s->fd_lwip, level, optname, optval, optlen);
 }
 
 int ipv4_getsockopt(struct socket *s, int level, int optname, void *optval, socklen_t *optlen)
 {
-	return -EOPNOTSUPP;
+	return lwip_getsockopt(s->fd_lwip, level, optname, optval, optlen);
 }
 
 int ipv4_init(void)
