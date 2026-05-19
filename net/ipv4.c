@@ -143,7 +143,7 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 	sc->ops = s->ops;
 	sc->fd_lwip = fd;
 
-	ip4 = &s->u.ipv4_info;
+	ip4 = &sc->u.ipv4_info;
 	memset_b(ip4, 0, sizeof(struct ipv4_info));
 	ip4->count = 1;
 	ip4->socket = sc;
