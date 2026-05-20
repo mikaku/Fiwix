@@ -10,7 +10,7 @@
 #define MS_TO_TICKS(ms)		((ms) * HZ / 1000)
 #define TICKS_TO_MS(ticks)	((ticks) * 1000 / HZ)
 
-static struct resource protect_lk;
+static struct mutex protect_lk;
 
 /* SEMAPHORES */
 
@@ -266,7 +266,7 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg,
 }
 
 void sys_init(void) {
-	memset_b(&protect_lk, 0, sizeof(struct resource));
+	memset_b(&protect_lk, 0, sizeof(struct mutex));
 }
 
 void *my_calloc(__size_t n, __size_t size)
@@ -290,13 +290,15 @@ u32_t sys_now(void)
 
 /* CRITICAL SECTIONS */
 
-int sys_arch_protect(void)
+#if SYS_LIGHTWEIGHT_PROT
+sys_prot_t sys_arch_protect(void)
 {
-	lock_resource(&protect_lk);
+	mutex_lock(&protect_lk);
 	return 0;
 }
 
 void sys_arch_unprotect(sys_prot_t lev)
 {
-	unlock_resource(&protect_lk);
+	mutex_unlock(&protect_lk);
 }
+#endif /* SYS_LIGHTWEIGHT_PROT */
