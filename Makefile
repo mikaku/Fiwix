@@ -7,6 +7,7 @@
 TOPDIR := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
 INCLUDE = $(TOPDIR)/include
 FIWIX_INCLUDE = $(TOPDIR)/include/fiwix
+LWIP_INCLUDE = $(TOPDIR)/net/lwip/include
 TMPFILE := $(shell mktemp)
 LWIP_STABLE_RELEASE := $(TOPDIR)/lwip-STABLE-2_2_1_RELEASE.tar.gz
 
@@ -19,7 +20,7 @@ LANG = -std=c89
 CCEXE=gcc
 
 CC = $(CROSS_COMPILE)$(CCEXE) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(CONFFLAGS) #-D__DEBUG__
-CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
+CFLAGS = -I$(INCLUDE) -I$(LWIP_INCLUDE) -I$(FIWIX_INCLUDE) -O2 -fno-pie -fno-common -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
 
 ifeq ($(CCEXE),gcc)
 LD = $(CROSS_COMPILE)ld
@@ -42,6 +43,7 @@ DIRS =	kernel \
 	fs \
 	drivers/char \
 	drivers/block \
+	drivers/net \
 	drivers/pci \
 	drivers/video \
 	net \
@@ -60,6 +62,7 @@ OBJS = 	kernel/*.o \
 	fs/sockfs/*.o \
 	drivers/char/*.o \
 	drivers/block/*.o \
+	drivers/net/*.o \
 	drivers/pci/*.o \
 	drivers/video/*.o \
 	net/*.o \

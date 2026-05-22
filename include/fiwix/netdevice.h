@@ -10,7 +10,28 @@
 #ifndef _FIWIX_NETDEVICE_H
 #define _FIWIX_NETDEVICE_H
 
+#include <fiwix/if.h>
+
+struct netdevice {
+	char name[IFNAMSIZ];		/* lo, eth0, ... */
+	int num;			/* interface index */
+	int flags;
+	unsigned short type;		/* ARPHRD_LOOPBACK, ... */
+	unsigned short family;		/* AF_INET */
+	void *lwip_netif;
+	struct netdevice *next;
+};
+extern struct netdevice *netdevice_table;
+
 int dev_ioctl(int, void *);
+
+struct netdevice *netdevice_alloc(void);
+void register_netdevice(struct netdevice *);
+void netdevice_init(void);
+
+/* loopback driver prototypes */
+int loopback_open(struct netdevice *);
+void loopback_init(void);
 
 #endif /* _FIWIX_NETDEVICE_H */
 

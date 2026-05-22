@@ -27,10 +27,15 @@
 #include <fiwix/utsname.h>
 #include <fiwix/version.h>
 #include <fiwix/socket.h>
+#include <fiwix/netdevice.h>
 #include <fiwix/pci.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+
+#ifdef CONFIG_NET
+#include <lwip/netif.h>
+#endif /* CONFIG_NET */
 
 #define FSHIFT16	16
 #define FIXED16_1	(1 << FSHIFT16)
@@ -446,7 +451,33 @@ int data_proc_fullversion(char *buffer, __pid_t pid)
 }
 
 
-int data_proc_unix(char *buffer, __pid_t pid)
+int data_proc_net_dev(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	struct netdevice *netdev;
+	struct netif *netif;
+	struct stats_mib2_netif_ctrs *stats;
+	int size;
+
+	netdev = netdevice_table;
+	size = sprintk(buffer, "Inter-|   Receive                                                |  Transmit\n"
+			       " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n");
+	while(netdev) {
+		netif = (struct netif *)netdev->lwip_netif;
+		stats = (struct stats_mib2_netif_ctrs *)&netif->mib2_counters;
+		size += sprintk(buffer + size, "%-6s:%8u %7u %4u %4u %4u %5u %10u %9u %8u %7u %4u %4u %4u %5u %7u %10u\n",
+				netdev->name,
+				stats->ifinoctets, stats->ifinucastpkts, stats->ifinerrors, stats->ifindiscards, 0, 0, 0, 0,
+				stats->ifoutoctets, stats->ifoutucastpkts, stats->ifouterrors, stats->ifoutdiscards, 0, 0, 0, 0);
+		netdev = netdev->next;
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
+
+int data_proc_net_unix(char *buffer, __pid_t pid)
 {
 #ifdef CONFIG_NET
 	struct unix_info *u;

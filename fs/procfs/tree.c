@@ -85,7 +85,8 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
    {	/* [lev 4] /net/ */
 	{ 4,     DIR,  2, 4, 1,  ".",   NULL },
 	{ 1,     DIR,  2, 0, 2,  "..",  NULL },
-	{ 4001,  REG,  1, 4, 4, "unix", data_proc_unix },
+	{ 4001,  REG,  1, 4, 3, "dev",  data_proc_net_dev },
+	{ 4002,  REG,  1, 4, 4, "unix", data_proc_net_unix },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
    {	/* [lev 5] /sys/ */
