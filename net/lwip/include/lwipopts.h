@@ -46,6 +46,7 @@
 
 #define MEM_ALIGNMENT 4
 #define MEMP_NUM_NETBUF 128
+#define MIB2_STATS 1
 
 /* debug */
 /*
