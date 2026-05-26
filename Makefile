@@ -73,6 +73,7 @@ export CC LD CFLAGS LDFLAGS INCLUDE FIWIX_INCLUDE LWIP_STABLE_RELEASE
 
 all:
 	@echo "#define UTS_VERSION \"`date -u`\"" > include/fiwix/version.h
+	tar -C net -zxf $(LWIP_STABLE_RELEASE)
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
 ifeq ($(CCEXE),gcc)
 	$(CPP) $(CONFFLAGS) fiwix.ld > $(TMPFILE)

@@ -11,7 +11,6 @@ OBJS = domains.o socket.o packet.o core.o unix.o ipv4.o
 DIRS = lwip
 
 all:	$(OBJS)
-	tar zxf $(LWIP_STABLE_RELEASE)
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) ; done
 
 clean:
