@@ -43,7 +43,9 @@
 
 #define LWIP_SO_SNDTIMEO 1
 #define LWIP_SO_RCVTIMEO 1
+#define LWIP_SO_RCVBUF 1
 
+#define ETH_PAD_SIZE 2
 #define MEM_ALIGNMENT 4
 #define MEMP_NUM_NETBUF 128
 #define MIB2_STATS 1
