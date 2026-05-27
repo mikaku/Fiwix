@@ -11,6 +11,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/socket.h>
 #include <fiwix/net.h>
+#include <fiwix/netdevice.h>
 #include <fiwix/net/ipv4.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/sched.h>
@@ -27,6 +28,8 @@ int lwip_bind(int, const struct sockaddr *, socklen_t);
 int lwip_listen(int, int backlog);
 int lwip_connect(int, const struct sockaddr *, socklen_t);
 int lwip_accept(int, struct sockaddr *, socklen_t *);
+int lwip_getpeername (int, struct sockaddr *, socklen_t *);
+int lwip_getsockname (int, struct sockaddr *, socklen_t *);
 __ssize_t lwip_send(int, const void *, __size_t, int);
 __ssize_t lwip_recv(int, void *, __size_t, int);
 __ssize_t lwip_sendto(int, const void *, __size_t, int, const struct sockaddr *, socklen_t);
@@ -41,8 +44,6 @@ __ssize_t lwip_readv(int, const struct iovec *, int);
 __ssize_t lwip_recvmsg(int, struct msghdr *, int);
 __ssize_t lwip_sendmsg(int, const struct msghdr *, int);
 __ssize_t lwip_writev(int, const struct iovec *, int);
-int lwip_getpeername (int, struct sockaddr *, socklen_t *);
-int lwip_getsockname (int, struct sockaddr *, socklen_t *);
 
 
 struct ipv4_info *ipv4_socket_head;
@@ -153,11 +154,22 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 
 int ipv4_getname(struct socket *s, struct sockaddr *addr, unsigned int *addrlen, int call)
 {
-	return -EOPNOTSUPP;
+	int errno;
+
+	if((errno = check_user_area(VERIFY_WRITE, addrlen, sizeof(int)))) {
+		return errno;
+	}
+	if(call == SYS_GETSOCKNAME) {
+		return lwip_getsockname(s->fd_lwip, addr, addrlen);
+	} else {
+		/* SYS_GETPEERNAME */
+		return lwip_getpeername(s->fd_lwip, addr, addrlen);
+	}
 }
 
 int ipv4_socketpair(struct socket *s1, struct socket *s2)
 {
+	printk("%s(%d) NOT SUPPORTED YET!\n", __FUNCTION__, current->pid);
 	return -EOPNOTSUPP;
 }
 
@@ -213,6 +225,7 @@ int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
 
 int ipv4_select(struct socket *s, int flag)
 {
+	printk("%s(%d) NOT SUPPORTED YET!\n", __FUNCTION__, current->pid);
 	return -EOPNOTSUPP;
 }
 
