@@ -6,13 +6,8 @@
 /* standard interface flags */
 #define IFF_UP		0x1		/* interface is up */
 #define IFF_BROADCAST	0x2		/* broadcast address valid */
-#define IFF_DEBUG	0x4		/* turn on debugging */
 #define IFF_LOOPBACK	0x8		/* is a loopback net */
-#define IFF_POINTOPOINT	0x10		/* interface is has p-p link */
-#define IFF_NOTRAILERS	0x20		/* avoid use of trailers */
 #define IFF_RUNNING	0x40		/* resources allocated */
-#define IFF_NOARP	0x80		/* no ARP protocol */
-#define IFF_PROMISC	0x100		/* receive all packets */
 
 #define ARPHRD_ETHER	1
 #define ARPHRD_LOOPBACK	772
@@ -33,9 +28,9 @@ struct ifaddr
 
 struct ifmap
 {
-	unsigned long mem_start;
-	unsigned long mem_end;
-	unsigned short base_addr;
+	unsigned long int mem_start;
+	unsigned long int mem_end;
+	unsigned short int base_addr;
 	unsigned char irq;
 	unsigned char dma;
 	unsigned char port;
@@ -60,6 +55,7 @@ struct ifreq
 		int ifru_mtu;
 		struct ifmap ifru_map;
 		char ifru_slave[IFNAMSIZ];
+		char ifru_newname[IFNAMSIZ];
 		void *ifru_data;
 	} ifr_ifru;
 };
@@ -77,6 +73,7 @@ struct ifreq
 #define ifr_slave	ifr_ifru.ifru_slave	/* slave device */
 #define ifr_data	ifr_ifru.ifru_data	/* for use by interface */
 #define ifr_ifindex	ifr_ifru.ifru_ivalue	/* interface index */
+#define ifr_newname	ifr_ifru.ifru_newname
 
 struct ifconf
 {
