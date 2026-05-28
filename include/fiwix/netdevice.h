@@ -15,7 +15,7 @@
 struct netdevice {
 	char name[IFNAMSIZ];		/* lo, eth0, ... */
 	int num;			/* interface index */
-	int flags;
+	int flags;			/* IFF_UP, IFF_RUNNING, ... */
 	unsigned short type;		/* ARPHRD_LOOPBACK, ... */
 	unsigned short family;		/* AF_INET */
 	void *lwip_netif;
