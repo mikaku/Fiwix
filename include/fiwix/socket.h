@@ -28,6 +28,7 @@
 #define SOCK_STREAM	1
 #define SOCK_DGRAM	2
 #define SOCK_RAW	3
+#define SOCK_CLOEXEC	02000000
 
 /* maximum queue length specifiable by listen() */
 #define SOMAXCONN	128

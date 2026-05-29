@@ -166,6 +166,10 @@ int socket(int domain, int type, int protocol)
 	if((ufd = sock_alloc(&s)) < 0) {
 		return ufd;
 	}
+	if(type & SOCK_CLOEXEC) {
+		s->fd->flags |= FD_CLOEXEC;
+		type &= ~SOCK_CLOEXEC;
+	}
 	s->type = type;
 	if(assign_proto(s, domain)) {
 		sock_free(s);
