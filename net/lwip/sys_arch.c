@@ -293,8 +293,7 @@ u32_t sys_now(void)
 #if SYS_LIGHTWEIGHT_PROT
 sys_prot_t sys_arch_protect(void)
 {
-	mutex_lock(&protect_lk);
-	return 0;
+	return mutex_lock(&protect_lk);
 }
 
 void sys_arch_unprotect(sys_prot_t lev)

@@ -260,7 +260,7 @@ void unlock_resource(struct resource *resource)
 	RESTORE_FLAGS(flags);
 }
 
-void mutex_lock(struct mutex *lock)
+int mutex_lock(struct mutex *lock)
 {
 	if(current != lock->holder) {
 		lock_resource(&lock->sem);
@@ -269,6 +269,7 @@ void mutex_lock(struct mutex *lock)
 	} else {
 		lock->recursive_count++;
 	}
+	return lock->recursive_count;
 }
 
 void mutex_unlock(struct mutex *lock)

@@ -38,7 +38,7 @@ void wakeup_proc(struct proc *);
 void lock_resource(struct resource *);
 int lock_resource_timeout(struct resource *, unsigned int);
 void unlock_resource(struct resource *);
-void mutex_lock(struct mutex *);
+int mutex_lock(struct mutex *);
 void mutex_unlock(struct mutex *);
 int can_lock_area(unsigned int);
 int unlock_area(unsigned int);
