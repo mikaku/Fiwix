@@ -275,13 +275,12 @@ int mutex_lock(struct mutex *lock)
 void mutex_unlock(struct mutex *lock)
 {
 	if(current != lock->holder) {
-		PANIC("attempting to unlock a not owned mutex.", __FUNCTION__);
-		return;
-	}
-
-	if(--lock->recursive_count == 0) {
-		lock->holder = NULL;
-		unlock_resource(&lock->sem);
+		printk("WARNING: %s(): attempting to unlock a not owned mutex.", __FUNCTION__);
+	} else {
+		if(--lock->recursive_count == 0) {
+			lock->holder = NULL;
+			unlock_resource(&lock->sem);
+		}
 	}
 }
 
