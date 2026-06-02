@@ -40,6 +40,8 @@ int lwip_ioctl(int, long, void *);
 int lwip_shutdown(int, int);
 int lwip_getsockopt (int, int, int, void *, socklen_t *);
 int lwip_setsockopt (int, int, int, const void *, socklen_t);
+
+/* not implemented yet */
 __ssize_t lwip_readv(int, const struct iovec *, int);
 __ssize_t lwip_recvmsg(int, struct msghdr *, int);
 __ssize_t lwip_sendmsg(int, const struct msghdr *, int);
@@ -178,7 +180,7 @@ int ipv4_send(struct socket *s, struct fd *f, const char *buffer, __size_t count
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return ipv4_write(s, f, buffer, count);
+	return lwip_send(s->fd_lwip, buffer, count, flags);
 }
 
 int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags)
@@ -186,7 +188,7 @@ int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int 
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return ipv4_read(s, f, buffer, count);
+	return lwip_recv(s->fd_lwip, buffer, count, flags);
 }
 
 int ipv4_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
@@ -225,7 +227,6 @@ int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
 
 int ipv4_select(struct socket *s, int flag)
 {
-	printk("%s(%d) NOT SUPPORTED YET!\n", __FUNCTION__, current->pid);
 	return -EOPNOTSUPP;
 }
 
