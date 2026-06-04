@@ -193,7 +193,11 @@ int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int 
 
 int ipv4_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
 {
-	return lwip_sendto(s->fd_lwip, buffer, count, flags, addr, addrlen);
+	unsigned int kbuffer;
+
+	/* makes sure lwIP will have access to 'buffer' */
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer));
+	return lwip_sendto(s->fd_lwip, (const char *)kbuffer, count, flags, addr, addrlen);
 }
 
 int ipv4_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, socklen_t *addrlen)
@@ -208,7 +212,11 @@ int ipv4_read(struct socket *s, struct fd *f, char *buffer, __size_t count)
 
 int ipv4_write(struct socket *s, struct fd *f, const char *buffer, __size_t count)
 {
-	return lwip_write(s->fd_lwip, buffer, count);
+	unsigned int kbuffer;
+
+	/* makes sure lwIP will have access to 'buffer' */
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer));
+	return lwip_write(s->fd_lwip, (const char *)kbuffer, count);
 }
 
 int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
