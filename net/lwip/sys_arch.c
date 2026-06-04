@@ -178,14 +178,18 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
+	lock_resource(&mbox->lock);
 	if(mbox->empty.locked) {
 		unlock_resource(&mbox->lock);
 		return SYS_MBOX_EMPTY;
 	}
-	lock_resource(&mbox->lock);
 	lock_resource(&mbox->empty);
 
-	*msg = mbox_dofetch(mbox);
+	if(msg != NULL) {
+		*msg = mbox_dofetch(mbox);
+	} else {
+		mbox_dofetch(mbox);	/* discarded */
+	}
 	if(mbox->length > 0) {
 		unlock_resource(&mbox->empty);
 	}
