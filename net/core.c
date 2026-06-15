@@ -161,7 +161,7 @@ static int dev_ifconf(void *arg)
 					return retval;
 				}
 				netif = (struct netif *)netdev->lwip_netif;
-				ifr = (struct ifreq *)(ifc->ifc_req + size);
+				ifr = (struct ifreq *)(ifc->ifc_buf + size);
 				memset(ifr, 0, sizeof(struct ifreq));
 				strcpy(ifr->ifr_name, netdev->name);
 				addr = (struct sockaddr_in *)&ifr->ifr_addr;
