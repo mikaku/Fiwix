@@ -35,10 +35,10 @@ void register_netdevice(struct netdevice *nd)
 		netdevice_table = nd;
 	} else {
 		netdev = netdevice_table;
-        	while(netdev) {
+		while(netdev->next) {
                 	netdev = netdev->next;
         	}
-        	netdev = nd;
+		netdev->next = nd;
 	}
 }
 
