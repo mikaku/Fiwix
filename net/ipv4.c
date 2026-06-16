@@ -193,10 +193,12 @@ int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int 
 
 int ipv4_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
 {
-	unsigned int kbuffer;
+	unsigned int kbuffer, offset;
 
 	/* makes sure lwIP will have access to 'buffer' */
-	kbuffer = P2V(get_mapped_addr(current, (int)buffer));
+	offset = (unsigned int)buffer & ~PAGE_MASK;
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer)) & PAGE_MASK;
+	kbuffer += offset;
 	return lwip_sendto(s->fd_lwip, (const char *)kbuffer, count, flags, addr, addrlen);
 }
 
@@ -212,10 +214,12 @@ int ipv4_read(struct socket *s, struct fd *f, char *buffer, __size_t count)
 
 int ipv4_write(struct socket *s, struct fd *f, const char *buffer, __size_t count)
 {
-	unsigned int kbuffer;
+	unsigned int kbuffer, offset;
 
 	/* makes sure lwIP will have access to 'buffer' */
-	kbuffer = P2V(get_mapped_addr(current, (int)buffer));
+	offset = (unsigned int)buffer & ~PAGE_MASK;
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer)) & PAGE_MASK;
+	kbuffer += offset;
 	return lwip_write(s->fd_lwip, (const char *)kbuffer, count);
 }
 
