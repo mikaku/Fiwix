@@ -77,12 +77,12 @@ err_t sys_mutex_new(sys_mutex_t *mutex)
 
 void sys_mutex_lock(sys_mutex_t *mutex)
 {
-	return mutex_lock(mutex);
+	mutex_lock(mutex);
 }
 
 void sys_mutex_unlock(sys_mutex_t *mutex)
 {
-	return mutex_unlock(mutex);
+	mutex_unlock(mutex);
 }
 
 /* MAILBOXES */
