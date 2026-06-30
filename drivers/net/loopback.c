@@ -24,11 +24,12 @@ void loopback_init(void)
 	netif = netif_get_by_index(1);
 	netif->mtu = 4096;
 	sprintk(nd->name, "%s", netif->name);
-	nd->num = 0;
+	nd->num = if_count;
 	nd->flags = IFF_UP | IFF_LOOPBACK | IFF_RUNNING;
 	nd->type = ARPHRD_LOOPBACK;
 	nd->family = AF_INET;
 	nd->lwip_netif = (void *)netif;
 	register_netdevice(nd);
+	if_count++;
 }
 #endif /* CONFIG_NET */

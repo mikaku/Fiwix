@@ -14,6 +14,7 @@
 
 #ifdef CONFIG_NET
 struct netdevice *netdevice_table;
+int if_count;
 
 struct netdevice *netdevice_alloc(void)
 {
@@ -45,6 +46,7 @@ void register_netdevice(struct netdevice *nd)
 void netdevice_init(void)
 {
 	netdevice_table = NULL;
+	if_count = 0;
 
 	loopback_init();
 }

@@ -23,6 +23,7 @@ struct netdevice {
 };
 extern struct netdevice *netdevice_table;
 
+extern int if_count;
 int dev_ioctl(int, void *);
 
 struct netdevice *netdevice_alloc(void);
