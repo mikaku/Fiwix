@@ -36,6 +36,7 @@
 #define MMIO_QUEUE_AVAIL_HIGH   0x094
 #define MMIO_QUEUE_USED_LOW     0x0a0
 #define MMIO_QUEUE_USED_HIGH    0x0a4
+#define MMIO_CONFIG             0x100
 
 #define STATUS_ACKNOWLEDGE      1U
 #define STATUS_DRIVER           2U
@@ -263,6 +264,23 @@ int riscv64_virtio_read_sector(u64 sector, void *buffer)
 	return 0;
 }
 
+int riscv64_virtio_transport_init(void)
+{
+	return find_transport() < 0 || setup_queue() < 0 ? -1 : 0;
+}
+
+u64 riscv64_virtio_capacity_sectors(void)
+{
+	u64 capacity;
+
+	if(!transport || !queue_size) {
+		return 0;
+	}
+	capacity = mmio_read(MMIO_CONFIG);
+	capacity |= (u64)mmio_read(MMIO_CONFIG + 4) << 32;
+	return capacity;
+}
+
 static int sector_matches(void)
 {
 	static const char expected[] = "Fiwix riscv64 virtio sector gate\n";
@@ -278,7 +296,7 @@ static int sector_matches(void)
 
 int riscv64_virtio_block_gate(void)
 {
-	if(find_transport() < 0 || setup_queue() < 0 ||
+	if(riscv64_virtio_transport_init() < 0 ||
 		riscv64_virtio_read_sector(0, sector_buffer) < 0 ||
 		!sector_matches()) {
 		return -1;

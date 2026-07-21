@@ -22,6 +22,13 @@ fixture/user.o: user-fixture.S
 fixture/user.elf: fixture/user.o user-fixture.ld
 	$(LD) $(LDFLAGS) -T user-fixture.ld -o $@ $<
 
+fixture/generic-init.o: generic-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/generic-init.elf: fixture/generic-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -36,8 +43,8 @@ fixture/make-riscv64-disk: ../../tests/make-riscv64-disk.c
 	mkdir -p fixture
 	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
 
-fixture/disk.img: fixture/make-riscv64-disk $(LINUX_IMAGE) FORCE
-	fixture/make-riscv64-disk $@ $(LINUX_IMAGE)
+fixture/disk.img: fixture/make-riscv64-disk $(LINUX_IMAGE) fixture/generic-init.elf FORCE
+	fixture/make-riscv64-disk $@ $(LINUX_IMAGE) fixture/generic-init.elf
 
 all: $(OBJS) fixture/disk.img
 

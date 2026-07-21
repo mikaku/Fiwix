@@ -1,18 +1,25 @@
 /* Firmware-free boot hooks for the generic RV64 kernel image. */
 
 #include <fiwix/arch_process.h>
+#include <fiwix/buffer.h>
+#include <fiwix/devices.h>
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/mm.h>
 #include <fiwix/process.h>
+#include <fiwix/riscv64_devices.h>
 #include <fiwix/riscv64_trap.h>
+#include <fiwix/sched.h>
+#include <fiwix/stat.h>
+#include <fiwix/string.h>
 #include <fiwix/timer.h>
+#include <fiwix/tty.h>
 
 #define UART0_BASE	0x10000000UL
 #define UART_THR	0
 #define UART_LSR	5
 #define UART_LSR_THRE	0x20
 #define TEST_FINISHER	0x00100000UL
-#define TEST_PASS	0x00005555U
 #define TEST_FAIL	0x00013333U
 
 volatile unsigned long riscv64_timer_ticks;
@@ -66,14 +73,43 @@ void riscv64_supervisor_main(unsigned long hartid, unsigned long dtb)
 
 void riscv64_generic_runtime_ready(void)
 {
+	static const char disk_marker[] =
+		"Fiwix riscv64 virtio sector gate\n";
+	struct buffer *buffer;
+	struct inode *inode;
+	__dev_t uart_dev;
+	__dev_t block_dev;
+	int valid;
+
+	uart_dev = MKDEV(RISCV64_UART_MAJOR, RISCV64_UART_MINOR);
+	block_dev = MKDEV(RISCV64_VIRTIO_BLK_MAJOR,
+		RISCV64_VIRTIO_BLK_MINOR);
+	buffer = bread(block_dev, 0, BLKSIZE_1K);
+	valid = buffer && !memcmp(buffer->data, disk_marker,
+		sizeof(disk_marker) - 1);
+	if(buffer) {
+		brelse(buffer);
+	}
+	inode = NULL;
+	if(namei("/bootstrap", &inode, NULL, FOLLOW_LINKS) ||
+		!inode || !S_ISREG(inode->i_mode)) {
+		valid = 0;
+	}
+	if(inode) {
+		iput(inode);
+	}
 	if(!kpage_dir || !page_table || !current || current->pid != IDLE ||
-		proc_table[INIT].pid != INIT || !kstat.free_pages ||
-		CURRENT_TICKS < 3) {
+		proc_table[INIT].pid != INIT ||
+		proc_table[INIT].state != PROC_RUNNING ||
+		!proc_table[INIT].arch.satp ||
+		!proc_table[INIT].arch.kernel_sp || !kstat.free_pages ||
+		CURRENT_TICKS < 3 || kparms.rootdev != block_dev ||
+		!get_device(CHR_DEV, uart_dev) || !get_tty(uart_dev) ||
+		!get_device(BLK_DEV, block_dev) || !valid) {
 		riscv64_uart_puts("Fiwix riscv64 generic runtime init failed\n");
 		riscv64_finish(TEST_FAIL);
 	}
-	riscv64_uart_puts("Fiwix riscv64 generic memory/timer init passed\n");
-	riscv64_finish(TEST_PASS);
+	riscv64_uart_puts("Fiwix riscv64 generic PID 1 construction passed\n");
 }
 
 void riscv64_trap(unsigned long cause, unsigned long epc,

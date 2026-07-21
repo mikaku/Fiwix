@@ -5,10 +5,10 @@ machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
 context-switch primitive with two kernel tasks, Sv39 address translation, and a
 small U-mode RV64 syscall fixture, polled virtio-mmio block reads, and a
-read-only ext2 file lookup. A separate generic image now activates its Sv39
-root, initializes allocator and process metadata, reserves idle and PID 1, and
-handles delegated timer ticks. It does not yet schedule a filesystem-backed
-userspace process.
+read-only ext2 file lookup. A separate generic image now activates Sv39,
+registers UART and virtio block devices, mounts ext2, schedules PID 1, executes
+`/sbin/init`, and observes a userspace console write through generic Fiwix
+policy.
 
 ## Build
 
@@ -101,8 +101,8 @@ that stack when the process is reaped. The trampoline enables supervisor
 interrupts before calling the kernel task function. Process VMA, ELF entry,
 heap, stack, and argument-page addresses use the architecture-selected
 `__addr_t`, preserving their 32-bit i386 layout while preventing RV64 address
-truncation. This path is compile-gated but is not linked into the bring-up
-kernel until generic allocation and page-table construction are available.
+truncation. The generic image now exercises the same scheduler switch and
+per-process page-table construction for PID 1.
 
 The smoke kernel initializes two independent kernel stacks and performs six
 cooperative switches before returning to the boot context. This gate checks the
@@ -154,17 +154,18 @@ with QEMU's legacy virtio-mmio v1 transport and once with modern v2. Queue
 completion is polled with a finite bound, and the driver verifies both the
 virtio request status and exact sector marker before reporting success.
 
-This queue code is not yet registered with Fiwix's generic block layer. Its
-purpose is to prove discovery, feature negotiation, DMA addresses, both queue
-layouts, and sector I/O before adapting the generic buffer cache.
+The staging queue remains the transport oracle for discovery, feature
+negotiation, DMA addresses, and both queue layouts. The generic image now wraps
+that transport in a read-only major-8 block device; reads pass through Fiwix's
+request queue, buffer cache, VFS, and ext2 implementation.
 
 The generated disk is also a deterministic 8 MiB, 1 KiB-block, revision-0 ext2
 filesystem. A bounded read-only gate follows the superblock, group descriptor,
 root inode, root directory, `bootstrap` inode, and its direct data block, then
 checks the file contents. Fiwix's existing ext2 implementation supports this
-same original revision. The staging reader is deliberately small and will be
-removed once the virtio device is registered with the generic block layer and
-the existing buffer-cache/VFS/ext2 path reaches the same file.
+same original revision. The staging reader remains as an independent oracle,
+while the generic image mounts the same disk on `/dev/vda`, resolves
+`/bootstrap`, and executes the ELF64 file at `/sbin/init`.
 
 The staging reader resolves direct, single-indirect, and double-indirect file
 blocks. `test-riscv64-large-image` pads the executable fixture to 300 KiB, so a
@@ -190,7 +191,7 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 262 C translation units, including the RV64 boot,
+It currently compiles 265 C translation units, including the RV64 boot,
 process, fork, syscall, trap, signal, and ELF64 exec hooks.
 Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
 retains ownership of common kernel globals and now has an RV64 entry that
@@ -229,8 +230,10 @@ shared `start_kernel()`, and installs the complete generic trap vector with
 interrupts disabled. It then activates the 256 MiB identity-mapped Sv39 root,
 initializes memory, process, sleep, buffer, scheduler, inode, and descriptor
 state, creates idle and reserves PID 1, and enables interrupts only after timer
-bottom halves exist. Its acceptance marker requires three delegated ticks and
-nonempty allocator metadata. The final link uses individual function/data
+bottom halves exist. It registers a polled UART tty and read-only virtio block
+device, mounts ext2, builds PID 1, and schedules it into U mode. Acceptance
+requires three delegated ticks plus a console marker from the filesystem-backed
+`/sbin/init`. The final link uses individual function/data
 sections and rejects undefined symbols. Weak per-symbol sentinels make legacy
 port-I/O and external-network relocations linkable during garbage collection,
 then fail the gate if any sentinel survives into the ELF. This proves those
@@ -242,9 +245,9 @@ The RV64 `kswapd` continuation retains generic memory devices except
 ATA, floppy, PC serial, or parallel-port devices. Timer policy uses delegated
 supervisor ticks without PIT/PIC setup, the absent CMOS RTC reports no procfs
 data, keyboard LEDs and console beep have no PS/2/PIT side effects, and reboot
-uses SBI SRST. A native UART character device, virtio block registration,
-creation of the `kswapd` continuation, and the transition from reserved PID 1
-to `/sbin/init` remain open.
+uses SBI SRST. The initial UART transmit and virtio completion paths are polled;
+PLIC-backed receive/completion interrupts, the `kswapd` continuation, and
+concurrent process I/O remain open.
 
 VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
@@ -253,17 +256,18 @@ walks all three Sv39 levels, maps and unmaps 4 KiB user leaves, clones writable
 pages as COW, releases empty tables, and builds a 256 MiB identity-mapped kernel
 root with supervisor-only finisher, PLIC, UART, and virtio windows. This backend
 passes GCC and both bootstrap TinyCC compile gates. Generic boot now activates
-its kernel root and allocator at runtime; per-process root creation, fork, and
-user mappings remain policy/compile gated until PID 1 runs.
+the kernel root and allocator, creates a private PID 1 root, maps U-mode pages,
+and switches `satp` at runtime; fork remains policy/compile gated.
 
 Generic PID 1 now has an RV64 construction path: it clones the supervisor root
 and its low device table, maps separate private RX text and RW stack pages at
 the top of the Sv39 user half, allocates a per-process kernel stack, and starts
 through an `sret` trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
 `execve`, and `exit` numbers and builds `argv`/`envp` on its user stack, so it
-contains no absolute kernel-address relocations. This path compiles under both
-bootstrap TinyCC rungs; runtime syscall dispatch and filesystem integration
-remain the next gate.
+contains no absolute kernel-address relocations. The generic image now runs the
+stub, opens `/dev/console`, duplicates it to stdout/stderr, executes a static
+filesystem ELF64 image, constructs its LP64 initial stack, and observes its
+U-mode `write`. Both virtio transport versions pass this gate.
 
 Fork now delegates page-root and saved-context construction to RV64 code. The
 child receives a private Sv39 root, a copied native 272-byte trap frame with
@@ -276,7 +280,7 @@ architecture-neutral.
 The generic syscall core accepts architecture-width arguments and a pointer to
 an existing saved frame. Its table bound uses the actual pointer element size
 and rejects an index equal to the element count. The RV64 translator implements
-the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
+the compatible stage0 syscall subset: `dup`, `openat`, `close`, `read`, `write`,
 `lseek`, `unlinkat`, `faccessat`, `chdir`, `fchmodat`, `brk`, fork-style
 `clone`, `wait4`, `exit`, `getpid`, and `getppid`. Signal translation adds
 `kill`, `rt_sigaction`, `rt_sigprocmask`, and `rt_sigreturn`. Unsupported
@@ -284,8 +288,8 @@ the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
 descriptors and clone sharing flags are rejected rather than silently given
 fork semantics. RV syscall 221 now enters shared `execve` policy, which selects
 the architecture ELF64 loader without passing its native trap frame to the
-ELF32 implementation. A generic trap vector now dispatches these calls, but the
-generic boot replacement must install it before they are exercised by PID 1.
+ELF32 implementation. The generic trap vector dispatches these calls for the
+filesystem-backed PID 1 path.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
@@ -321,6 +325,18 @@ enables them only after idle and timer bottom halves are ready. The first
 `sprintk("%s")` then faulted because the bundled i386-only varargs walker read a
 bogus RV64 pointer. The compiler-owned non-i386 varargs branch fixes that fault
 without changing the i386 bootstrap path.
+
+The fixed QEMU machine uses `/dev/ttyS0` as `/dev/console` and a read-only
+major-8 `/dev/vda` root. UART transmit drains generic tty queues by polling the
+16550 line-status register. The block adapter reports capacity from the virtio
+configuration space and converts each generic block request into bounded 512
+byte sector reads. The generated ext2 fixture includes `/dev/console` and a
+header-mapped static `/sbin/init`; `e2fsck -fn` validates the expanded image.
+
+The first scheduled PID 1 reached its ELF64 `write` but returned `EBADF` because
+the init trampoline's asm-generic syscall 23 (`dup`) was absent from the RV64
+translator. Adding the direct `SYS_dup` mapping and host regression case opens
+stdout/stderr correctly and makes the U-mode marker visible.
 
 ## Generic ELF64 exec design
 
@@ -488,6 +504,6 @@ The first whole-tree compile audit counted `font-lat9-8x8.c`,
 `font-lat9-8x14.c`, and `font-lat9-8x16.c` as standalone units even though the
 normal video build includes them textually from `fonts.c`. Compiling and
 relocating those objects exposed duplicate font definitions. The manifest now
-matched the Makefile at 260 real C translation units; subsequent boot and CPU
-replacements raise the current count to 262 without reintroducing the textual
-includes.
+matched the Makefile at 260 real C translation units; subsequent boot, CPU,
+UART, and virtio additions raise the current count to 265 without
+reintroducing the textual includes.

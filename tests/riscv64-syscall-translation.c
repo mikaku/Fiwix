@@ -81,6 +81,7 @@ int main(void)
 		unsigned long riscv64_num;
 		unsigned int fiwix_num;
 	} mappings[] = {
+		{ 23, SYS_dup },
 		{ 35, SYS_unlink },
 		{ 48, SYS_access },
 		{ 49, SYS_chdir },

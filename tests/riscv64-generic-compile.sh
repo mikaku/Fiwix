@@ -23,7 +23,8 @@ cd "$root"
 for source in arch/riscv64/cpu.c arch/riscv64/elf64.c arch/riscv64/exec.c \
 	arch/riscv64/generic-boot.c \
 	arch/riscv64/process.c arch/riscv64/signal.c arch/riscv64/syscall.c \
-	arch/riscv64/trap.c \
+	arch/riscv64/trap.c arch/riscv64/uart.c arch/riscv64/virtio-block.c \
+	arch/riscv64/virtio.c \
 	$(find kernel mm fs drivers net lib -name '*.c' | sort); do
 	case "$source" in
 	kernel/gdt.c|kernel/idt.c)
@@ -52,7 +53,7 @@ for source in arch/riscv64/cpu.c arch/riscv64/elf64.c arch/riscv64/exec.c \
 done
 
 test "$excluded" -eq 2
-test "$compiled" -eq 262
+test "$compiled" -eq 265
 if test -n "$GENERIC_OUTPUT"; then
 	"$GENERIC_LD" -m elf64lriscv -r $objects -o "$GENERIC_OUTPUT"
 fi

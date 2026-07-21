@@ -10,6 +10,7 @@
 #include <fiwix/limits.h>
 #include <fiwix/kparms.h>
 #include <fiwix/fs.h>
+#include <fiwix/filesystems.h>
 #include <fiwix/system.h>
 #include <fiwix/version.h>
 #include <fiwix/utsname.h>
@@ -35,6 +36,7 @@
 #include <fiwix/sysconsole.h>
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/arch_process.h>
+#include <fiwix/riscv64_devices.h>
 #endif
 
 struct kernel_params kparms;
@@ -83,6 +85,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	cpu_init();
 	dev_init();
 	irq_init();
+	tty_init();
 	mem_init();
 	proc_init();
 	sleep_init();
@@ -100,6 +103,16 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	init = get_proc_free();
 	proc_slot_init(init);
 	init->pid = get_unused_pid();
+	strcpy(kparms.rootfstype, "ext2");
+	kparms.rootdev = MKDEV(RISCV64_VIRTIO_BLK_MAJOR,
+		RISCV64_VIRTIO_BLK_MINOR);
+	strcpy(kparms.rootdevname, "/dev/vda");
+	kparms.ro = 1;
+	riscv64_uart_init();
+	riscv64_virtio_block_init();
+	fs_init();
+	mount_root();
+	init_init();
 
 	timer_init();
 	start_ticks = CURRENT_TICKS;
@@ -109,9 +122,9 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	}
 	CLI();
 	riscv64_generic_runtime_ready();
-	for(;;) {
-		HLT();
-	}
+	need_resched = 1;
+	STI();
+	cpu_idle();
 #else
 	struct proc *init;
 

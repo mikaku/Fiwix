@@ -171,8 +171,12 @@ riscv64-generic-image:
 		READELF="$(CROSS_COMPILE)readelf" GENERIC_IMAGE=fiwix-generic \
 		tests/riscv64-generic-image.sh
 
-test-riscv64-generic-boot: riscv64-generic-image
-	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" \
-		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic
+riscv64-generic-disk:
+	$(MAKE) -C arch/riscv64 fixture/disk.img
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image test-riscv64-generic-boot
+test-riscv64-generic-boot: riscv64-generic-image riscv64-generic-disk
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" \
+		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic \
+		arch/riscv64/fixture/disk.img
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-disk test-riscv64-generic-boot
