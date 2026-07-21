@@ -2,13 +2,14 @@
 
 set -eu
 
-if test "$#" -ne 2; then
-	echo "usage: $0 LINUX_SOURCE OUTPUT_DIRECTORY" >&2
+if test "$#" -lt 2 || test "$#" -gt 3; then
+	echo "usage: $0 LINUX_SOURCE OUTPUT_DIRECTORY [EXTRA_CONFIG]" >&2
 	exit 2
 fi
 
 source=$1
 output=$2
+extra_config=${3:-}
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 source=$(CDPATH= cd -- "$source" && pwd)
 mkdir -p "$output"
@@ -22,8 +23,16 @@ output=$(CDPATH= cd -- "$output" && pwd)
 export CROSS_COMPILE KBUILD_BUILD_USER KBUILD_BUILD_HOST KBUILD_BUILD_TIMESTAMP
 
 make -C "$source" O="$output" ARCH=riscv tinyconfig
+set -- "$output/.config" "$root/tests/riscv64-linux.config"
+if test -n "$extra_config"; then
+	test -f "$extra_config" || {
+		echo "missing Linux config fragment: $extra_config" >&2
+		exit 2
+	}
+	set -- "$@" "$extra_config"
+fi
 "$source/scripts/kconfig/merge_config.sh" -m -O "$output" \
-	"$output/.config" "$root/tests/riscv64-linux.config"
+	"$@"
 make -C "$source" O="$output" ARCH=riscv olddefconfig
 make -C "$source" O="$output" ARCH=riscv -j"$JOBS" Image
 

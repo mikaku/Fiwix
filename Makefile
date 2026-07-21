@@ -6,7 +6,7 @@
 
 TOPDIR := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
 INCLUDE = $(TOPDIR)/include
-TMPFILE = $(shell mktemp)
+GENERATED_LDSCRIPT = .fiwix.generated.ld
 LANG = -std=c89
 TARGET_ARCH ?= i386
 RISCV_MARCH ?= rv64ima_zicsr_zifencei
@@ -113,9 +113,9 @@ ifeq ($(TARGET_ARCH),i386)
 endif
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
 ifeq ($(CCEXE),gcc)
-	$(CPP) $(ARCH_DEFINES) $(CONFFLAGS) $(KERNEL_LDSCRIPT) > $(TMPFILE)
-	$(LD) -T $(TMPFILE) $(LDFLAGS) $(OBJS) $(LIBGCC) -o fiwix
-	rm -f $(TMPFILE)
+	$(CPP) $(ARCH_DEFINES) $(CONFFLAGS) $(KERNEL_LDSCRIPT) > $(GENERATED_LDSCRIPT)
+	$(LD) -T $(GENERATED_LDSCRIPT) $(LDFLAGS) $(OBJS) $(LIBGCC) -o fiwix
+	rm -f $(GENERATED_LDSCRIPT)
 	$(NM) fiwix | sort | gzip -9c > System.map.gz
 endif
 ifeq ($(CCEXE),tcc)
@@ -130,7 +130,7 @@ endif
 
 clean:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE) clean) ; done
-	rm -f *.o fiwix fiwix-generic System.map.gz
+	rm -f *.o fiwix fiwix-generic System.map.gz $(GENERATED_LDSCRIPT)
 
 test-riscv64: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64 requires TARGET_ARCH=riscv64" >&2; exit 1; }
@@ -144,6 +144,20 @@ test-riscv64-linux: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-linux requires TARGET_ARCH=riscv64" >&2; exit 1; }
 	@test -n "$(LINUX_IMAGE)" || { echo "test-riscv64-linux requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
 	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-linux-smoke.sh ./fiwix
+
+riscv64-linux-root-init:
+	$(MAKE) -C arch/riscv64 fixture/linux-root-init.elf
+
+riscv64-linux-root-disk: riscv64-linux-root-init
+	@test -n "$(LINUX_IMAGE)" || { echo "riscv64-linux-root-disk requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
+	$(MAKE) -C arch/riscv64 LINUX_IMAGE="$(LINUX_IMAGE)" fixture/linux-root-disk.img
+
+test-riscv64-linux-root: TIMEOUT=30
+test-riscv64-linux-root: all riscv64-linux-root-disk
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-linux-root requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" \
+		tests/riscv64-linux-root-smoke.sh ./fiwix \
+		arch/riscv64/fixture/linux-root-disk.img
 
 test-riscv64-tcc:
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-tcc requires TARGET_ARCH=riscv64" >&2; exit 1; }
@@ -214,6 +228,9 @@ riscv64-kaem-seed-init:
 riscv64-kaem-complete:
 	$(MAKE) -C arch/riscv64 fixture/kaem-complete.elf
 
+riscv64-kaem-linux-complete:
+	$(MAKE) -C arch/riscv64 fixture/kaem-linux-complete.elf
+
 test-riscv64-kaem-seed: riscv64-generic-image riscv64-kaem-seed-init
 	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-seed requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
 	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
@@ -248,4 +265,15 @@ test-riscv64-kaem-mini: riscv64-generic-image riscv64-kaem-seed-init riscv64-kae
 		KAEM_STAGE=mini tests/riscv64-kaem-seed-boot-smoke.sh \
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini
+test-riscv64-kaem-linux: TIMEOUT=3600
+test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-kaem-linux-complete riscv64-linux-root-init
+	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-linux requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
+	@test -n "$(LINUX_IMAGE)" || { echo "test-riscv64-kaem-linux requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
+		LINUX_IMAGE="$(LINUX_IMAGE)" \
+		LINUX_INIT=arch/riscv64/fixture/linux-root-init.elf \
+		KAEM_STAGE=linux tests/riscv64-kaem-seed-boot-smoke.sh \
+		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
+		arch/riscv64/fixture/kaem-linux-complete.elf
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-linux

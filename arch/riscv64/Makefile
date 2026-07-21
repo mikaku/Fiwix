@@ -50,6 +50,20 @@ fixture/kaem-complete.o: kaem-complete.S
 fixture/kaem-complete.elf: fixture/kaem-complete.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/kaem-linux-complete.o: kaem-linux-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-linux-complete.elf: fixture/kaem-linux-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/linux-root-init.o: linux-root-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-root-init.elf: fixture/linux-root-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -66,6 +80,9 @@ fixture/make-riscv64-disk: ../../tests/make-riscv64-disk.c
 
 fixture/disk.img: fixture/make-riscv64-disk $(LINUX_IMAGE) fixture/generic-init.elf FORCE
 	fixture/make-riscv64-disk $@ $(LINUX_IMAGE) fixture/generic-init.elf
+
+fixture/linux-root-disk.img: fixture/make-riscv64-disk $(LINUX_IMAGE) fixture/linux-root-init.elf FORCE
+	fixture/make-riscv64-disk $@ $(LINUX_IMAGE) fixture/linux-root-init.elf
 
 all: $(OBJS) fixture/disk.img
 

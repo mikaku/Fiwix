@@ -1,6 +1,7 @@
 /* Firmware-free boot hooks for the generic RV64 kernel image. */
 
 #include <fiwix/arch_process.h>
+#include <fiwix/asm.h>
 #include <fiwix/buffer.h>
 #include <fiwix/devices.h>
 #include <fiwix/kernel.h>
@@ -24,6 +25,14 @@
 
 volatile unsigned long riscv64_timer_ticks;
 volatile unsigned long riscv64_user_exit_status;
+
+/* start_kernel() clears BSS after entry, so preserve firmware state in data. */
+static unsigned long riscv64_boot_hartid = 1;
+static unsigned long riscv64_boot_dtb = 1;
+
+extern int riscv64_linux_image_gate(void);
+extern unsigned long riscv64_linux_image_entry(void);
+extern void riscv64_linux_handoff(unsigned long, unsigned long, unsigned long);
 
 static void riscv64_uart_putc(char c)
 {
@@ -59,16 +68,34 @@ static void riscv64_finish(unsigned int status)
 
 void riscv64_machine_main(unsigned long hartid, unsigned long dtb)
 {
-	(void)hartid;
-	(void)dtb;
+	riscv64_boot_hartid = hartid;
+	riscv64_boot_dtb = dtb;
 }
 
 void riscv64_supervisor_main(unsigned long hartid, unsigned long dtb)
 {
-	(void)hartid;
-	(void)dtb;
+	riscv64_boot_hartid = hartid;
+	riscv64_boot_dtb = dtb;
 	start_kernel(0, 0, 0);
 	riscv64_finish(TEST_FAIL);
+}
+
+int riscv64_linux_kexec(void)
+{
+	unsigned long flags;
+
+	SAVE_FLAGS(flags);
+	CLI();
+	if(riscv64_linux_image_gate() < 0) {
+		riscv64_uart_puts("Fiwix riscv64 Linux Image load failed\n");
+		RESTORE_FLAGS(flags);
+		return -1;
+	}
+	riscv64_uart_puts("Fiwix riscv64 Linux Image header gate passed\n");
+	riscv64_uart_puts("Fiwix riscv64 Linux root handoff\n");
+	riscv64_linux_handoff(riscv64_linux_image_entry(),
+		riscv64_boot_hartid, riscv64_boot_dtb);
+	return -1;
 }
 
 void riscv64_generic_runtime_ready(void)

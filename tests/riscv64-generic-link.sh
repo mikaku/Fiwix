@@ -15,7 +15,7 @@ GENERIC_CC="$GENERIC_CC" GENERIC_LD="$GENERIC_LD" \
 	"$root/tests/riscv64-generic-compile.sh"
 
 objects="$temporary/generic-c.o"
-for source in context generic-trap init_trampoline ops; do
+for source in context generic-trap handoff init_trampoline ops; do
 	"$AS" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
 		-o "$temporary/$source.o" "$root/arch/riscv64/$source.S"
 	objects="$objects $temporary/$source.o"
@@ -38,4 +38,4 @@ if grep -q '^riscv64_' "$temporary/unresolved"; then
 	exit 1
 fi
 
-echo "Fiwix riscv64 generic link gate passed: 265 C files, 4 assembly files; 9 platform/linker boundaries remain"
+echo "Fiwix riscv64 generic link gate passed: 267 C files, 5 assembly files; 9 platform/linker boundaries remain"

@@ -12,6 +12,9 @@ STAGE0_DIR=${STAGE0_DIR:?set STAGE0_DIR to the stage0-posix checkout}
 KAEM_WORKDIR=${KAEM_WORKDIR:-}
 KAEM_STAGE=${KAEM_STAGE:-seed}
 KAEM_TRANSPORT=${KAEM_TRANSPORT:-all}
+LINUX_IMAGE=${LINUX_IMAGE:-}
+LINUX_INIT=${LINUX_INIT:-}
+LINUX_CMDLINE=${LINUX_CMDLINE:-earlycon=uart8250,mmio,0x10000000 console=ttyS0,115200 root=/dev/vda ro rootfstype=ext2 init=/sbin/linux-init}
 kernel=${1:-./fiwix-generic}
 launcher=${2:-arch/riscv64/fixture/kaem-seed-init.elf}
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -19,7 +22,7 @@ stage0=$(cd "$STAGE0_DIR" && pwd)
 completion=${3:-$root/arch/riscv64/fixture/kaem-complete.elf}
 
 case $KAEM_STAGE in
-	seed|phase2|phase3|phase4|mini) ;;
+	seed|phase2|phase3|phase4|mini|linux) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
 case $KAEM_TRANSPORT in
@@ -133,6 +136,18 @@ if test "$KAEM_STAGE" != seed; then
 		}
 		mkdir -p "$rootfs/sbin"
 		install -m 755 "$completion" "$rootfs/sbin/kaem-complete"
+		if test "$KAEM_STAGE" = linux; then
+			test -f "$LINUX_IMAGE" || {
+				echo "KAEM_STAGE=linux requires LINUX_IMAGE" >&2
+				exit 1
+			}
+			test -f "$LINUX_INIT" || {
+				echo "KAEM_STAGE=linux requires LINUX_INIT" >&2
+				exit 1
+			}
+			install -m 644 "$LINUX_IMAGE" "$rootfs/linux"
+			install -m 755 "$LINUX_INIT" "$rootfs/sbin/linux-init"
+		fi
 	fi
 	disk_blocks=131072
 else
@@ -173,6 +188,9 @@ run_qemu()
 	mini_m1_actual=$work/$name.M1
 	mini_hex2_actual=$work/$name.hex2
 	mini_kaem_actual=$work/$name.kaem
+	if test "$KAEM_STAGE" = linux; then
+		set -- "$@" -append "$LINUX_CMDLINE"
+	fi
 	if timeout "$TIMEOUT" "$QEMU" -machine virt -m 256M -smp 1 \
 		-nographic -bios none -kernel "$kernel" -no-reboot \
 		-drive file="$run_disk",format=raw,if=none,id=drive0 \
@@ -185,7 +203,8 @@ run_qemu()
 		cat "$serial" >&2
 		exit "$status"
 	fi
-	if test "$KAEM_STAGE" = mini && test "$status" -ne 0; then
+	if { test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = linux; } &&
+		test "$status" -ne 0; then
 		cat "$serial" >&2
 		exit 1
 	fi
@@ -200,6 +219,18 @@ run_qemu()
 		cat "$serial" >&2
 		exit 1
 	fi
+	if test "$KAEM_STAGE" = linux && {
+		! grep -q '^Fiwix riscv64 kaem Linux handoff' "$serial" ||
+		! grep -q '^Fiwix riscv64 Linux Image header gate passed' "$serial" ||
+		! grep -q '^Fiwix riscv64 Linux root handoff' "$serial" ||
+		! grep -q '^Linux version ' "$serial" ||
+		! grep -q 'VFS: Mounted root (ext2 filesystem) readonly' "$serial" ||
+		! grep -q '^Fiwix riscv64 Linux root PID 1 passed' "$serial" ||
+		grep -q 'Kernel panic' "$serial"
+	}; then
+		cat "$serial" >&2
+		exit 1
+	fi
 	"$DEBUGFS" -R 'cat /riscv64/artifact/hex0' "$run_disk" \
 		> "$hex0_actual" 2>/dev/null
 	"$DEBUGFS" -R 'cat /riscv64/artifact/kaem-0' "$run_disk" \
@@ -211,7 +242,7 @@ run_qemu()
 			"$kaem_actual" >&2
 		exit 1
 	fi
-	if test "$KAEM_STAGE" = mini; then
+	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = linux; then
 		"$DEBUGFS" -R 'cat /riscv64/bin/M1' "$run_disk" \
 			> "$mini_m1_actual" 2>/dev/null
 		"$DEBUGFS" -R 'cat /riscv64/bin/hex2' "$run_disk" \

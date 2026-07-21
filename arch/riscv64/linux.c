@@ -43,6 +43,7 @@ int riscv64_linux_image_gate(void)
 	}
 	image_size = get64(linux_image + 16);
 	if(get64(linux_image + 8) != IMAGE_TEXT_OFFSET || !image_size ||
+		file_size > image_size ||
 		image_size > IMAGE_CAPACITY || get64(linux_image + 24) != 0 ||
 		get32(linux_image + 32) != 2 ||
 		get64(linux_image + 48) != IMAGE_MAGIC ||

@@ -45,6 +45,13 @@ int sys_reboot(int magic1, int magic2, int flag)
 			reboot();
 #endif
 			break;
+#ifdef CONFIG_ARCH_RISCV64
+		case BMAGIC_KEXEC:
+			if(riscv64_linux_kexec() < 0) {
+				return -EINVAL;
+			}
+			break;
+#endif
 		case BMAGIC_HALT:
 			sys_kill(-1, SIGKILL);
 			stop_kernel();

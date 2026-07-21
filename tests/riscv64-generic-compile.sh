@@ -46,7 +46,7 @@ while IFS= read -r source; do
 	compiled=$((compiled + 1))
 done < "$GENERIC_SOURCE_LIST"
 
-test "$compiled" -eq 265
+test "$compiled" -eq 267
 if test -n "$GENERIC_OUTPUT"; then
 	"$GENERIC_LD" -m elf64lriscv -r $objects -o "$GENERIC_OUTPUT"
 fi

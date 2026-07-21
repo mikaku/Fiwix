@@ -105,6 +105,7 @@ void riscv64_clear_ssip(void);
 void riscv64_vm_install(unsigned long);
 void riscv64_fence_i(void);
 void riscv64_system_reset(void);
+int riscv64_linux_kexec(void);
 unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
 	unsigned long, unsigned long);
 

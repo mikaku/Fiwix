@@ -120,35 +120,48 @@ static int find_root_file(const char *name, u32 *inode)
 	return -1;
 }
 
-static u32 file_block(const u8 *inode, u32 logical)
+static int file_block(const u8 *inode, u32 logical, u32 *result)
 {
 	u32 indirect;
 	u32 child;
 
+	*result = 0;
 	if(logical < 12) {
-		return get32(inode + INODE_BLOCK_OFFSET + logical * 4);
+		*result = get32(inode + INODE_BLOCK_OFFSET + logical * 4);
+		return 0;
 	}
 	logical -= 12;
 	if(logical < 256) {
 		indirect = get32(inode + INODE_BLOCK_OFFSET + 12 * 4);
-		if(!indirect || read_block(indirect) < 0) {
+		if(!indirect) {
 			return 0;
 		}
-		return get32(block_buffer + logical * 4);
+		if(read_block(indirect) < 0) {
+			return -1;
+		}
+		*result = get32(block_buffer + logical * 4);
+		return 0;
 	}
 	logical -= 256;
 	if(logical >= 256 * 256) {
-		return 0;
+		return -1;
 	}
 	indirect = get32(inode + INODE_BLOCK_OFFSET + 13 * 4);
-	if(!indirect || read_block(indirect) < 0) {
+	if(!indirect) {
 		return 0;
+	}
+	if(read_block(indirect) < 0) {
+		return -1;
 	}
 	child = get32(block_buffer + (logical / 256) * 4);
-	if(!child || read_block(child) < 0) {
+	if(!child) {
 		return 0;
 	}
-	return get32(block_buffer + (logical % 256) * 4);
+	if(read_block(child) < 0) {
+		return -1;
+	}
+	*result = get32(block_buffer + (logical % 256) * 4);
+	return 0;
 }
 
 int riscv64_ext2_gate(void)
@@ -210,16 +223,18 @@ int riscv64_ext2_load_file(const char *name, void *destination,
 	}
 	output = (u8 *)destination;
 	for(copied = 0; copied < file_size; copied += chunk) {
-		block = file_block(inode_data, copied / BLOCK_SIZE);
-		if(!block || read_block(block) < 0) {
+		if(file_block(inode_data, copied / BLOCK_SIZE, &block) < 0) {
 			return -1;
 		}
 		chunk = file_size - copied;
 		if(chunk > BLOCK_SIZE) {
 			chunk = BLOCK_SIZE;
 		}
+		if(block && read_block(block) < 0) {
+			return -1;
+		}
 		for(n = 0; n < chunk; n++) {
-			output[copied + n] = block_buffer[n];
+			output[copied + n] = block ? block_buffer[n] : 0;
 		}
 	}
 	*size = file_size;

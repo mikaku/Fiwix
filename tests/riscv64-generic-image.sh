@@ -36,7 +36,7 @@ objects=
 while IFS= read -r object; do
 	objects="$objects $object"
 done < "$temporary/generic-objects.list"
-for source in boot context generic-trap init_trampoline ops user; do
+for source in boot context generic-trap handoff init_trampoline ops user; do
 	"$AS" -march="$GENERIC_MARCH" -mabi=lp64 \
 		-o "$temporary/$source.o" "$root/arch/riscv64/$source.S"
 	objects="$objects $temporary/$source.o"

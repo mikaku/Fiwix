@@ -12,6 +12,9 @@ policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
 RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
 chain and verify its final M1, hex2, and kaem binaries.
+The final chain gate then asks Fiwix to load Linux from that same mutated ext2
+root, preserves the original hart ID and DTB contract, mounts the root under
+Linux, and executes a static Linux PID 1.
 
 ## Build
 
@@ -90,6 +93,21 @@ JOBS=8 tests/build-riscv64-linux.sh /path/to/linux-6.12.1 /tmp/linux-build
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 \
   LINUX_IMAGE=/tmp/linux-build/arch/riscv/boot/Image test-riscv64-linux
+
+# Add block, virtio, ext2, and static ELF support for the root handoff gates.
+JOBS=8 tests/build-riscv64-linux.sh /path/to/linux-6.12.1 \
+  /tmp/linux-root-build tests/riscv64-linux-root.config
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  LINUX_IMAGE=/tmp/linux-root-build/arch/riscv/boot/Image \
+  test-riscv64-linux-root
+
+# Run stage0 phases 1-11 and hand the resulting ext2 root to Linux.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LINUX_IMAGE=/tmp/linux-root-build/arch/riscv/boot/Image \
+  test-riscv64-kaem-linux
 ```
 
 The recorded oracle uses upstream Linux 6.12.1 tarball SHA-256
@@ -242,7 +260,7 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 265 C translation units, including the RV64 boot,
+It currently compiles 267 C translation units, including the RV64 boot,
 process, fork, syscall, trap, signal, and ELF64 exec hooks.
 Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
 retains ownership of common kernel globals and now has an RV64 entry that
@@ -297,8 +315,7 @@ ATA, floppy, PC serial, or parallel-port devices. Timer policy uses delegated
 supervisor ticks without PIT/PIC setup, the absent CMOS RTC reports no procfs
 data, keyboard LEDs and console beep have no PS/2/PIT side effects, and reboot
 uses SBI SRST. The initial UART transmit and virtio completion paths are polled;
-PLIC-backed receive/completion interrupts, the `kswapd` continuation, and the
-full concurrent kaem process tree remain open.
+PLIC-backed UART receive and block-completion interrupts remain open.
 
 VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
@@ -527,17 +544,31 @@ smoke gate probes BASE/TIME/SRST, programs a timer, observes the delegated
 supervisor timer pending bit, and cancels it. The M-mode trap frame preserves
 every caller-saved integer register except the SBI return pair.
 
-The optional Linux 6.12.1 gate loads a 1.9 MiB kernel from ext2, then verifies
-Linux's own version banner, SBI discovery, clocksource, PLIC, and interrupt-
-driven 16550 console initialization. The tiny kernel deliberately has no
-userspace, and the gate ends at its expected `No working init found` panic.
-This proves a real Linux boot through device initialization while keeping
-OpenSBI and a distribution kernel out of the bootstrap runtime. It does not
-yet prove a Linux initramfs or userspace handoff.
+The first optional Linux 6.12.1 gate loads a 1.9 MiB kernel from ext2, then
+verifies Linux's own version banner, SBI discovery, clocksource, PLIC, and
+interrupt-driven 16550 console initialization. That negative-control kernel
+deliberately has no userspace and ends at its expected `No working init found`
+panic.
+
+The root-capable config overlay adds only block, virtio-mmio block, ext2,
+devtmpfs, and static ELF support. Its 2.1 MiB Image mounts the same revision-0
+ext2 disk read-only and executes a freestanding assembly PID 1, which prints a
+marker and powers down through SBI. This keeps the root-continuity claim
+separate from a future distribution userspace or manifest resume claim.
+
+The full generic-kernel route uses Linux's standard reboot kexec command
+`0x45584543` as an explicit post-stage0 transition. The ordinary completion
+fixture still calls sync and reset, so the established phase 1-11 acceptance
+boundary does not silently change. The Linux completion fixture calls sync and
+kexec instead. Fiwix disables supervisor interrupts, loads `/linux` through
+the already-negotiated polled virtio queue, validates its Image header, clears
+`satp`, and enters Linux with the original hart ID and DTB. The saved values
+live in initialized data because generic `start_kernel()` clears BSS after the
+firmware-free entry code first receives them.
 
 ## Bootstrap compiler findings
 
-The complete 265-unit generic kernel can be built with the pinned bootstrap
+The complete 267-unit generic kernel can be built with the pinned bootstrap
 TinyCC by invoking `riscv64-generic-image-tcc` and supplying `TCC` plus
 `TCC_LIBTCC1`. The target passes `--no-warn-mismatch` only at this boundary:
 TinyCC currently tags its integer-only RV64 output as double-float ABI even
@@ -552,9 +583,12 @@ with commencement's Gash utilities without adding a later coreutils input.
 The same recipe sets `GENERIC_MARCH=rv64ima` for bootstrap binutils 2.30,
 whose assembler implements the CSR and instruction-fence operations but
 predates their later `_zicsr_zifencei` command-line spelling.
-The top-level Makefile also defers its unrelated GCC linker-script `mktemp`
-until that value is used; parsing a TinyCC-only target must not add an absent
-utility to the package closure.
+The top-level Makefile uses one stable in-tree generated linker-script path.
+The previous lazy `$(shell mktemp)` variable was expanded separately on each
+recipe line, so the preprocessor wrote one temporary file while the linker
+opened a different empty file. The deterministic path is removed after the
+link and by `clean`; parsing a TinyCC-only target still does not add `mktemp` to
+the package closure.
 
 ## Native stage0 process tree
 
@@ -578,6 +612,15 @@ assembly fixture prints the completion marker, invokes Linux RV64 syscall 81
 to persist the output filesystem, and invokes syscall 142 with Fiwix's reboot
 magic. This exits QEMU through the existing SBI reset path, so the long gate
 does not confuse an arbitrary timeout with successful script completion.
+
+The `linux` stage runs that same uninterrupted script and verifies the same
+three final hashes before allowing the handoff. The root builder adds the
+root-capable Linux Image as `/linux` and a distinct `/sbin/linux-init`; Fiwix's
+stage0 launcher remains `/sbin/init`, while the preserved DTB command line
+selects `/sbin/linux-init` after handoff. Both legacy and modern virtio paths
+must reach a clean Linux poweroff. The final acceptance run also uses the
+complete generic kernel compiled by `tcc-musl` and linked by bootstrap
+binutils 2.30.
 
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
@@ -613,7 +656,14 @@ Constructing the complete source root found a host-side test bug as well:
 checks `git submodule status --recursive` and archives each pinned submodule at
 its registered path before creating ext2.
 
-The 265 compiled translation units are recorded in
+The Linux continuation exposed a second ext2-reader assumption. The custom
+fixture builder allocated every Image block, but `mke2fs -d` preserves holes
+in the real Linux Image. The staging loader treated a zero data-block pointer
+as an I/O failure. It now distinguishes failed indirect-block reads from valid
+sparse mappings and explicitly zero-fills holes before validating and entering
+the kernel.
+
+The 267 compiled translation units are recorded in
 `tests/riscv64-generic-sources.list` rather than discovered with
 `find -name`. Commencement's Gash `find` lacks that predicate, and an exact
 manifest also makes additions to the reviewed kernel closure fail the expected
@@ -667,5 +717,6 @@ The first whole-tree compile audit counted `font-lat9-8x8.c`,
 normal video build includes them textually from `fonts.c`. Compiling and
 relocating those objects exposed duplicate font definitions. The manifest now
 matched the Makefile at 260 real C translation units; subsequent boot, CPU,
-UART, and virtio additions raise the current count to 265 without
+UART, virtio, ext2 handoff, and Linux Image additions raise the current count
+to 267 without
 reintroducing the textual includes.
