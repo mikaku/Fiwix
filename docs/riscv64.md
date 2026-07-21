@@ -56,6 +56,16 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 \
   STAGE0_SEED=/path/to/stage0-posix/bootstrap-seeds/POSIX/riscv64/hex0-seed \
   test-riscv64-stage0
+
+# Reproduce hex0, kaem-0, hex1, and hex2-0 through nested kaem processes.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-phase2
+
+# Run the uninterrupted phase 1-11 compiler/tool chain (long-running).
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-mini
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -142,7 +152,7 @@ supervisor context.
 The build produces a standalone ELF64/RISC-V executable at
 `arch/riscv64/fixture/user.elf` and embeds its bytes as immutable loader input.
 The kernel validates the ELF identity, machine, executable type, program-header
-bounds, one-page RX load segment, alignment, entry point, and W^X policy before
+bounds, one-page RX load segment, alignment, and entry point before
 copying the segment into its user page. The fixture then verifies an
 ABI-shaped initial stack containing `argc`, `argv`, a null environment, and
 `AT_PAGESZ`, `AT_ENTRY`, and `AT_NULL` auxiliary-vector entries.
@@ -380,10 +390,10 @@ aligned LP64 `argc`/`argv`/`envp`/auxv stack.
 Eager population is deliberate: first execution remains deterministic without
 requiring a file-backed demand fault before the generic boot path is live. This
 initial scope excludes dynamic linking, PIE, and lazy ELF paging. The
-loader enforces W^X by dropping write permission from executable segments. The
-bootstrap stage0 `hex0-seed` overstates its single segment as RWE, but static
-inspection confirms that it writes only to its stack, so it executes correctly
-when normalized to RX.
+loader preserves the ELF segment permissions. This includes RWE for the legacy
+stage0 seeds: `hex1` stores its first-pass label table inside its sole load
+segment, so removing `PF_W` from executable segments breaks the canonical
+bootstrap binary.
 
 The host-side ELF plan gate mirrors the seed's 392-byte image shape and rejects
 wrong class or machine, truncated headers and files, dynamic interpreters,
@@ -533,6 +543,36 @@ predates their later `_zicsr_zifencei` command-line spelling.
 The top-level Makefile also defers its unrelated GCC linker-script `mktemp`
 until that value is used; parsing a TinyCC-only target must not add an absent
 utility to the package closure.
+
+## Native stage0 process tree
+
+The kaem root builder pins stage0-posix commit
+`643598041bf7639883874fe2cdc9d9693c9b03d5` and rejects displaced recursive
+submodules. It archives the superproject and every registered submodule into a
+revision-0 ext2 image rather than copying generated files from the host working
+tree. The short gate runs nested optional/minimal kaem processes and compares
+the generated `hex0`, `kaem-0`, `hex1`, and `hex2-0` against canonical hashes
+after independently reopening each v1 and v2 disk.
+
+The complete `mescc-tools-mini-kaem.kaem` route is a separate long-running
+target. Historical tools perform byte-at-a-time file syscalls; keeping that
+gate distinct prevents a multi-minute compiler build from weakening the fast
+seed and phase-2 acceptance boundaries.
+
+The first process-tree run exposed two ABI mistakes. The clone translator
+required parent-TID, TLS, and child-TID registers to be zero even when flags 17
+(`SIGCHLD` only) make Linux ignore those arguments; the hand-written kaem seed
+leaves them unspecified. The translator now validates only the flags and null
+child stack that define fork semantics. The ELF planner also normalized RWE
+segments to RX. That happened to work for `hex0-seed`, but `hex1` writes its
+first-pass label table inside its sole load segment and faulted at
+`0x600045c`. Filesystem exec now preserves the permissions declared by each
+static ELF segment.
+
+Constructing the complete source root found a host-side test bug as well:
+`git archive` emits a gitlink but no submodule contents. The root builder now
+checks `git submodule status --recursive` and archives each pinned submodule at
+its registered path before creating ext2.
 
 The 265 compiled translation units are recorded in
 `tests/riscv64-generic-sources.list` rather than discovered with

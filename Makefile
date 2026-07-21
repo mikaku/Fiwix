@@ -208,4 +208,27 @@ test-riscv64-stage0: riscv64-generic-image riscv64-stage0-init
 		tests/riscv64-stage0-boot-smoke.sh ./fiwix-generic \
 		arch/riscv64/fixture/stage0-init.elf
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0
+riscv64-kaem-seed-init:
+	$(MAKE) -C arch/riscv64 fixture/kaem-seed-init.elf
+
+test-riscv64-kaem-seed: riscv64-generic-image riscv64-kaem-seed-init
+	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-seed requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
+		tests/riscv64-kaem-seed-boot-smoke.sh ./fiwix-generic \
+		arch/riscv64/fixture/kaem-seed-init.elf
+
+test-riscv64-kaem-phase2: TIMEOUT=60
+test-riscv64-kaem-phase2: riscv64-generic-image riscv64-kaem-seed-init
+	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-phase2 requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
+		KAEM_STAGE=phase2 tests/riscv64-kaem-seed-boot-smoke.sh \
+		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf
+
+test-riscv64-kaem-mini: TIMEOUT=3600
+test-riscv64-kaem-mini: riscv64-generic-image riscv64-kaem-seed-init
+	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-mini requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
+		KAEM_STAGE=mini tests/riscv64-kaem-seed-boot-smoke.sh \
+		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-mini

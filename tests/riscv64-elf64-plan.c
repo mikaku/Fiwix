@@ -79,7 +79,7 @@ static int check_stage0_file(const char *path)
 	if(riscv64_elf_plan(image, header_size, (unsigned long)size,
 		USER_LIMIT, &plan) || plan.entry != 0x600078 ||
 		plan.phdr != 0x600040 || plan.image_end != 0x600188 ||
-		plan.load_count != 1 || plan.load[0].prot != 5) {
+		plan.load_count != 1 || plan.load[0].prot != 7) {
 		return 22;
 	}
 	return 0;
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	program = (struct riscv64_elf64_program_header *)(image + header->phoff);
 	program[1].flags = 7;
 	if(riscv64_elf_plan(image, sizeof(image), 0x2000,
-		USER_LIMIT, &plan) || plan.load[1].prot != 5) {
+		USER_LIMIT, &plan) || plan.load[1].prot != 7) {
 		return 3;
 	}
 	make_valid();
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 	program[0].align = 1;
 	if(riscv64_elf_plan(image, sizeof(image), 392, USER_LIMIT, &plan) ||
 		plan.entry != 0x600078 || plan.phdr != 0x600040 ||
-		plan.load_count != 1 || plan.load[0].prot != 5) {
+		plan.load_count != 1 || plan.load[0].prot != 7) {
 		return 10;
 	}
 	make_valid();

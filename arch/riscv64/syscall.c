@@ -150,8 +150,8 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 				0, 0, 0, 0);
 			break;
 		case RV_SYS_CLONE:
-			if(frame->a0 != RV_CLONE_FORK_FLAGS || frame->a1 || frame->a2 ||
-				frame->a3 || frame->a4) {
+			/* Extra clone arguments are ignored without their enabling flags. */
+			if(frame->a0 != RV_CLONE_FORK_FLAGS || frame->a1) {
 				result = -EINVAL;
 				break;
 			}

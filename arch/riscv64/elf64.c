@@ -117,8 +117,7 @@ int riscv64_elf_plan(const void *header_data, unsigned long header_size,
 		if(program->flags & PF_R) {
 			plan->load[plan->load_count].prot |= PROT_READ;
 		}
-		/* Enforce W^X; the legacy stage0 RWE segment executes correctly as RX. */
-		if((program->flags & PF_W) && !(program->flags & PF_X)) {
+		if(program->flags & PF_W) {
 			plan->load[plan->load_count].prot |= PROT_WRITE;
 		}
 		if(program->flags & PF_X) {
