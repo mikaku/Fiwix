@@ -188,24 +188,57 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 261 C translation units, including the RV64 process,
-fork, syscall, trap, signal, and ELF64 exec hooks.
+It currently compiles 262 C translation units, including the RV64 boot,
+process, fork, syscall, trap, signal, and ELF64 exec hooks.
 Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
 retains ownership of common kernel globals and now has an RV64 entry that
 installs the generic trap vector before idling; the complete device, memory,
-process, and PID 1 initialization sequence is still the next boot milestone.
+process, and PID 1 initialization sequence is still the next runtime milestone.
 An architecture CPU implementation reports `riscv64` and the fixed
 RV64IMA/Zicsr/Zifencei contract without emulating x86 CPUID, TSC, or port I/O.
 The same gate relocatably links those objects with the real RV64 context
 switch, generic trap vector, init trampoline, and privileged-operation
-assembly. All `riscv64_*` references resolve. An exact 46-symbol allowlist
-has therefore fallen to 25 symbols: legacy i386 port I/O, the optional external
-IPv4 backend, and three final-linker boundaries. Additions or removals require
-an explicit review rather than disappearing in compile-only coverage.
+assembly. All `riscv64_*` references resolve. The exact unresolved allowlist
+has fallen from 46 to nine symbols: six operations referenced only by
+compile-audited legacy i386 drivers and three final-linker boundaries.
+Additions or removals require an explicit review rather than disappearing in
+compile-only coverage. RV64 disables the repository's unimplemented external
+IPv4 backend and x86 PCI, BGA, and PS/2 options rather than supplying false
+runtime stubs.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 activates the selected process address space first, and `ioperm` returns
 `ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures
 the active `satp` so a later switch cannot accidentally return to bare mode.
+
+## Generic-kernel boot boundary
+
+The generic objects also link into a separate firmware-free image without
+changing the default staging kernel:
+
+```sh
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  riscv64-generic-image
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=qemu-system-riscv64 test-riscv64-generic-boot
+```
+
+`fiwix-generic` enters through the proven M/S-mode boot assembly, calls the
+shared `start_kernel()`, installs the complete generic trap vector, disables
+interrupts while no current process exists, and emits its acceptance marker
+after the vector installation. The final link uses individual function/data
+sections and rejects undefined symbols. Weak per-symbol sentinels make legacy
+port-I/O and external-network relocations linkable during garbage collection,
+then fail the gate if any sentinel survives into the ELF. This proves those
+subsystems are absent from the runnable closure rather than silently mapped to
+no-op hardware.
+
+The RV64 `kswapd` continuation retains generic memory devices except
+`/dev/port`, PTYs, ramdisk, filesystems, and PID 1 policy, but does not register
+ATA, floppy, PC serial, or parallel-port devices. Timer policy uses delegated
+supervisor ticks without PIT/PIC setup, the absent CMOS RTC reports no procfs
+data, keyboard LEDs and console beep have no PS/2/PIT side effects, and reboot
+uses SBI SRST. A native UART character device, virtio block registration,
+memory/process initialization, and the transition into `kswapd` remain open.
 
 VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
@@ -424,5 +457,6 @@ The first whole-tree compile audit counted `font-lat9-8x8.c`,
 `font-lat9-8x14.c`, and `font-lat9-8x16.c` as standalone units even though the
 normal video build includes them textually from `fonts.c`. Compiling and
 relocating those objects exposed duplicate font definitions. The manifest now
-matches the Makefile and reports 260 real C translation units; this correction
-does not remove any kernel code from the audit.
+matched the Makefile at 260 real C translation units; subsequent boot and CPU
+replacements raise the current count to 262 without reintroducing the textual
+includes.

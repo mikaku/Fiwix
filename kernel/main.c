@@ -74,7 +74,11 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	(void)last_boot_addr;
 	memset_b(&kstat, 0, sizeof(kstat));
 	riscv64_generic_traps_install();
-	cpu_idle();
+	CLI();
+	riscv64_generic_boot_ready();
+	for(;;) {
+		HLT();
+	}
 #else
 	struct proc *init;
 

@@ -10,6 +10,7 @@
 	.globl riscv64_fence_full
 	.globl riscv64_fence_read
 	.globl riscv64_fence_i
+	.globl riscv64_system_reset
 	.globl riscv64_interrupt_disable
 	.globl riscv64_interrupt_enable
 	.globl riscv64_interrupt_state
@@ -59,6 +60,16 @@ riscv64_fence_read:
 riscv64_fence_i:
 	fence.i
 	ret
+
+riscv64_system_reset:
+	li a7, 0x53525354
+	li a6, 0
+	li a0, 0
+	li a1, 0
+	ecall
+1:
+	wfi
+	j 1b
 
 riscv64_interrupt_disable:
 	csrci sstatus, 2

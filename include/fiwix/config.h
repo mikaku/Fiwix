@@ -54,6 +54,15 @@
 #define CONFIG_PSAUX
 #define CONFIG_UNIX98_PTYS
 
+#ifdef CONFIG_ARCH_RISCV64
+/* These options currently select i386 hardware or an external IPv4 backend. */
+#undef CONFIG_PCI
+#undef CONFIG_PCI_NAMES
+#undef CONFIG_BGA
+#undef CONFIG_NET
+#undef CONFIG_PSAUX
+#endif
+
 
 /* configuration options to help debugging */
 #define CONFIG_VERBOSE_SEGFAULTS

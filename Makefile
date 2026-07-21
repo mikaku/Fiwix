@@ -129,7 +129,7 @@ endif
 
 clean:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE) clean) ; done
-	rm -f *.o fiwix System.map.gz
+	rm -f *.o fiwix fiwix-generic System.map.gz
 
 test-riscv64: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64 requires TARGET_ARCH=riscv64" >&2; exit 1; }
@@ -164,4 +164,15 @@ test-riscv64-generic-compile:
 	HOSTCC="$(HOSTCC)" tests/riscv64-elf64-plan.sh
 	HOSTCC="$(HOSTCC)" tests/riscv64-syscall-translation.sh
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile
+riscv64-generic-image:
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "riscv64-generic-image requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	GENERIC_CC="$(CROSS_COMPILE)gcc" GENERIC_LD="$(CROSS_COMPILE)ld" \
+		AS="$(CROSS_COMPILE)as" NM="$(CROSS_COMPILE)nm" \
+		READELF="$(CROSS_COMPILE)readelf" GENERIC_IMAGE=fiwix-generic \
+		tests/riscv64-generic-image.sh
+
+test-riscv64-generic-boot: riscv64-generic-image
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" \
+		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image test-riscv64-generic-boot

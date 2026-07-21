@@ -37,8 +37,10 @@ int kswapd(void)
 
 	/* char devices */
 	memdev_init();
+#ifndef CONFIG_ARCH_RISCV64
 	serial_init();
 	lp_init();
+#endif
 #ifdef CONFIG_UNIX98_PTYS
 	pty_init();
 #endif /* CONFIG_UNIX98_PTYS */
@@ -50,8 +52,10 @@ int kswapd(void)
 
 	/* block devices */
 	ramdisk_init();
+#ifndef CONFIG_ARCH_RISCV64
 	floppy_init();
 	ata_init();
+#endif
 
 	/* starting system */
 	mem_stats();

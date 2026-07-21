@@ -371,6 +371,11 @@ int data_proc_pci(char *buffer, __pid_t pid)
 
 int data_proc_rtc(char *buffer, __pid_t pid)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	(void)buffer;
+	(void)pid;
+	return 0;
+#else
 	int size;
 	short int sec, min, hour;
 	short int day, month, year, century;
@@ -401,6 +406,7 @@ int data_proc_rtc(char *buffer, __pid_t pid)
 	size += sprintk(buffer + size, "periodic_freq\t: %s\n", (cmos_read(CMOS_STATA) & CMOS_STATA_IRQF) == 0x6 ? "1024" : "?");
 	size += sprintk(buffer + size, "batt_status\t: %s\n", cmos_read(CMOS_STATD) & CMOS_STATD_VRT ? "okay" : "dead");
 	return size;
+#endif
 }
 
 int data_proc_stat(char *buffer, __pid_t pid)
