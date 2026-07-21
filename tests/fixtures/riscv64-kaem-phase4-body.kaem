@@ -1,0 +1,9 @@
+./riscv64/artifact/hex0 ./riscv64/hex1_riscv64.hex0 ./riscv64/artifact/hex1
+./riscv64/artifact/hex1 ./riscv64/hex2_riscv64.hex1 ./riscv64/artifact/hex2-0
+./riscv64/artifact/hex2-0 ./riscv64/catm_riscv64.hex2 ./riscv64/artifact/catm
+./riscv64/artifact/catm ./riscv64/artifact/M0.hex2 ./riscv64/ELF-riscv64.hex2 ./riscv64/M0_riscv64.hex2
+./riscv64/artifact/hex2-0 ./riscv64/artifact/M0.hex2 ./riscv64/artifact/M0
+./riscv64/artifact/catm ./riscv64/artifact/cc_riscv64.M1 ./riscv64/riscv64_defs.M1 ./riscv64/cc_riscv64.M1
+./riscv64/artifact/M0 ./riscv64/artifact/cc_riscv64.M1 ./riscv64/artifact/cc_riscv64.hex2
+./riscv64/artifact/catm ./riscv64/artifact/cc_riscv64-0.hex2 ./riscv64/ELF-riscv64.hex2 ./riscv64/artifact/cc_riscv64.hex2
+./riscv64/artifact/hex2-0 ./riscv64/artifact/cc_riscv64-0.hex2 ./riscv64/artifact/cc_riscv64

@@ -19,7 +19,7 @@
 #include <fiwix/stat.h>
 #include <fiwix/blk_queue.h>
 
-#define NR_BUF_HASH		(buffer_hash_table_size / sizeof(struct buffer *))
+#define NR_BUF_HASH		(buffer_hash_table_size / sizeof(*buffer_hash_table))
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define BUFHEAD_INDEX(size)	((size / BLKSIZE_1K) - 1)
 

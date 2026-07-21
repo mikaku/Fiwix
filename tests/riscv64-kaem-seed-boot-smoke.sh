@@ -16,9 +16,10 @@ kernel=${1:-./fiwix-generic}
 launcher=${2:-arch/riscv64/fixture/kaem-seed-init.elf}
 root=$(cd "$(dirname "$0")/.." && pwd)
 stage0=$(cd "$STAGE0_DIR" && pwd)
+completion=${3:-$root/arch/riscv64/fixture/kaem-complete.elf}
 
 case $KAEM_STAGE in
-	seed|phase2|mini) ;;
+	seed|phase2|phase3|phase4|mini) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
 case $KAEM_TRANSPORT in
@@ -111,9 +112,27 @@ if test "$KAEM_STAGE" != seed; then
 		install -m 644 \
 			"$root/tests/fixtures/riscv64-kaem-phase2-body.kaem" \
 			"$rootfs/riscv64/mescc-tools-phase2-kaem.kaem"
+	elif test "$KAEM_STAGE" = phase3; then
+		install -m 644 "$root/tests/fixtures/riscv64-kaem-phase3.kaem" \
+			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
+		install -m 644 \
+			"$root/tests/fixtures/riscv64-kaem-phase3-body.kaem" \
+			"$rootfs/riscv64/mescc-tools-phase3-kaem.kaem"
+	elif test "$KAEM_STAGE" = phase4; then
+		install -m 644 "$root/tests/fixtures/riscv64-kaem-phase4.kaem" \
+			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
+		install -m 644 \
+			"$root/tests/fixtures/riscv64-kaem-phase4-body.kaem" \
+			"$rootfs/riscv64/mescc-tools-phase4-kaem.kaem"
 	else
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-mini.kaem" \
 			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
+		test -f "$completion" || {
+			echo "missing kaem completion fixture: $completion" >&2
+			exit 1
+		}
+		mkdir -p "$rootfs/sbin"
+		install -m 755 "$completion" "$rootfs/sbin/kaem-complete"
 	fi
 	disk_blocks=131072
 else
@@ -166,9 +185,18 @@ run_qemu()
 		cat "$serial" >&2
 		exit "$status"
 	fi
+	if test "$KAEM_STAGE" = mini && test "$status" -ne 0; then
+		cat "$serial" >&2
+		exit 1
+	fi
 	if ! grep -q 'Fiwix riscv64 kaem seed launcher entered' "$serial" ||
 		grep -q 'kaem seed launcher exec failed\|Subprocess error\|fatal\|PANIC' \
 		"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = mini &&
+		! grep -q 'Fiwix riscv64 kaem mini completed' "$serial"; then
 		cat "$serial" >&2
 		exit 1
 	fi
@@ -196,7 +224,8 @@ run_qemu()
 			96ce368b0ec942470c08a8cbe197f843781ca2d1f4a7a64d3908d5f62c3d0d07
 		check_hash "$mini_kaem_actual" \
 			0c2fdf2057b404707c6c589280c5bf99b33a62b6649bfd0cedbb699a3d0d7c00
-	elif test "$KAEM_STAGE" = phase2; then
+	elif test "$KAEM_STAGE" = phase2 || test "$KAEM_STAGE" = phase3 ||
+		test "$KAEM_STAGE" = phase4; then
 		phase2_hex1_actual=$work/$name.hex1
 		phase2_hex2_actual=$work/$name.hex2-0
 		"$DEBUGFS" -R 'cat /riscv64/artifact/hex1' "$run_disk" \
@@ -207,6 +236,45 @@ run_qemu()
 			2c0037d9455f282d5612c1cf280b6a681a33ee1fd633375276e4a816101a3574
 		check_hash "$phase2_hex2_actual" \
 			93b9073e0fbdd03da34bc3d6b47302157b11a18a6753161b2e77384dc4347459
+		if test "$KAEM_STAGE" = phase3 || test "$KAEM_STAGE" = phase4; then
+			phase3_catm_actual=$work/$name.catm
+			phase3_m0_source_actual=$work/$name.M0.hex2
+			phase3_m0_actual=$work/$name.M0
+			"$DEBUGFS" -R 'cat /riscv64/artifact/catm' "$run_disk" \
+				> "$phase3_catm_actual" 2>/dev/null
+			"$DEBUGFS" -R 'cat /riscv64/artifact/M0.hex2' "$run_disk" \
+				> "$phase3_m0_source_actual" 2>/dev/null
+			"$DEBUGFS" -R 'cat /riscv64/artifact/M0' "$run_disk" \
+				> "$phase3_m0_actual" 2>/dev/null
+			check_hash "$phase3_catm_actual" \
+				ad24954282f57a2704c890fd95c375745b076964b6d731f1baf9f387afee2c0b
+			check_hash "$phase3_m0_source_actual" \
+				a3b3bff7a7aafafae8e3bda4614727b20ac8772e91907811bb1819f91f069d7f
+			check_hash "$phase3_m0_actual" \
+				495d188c9e24bba8e7c76bcb11cdfd9a6624e037c4df50b07b2aeb4a8f68b3ea
+		fi
+		if test "$KAEM_STAGE" = phase4; then
+			phase4_cc_source_actual=$work/$name.cc_riscv64.M1
+			phase4_cc_hex_actual=$work/$name.cc_riscv64.hex2
+			phase4_cc_link_actual=$work/$name.cc_riscv64-0.hex2
+			phase4_cc_actual=$work/$name.cc_riscv64
+			"$DEBUGFS" -R 'cat /riscv64/artifact/cc_riscv64.M1' "$run_disk" \
+				> "$phase4_cc_source_actual" 2>/dev/null
+			"$DEBUGFS" -R 'cat /riscv64/artifact/cc_riscv64.hex2' "$run_disk" \
+				> "$phase4_cc_hex_actual" 2>/dev/null
+			"$DEBUGFS" -R 'cat /riscv64/artifact/cc_riscv64-0.hex2' "$run_disk" \
+				> "$phase4_cc_link_actual" 2>/dev/null
+			"$DEBUGFS" -R 'cat /riscv64/artifact/cc_riscv64' "$run_disk" \
+				> "$phase4_cc_actual" 2>/dev/null
+			check_hash "$phase4_cc_source_actual" \
+				56ba662448370c78e5c5d5ff3d98412d75d30cb625c89d021d7e31c03963e69c
+			check_hash "$phase4_cc_hex_actual" \
+				17b4317b4e3ad61aa0923ede8cae83cbf3276550f2fa1cd95868e1372a552412
+			check_hash "$phase4_cc_link_actual" \
+				3c7feea89506b70ceb602257ffc56b2481dcfd474527c473fad022c039a50b64
+			check_hash "$phase4_cc_actual" \
+				fe337e9c2d9b6e6a550561491b7d2640d088975e107ee9b522641428e1362685
+		fi
 	fi
 	"$root/tests/riscv64-ext2-check.sh" "$run_disk"
 }

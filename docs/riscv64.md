@@ -10,6 +10,8 @@ registers UART and virtio block devices, mounts ext2, schedules PID 1, executes
 `/sbin/init`, and observes a userspace console write through generic Fiwix
 policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
 RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
+The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
+chain and verify its final M1, hex2, and kaem binaries.
 
 ## Build
 
@@ -61,6 +63,16 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 \
   STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-phase2
+
+# Continue through catm and the architecture-specific M0 assembler.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-phase3
+
+# Use M0 to reproduce the architecture-specific cc_riscv64 compiler.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-phase4
 
 # Run the uninterrupted phase 1-11 compiler/tool chain (long-running).
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
@@ -550,14 +562,22 @@ The kaem root builder pins stage0-posix commit
 `643598041bf7639883874fe2cdc9d9693c9b03d5` and rejects displaced recursive
 submodules. It archives the superproject and every registered submodule into a
 revision-0 ext2 image rather than copying generated files from the host working
-tree. The short gate runs nested optional/minimal kaem processes and compares
-the generated `hex0`, `kaem-0`, `hex1`, and `hex2-0` against canonical hashes
-after independently reopening each v1 and v2 disk.
+tree. The short cumulative gates run nested optional/minimal kaem processes and
+compare the generated `hex0`, `kaem-0`, `hex1`, `hex2-0`, `catm`, concatenated
+M0 input, M0 executable, and `cc_riscv64` intermediates and executable against
+canonical hashes after independently reopening each v1 and v2 disk.
 
 The complete `mescc-tools-mini-kaem.kaem` route is a separate long-running
 target. Historical tools perform byte-at-a-time file syscalls; keeping that
 gate distinct prevents a multi-minute compiler build from weakening the fast
-seed and phase-2 acceptance boundaries.
+acceptance boundaries. Each short gate includes every preceding phase. This is
+deliberate: it identifies the first broken bootstrap contract while the long
+gate remains the proof that no host process or pre-generated artifact was
+inserted between phases. After the nested kaem process returns, a dedicated
+assembly fixture prints the completion marker and invokes Linux RV64 syscall
+142 with Fiwix's reboot magic. This exits QEMU immediately through the existing
+SBI reset path, so the long gate does not confuse an arbitrary timeout with
+successful script completion.
 
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
@@ -568,6 +588,23 @@ segments to RX. That happened to work for `hex0-seed`, but `hex1` writes its
 first-pass label table inside its sole load segment and faulted at
 `0x600045c`. Filesystem exec now preserves the permissions declared by each
 static ELF segment.
+
+The first phase-3 run exposed an LP64 hash-table overrun. The buffer, inode,
+and page caches stored arrays of pointers, but their allocation or bucket-count
+calculations used `sizeof(unsigned int)`. On RV64, the page cache consequently
+addressed twice the available buckets and overwrote the adjacent page table.
+`catm` made the corruption deterministic when a 65 KiB read faulted in another
+lazy heap page. All three tables now derive allocation, bucket, and diagnostic
+counts from `sizeof(*hash_table)`; keeping that calculation tied to the declared
+element type preserves i386 behavior and prevents another pointer-width
+assumption from diverging.
+
+The completion fixture also exposed signed-argument conversion hidden by the
+i386 dispatcher. Generic syscall dispatch uses machine-word arguments even
+when a handler, such as `sys_reboot`, declares 32-bit `int` parameters. The
+RV64 syscall adapter now explicitly sign-extends reboot's three integer
+arguments before generic dispatch; otherwise the high-bit reboot magic reaches
+the handler zero-extended and is rejected.
 
 Constructing the complete source root found a host-side test bug as well:
 `git archive` emits a gitlink but no submodule contents. The root builder now

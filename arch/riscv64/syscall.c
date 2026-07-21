@@ -26,6 +26,7 @@
 #define RV_SYS_RT_SIGACTION	134
 #define RV_SYS_RT_SIGPROCMASK	135
 #define RV_SYS_RT_SIGRETURN	139
+#define RV_SYS_REBOOT		142
 #define RV_SYS_GETPID		172
 #define RV_SYS_GETPPID		173
 #define RV_SYS_BRK		214
@@ -138,6 +139,12 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 			if(!result) {
 				return 0;
 			}
+			break;
+		case RV_SYS_REBOOT:
+			result = riscv64_call_fiwix(SYS_reboot, frame,
+				(__sysarg_t)(int)frame->a0,
+				(__sysarg_t)(int)frame->a1,
+				(__sysarg_t)(int)frame->a2, 0, 0, 0);
 			break;
 		case RV_SYS_GETPID:
 			result = riscv64_call_fiwix(SYS_getpid, frame, 0, 0, 0, 0, 0, 0);

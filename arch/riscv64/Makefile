@@ -43,6 +43,13 @@ fixture/kaem-seed-init.o: kaem-seed-init.S
 fixture/kaem-seed-init.elf: fixture/kaem-seed-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/kaem-complete.o: kaem-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-complete.elf: fixture/kaem-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<

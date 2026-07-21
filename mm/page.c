@@ -38,7 +38,7 @@
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % (NR_PAGE_HASH))
 #define NR_PAGES	(page_table_size / sizeof(struct page))
-#define NR_PAGE_HASH	(page_hash_table_size / sizeof(struct page *))
+#define NR_PAGE_HASH	(page_hash_table_size / sizeof(*page_hash_table))
 
 struct page *page_table;		/* page pool */
 struct page *page_head;			/* page pool head */

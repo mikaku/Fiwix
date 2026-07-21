@@ -93,6 +93,7 @@ int main(void)
 		{ 64, SYS_write },
 		{ 93, SYS_exit },
 		{ 129, SYS_kill },
+		{ 142, SYS_reboot },
 		{ 172, SYS_getpid },
 		{ 173, SYS_getppid },
 		{ 214, SYS_brk },
@@ -177,6 +178,18 @@ int main(void)
 		called_args[1] != 0x200000002UL || called_args[2] != 1 ||
 		called_args[3] != 0x300000003UL) {
 		return 7;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 142;
+	frame.a0 = 0xfee1deadUL;
+	frame.a1 = 0x28121969UL;
+	frame.a2 = 0x01234567UL;
+	if(riscv64_user_syscall(&frame, 8) || called_num != SYS_reboot ||
+		called_args[0] != (__sysarg_t)(int)0xfee1deadU ||
+		called_args[1] != 0x28121969UL ||
+		called_args[2] != 0x01234567UL) {
+		return 41;
 	}
 
 	clear_frame(&frame);
