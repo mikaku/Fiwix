@@ -645,6 +645,12 @@ must reach a clean Linux poweroff. The final acceptance run also uses the
 complete generic kernel compiled by `tcc-musl` and linked by bootstrap
 binutils 2.30.
 
+A fresh archived stage0 root does not contain an empty `/sbin` directory. The
+first manifest-to-Linux replay therefore failed on the host while installing
+`linux-init`, before QEMU started. The Linux-stage builder now creates that
+directory before either completion fixture is installed; retained work trees
+are not allowed to supply undeclared directory state.
+
 ## Live-bootstrap continuation
 
 The first manifest-resume gate pins live-bootstrap commit

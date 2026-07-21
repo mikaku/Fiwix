@@ -173,6 +173,7 @@ if test "$KAEM_STAGE" != seed; then
 				echo "KAEM_STAGE=linux requires LINUX_INIT" >&2
 				exit 1
 			}
+			mkdir -p "$rootfs/sbin"
 			install -m 644 "$LINUX_IMAGE" "$rootfs/linux"
 			install -m 755 "$LINUX_INIT" "$rootfs/sbin/linux-init"
 		fi
