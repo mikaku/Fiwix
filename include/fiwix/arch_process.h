@@ -11,6 +11,7 @@
 #ifdef CONFIG_ARCH_RISCV64
 
 struct proc;
+struct riscv64_trap_frame;
 
 struct arch_context {
 	unsigned long ra;
@@ -33,12 +34,14 @@ struct arch_context {
 
 int riscv64_process_setup(struct proc *, int (*)(void));
 int riscv64_user_process_setup(struct proc *, unsigned long, unsigned long);
+int riscv64_fork_process_setup(struct proc *, struct riscv64_trap_frame *);
 void riscv64_process_release(struct proc *);
 void riscv64_context_activate(struct arch_context *);
 unsigned long riscv64_read_satp(void);
 unsigned long riscv64_make_satp(unsigned long);
 void riscv64_kernel_process_entry(void);
 void riscv64_user_process_entry(void);
+void riscv64_return_to_user(void);
 
 #else
 

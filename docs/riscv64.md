@@ -188,9 +188,9 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 257 C files, including the RV64 process hooks. Four
-explicit architecture boundaries remain excluded: i386 GDT/IDT and boot main,
-and fork.
+It currently compiles 258 C files, including the RV64 process and fork hooks.
+Three explicit architecture replacements remain excluded: i386 GDT/IDT and
+boot main.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 activates the selected process address space first, and `ioperm` returns
 `ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures
@@ -213,6 +213,14 @@ trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
 contains no absolute kernel-address relocations. This path compiles under both
 bootstrap TinyCC rungs; runtime syscall dispatch and filesystem integration
 remain the next gate.
+
+Fork now delegates page-root and saved-context construction to RV64 code. The
+child receives a private Sv39 root, a copied native 272-byte trap frame with
+`a0 == 0`, and an architecture return stub that restores every integer register
+before `sret`. The generic syscall signature still names the historical i386
+`sigcontext`; the RV64 dispatcher will pass its native frame through that
+pointer-shaped compatibility boundary until syscall context becomes fully
+architecture-neutral.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal

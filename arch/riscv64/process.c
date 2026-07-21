@@ -2,6 +2,8 @@
 
 #include <fiwix/mm.h>
 #include <fiwix/process.h>
+#include <fiwix/riscv64_trap.h>
+#include <fiwix/string.h>
 
 int riscv64_process_setup(struct proc *p, int (*fn)(void))
 {
@@ -34,6 +36,33 @@ int riscv64_user_process_setup(struct proc *p, unsigned long entry,
 	p->arch.ra = (unsigned long)riscv64_user_process_entry;
 	p->arch.s0 = entry;
 	p->arch.s1 = user_sp;
+	p->rss++;
+	return 0;
+}
+
+int riscv64_fork_process_setup(struct proc *p,
+	struct riscv64_trap_frame *parent_frame)
+{
+	struct riscv64_trap_frame *child_frame;
+	__addr_t stack;
+
+	if(riscv64_address_space_create(p) < 0) {
+		return -1;
+	}
+	stack = kmalloc(PAGE_SIZE);
+	if(!stack) {
+		riscv64_address_space_release(p);
+		return -1;
+	}
+	child_frame = (struct riscv64_trap_frame *)(stack + PAGE_SIZE -
+		sizeof(struct riscv64_trap_frame));
+	memcpy_b(child_frame, parent_frame, sizeof(struct riscv64_trap_frame));
+	child_frame->a0 = 0;
+
+	p->arch.kernel_sp = stack;
+	p->arch.sp = (unsigned long)child_frame;
+	p->arch.ra = (unsigned long)riscv64_return_to_user;
+	p->arch.s0 = stack + PAGE_SIZE;
 	p->rss++;
 	return 0;
 }

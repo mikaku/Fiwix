@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/arch_process.h>
+#include <fiwix/riscv64_trap.h>
 
 #define UART0_BASE     0x10000000UL
 #define UART_THR       0
@@ -51,43 +52,6 @@ extern void riscv64_linux_handoff(u64, u64, u64);
 extern int riscv64_sbi_gate(void);
 extern void riscv64_wait_for_interrupt(void);
 extern void riscv64_clear_ssip(void);
-
-struct riscv64_trap_frame {
-	u64 ra;
-	u64 sp;
-	u64 gp;
-	u64 tp;
-	u64 t0;
-	u64 t1;
-	u64 t2;
-	u64 s0;
-	u64 s1;
-	u64 a0;
-	u64 a1;
-	u64 a2;
-	u64 a3;
-	u64 a4;
-	u64 a5;
-	u64 a6;
-	u64 a7;
-	u64 s2;
-	u64 s3;
-	u64 s4;
-	u64 s5;
-	u64 s6;
-	u64 s7;
-	u64 s8;
-	u64 s9;
-	u64 s10;
-	u64 s11;
-	u64 t3;
-	u64 t4;
-	u64 t5;
-	u64 t6;
-	u64 sepc;
-	u64 sstatus;
-	u64 stval;
-};
 
 typedef char arch_context_size_must_be_128[
 	(sizeof(struct arch_context) == 128) ? 1 : -1];

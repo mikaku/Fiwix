@@ -19,6 +19,7 @@
 	.globl riscv64_user_syscall3
 	.globl riscv64_kernel_process_entry
 	.globl riscv64_user_process_entry
+	.globl riscv64_return_to_user
 	.globl riscv64_context_activate
 	.globl riscv64_read_satp
 	.globl riscv64_make_satp
@@ -139,4 +140,44 @@ riscv64_user_process_entry:
 	ori t0, t0, 0x20
 	csrw sstatus, t0
 	mv sp, s1
+	sret
+
+/* Resume a fork child from its copied trap frame; s0 is its kernel stack top. */
+riscv64_return_to_user:
+	csrw sscratch, s0
+	ld t0, 248(sp)
+	csrw sepc, t0
+	ld t0, 256(sp)
+	csrw sstatus, t0
+	ld ra, 0(sp)
+	ld gp, 16(sp)
+	ld tp, 24(sp)
+	ld t0, 32(sp)
+	ld t1, 40(sp)
+	ld t2, 48(sp)
+	ld s0, 56(sp)
+	ld s1, 64(sp)
+	ld a0, 72(sp)
+	ld a1, 80(sp)
+	ld a2, 88(sp)
+	ld a3, 96(sp)
+	ld a4, 104(sp)
+	ld a5, 112(sp)
+	ld a6, 120(sp)
+	ld a7, 128(sp)
+	ld s2, 136(sp)
+	ld s3, 144(sp)
+	ld s4, 152(sp)
+	ld s5, 160(sp)
+	ld s6, 168(sp)
+	ld s7, 176(sp)
+	ld s8, 184(sp)
+	ld s9, 192(sp)
+	ld s10, 200(sp)
+	ld s11, 208(sp)
+	ld t3, 216(sp)
+	ld t4, 224(sp)
+	ld t5, 232(sp)
+	ld t6, 240(sp)
+	ld sp, 8(sp)
 	sret
