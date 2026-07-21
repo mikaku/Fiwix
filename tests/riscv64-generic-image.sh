@@ -29,9 +29,13 @@ trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 
 GENERIC_CC="$GENERIC_CC" GENERIC_LD="$GENERIC_LD" \
 	GENERIC_OBJECT_DIR="$temporary/generic-c" \
+	GENERIC_OBJECT_LIST="$temporary/generic-objects.list" \
 	"$root/tests/riscv64-generic-compile.sh"
 
-objects=$(find "$temporary/generic-c" -name '*.o' | sort)
+objects=
+while IFS= read -r object; do
+	objects="$objects $object"
+done < "$temporary/generic-objects.list"
 for source in boot context generic-trap init_trampoline ops user; do
 	"$AS" -march="$GENERIC_MARCH" -mabi=lp64 \
 		-o "$temporary/$source.o" "$root/arch/riscv64/$source.S"
