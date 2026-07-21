@@ -4,8 +4,8 @@ The experimental riscv64 target boots directly on the single-hart QEMU `virt`
 machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
 context-switch primitive with two kernel tasks, Sv39 address translation, and a
-small U-mode RV64 syscall fixture. It does not yet run the generic Fiwix
-scheduler or a filesystem-backed userspace.
+small U-mode RV64 syscall fixture, and polled virtio-mmio block reads. It does
+not yet run the generic Fiwix scheduler or a filesystem-backed userspace.
 
 ## Build
 
@@ -87,3 +87,17 @@ Embedding the standalone ELF is intentionally not treated as the final
 filesystem path. It is a deterministic loader/privilege/MMU/trap gate that must
 remain green while generic process state and filesystem-backed binaries are
 added.
+
+## Storage bring-up
+
+The first storage gate scans the QEMU `virt` MMIO window rather than assuming a
+device slot, negotiates an eight-entry-or-smaller split queue, and reads sector
+zero from a generated read-only disk fixture. The same test runs twice: once
+with QEMU's legacy virtio-mmio v1 transport and once with modern v2. Queue
+completion is polled with a finite bound, and the driver verifies both the
+virtio request status and exact sector marker before reporting success.
+
+This queue code is not yet registered with Fiwix's generic block layer. Its
+purpose is to prove discovery, feature negotiation, DMA addresses, both queue
+layouts, and sector I/O before adapting the generic buffer cache and ext2 mount
+path.
