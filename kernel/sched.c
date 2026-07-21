@@ -32,6 +32,7 @@ static void context_switch(struct proc *next)
 	kstat.ctxt++;
 	prev = current;
 #ifdef CONFIG_ARCH_RISCV64
+	riscv64_context_activate(&next->arch);
 	current = next;
 	riscv64_context_switch(&prev->arch, &next->arch);
 #else

@@ -5,9 +5,12 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/arch_process.h>
+
 #define PAGE_SIZE       4096UL
 #define USER_TEXT_VA    0x00400000UL
 #define USER_STACK_VA   0x00800000UL
+#define CONTEXT_TEST_VA 0x00c00000UL
 #define KERNEL_RAM_PA   0x80000000UL
 #define UART_PA         0x10000000UL
 #define STACK_FRAME_SIZE 128UL
@@ -30,11 +33,21 @@ extern void riscv64_vm_install(u64);
 
 static u64 root_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 low_page_table[512] __attribute__((aligned(PAGE_SIZE)));
+static u64 alternate_root_page_table[512] __attribute__((aligned(PAGE_SIZE)));
+static u64 alternate_low_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 user_text_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 user_stack_page_table[512] __attribute__((aligned(PAGE_SIZE)));
+static u64 context_primary_page_table[512]
+	__attribute__((aligned(PAGE_SIZE)));
+static u64 context_alternate_page_table[512]
+	__attribute__((aligned(PAGE_SIZE)));
 static u64 user_text[PAGE_SIZE / sizeof(u64)]
 	__attribute__((aligned(PAGE_SIZE)));
 static u64 user_stack[PAGE_SIZE / sizeof(u64)]
+	__attribute__((aligned(PAGE_SIZE)));
+static u64 context_primary_page[PAGE_SIZE / sizeof(u64)]
+	__attribute__((aligned(PAGE_SIZE)));
+static u64 context_alternate_page[PAGE_SIZE / sizeof(u64)]
 	__attribute__((aligned(PAGE_SIZE)));
 
 static u64 table_entry(void *table)
@@ -47,29 +60,60 @@ static u64 leaf_entry(u64 physical, u64 flags)
 	return ((physical >> 12) << 10) | flags | PTE_V | PTE_A | PTE_D;
 }
 
+static void setup_root(u64 *root, u64 *low, u64 *context_table,
+	u64 *context_page)
+{
+	root[2] = leaf_entry(KERNEL_RAM_PA, PTE_R | PTE_W | PTE_X);
+	root[0] = table_entry(low);
+	low[0] = leaf_entry(0, PTE_R | PTE_W);
+	low[UART_PA >> 21] = leaf_entry(UART_PA, PTE_R | PTE_W);
+	low[USER_TEXT_VA >> 21] = table_entry(user_text_page_table);
+	low[USER_STACK_VA >> 21] = table_entry(user_stack_page_table);
+	low[CONTEXT_TEST_VA >> 21] = table_entry(context_table);
+	context_table[0] = leaf_entry((u64)context_page, PTE_R | PTE_W);
+}
+
 void riscv64_vm_enable(void)
 {
 	u64 satp;
 
-	/* Root index 2 is the 1 GiB identity window containing kernel RAM. */
-	root_page_table[2] = leaf_entry(KERNEL_RAM_PA, PTE_R | PTE_W | PTE_X);
-	root_page_table[0] = table_entry(low_page_table);
+	setup_root(root_page_table, low_page_table, context_primary_page_table,
+		context_primary_page);
+	setup_root(alternate_root_page_table, alternate_low_page_table,
+		context_alternate_page_table, context_alternate_page);
 
-	/* Supervisor-only 2 MiB leaves cover the finisher and UART. */
-	low_page_table[0] = leaf_entry(0, PTE_R | PTE_W);
-	low_page_table[UART_PA >> 21] = leaf_entry(UART_PA, PTE_R | PTE_W);
-
-	low_page_table[USER_TEXT_VA >> 21] = table_entry(user_text_page_table);
 	user_text_page_table[0] = leaf_entry((u64)user_text,
 		PTE_R | PTE_X | PTE_U);
-
-	low_page_table[USER_STACK_VA >> 21] = table_entry(user_stack_page_table);
 	user_stack_page_table[0] = leaf_entry((u64)user_stack,
 		PTE_R | PTE_W | PTE_U);
 
 	satp = (u64)root_page_table >> 12;
 	/* The assembly helper also enables SUM for validated syscall buffers. */
 	riscv64_vm_install(satp);
+}
+
+int riscv64_vm_context_gate(void)
+{
+	struct arch_context primary;
+	struct arch_context alternate;
+	volatile u64 *visible;
+
+	context_primary_page[0] = 0x13579bdfUL;
+	context_alternate_page[0] = 0x2468ace0UL;
+	primary.satp = riscv64_make_satp((u64)root_page_table >> 12);
+	alternate.satp = riscv64_make_satp((u64)alternate_root_page_table >> 12);
+	visible = (volatile u64 *)CONTEXT_TEST_VA;
+
+	riscv64_context_activate(&primary);
+	if(*visible != context_primary_page[0]) {
+		return -1;
+	}
+	riscv64_context_activate(&alternate);
+	if(*visible != context_alternate_page[0]) {
+		return -1;
+	}
+	riscv64_context_activate(&primary);
+	return *visible == context_primary_page[0] ? 0 : -1;
 }
 
 unsigned char *riscv64_user_text_page(void)

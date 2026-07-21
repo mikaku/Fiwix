@@ -15,7 +15,7 @@ int riscv64_process_setup(struct proc *p, int (*fn)(void))
 	p->arch.sp = (stack + PAGE_SIZE) & ~15UL;
 	p->arch.ra = (unsigned long)riscv64_kernel_process_entry;
 	p->arch.s0 = (unsigned long)fn;
-	p->arch.satp = 0;
+	p->arch.satp = riscv64_read_satp();
 	p->rss++;
 	return 0;
 }

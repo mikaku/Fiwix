@@ -48,6 +48,7 @@ check_common()
 	grep -q '^Fiwix riscv64 SBI base/time gate passed' "$result"
 	grep -q '^Fiwix riscv64 ELF64 loader gate passed' "$result"
 	grep -q '^Fiwix riscv64 Sv39 gate passed' "$result"
+	grep -q '^Fiwix riscv64 address-space switch gate passed' "$result"
 	grep -q '^Fiwix riscv64 ext2 file gate passed' "$result"
 	grep -q '^Fiwix riscv64 initial stack gate passed' "$result"
 	grep -q '^Fiwix riscv64 U-mode write syscall passed' "$result"

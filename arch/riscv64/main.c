@@ -39,6 +39,7 @@ static volatile unsigned int task_switches;
 extern void riscv64_context_switch(struct arch_context *,
 	struct arch_context *);
 extern void riscv64_vm_enable(void);
+extern int riscv64_vm_context_gate(void);
 extern u64 riscv64_load_user_elf(void);
 extern u64 riscv64_prepare_user_stack(u64);
 extern u64 riscv64_enter_user(u64, u64);
@@ -210,6 +211,11 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 	uart_puts("Fiwix riscv64 ELF64 loader gate passed\n");
 	riscv64_vm_enable();
 	uart_puts("Fiwix riscv64 Sv39 gate passed\n");
+	if(riscv64_vm_context_gate() < 0) {
+		uart_puts("Fiwix riscv64 address-space switch gate failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 address-space switch gate passed\n");
 	virtio_version = riscv64_virtio_block_gate();
 	if(virtio_version == 1) {
 		uart_puts("Fiwix riscv64 virtio-mmio v1 sector gate passed\n");

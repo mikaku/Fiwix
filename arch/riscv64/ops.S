@@ -2,6 +2,7 @@
 
 	.option norvc
 	.section .text
+	.equ ARCH_CONTEXT_SATP, 112
 	.globl riscv64_wait_for_interrupt
 	.globl riscv64_clear_ssip
 	.globl riscv64_vm_install
@@ -17,6 +18,9 @@
 	.globl riscv64_set_sp
 	.globl riscv64_user_syscall3
 	.globl riscv64_kernel_process_entry
+	.globl riscv64_context_activate
+	.globl riscv64_read_satp
+	.globl riscv64_make_satp
 
 riscv64_wait_for_interrupt:
 	wfi
@@ -87,6 +91,27 @@ riscv64_user_syscall3:
 	mv a1, a2
 	mv a2, a3
 	ecall
+	ret
+
+riscv64_read_satp:
+	csrr a0, satp
+	ret
+
+riscv64_make_satp:
+	li t0, 8
+	slli t0, t0, 60
+	or a0, a0, t0
+	ret
+
+/* Activate a complete process SATP value and reset kernel trap selection. */
+riscv64_context_activate:
+	ld t0, ARCH_CONTEXT_SATP(a0)
+	csrr t1, satp
+	beq t0, t1, 1f
+	csrw satp, t0
+	sfence.vma zero, zero
+1:
+	csrw sscratch, zero
 	ret
 
 riscv64_kernel_process_entry:

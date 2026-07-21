@@ -89,8 +89,9 @@ The first member of `struct proc` is now an architecture-owned
 the existing hardware-facing offsets and generated code remain unchanged. The
 riscv64 definition stores `ra`, `sp`, the twelve callee-saved registers, `satp`,
 and the per-process kernel stack pointer. The switch primitive deliberately
-handles only the callee-saved execution state; address-space activation and
-trap-stack selection belong at the scheduler boundary.
+handles only the callee-saved execution state. The scheduler separately loads
+the next process's complete `satp`, flushes stale translations when it changes,
+and resets supervisor trap-stack selection before switching registers.
 
 Generic kernel-process creation now allocates an architecture-owned 4 KiB
 stack, initializes the saved context to a first-run trampoline, and releases
@@ -99,7 +100,7 @@ interrupts before calling the kernel task function. Process VMA, ELF entry,
 heap, stack, and argument-page addresses use the architecture-selected
 `__addr_t`, preserving their 32-bit i386 layout while preventing RV64 address
 truncation. This path is compile-gated but is not linked into the bring-up
-kernel until generic allocation and address-space activation are available.
+kernel until generic allocation and page-table construction are available.
 
 The smoke kernel initializes two independent kernel stacks and performs six
 cooperative switches before returning to the boot context. This gate checks the
@@ -112,6 +113,13 @@ The bring-up page tables keep a supervisor-only 1 GiB identity mapping for the
 kernel and add supervisor-only low leaves for the QEMU UART and test finisher.
 Two 4 KiB user leaves map the fixture text read/execute and its stack
 read/write. No user mapping is writable and executable at the same time.
+
+An address-space switch gate creates two Sv39 roots that share the kernel and
+device mappings but map one supervisor virtual address to different physical
+pages. The generic scheduler activation helper selects each root in turn and
+the gate verifies the visible marker before restoring the primary root. This
+tests full `satp` activation and `sfence.vma` independently of the still-pending
+generic page allocator and fault path.
 
 The supervisor trap entry uses `sscratch` to distinguish U-mode traps from
 S-mode interrupts without destroying a general register. User traps run on a
@@ -184,7 +192,9 @@ It currently compiles 253 C files, including the RV64 process hooks. Eight
 explicit architecture boundaries remain excluded: i386 GDT/IDT and boot main,
 init, fork, and the three x86 page-table modules for fault, memory, and mmap.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
-and `ioperm` returns `ENOSYS` because RISC-V has no x86 I/O bitmap.
+activates the selected process address space first, and `ioperm` returns
+`ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures
+the active `satp` so a later switch cannot accidentally return to bare mode.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
