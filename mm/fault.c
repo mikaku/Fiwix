@@ -31,62 +31,22 @@ static void send_sigsegv(struct sigcontext *sc)
 	send_sig(current, SIGSEGV);
 }
 
-static int page_protection_violation(struct vma *vma, unsigned int cr2, struct sigcontext *sc)
+static int page_protection_violation(struct vma *vma, __addr_t cr2, struct sigcontext *sc)
 {
-	unsigned int *pgdir;
-	unsigned int *pgtbl;
-	unsigned int pde, pte, addr;
-	struct page *pg;
-	int page;
+	int status;
 
-	pde = GET_PGDIR(cr2);
-	pte = GET_PGTBL(cr2);
-	pgdir = (unsigned int *)P2V(current->arch.cr3);
-	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
-	page = (pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT;
-
-	pg = &page_table[page];
-
-	/* Copy On Write feature */
-	if(pg->count > 1) {
-		/* a page not marked as copy-on-write means it's read-only */
-		if(!(pg->flags & PAGE_COW)) {
-			printk("Oops!, page %d NOT marked for CoW.\n", pg->page);
-			send_sigsegv(sc);
-			return 0;
-		}
-		if(!(addr = kmalloc(PAGE_SIZE))) {
-			printk("%s(): not enough memory!\n", __FUNCTION__);
-			return 1;
-		}
-		current->rss++;
-		memcpy_b((void *)addr, (void *)P2V((page << PAGE_SHIFT)), PAGE_SIZE);
-		pgtbl[pte] = V2P(addr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-		kfree(P2V((page << PAGE_SHIFT)));
-		current->rss--;
-		invalidate_tlb();
+	status = copy_on_write_page(vma, cr2);
+	if(status < 0) {
+		send_sigsegv(sc);
 		return 0;
-	} else {
-		/* last page of Copy On Write procedure */
-		if(pg->count == 1) {
-			/* a page not marked as copy-on-write means it's read-only */
-			if(!(pg->flags & PAGE_COW)) {
-				printk("Oops!, last page %d NOT marked for CoW.\n", pg->page);
-				send_sigsegv(sc);
-				return 0;
-			}
-			pgtbl[pte] = (page << PAGE_SHIFT) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-			invalidate_tlb();
-			return 0;
-		}
 	}
-	printk("WARNING: %s(): page %d with pg->count = 0!\n", __FUNCTION__, pg->page);
-	return 1;
+	return status;
 }
 
-static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext *sc)
+static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc)
 {
-	unsigned int addr, file_offset;
+	unsigned int file_offset;
+	__addr_t addr;
 	struct page *pg;
 
 	if(!vma) {
@@ -118,12 +78,12 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
 		if(!(vma->prot & PROT_WRITE) || vma->flags & MAP_SHARED) {
 			/* check if it's already in cache */
 			if((pg = search_page_hash(vma->inode, file_offset))) {
-				if(!map_page(current, cr2, (unsigned int)V2P(pg->data), vma->prot)) {
+				if(!map_page(current, cr2, (__addr_t)V2P(pg->data), vma->prot)) {
 					printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 					return 1;
 				}
 				page_lock(pg);
-				addr = (unsigned int)pg->data;
+				addr = (__addr_t)pg->data;
 				page_unlock(pg);
 			}
 		}
@@ -211,7 +171,7 @@ static int page_not_present(struct vma *vma, unsigned int cr2, struct sigcontext
  */
 void do_page_fault(unsigned int trap, struct sigcontext *sc)
 {
-	unsigned int cr2;
+	__addr_t cr2;
 	struct vma *vma;
 	int panic;
 
@@ -288,7 +248,8 @@ void do_page_fault(unsigned int trap, struct sigcontext *sc)
 			 * exception occurred at the same privilege level, hence
 			 * the %ss and %esp registers were not saved.
 			 */
-			usc = (struct sigcontext *)((unsigned int *)sc->esp + 16);
+			usc = (struct sigcontext *)((__addr_t)sc->esp +
+				16 * sizeof(unsigned int));
 			usc += 1;
 
 			/* does it look like a user stack address? */

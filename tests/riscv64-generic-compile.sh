@@ -15,7 +15,7 @@ for source in arch/riscv64/process.c \
 	$(find kernel mm fs drivers net lib -name '*.c' | sort); do
 	case "$source" in
 	kernel/gdt.c|kernel/idt.c|kernel/init.c|kernel/main.c|\
-	kernel/syscalls/fork.c|mm/fault.c|mm/memory.c|mm/mmap.c)
+	kernel/syscalls/fork.c|mm/memory.c)
 		excluded=$((excluded + 1))
 		continue
 		;;
@@ -30,5 +30,5 @@ for source in arch/riscv64/process.c \
 	compiled=$((compiled + 1))
 done
 
-test "$excluded" -eq 8
+test "$excluded" -eq 6
 echo "Fiwix riscv64 generic compile gate passed: $compiled files; $excluded architecture boundaries remain"

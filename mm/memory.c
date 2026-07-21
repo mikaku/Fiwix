@@ -18,6 +18,7 @@
 #include <fiwix/buffer.h>
 #include <fiwix/fs.h>
 #include <fiwix/kexec.h>
+#include <fiwix/shm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
@@ -124,7 +125,7 @@ unsigned int setup_tmp_pgdir(unsigned int magic, unsigned int info)
 }
 
 /* returns the mapped address of a virtual address */
-unsigned int get_mapped_addr(struct proc *p, unsigned int addr)
+__addr_t get_mapped_addr(struct proc *p, __addr_t addr)
 {
 	unsigned int *pgdir, *pgtbl;
 	unsigned int pde, pte;
@@ -136,12 +137,62 @@ unsigned int get_mapped_addr(struct proc *p, unsigned int addr)
 	return pgtbl[pte];
 }
 
+int copy_on_write_page(struct vma *vma, __addr_t addr)
+{
+	unsigned int *pgdir;
+	unsigned int *pgtbl;
+	unsigned int pde, pte;
+	__addr_t newaddr;
+	struct page *pg;
+	int page;
+
+	pde = GET_PGDIR(addr);
+	pte = GET_PGTBL(addr);
+	pgdir = (unsigned int *)P2V(current->arch.cr3);
+	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
+	page = (pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT;
+	pg = &page_table[page];
+
+	if(pg->count > 1) {
+		if(!(pg->flags & PAGE_COW)) {
+			printk("Oops!, page %d NOT marked for CoW.\n", pg->page);
+			return -1;
+		}
+		if(!(newaddr = kmalloc(PAGE_SIZE))) {
+			printk("%s(): not enough memory!\n", __FUNCTION__);
+			return 1;
+		}
+		current->rss++;
+		memcpy_b((void *)newaddr,
+			(void *)P2V((page << PAGE_SHIFT)), PAGE_SIZE);
+		pgtbl[pte] = V2P(newaddr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+		kfree(P2V((page << PAGE_SHIFT)));
+		current->rss--;
+		invalidate_tlb();
+		return 0;
+	}
+	if(pg->count == 1) {
+		if(!(pg->flags & PAGE_COW)) {
+			printk("Oops!, last page %d NOT marked for CoW.\n", pg->page);
+			return -1;
+		}
+		pgtbl[pte] = (page << PAGE_SHIFT) |
+			PAGE_PRESENT | PAGE_RW | PAGE_USER;
+		invalidate_tlb();
+		return 0;
+	}
+	printk("WARNING: %s(): page %d with pg->count = 0!\n",
+		__FUNCTION__, pg->page);
+	return 1;
+}
+
 int clone_pages(struct proc *child)
 {
 	unsigned int *src_pgdir, *dst_pgdir;
 	unsigned int *src_pgtbl, *dst_pgtbl;
 	unsigned int pde, pte;
-	unsigned int p_addr, c_addr;
+	unsigned int p_addr;
+	__addr_t c_addr;
 	unsigned int n, pages;
 	struct page *pg;
 	struct vma *vma;
@@ -217,15 +268,15 @@ int free_page_tables(struct proc *p)
 	return count;
 }
 
-unsigned int map_page(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot)
+__addr_t map_page(struct proc *p, __addr_t vaddr, __addr_t addr, unsigned int prot)
 {
 	return map_page_flags(p, vaddr, addr, prot, 0);
 }
 
-unsigned int map_page_flags(struct proc *p, unsigned int vaddr, unsigned int addr, unsigned int prot, int flags)
+__addr_t map_page_flags(struct proc *p, __addr_t vaddr, __addr_t addr, unsigned int prot, int flags)
 {
 	unsigned int *pgdir, *pgtbl;
-	unsigned int newaddr;
+	__addr_t newaddr;
 	int pde, pte;
 
 	pgdir = (unsigned int *)P2V(p->arch.cr3);
@@ -257,10 +308,11 @@ unsigned int map_page_flags(struct proc *p, unsigned int vaddr, unsigned int add
 	return P2V(addr);
 }
 
-int unmap_page(unsigned int vaddr)
+int unmap_page(__addr_t vaddr)
 {
 	unsigned int *pgdir, *pgtbl;
-	unsigned int addr, desc;
+	unsigned int desc;
+	__addr_t addr;
 	int pde, pte;
 
 	pgdir = (unsigned int *)P2V(current->arch.cr3);
@@ -285,6 +337,62 @@ int unmap_page(unsigned int vaddr)
 	}
 	current->rss--;
 	return 0;
+}
+
+void free_vma_pages(struct vma *vma, __addr_t start, __size_t length)
+{
+	unsigned int n, offset;
+	unsigned int *pgdir, *pgtbl;
+	unsigned int pde, pte;
+	struct page *pg;
+	int page;
+
+	pgdir = (unsigned int *)P2V(current->arch.cr3);
+	pgtbl = NULL;
+
+	for(n = 0; n < (length / PAGE_SIZE); n++) {
+		pde = GET_PGDIR(start + (n * PAGE_SIZE));
+		pte = GET_PGTBL(start + (n * PAGE_SIZE));
+		if(pgdir[pde] & PAGE_PRESENT) {
+			pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
+			if(pgtbl[pte] & PAGE_PRESENT) {
+				if (!(pgtbl[pte] & PAGE_NOALLOC)) {
+					/* make sure to not free reserved pages */
+					page = pgtbl[pte] >> PAGE_SHIFT;
+					pg = &page_table[page];
+					if(pg->flags & PAGE_RESERVED) {
+						continue;
+					}
+
+					if(vma->prot & PROT_WRITE && vma->flags & MAP_SHARED) {
+						offset = start - vma->start + vma->offset + n * PAGE_SIZE;
+						write_page(pg, vma->inode, offset, PAGE_SIZE);
+					}
+
+					kfree(P2V(pgtbl[pte]) & PAGE_MASK);
+				}
+				current->rss--;
+#ifdef CONFIG_SYSVIPC
+				if(vma->object) {
+					shm_rss--;
+				}
+#endif /* CONFIG_SYSVIPC */
+				pgtbl[pte] = 0;
+
+				/* check if a page table can be freed */
+				for(pte = 0; pte < PT_ENTRIES; pte++) {
+					if(pgtbl[pte] & PAGE_MASK) {
+						break;
+					}
+				}
+				if(pte == PT_ENTRIES) {
+					kfree((__addr_t)pgtbl & PAGE_MASK);
+					current->rss--;
+					pgdir[pde] = 0;
+				}
+			}
+		}
+	}
 }
 
 /*

@@ -105,12 +105,13 @@ void page_init(int);
 unsigned int map_kaddr(unsigned int *,unsigned int, unsigned int, unsigned int, int);
 void bss_init(void);
 unsigned int setup_tmp_pgdir(unsigned int, unsigned int);
-unsigned int get_mapped_addr(struct proc *, unsigned int);
+__addr_t get_mapped_addr(struct proc *, __addr_t);
+int copy_on_write_page(struct vma *, __addr_t);
 int clone_pages(struct proc *);
 int free_page_tables(struct proc *);
-unsigned int map_page(struct proc *, unsigned int, unsigned int, unsigned int);
-unsigned int map_page_flags(struct proc *, unsigned int, unsigned int, unsigned int, int);
-int unmap_page(unsigned int);
+__addr_t map_page(struct proc *, __addr_t, __addr_t, unsigned int);
+__addr_t map_page_flags(struct proc *, __addr_t, __addr_t, unsigned int, int);
+int unmap_page(__addr_t);
 void mem_init(void);
 void mem_stats(void);
 
