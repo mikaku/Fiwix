@@ -132,10 +132,14 @@ __pid_t remove_zombie(struct proc *p)
 	__pid_t pid;
 
 	pid = p->pid;
+#ifdef CONFIG_ARCH_RISCV64
+	riscv64_process_release(p);
+#else
 	kfree(p->arch.esp0);
 	p->rss--;
 	kfree(P2V(p->arch.cr3));
 	p->rss--;
+#endif
 	pp = p->ppid;
 	release_proc(p);
 	if(pp) {
@@ -283,6 +287,14 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	p->ppid = &proc_table[IDLE];
 	p->flags |= PF_KPROC;
 	p->priority = DEF_PRIORITY;
+#ifdef CONFIG_ARCH_RISCV64
+	if(riscv64_process_setup(p, fn) < 0) {
+		release_proc(p);
+		return NULL;
+	}
+	p->entry_address = 0;
+	p->end_code = (__addr_t)_end;
+#else
 	if(!(p->arch.esp0 = kmalloc(PAGE_SIZE))) {
 		release_proc(p);
 		return NULL;
@@ -294,6 +306,7 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	p->arch.cr3 = V2P((unsigned int)kpage_dir);
 	p->arch.eip = (unsigned int)fn;
 	p->arch.esp = p->arch.esp0;
+#endif
 	sprintk(p->pidstr, "%d", p->pid);
 	sprintk(p->argv0, "%s", name);
 	runnable(p);
@@ -318,6 +331,9 @@ void proc_slot_init(struct proc *p)
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
+#ifdef CONFIG_ARCH_RISCV64
+	memset_b(&p->arch, 0, sizeof(struct arch_context));
+#else
 	memset_b(&p->arch, 0, sizeof(struct arch_context) - IO_BITMAP_SIZE);
 	p->arch.io_bitmap_addr = offsetof(struct arch_context, io_bitmap);
 
@@ -325,6 +341,7 @@ void proc_slot_init(struct proc *p)
 	memset_l(&p->arch.io_bitmap, ~0, IO_BITMAP_SIZE / sizeof(unsigned int));
 
 	p->arch.io_bitmap[IO_BITMAP_SIZE] = ~0;	/* extra byte must be all 1's */
+#endif
 	p->state = PROC_IDLE;
 }
 

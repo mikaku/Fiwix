@@ -10,6 +10,8 @@
 
 #ifdef CONFIG_ARCH_RISCV64
 
+struct proc;
+
 struct arch_context {
 	unsigned long ra;
 	unsigned long sp;
@@ -28,6 +30,10 @@ struct arch_context {
 	unsigned long satp;
 	unsigned long kernel_sp;
 };
+
+int riscv64_process_setup(struct proc *, int (*)(void));
+void riscv64_process_release(struct proc *);
+void riscv64_kernel_process_entry(void);
 
 #else
 

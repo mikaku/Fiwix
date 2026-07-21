@@ -16,6 +16,7 @@
 	.globl riscv64_read_sp
 	.globl riscv64_set_sp
 	.globl riscv64_user_syscall3
+	.globl riscv64_kernel_process_entry
 
 riscv64_wait_for_interrupt:
 	wfi
@@ -87,3 +88,10 @@ riscv64_user_syscall3:
 	mv a2, a3
 	ecall
 	ret
+
+riscv64_kernel_process_entry:
+	csrsi sstatus, 2
+	jalr ra, s0, 0
+1:
+	wfi
+	j 1b

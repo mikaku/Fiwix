@@ -8,9 +8,11 @@
 #ifndef _FIWIX_PROCESS_H
 #define _FIWIX_PROCESS_H
 
+#include <fiwix/types.h>
+
 struct vma {
-	unsigned int start;
-	unsigned int end;
+	__addr_t start;
+	__addr_t end;
 	char prot;		/* PROT_READ, PROT_WRITE, ... */
 	unsigned int flags;	/* MAP_SHARED, MAP_PRIVATE, ... */
 	unsigned int offset;
@@ -23,7 +25,6 @@ struct vma {
 };
 
 #include <fiwix/config.h>
-#include <fiwix/types.h>
 #include <fiwix/signal.h>
 #include <fiwix/limits.h>
 #include <fiwix/sigcontext.h>
@@ -64,7 +65,7 @@ extern __pid_t lastpid;
 extern struct proc *proc_table_head;
 
 struct binargs {
-	unsigned int page[ARG_MAX];
+	__addr_t page[ARG_MAX];
 	int argc;
 	int argv_len;
 	int envc;
@@ -98,8 +99,8 @@ struct proc {
 	unsigned char fd_flags[OPEN_MAX];
 	struct inode *root;
 	struct inode *pwd;		/* process working directory */
-	unsigned int entry_address;
-	unsigned int end_code;
+	__addr_t entry_address;
+	__addr_t end_code;
 	char argv0[NAME_MAX + 1];
 	int argc;
 	char **argv;
@@ -107,14 +108,14 @@ struct proc {
 	char **envp;
 	char pidstr[5];			/* PID number converted to string */
 	struct vma *vma_table;		/* virtual memory-map addresses */
-	unsigned int brk_lower;		/* lower limit of the heap section */
-	unsigned int brk;		/* current limit of the heap */
+	__addr_t brk_lower;		/* lower limit of the heap section */
+	__addr_t brk;		/* current limit of the heap */
 	__sigset_t sigpending;
 	__sigset_t sigblocked;
 	__sigset_t sigexecuting;
 	struct sigaction sigaction[NSIG];
 	struct sigcontext sc[NSIG];	/* each signal has its own context */
-	unsigned int sp;		/* current process' stack frame */
+	__addr_t sp;		/* current process' stack frame */
 	struct rusage usage;		/* process resource usage */
 	struct rusage cusage;		/* children resource usage */
 	unsigned int it_real_interval, it_real_value;

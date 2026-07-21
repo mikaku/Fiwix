@@ -1,0 +1,30 @@
+/* Generic Fiwix process hooks for riscv64 kernel tasks. */
+
+#include <fiwix/mm.h>
+#include <fiwix/process.h>
+
+int riscv64_process_setup(struct proc *p, int (*fn)(void))
+{
+	__addr_t stack;
+
+	stack = kmalloc(PAGE_SIZE);
+	if(!stack) {
+		return -1;
+	}
+	p->arch.kernel_sp = stack;
+	p->arch.sp = (stack + PAGE_SIZE) & ~15UL;
+	p->arch.ra = (unsigned long)riscv64_kernel_process_entry;
+	p->arch.s0 = (unsigned long)fn;
+	p->arch.satp = 0;
+	p->rss++;
+	return 0;
+}
+
+void riscv64_process_release(struct proc *p)
+{
+	if(p->arch.kernel_sp) {
+		kfree(p->arch.kernel_sp);
+		p->arch.kernel_sp = 0;
+		p->rss--;
+	}
+}

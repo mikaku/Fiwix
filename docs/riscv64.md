@@ -92,6 +92,15 @@ and the per-process kernel stack pointer. The switch primitive deliberately
 handles only the callee-saved execution state; address-space activation and
 trap-stack selection belong at the scheduler boundary.
 
+Generic kernel-process creation now allocates an architecture-owned 4 KiB
+stack, initializes the saved context to a first-run trampoline, and releases
+that stack when the process is reaped. The trampoline enables supervisor
+interrupts before calling the kernel task function. Process VMA, ELF entry,
+heap, stack, and argument-page addresses use the architecture-selected
+`__addr_t`, preserving their 32-bit i386 layout while preventing RV64 address
+truncation. This path is compile-gated but is not linked into the bring-up
+kernel until generic allocation and address-space activation are available.
+
 The smoke kernel initializes two independent kernel stacks and performs six
 cooperative switches before returning to the boot context. This gate checks the
 assembly offsets against the C structure and gives later generic-scheduler work
@@ -171,8 +180,8 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 251 generic C files. Nine explicit architecture
-boundaries remain excluded: i386 GDT/IDT and boot main, process creation and
+It currently compiles 253 C files, including the RV64 process hooks. Eight
+explicit architecture boundaries remain excluded: i386 GDT/IDT and boot main,
 init, fork, and the three x86 page-table modules for fault, memory, and mmap.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 and `ioperm` returns `ENOSYS` because RISC-V has no x86 I/O bitmap.
@@ -181,7 +190,7 @@ Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
 allocator addresses use `__addr_t`, which is `unsigned int` on i386 and
 `unsigned long` on riscv64. This removes allocator return truncation while
-preserving i386 layouts and call widths. The gate still emits 214 pointer-width
+preserving i386 layouts and call widths. The gate still emits 200 pointer-width
 warnings, primarily from 32-bit syscall arguments and x86 physical-memory
 interfaces; compile success is not yet an LP64 correctness claim.
 
