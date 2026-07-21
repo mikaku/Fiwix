@@ -12,8 +12,10 @@
 #define INODE_TABLE_BLOCK   5U
 #define ROOT_DIR_BLOCK      21U
 #define FILE_DATA_BLOCK     22U
+#define LINUX_DATA_BLOCK    23U
 #define ROOT_INODE          2U
 #define FILE_INODE          12U
+#define LINUX_INODE         13U
 #define INODE_SIZE          128U
 
 static void put16(unsigned char *p, unsigned int value)
@@ -74,10 +76,12 @@ int main(int argc, char **argv)
 	unsigned char *inodes;
 	unsigned char *directory;
 	FILE *output;
+	FILE *linux_input;
+	long linux_size;
 	size_t written;
 
-	if(argc != 2) {
-		fprintf(stderr, "usage: %s OUTPUT\n", argv[0]);
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s OUTPUT LINUX_IMAGE\n", argv[0]);
 		return 2;
 	}
 	image = (unsigned char *)calloc(BLOCK_COUNT, BLOCK_SIZE);
@@ -90,8 +94,8 @@ int main(int argc, char **argv)
 	super = image + BLOCK_SIZE;
 	put32(super + 0, INODE_COUNT);
 	put32(super + 4, BLOCK_COUNT);
-	put32(super + 12, BLOCK_COUNT - (FILE_DATA_BLOCK + 1));
-	put32(super + 16, INODE_COUNT - FILE_INODE);
+	put32(super + 12, BLOCK_COUNT - (LINUX_DATA_BLOCK + 1));
+	put32(super + 16, INODE_COUNT - LINUX_INODE);
 	put32(super + 20, 1);
 	put32(super + 24, 0);
 	put32(super + 28, 0);
@@ -110,11 +114,11 @@ int main(int argc, char **argv)
 	put32(group + 0, BLOCK_BITMAP_BLOCK);
 	put32(group + 4, INODE_BITMAP_BLOCK);
 	put32(group + 8, INODE_TABLE_BLOCK);
-	put16(group + 12, BLOCK_COUNT - (FILE_DATA_BLOCK + 1));
-	put16(group + 14, INODE_COUNT - FILE_INODE);
+	put16(group + 12, BLOCK_COUNT - (LINUX_DATA_BLOCK + 1));
+	put16(group + 14, INODE_COUNT - LINUX_INODE);
 	put16(group + 16, 1);
-	mark_bits(image + BLOCK_BITMAP_BLOCK * BLOCK_SIZE, FILE_DATA_BLOCK);
-	mark_bits(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, FILE_INODE);
+	mark_bits(image + BLOCK_BITMAP_BLOCK * BLOCK_SIZE, LINUX_DATA_BLOCK);
+	mark_bits(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, LINUX_INODE);
 
 	inodes = image + INODE_TABLE_BLOCK * BLOCK_SIZE;
 	make_inode(inodes + (ROOT_INODE - 1) * INODE_SIZE,
@@ -122,11 +126,37 @@ int main(int argc, char **argv)
 	make_inode(inodes + (FILE_INODE - 1) * INODE_SIZE,
 		0x81a4, sizeof(file_marker) - 1, 1, FILE_DATA_BLOCK);
 
+	linux_input = fopen(argv[2], "rb");
+	if(!linux_input || fseek(linux_input, 0, SEEK_END)) {
+		fprintf(stderr, "unable to read %s\n", argv[2]);
+		free(image);
+		return 2;
+	}
+	linux_size = ftell(linux_input);
+	if(linux_size <= 0 || linux_size > (long)BLOCK_SIZE ||
+		fseek(linux_input, 0, SEEK_SET)) {
+		fprintf(stderr, "invalid Linux fixture size in %s\n", argv[2]);
+		fclose(linux_input);
+		free(image);
+		return 2;
+	}
+	if(fread(image + LINUX_DATA_BLOCK * BLOCK_SIZE, 1,
+		(size_t)linux_size, linux_input) != (size_t)linux_size ||
+		fclose(linux_input)) {
+		fprintf(stderr, "unable to copy %s\n", argv[2]);
+		free(image);
+		return 2;
+	}
+	make_inode(inodes + (LINUX_INODE - 1) * INODE_SIZE,
+		0x81a4, (unsigned int)linux_size, 1, LINUX_DATA_BLOCK);
+
 	directory = image + ROOT_DIR_BLOCK * BLOCK_SIZE;
 	make_dirent(directory, ROOT_INODE, 12, 2, ".");
 	make_dirent(directory + 12, ROOT_INODE, 12, 2, "..");
-	make_dirent(directory + 24, FILE_INODE, BLOCK_SIZE - 24, 1,
+	make_dirent(directory + 24, FILE_INODE, 20, 1,
 		"bootstrap");
+	make_dirent(directory + 44, LINUX_INODE, BLOCK_SIZE - 44, 1,
+		"linux");
 	memcpy(image + FILE_DATA_BLOCK * BLOCK_SIZE, file_marker,
 		sizeof(file_marker) - 1);
 

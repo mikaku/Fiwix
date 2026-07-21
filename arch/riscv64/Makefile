@@ -8,8 +8,8 @@ HOSTCC ?= cc
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o ext2_gate.o main.o user.o user_fixture_blob.o \
-	virtio.o vm.o
+OBJS = boot.o context.o elf.o ext2_gate.o handoff.o linux.o main.o user.o \
+	user_fixture_blob.o virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -21,16 +21,26 @@ fixture/user.o: user-fixture.S
 fixture/user.elf: fixture/user.o user-fixture.ld
 	$(LD) $(LDFLAGS) -T user-fixture.ld -o $@ $<
 
+fixture/linux.o: linux-fixture.S
+	mkdir -p fixture
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+fixture/linux.elf: fixture/linux.o linux-fixture.ld
+	$(LD) $(LDFLAGS) -T linux-fixture.ld -o $@ $<
+
+fixture/linux.bin: fixture/linux.elf
+	$(CROSS_COMPILE)objcopy -O binary $< $@
+
 fixture/make-riscv64-disk: ../../tests/make-riscv64-disk.c
 	mkdir -p fixture
 	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
 
-fixture/disk.img: fixture/make-riscv64-disk
-	$< $@
+fixture/disk.img: fixture/make-riscv64-disk fixture/linux.bin
+	$< $@ fixture/linux.bin
 
 all: $(OBJS) fixture/disk.img
 
 clean:
-	rm -f *.o fixture/*.o fixture/*.elf fixture/*.img \
+	rm -f *.o fixture/*.o fixture/*.elf fixture/*.bin fixture/*.img \
 		fixture/make-riscv64-disk
 	rmdir fixture 2>/dev/null || true

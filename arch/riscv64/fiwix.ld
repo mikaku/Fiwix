@@ -44,6 +44,13 @@ SECTIONS
 		__boot_stack_top = __machine_stack_top;
 	}
 
+	ASSERT(. <= 0x80200000, "Fiwix overlaps the RV64 Linux Image load address")
+	. = 0x80200000;
+	.linux_image (NOLOAD) : ALIGN(0x200000)
+	{
+		*(.linux_image)
+	}
+
 	__kernel_end = .;
 
 	/DISCARD/ :

@@ -109,3 +109,23 @@ checks the file contents. Fiwix's existing ext2 implementation supports this
 same original revision. The staging reader is deliberately small and will be
 removed once the virtio device is registered with the generic block layer and
 the existing buffer-cache/VFS/ext2 path reaches the same file.
+
+## Linux Image handoff
+
+The ext2 fixture also contains a position-independent payload with a current
+64-byte RISC-V Linux `Image` header. Fiwix loads it at the RV64 2 MiB RAM offset
+(`0x80200000`), with a link-time assertion preventing the resident kernel from
+growing into that region. The loader checks the advertised offset and size,
+little-endian flags, header version 0.2, and both Image magic fields.
+
+The final assembly boundary clears `sie`, `sstatus.SIE`, `sscratch`, and `satp`,
+flushes translation and instruction state, then enters with the original hart
+ID in `a0` and QEMU DTB physical address in `a1`. The payload independently
+checks hart 0, the flattened-device-tree magic, `satp == 0`, and `sie == 0`
+before printing its success marker.
+
+This proves the bootloader register/CSR and Image placement contract, not a
+Linux boot. A real S-mode Linux kernel additionally needs a resident machine
+firmware interface for timer and reset services. The firmware-free port will
+extend its bounded M-mode shim with the required SBI calls rather than add an
+OpenSBI binary to the bootstrap runtime.

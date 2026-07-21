@@ -45,6 +45,9 @@ extern u64 riscv64_prepare_user_stack(u64);
 extern u64 riscv64_enter_user(u64, u64);
 extern int riscv64_virtio_block_gate(void);
 extern int riscv64_ext2_gate(void);
+extern int riscv64_linux_image_gate(void);
+extern u64 riscv64_linux_image_entry(void);
+extern void riscv64_linux_handoff(u64, u64, u64);
 
 struct riscv64_trap_frame {
 	u64 ra;
@@ -183,8 +186,6 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 	u64 status;
 	int virtio_version;
 
-	(void)hartid;
-	(void)dtb;
 	uart_puts("Fiwix riscv64 S-mode entry passed\n");
 	context_switch_gate();
 	while(riscv64_timer_ticks < 3) {
@@ -219,7 +220,13 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 		finish(TEST_FAIL);
 	}
 	uart_puts("Fiwix riscv64 U-mode exit syscall passed: 42\n");
-	finish(TEST_PASS);
+	if(riscv64_linux_image_gate() < 0) {
+		uart_puts("Fiwix riscv64 Linux Image gate failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 Linux Image header gate passed\n");
+	riscv64_linux_handoff(riscv64_linux_image_entry(), hartid, dtb);
+	finish(TEST_FAIL);
 }
 
 void riscv64_trap(u64 cause, u64 epc, u64 value)

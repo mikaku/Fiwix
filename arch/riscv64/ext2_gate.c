@@ -75,30 +75,18 @@ static int read_inode(u32 table_block, u32 inode, u8 *result)
 	return 0;
 }
 
-int riscv64_ext2_gate(void)
+static int load_root_directory(u32 *inode_table)
 {
-	static const char expected[] =
-		"Fiwix riscv64 ext2 file gate passed\n";
 	u8 inode[INODE_SIZE];
-	u32 inode_table;
 	u32 root_block;
-	u32 file_inode;
-	u32 file_block;
-	u32 file_size;
-	u32 offset;
-	u16 record_length;
-	u8 name_length;
-	u64 n;
 
 	if(read_block(1) < 0 || get16(block_buffer + 56) != EXT2_MAGIC ||
-		get32(block_buffer + 24) != 0 || get32(block_buffer + 76) != 0) {
+		get32(block_buffer + 24) != 0 || get32(block_buffer + 76) != 0 ||
+		read_block(2) < 0) {
 		return -1;
 	}
-	if(read_block(2) < 0) {
-		return -1;
-	}
-	inode_table = get32(block_buffer + INODE_TABLE_OFFSET);
-	if(!inode_table || read_inode(inode_table, ROOT_INODE, inode) < 0 ||
+	*inode_table = get32(block_buffer + INODE_TABLE_OFFSET);
+	if(!*inode_table || read_inode(*inode_table, ROOT_INODE, inode) < 0 ||
 		(get16(inode + INODE_MODE_OFFSET) & MODE_TYPE_MASK) !=
 		MODE_DIRECTORY || get32(inode + INODE_SIZE_OFFSET) != BLOCK_SIZE) {
 		return -1;
@@ -107,7 +95,16 @@ int riscv64_ext2_gate(void)
 	if(!root_block || read_block(root_block) < 0) {
 		return -1;
 	}
-	file_inode = 0;
+	return 0;
+}
+
+static int find_root_file(const char *name, u32 *inode)
+{
+	u32 offset;
+	u16 record_length;
+	u8 name_length;
+
+	*inode = 0;
 	for(offset = 0; offset + 8 <= BLOCK_SIZE; offset += record_length) {
 		record_length = get16(block_buffer + offset + 4);
 		name_length = block_buffer[offset + 6];
@@ -115,18 +112,34 @@ int riscv64_ext2_gate(void)
 			name_length > record_length - 8) {
 			return -1;
 		}
-		if(name_matches(block_buffer + offset + 8, name_length,
-			"bootstrap")) {
-			file_inode = get32(block_buffer + offset);
-			break;
+		if(name_matches(block_buffer + offset + 8, name_length, name)) {
+			*inode = get32(block_buffer + offset);
+			return *inode ? 0 : -1;
 		}
 	}
-	if(!file_inode || read_inode(inode_table, file_inode, inode) < 0 ||
-		(get16(inode + INODE_MODE_OFFSET) & MODE_TYPE_MASK) != MODE_REGULAR) {
+	return -1;
+}
+
+int riscv64_ext2_gate(void)
+{
+	static const char expected[] =
+		"Fiwix riscv64 ext2 file gate passed\n";
+	u8 inode_data[INODE_SIZE];
+	u32 inode_table;
+	u32 file_inode;
+	u32 file_block;
+	u32 file_size;
+	u64 n;
+
+	if(load_root_directory(&inode_table) < 0 ||
+		find_root_file("bootstrap", &file_inode) < 0 ||
+		read_inode(inode_table, file_inode, inode_data) < 0 ||
+		(get16(inode_data + INODE_MODE_OFFSET) & MODE_TYPE_MASK) !=
+		MODE_REGULAR) {
 		return -1;
 	}
-	file_size = get32(inode + INODE_SIZE_OFFSET);
-	file_block = get32(inode + INODE_BLOCK_OFFSET);
+	file_size = get32(inode_data + INODE_SIZE_OFFSET);
+	file_block = get32(inode_data + INODE_BLOCK_OFFSET);
 	if(file_size != sizeof(expected) - 1 || !file_block ||
 		read_block(file_block) < 0) {
 		return -1;
@@ -136,5 +149,49 @@ int riscv64_ext2_gate(void)
 			return -1;
 		}
 	}
+	return 0;
+}
+
+int riscv64_ext2_load_file(const char *name, void *destination,
+	u64 capacity, u64 *size)
+{
+	u8 inode_data[INODE_SIZE];
+	u8 *output;
+	u32 inode_table;
+	u32 inode;
+	u32 file_size;
+	u32 block;
+	u32 chunk;
+	u32 copied;
+	u32 n;
+
+	if(!name || !destination || !size ||
+		load_root_directory(&inode_table) < 0 ||
+		find_root_file(name, &inode) < 0 ||
+		read_inode(inode_table, inode, inode_data) < 0 ||
+		(get16(inode_data + INODE_MODE_OFFSET) & MODE_TYPE_MASK) !=
+		MODE_REGULAR) {
+		return -1;
+	}
+	file_size = get32(inode_data + INODE_SIZE_OFFSET);
+	if(!file_size || file_size > capacity || file_size > 12 * BLOCK_SIZE) {
+		return -1;
+	}
+	output = (u8 *)destination;
+	for(copied = 0; copied < file_size; copied += chunk) {
+		block = get32(inode_data + INODE_BLOCK_OFFSET +
+			(copied / BLOCK_SIZE) * 4);
+		if(!block || read_block(block) < 0) {
+			return -1;
+		}
+		chunk = file_size - copied;
+		if(chunk > BLOCK_SIZE) {
+			chunk = BLOCK_SIZE;
+		}
+		for(n = 0; n < chunk; n++) {
+			output[copied + n] = block_buffer[n];
+		}
+	}
+	*size = file_size;
 	return 0;
 }

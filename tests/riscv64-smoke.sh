@@ -7,6 +7,7 @@ QEMU=${QEMU:-qemu-system-riscv64}
 TIMEOUT=${TIMEOUT:-10}
 READELF=${READELF:-riscv64-linux-gnu-readelf}
 FIXTURE=${FIXTURE:-arch/riscv64/fixture/user.elf}
+LINUX_FIXTURE=${LINUX_FIXTURE:-arch/riscv64/fixture/linux.elf}
 DISK=${DISK:-arch/riscv64/fixture/disk.img}
 
 output=$(mktemp)
@@ -20,6 +21,8 @@ trap 'rm -f "$output" "$modern_output"' EXIT HUP INT TERM
 "$READELF" -h "$FIXTURE" | grep -q 'Machine:.*RISC-V'
 "$READELF" -h "$FIXTURE" | grep -q 'Entry point address:.*0x400000'
 "$READELF" -lW "$FIXTURE" | grep -q 'LOAD .* R E '
+"$READELF" -h "$LINUX_FIXTURE" | grep -q 'Machine:.*RISC-V'
+"$READELF" -h "$LINUX_FIXTURE" | grep -q 'Entry point address:.*0x0'
 
 run_qemu()
 {
@@ -46,6 +49,8 @@ check_common()
 	grep -q '^Fiwix riscv64 initial stack gate passed' "$result"
 	grep -q '^Fiwix riscv64 U-mode write syscall passed' "$result"
 	grep -q '^Fiwix riscv64 U-mode exit syscall passed: 42' "$result"
+	grep -q '^Fiwix riscv64 Linux Image header gate passed' "$result"
+	grep -q '^Fiwix riscv64 Linux Image handoff gate passed' "$result"
 	if grep -q 'fatal .* trap' "$result"; then
 		cat "$result" >&2
 		exit 1
