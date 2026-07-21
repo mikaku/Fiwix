@@ -1,13 +1,15 @@
 # fiwix/arch/riscv64/Makefile
 
 .DEFAULT_GOAL := all
+HOSTCC ?= cc
 
 .S.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o main.o user.o user_fixture_blob.o virtio.o vm.o
+OBJS = boot.o context.o elf.o ext2_gate.o main.o user.o user_fixture_blob.o \
+	virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -19,12 +21,16 @@ fixture/user.o: user-fixture.S
 fixture/user.elf: fixture/user.o user-fixture.ld
 	$(LD) $(LDFLAGS) -T user-fixture.ld -o $@ $<
 
-fixture/disk.img: ../../tests/make-riscv64-disk.sh
+fixture/make-riscv64-disk: ../../tests/make-riscv64-disk.c
 	mkdir -p fixture
-	../../tests/make-riscv64-disk.sh $@
+	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
+
+fixture/disk.img: fixture/make-riscv64-disk
+	$< $@
 
 all: $(OBJS) fixture/disk.img
 
 clean:
-	rm -f *.o fixture/*.o fixture/*.elf fixture/*.img
+	rm -f *.o fixture/*.o fixture/*.elf fixture/*.img \
+		fixture/make-riscv64-disk
 	rmdir fixture 2>/dev/null || true

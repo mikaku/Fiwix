@@ -42,6 +42,7 @@ check_common()
 	grep -q '^Fiwix riscv64 timer gate passed: 3 ticks' "$result"
 	grep -q '^Fiwix riscv64 ELF64 loader gate passed' "$result"
 	grep -q '^Fiwix riscv64 Sv39 gate passed' "$result"
+	grep -q '^Fiwix riscv64 ext2 file gate passed' "$result"
 	grep -q '^Fiwix riscv64 initial stack gate passed' "$result"
 	grep -q '^Fiwix riscv64 U-mode write syscall passed' "$result"
 	grep -q '^Fiwix riscv64 U-mode exit syscall passed: 42' "$result"

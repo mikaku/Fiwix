@@ -44,6 +44,7 @@ extern u64 riscv64_load_user_elf(void);
 extern u64 riscv64_prepare_user_stack(u64);
 extern u64 riscv64_enter_user(u64, u64);
 extern int riscv64_virtio_block_gate(void);
+extern int riscv64_ext2_gate(void);
 
 struct riscv64_trap_frame {
 	u64 ra;
@@ -207,6 +208,11 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 		uart_puts("Fiwix riscv64 virtio block gate failed\n");
 		finish(TEST_FAIL);
 	}
+	if(riscv64_ext2_gate() < 0) {
+		uart_puts("Fiwix riscv64 ext2 gate failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 ext2 file gate passed\n");
 	status = riscv64_enter_user(entry, riscv64_prepare_user_stack(entry));
 	if(status != 42) {
 		uart_puts("Fiwix riscv64 U-mode exit syscall failed\n");

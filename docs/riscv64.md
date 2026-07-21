@@ -4,8 +4,9 @@ The experimental riscv64 target boots directly on the single-hart QEMU `virt`
 machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
 context-switch primitive with two kernel tasks, Sv39 address translation, and a
-small U-mode RV64 syscall fixture, and polled virtio-mmio block reads. It does
-not yet run the generic Fiwix scheduler or a filesystem-backed userspace.
+small U-mode RV64 syscall fixture, polled virtio-mmio block reads, and a
+read-only ext2 file lookup. It does not yet run the generic Fiwix scheduler or
+a filesystem-backed userspace process.
 
 ## Build
 
@@ -99,5 +100,12 @@ virtio request status and exact sector marker before reporting success.
 
 This queue code is not yet registered with Fiwix's generic block layer. Its
 purpose is to prove discovery, feature negotiation, DMA addresses, both queue
-layouts, and sector I/O before adapting the generic buffer cache and ext2 mount
-path.
+layouts, and sector I/O before adapting the generic buffer cache.
+
+The generated disk is also a deterministic 1 MiB, 1 KiB-block, revision-0 ext2
+filesystem. A bounded read-only gate follows the superblock, group descriptor,
+root inode, root directory, `bootstrap` inode, and its direct data block, then
+checks the file contents. Fiwix's existing ext2 implementation supports this
+same original revision. The staging reader is deliberately small and will be
+removed once the virtio device is registered with the generic block layer and
+the existing buffer-cache/VFS/ext2 path reaches the same file.

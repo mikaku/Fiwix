@@ -199,7 +199,7 @@ static int setup_queue(void)
 	return 0;
 }
 
-static int read_sector_zero(void)
+int riscv64_virtio_read_sector(u64 sector, void *buffer)
 {
 	struct virtq_descriptor *descriptors;
 	volatile struct virtq_available *available;
@@ -215,16 +215,19 @@ static int read_sector_zero(void)
 	used = (volatile struct virtq_used *)(queue_memory + 4096);
 	request.type = VIRTIO_BLK_T_IN;
 	request.reserved = 0;
-	request.sector = 0;
+	if(!transport || !queue_size || !buffer) {
+		return -1;
+	}
+	request.sector = sector;
 	request_status = 0xff;
-	clear_bytes(sector_buffer, sizeof(sector_buffer));
+	clear_bytes((u8 *)buffer, SECTOR_SIZE);
 
 	descriptors[0].address = (u64)&request;
 	descriptors[0].length = sizeof(request);
 	descriptors[0].flags = VIRTQ_DESC_F_NEXT;
 	descriptors[0].next = 1;
-	descriptors[1].address = (u64)sector_buffer;
-	descriptors[1].length = sizeof(sector_buffer);
+	descriptors[1].address = (u64)buffer;
+	descriptors[1].length = SECTOR_SIZE;
 	descriptors[1].flags = VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE;
 	descriptors[1].next = 2;
 	descriptors[2].address = (u64)&request_status;
@@ -272,7 +275,8 @@ static int sector_matches(void)
 int riscv64_virtio_block_gate(void)
 {
 	if(find_transport() < 0 || setup_queue() < 0 ||
-		read_sector_zero() < 0 || !sector_matches()) {
+		riscv64_virtio_read_sector(0, sector_buffer) < 0 ||
+		!sector_matches()) {
 		return -1;
 	}
 	return (int)transport_version;
