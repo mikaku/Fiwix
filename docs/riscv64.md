@@ -628,6 +628,14 @@ to persist the output filesystem, and invokes syscall 142 with Fiwix's reboot
 magic. This exits QEMU through the existing SBI reset path, so the long gate
 does not confuse an arbitrary timeout with successful script completion.
 
+The shorter generic PID 1 fixture intentionally remains scheduled after its
+userspace marker. Its smoke harness watches the serial log while QEMU runs and
+terminates the emulator as soon as the RTC, kernel construction, and userspace
+markers are all present. The earlier fixed-duration wrapper always consumed
+the full timeout and produced false failures under sustained host contention.
+The timeout is now only an upper failure bound; early QEMU exit and incomplete
+serial output still fail with the captured log.
+
 The `linux` stage runs that same uninterrupted script and verifies the same
 three final hashes before allowing the handoff. The root builder adds the
 root-capable Linux Image as `/linux` and a distinct `/sbin/linux-init`; Fiwix's
