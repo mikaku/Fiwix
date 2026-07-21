@@ -1,5 +1,5 @@
 /*
- * Read-only Fiwix block adapter for the polled virtio-mmio transport.
+ * Fiwix block adapter for the polled virtio-mmio transport.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -54,11 +54,26 @@ static int riscv64_virtio_read(__dev_t dev, __blk_t block, char *buffer,
 static int riscv64_virtio_write(__dev_t dev, __blk_t block, char *buffer,
 	int blksize)
 {
-	(void)dev;
-	(void)block;
-	(void)buffer;
-	(void)blksize;
-	return -EROFS;
+	unsigned long first_sector;
+	unsigned long sectors;
+	unsigned long n;
+
+	if(MINOR(dev) != RISCV64_VIRTIO_BLK_MINOR || blksize <= 0 ||
+		blksize % BPS) {
+		return -EINVAL;
+	}
+	sectors = (unsigned long)blksize / BPS;
+	first_sector = (unsigned long)block * sectors;
+	if(first_sector + sectors > riscv64_virtio_capacity_sectors()) {
+		return -EIO;
+	}
+	for(n = 0; n < sectors; n++) {
+		if(riscv64_virtio_write_sector(first_sector + n,
+			buffer + n * BPS) < 0) {
+			return -EIO;
+		}
+	}
+	return blksize;
 }
 
 static int riscv64_virtio_ioctl(struct inode *inode, struct fd *fd, int cmd,

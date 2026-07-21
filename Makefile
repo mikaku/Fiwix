@@ -79,7 +79,7 @@ ifeq ($(CCEXE),gcc)
 LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 NM = $(CROSS_COMPILE)nm
-LIBGCC := -L$(shell dirname `$(CC) -print-libgcc-file-name`) -lgcc
+LIBGCC = -L$(shell dirname `$(CC) -print-libgcc-file-name`) -lgcc
 ifeq ($(TARGET_ARCH),i386)
 LDFLAGS = -N -m elf_i386
 endif
@@ -199,4 +199,13 @@ test-riscv64-generic-boot: riscv64-generic-image riscv64-generic-disk
 		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic \
 		arch/riscv64/fixture/disk.img
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot
+riscv64-stage0-init:
+	$(MAKE) -C arch/riscv64 fixture/stage0-init.elf
+
+test-riscv64-stage0: riscv64-generic-image riscv64-stage0-init
+	@test -n "$(STAGE0_SEED)" || { echo "test-riscv64-stage0 requires STAGE0_SEED=/path/to/hex0-seed" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_SEED="$(STAGE0_SEED)" \
+		tests/riscv64-stage0-boot-smoke.sh ./fiwix-generic \
+		arch/riscv64/fixture/stage0-init.elf
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0

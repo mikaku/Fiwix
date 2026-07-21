@@ -107,7 +107,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	kparms.rootdev = MKDEV(RISCV64_VIRTIO_BLK_MAJOR,
 		RISCV64_VIRTIO_BLK_MINOR);
 	strcpy(kparms.rootdevname, "/dev/vda");
-	kparms.ro = 1;
+	kparms.ro = 0;
 	riscv64_uart_init();
 	riscv64_virtio_block_init();
 	fs_init();

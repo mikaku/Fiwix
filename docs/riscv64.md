@@ -4,11 +4,12 @@ The experimental riscv64 target boots directly on the single-hart QEMU `virt`
 machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
 context-switch primitive with two kernel tasks, Sv39 address translation, and a
-small U-mode RV64 syscall fixture, polled virtio-mmio block reads, and a
-read-only ext2 file lookup. A separate generic image now activates Sv39,
+small U-mode RV64 syscall fixture, polled virtio-mmio block I/O, and an ext2
+file lookup. A separate generic image now activates Sv39,
 registers UART and virtio block devices, mounts ext2, schedules PID 1, executes
 `/sbin/init`, and observes a userspace console write through generic Fiwix
-policy.
+policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
+RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 
 ## Build
 
@@ -49,6 +50,12 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
 # Exercise direct, single-indirect, and double-indirect ext2 file blocks.
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 test-riscv64-large-image
+
+# Build a revision-0 ext2 root and execute the real upstream hex0 seed.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_SEED=/path/to/stage0-posix/bootstrap-seeds/POSIX/riscv64/hex0-seed \
+  test-riscv64-stage0
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -149,15 +156,17 @@ added.
 
 The first storage gate scans the QEMU `virt` MMIO window rather than assuming a
 device slot, negotiates an eight-entry-or-smaller split queue, and reads sector
-zero from a generated read-only disk fixture. The same test runs twice: once
+zero from a generated disk fixture. The same test runs twice: once
 with QEMU's legacy virtio-mmio v1 transport and once with modern v2. Queue
 completion is polled with a finite bound, and the driver verifies both the
 virtio request status and exact sector marker before reporting success.
 
 The staging queue remains the transport oracle for discovery, feature
-negotiation, DMA addresses, and both queue layouts. The generic image now wraps
-that transport in a read-only major-8 block device; reads pass through Fiwix's
-request queue, buffer cache, VFS, and ext2 implementation.
+negotiation, DMA addresses, and both queue layouts. The generic image wraps
+that transport in a writable major-8 block device; reads and writes pass
+through Fiwix's request queue, buffer cache, VFS, and ext2 implementation.
+Each test mode receives a private disk copy so mount metadata and stage0 output
+cannot make the second transport depend on the first.
 
 The generated disk is also a deterministic 8 MiB, 1 KiB-block, revision-0 ext2
 filesystem. A bounded read-only gate follows the superblock, group descriptor,
@@ -180,6 +189,26 @@ The smoke scripts run `e2fsck -fn` before QEMU when it is available in `PATH`
 or at `/sbin/e2fsck`. This independently checks the generated revision-0
 directory format, inode allocation, block accounting, indirect trees, and
 bitmap padding rather than relying only on the staging reader under test.
+
+The real-stage0 gate constructs a revision-0, feature-free ext2 root with host
+`mke2fs` and `debugfs`. Its `/sbin/init` is a 64-bit assembly launcher that
+calls `execve` with the three arguments required by the unmodified seed:
+`/bin/hex0-seed`, `/stage0-input.hex0`, and `/stage0-output`. It does not embed
+those paths in kernel policy. After each legacy and modern virtio boot, the host
+extracts `/stage0-output` and compares all bytes with the expected decoded
+fixture. The accepted seed is exactly 392 bytes; the recorded stage0-posix
+artifact has SHA-256
+`1b50ceef632b83b79aef0cf91d60bc0cb242a3b2bfba22cb5115d80112b50ac9`.
+
+Two root-fixture bugs were caught by the independent gates. GNU `as` does not
+accept a forward section-label difference directly as a `li` operand, so the
+launcher pins message lengths and checks them with assembly-time assertions.
+Also, `debugfs mknod /dev/console` creates a literal slash-containing name in
+the root directory; the builder now enters `/dev` before creating `console`,
+and `e2fsck -fn` rejects the malformed form before QEMU starts.
+An assembler-only launcher target also triggered an eager top-level `libgcc`
+probe through an absent `${CROSS_COMPILE}gcc`; that lookup is now expanded only
+by the GCC kernel link that consumes it.
 
 ## Generic-kernel compile boundary
 
@@ -230,7 +259,7 @@ shared `start_kernel()`, and installs the complete generic trap vector with
 interrupts disabled. It then activates the 256 MiB identity-mapped Sv39 root,
 initializes memory, process, sleep, buffer, scheduler, inode, and descriptor
 state, creates idle and reserves PID 1, and enables interrupts only after timer
-bottom halves exist. It registers a polled UART tty and read-only virtio block
+bottom halves exist. It registers a polled UART tty and writable virtio block
 device, mounts ext2, builds PID 1, and schedules it into U mode. Acceptance
 requires three delegated ticks plus a console marker from the filesystem-backed
 `/sbin/init`. The final link uses individual function/data
@@ -246,8 +275,8 @@ ATA, floppy, PC serial, or parallel-port devices. Timer policy uses delegated
 supervisor ticks without PIT/PIC setup, the absent CMOS RTC reports no procfs
 data, keyboard LEDs and console beep have no PS/2/PIT side effects, and reboot
 uses SBI SRST. The initial UART transmit and virtio completion paths are polled;
-PLIC-backed receive/completion interrupts, the `kswapd` continuation, and
-concurrent process I/O remain open.
+PLIC-backed receive/completion interrupts, the `kswapd` continuation, and the
+full concurrent kaem process tree remain open.
 
 VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
@@ -326,11 +355,11 @@ enables them only after idle and timer bottom halves are ready. The first
 bogus RV64 pointer. The compiler-owned non-i386 varargs branch fixes that fault
 without changing the i386 bootstrap path.
 
-The fixed QEMU machine uses `/dev/ttyS0` as `/dev/console` and a read-only
+The fixed QEMU machine uses `/dev/ttyS0` as `/dev/console` and a writable
 major-8 `/dev/vda` root. UART transmit drains generic tty queues by polling the
 16550 line-status register. The block adapter reports capacity from the virtio
 configuration space and converts each generic block request into bounded 512
-byte sector reads. The generated ext2 fixture includes `/dev/console` and a
+byte sector transfers. The generated ext2 fixture includes `/dev/console` and a
 header-mapped static `/sbin/init`; `e2fsck -fn` validates the expanded image.
 
 The first scheduled PID 1 reached its ELF64 `write` but returned `EBADF` because

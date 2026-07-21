@@ -17,6 +17,7 @@ void riscv64_uart_init(void);
 int riscv64_virtio_block_init(void);
 int riscv64_virtio_transport_init(void);
 int riscv64_virtio_read_sector(unsigned long, void *);
+int riscv64_virtio_write_sector(unsigned long, void *);
 unsigned long riscv64_virtio_capacity_sectors(void);
 
 #endif /* _FIWIX_RISCV64_DEVICES_H */

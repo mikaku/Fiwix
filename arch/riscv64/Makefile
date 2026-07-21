@@ -29,6 +29,13 @@ fixture/generic-init.o: generic-init.S
 fixture/generic-init.elf: fixture/generic-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/stage0-init.o: stage0-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/stage0-init.elf: fixture/stage0-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<

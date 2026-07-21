@@ -46,6 +46,7 @@
 #define VIRTQ_DESC_F_NEXT       1U
 #define VIRTQ_DESC_F_WRITE      2U
 #define VIRTIO_BLK_T_IN         0U
+#define VIRTIO_BLK_T_OUT        1U
 #define SECTOR_SIZE             512U
 #define POLL_LIMIT              10000000UL
 
@@ -204,7 +205,7 @@ static int setup_queue(void)
 	return 0;
 }
 
-int riscv64_virtio_read_sector(u64 sector, void *buffer)
+static int transfer_sector(u64 sector, void *buffer, u32 type)
 {
 	struct virtq_descriptor *descriptors;
 	volatile struct virtq_available *available;
@@ -218,14 +219,16 @@ int riscv64_virtio_read_sector(u64 sector, void *buffer)
 	available = (volatile struct virtq_available *)(queue_memory +
 		queue_size * sizeof(struct virtq_descriptor));
 	used = (volatile struct virtq_used *)(queue_memory + 4096);
-	request.type = VIRTIO_BLK_T_IN;
+	request.type = type;
 	request.reserved = 0;
 	if(!transport || !queue_size || !buffer) {
 		return -1;
 	}
 	request.sector = sector;
 	request_status = 0xff;
-	clear_bytes((u8 *)buffer, SECTOR_SIZE);
+	if(type == VIRTIO_BLK_T_IN) {
+		clear_bytes((u8 *)buffer, SECTOR_SIZE);
+	}
 
 	descriptors[0].address = (u64)&request;
 	descriptors[0].length = sizeof(request);
@@ -233,7 +236,10 @@ int riscv64_virtio_read_sector(u64 sector, void *buffer)
 	descriptors[0].next = 1;
 	descriptors[1].address = (u64)buffer;
 	descriptors[1].length = SECTOR_SIZE;
-	descriptors[1].flags = VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE;
+	descriptors[1].flags = VIRTQ_DESC_F_NEXT;
+	if(type == VIRTIO_BLK_T_IN) {
+		descriptors[1].flags |= VIRTQ_DESC_F_WRITE;
+	}
 	descriptors[1].next = 2;
 	descriptors[2].address = (u64)&request_status;
 	descriptors[2].length = 1;
@@ -262,6 +268,16 @@ int riscv64_virtio_read_sector(u64 sector, void *buffer)
 		mmio_write(MMIO_INTERRUPT_ACK, interrupts);
 	}
 	return 0;
+}
+
+int riscv64_virtio_read_sector(u64 sector, void *buffer)
+{
+	return transfer_sector(sector, buffer, VIRTIO_BLK_T_IN);
+}
+
+int riscv64_virtio_write_sector(u64 sector, void *buffer)
+{
+	return transfer_sector(sector, buffer, VIRTIO_BLK_T_OUT);
 }
 
 int riscv64_virtio_transport_init(void)
