@@ -188,16 +188,20 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 260 C translation units, including the RV64 process,
+It currently compiles 261 C translation units, including the RV64 process,
 fork, syscall, trap, signal, and ELF64 exec hooks.
-Three explicit architecture replacements remain excluded: i386 GDT/IDT and
-boot main.
+Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
+retains ownership of common kernel globals and now has an RV64 entry that
+installs the generic trap vector before idling; the complete device, memory,
+process, and PID 1 initialization sequence is still the next boot milestone.
+An architecture CPU implementation reports `riscv64` and the fixed
+RV64IMA/Zicsr/Zifencei contract without emulating x86 CPUID, TSC, or port I/O.
 The same gate relocatably links those objects with the real RV64 context
 switch, generic trap vector, init trampoline, and privileged-operation
 assembly. All `riscv64_*` references resolve. An exact 46-symbol allowlist
-records the remaining generic startup, i386 CPU/I/O, optional external-network,
-and final-linker boundaries, so additions or removals require an explicit
-review rather than disappearing in compile-only coverage.
+has therefore fallen to 25 symbols: legacy i386 port I/O, the optional external
+IPv4 backend, and three final-linker boundaries. Additions or removals require
+an explicit review rather than disappearing in compile-only coverage.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 activates the selected process address space first, and `ioperm` returns
 `ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures

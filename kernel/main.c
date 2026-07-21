@@ -33,6 +33,9 @@
 #include <fiwix/mm.h>
 #include <fiwix/kexec.h>
 #include <fiwix/sysconsole.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/arch_process.h>
+#endif
 
 struct kernel_params kparms;
 struct kernel_stat kstat;
@@ -47,6 +50,7 @@ struct new_utsname sys_utsname = {
 	UTS_DOMAINNAME,
 };
 
+#ifndef CONFIG_ARCH_RISCV64
 static void set_default_values(void)
 {
 	/* filesystem is ext2 */
@@ -60,9 +64,18 @@ static void set_default_values(void)
 		add_sysconsoledev(kparms.syscondev);
 	}
 }
+#endif
 
 void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_addr)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	(void)magic;
+	(void)info;
+	(void)last_boot_addr;
+	memset_b(&kstat, 0, sizeof(kstat));
+	riscv64_generic_traps_install();
+	cpu_idle();
+#else
 	struct proc *init;
 
 	_last_data_addr = last_boot_addr - PAGE_OFFSET;
@@ -137,10 +150,17 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 
 	STI();		/* let's rock! */
 	cpu_idle();
+#endif
 }
 
 void stop_kernel(void)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	CLI();
+	for(;;) {
+		HLT();
+	}
+#else
 	struct proc *p, *next;
 	int n;
 
@@ -184,6 +204,7 @@ void stop_kernel(void)
 	STI();
 
 	cpu_idle();
+#endif
 }
 
 void cpu_idle(void)

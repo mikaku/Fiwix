@@ -14,13 +14,17 @@ excluded=0
 objects=
 cd "$root"
 
-for source in arch/riscv64/elf64.c arch/riscv64/exec.c \
+for source in arch/riscv64/cpu.c arch/riscv64/elf64.c arch/riscv64/exec.c \
 	arch/riscv64/process.c arch/riscv64/signal.c arch/riscv64/syscall.c \
 	arch/riscv64/trap.c \
 	$(find kernel mm fs drivers net lib -name '*.c' | sort); do
 	case "$source" in
-	kernel/gdt.c|kernel/idt.c|kernel/main.c)
+	kernel/gdt.c|kernel/idt.c)
 		excluded=$((excluded + 1))
+		continue
+		;;
+	kernel/cpu.c)
+		# arch/riscv64/cpu.c provides the architecture CPU implementation.
 		continue
 		;;
 	drivers/video/font-lat9-*.c)
@@ -39,8 +43,8 @@ for source in arch/riscv64/elf64.c arch/riscv64/exec.c \
 	compiled=$((compiled + 1))
 done
 
-test "$excluded" -eq 3
-test "$compiled" -eq 260
+test "$excluded" -eq 2
+test "$compiled" -eq 261
 if test -n "$GENERIC_OUTPUT"; then
 	"$GENERIC_LD" -m elf64lriscv -r $objects -o "$GENERIC_OUTPUT"
 fi

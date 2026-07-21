@@ -38,4 +38,4 @@ if grep -q '^riscv64_' "$temporary/unresolved"; then
 	exit 1
 fi
 
-echo "Fiwix riscv64 generic link gate passed: 260 C files, 4 assembly files; 46 startup/platform boundaries remain"
+echo "Fiwix riscv64 generic link gate passed: 261 C files, 4 assembly files; 25 platform/linker boundaries remain"
