@@ -181,14 +181,15 @@ bitmap padding rather than relying only on the staging reader under test.
 ## Generic-kernel compile boundary
 
 The architecture-independent compile audit is available separately from the
-bring-up kernel:
+bring-up kernel. It also runs a host-side syscall-number translation gate:
 
 ```sh
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 258 C files, including the RV64 process and fork hooks.
+It currently compiles 259 C files, including the RV64 process, fork, and
+syscall hooks.
 Three explicit architecture replacements remain excluded: i386 GDT/IDT and
 boot main.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
@@ -221,6 +222,18 @@ before `sret`. The generic syscall signature still names the historical i386
 `sigcontext`; the RV64 dispatcher will pass its native frame through that
 pointer-shaped compatibility boundary until syscall context becomes fully
 architecture-neutral.
+
+The generic syscall core accepts architecture-width arguments and a pointer to
+an existing saved frame. Its table bound uses the actual pointer element size
+and rejects an index equal to the element count. The RV64 translator implements
+the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
+`lseek`, `unlinkat`, `faccessat`, `chdir`, `fchmodat`, `brk`, fork-style
+`clone`, `wait4`, `exit`, `getpid`, and `getppid`. Unsupported `*at` directory
+descriptors and clone sharing flags are rejected rather than silently given
+fork semantics. `execve` remains `ENOSYS` until the ELF64 loader and LP64
+initial stack replace the current ELF32 implementation. The translator is
+compile-gated; the generic boot replacement must select it from the U-mode trap
+vector before these calls are exercised by PID 1.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal

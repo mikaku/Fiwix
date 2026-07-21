@@ -11,7 +11,7 @@ compiled=0
 excluded=0
 cd "$root"
 
-for source in arch/riscv64/process.c \
+for source in arch/riscv64/process.c arch/riscv64/syscall.c \
 	$(find kernel mm fs drivers net lib -name '*.c' | sort); do
 	case "$source" in
 	kernel/gdt.c|kernel/idt.c|kernel/main.c)

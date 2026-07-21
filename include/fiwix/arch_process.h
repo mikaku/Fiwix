@@ -42,6 +42,7 @@ unsigned long riscv64_make_satp(unsigned long);
 void riscv64_kernel_process_entry(void);
 void riscv64_user_process_entry(void);
 void riscv64_return_to_user(void);
+int riscv64_user_syscall(struct riscv64_trap_frame *, unsigned long);
 
 #else
 

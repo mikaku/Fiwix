@@ -25,12 +25,17 @@
 #include <fiwix/mman.h>
 #include <fiwix/ipc.h>
 
-#define NR_SYSCALLS	(sizeof(syscall_table) / sizeof(void *))
+#define NR_SYSCALLS	(sizeof(syscall_table) / sizeof(syscall_table[0]))
+
+int do_syscall_frame(unsigned int, __sysarg_t, __sysarg_t, __sysarg_t,
+	__sysarg_t, __sysarg_t, __sysarg_t, struct sigcontext *);
 
 #ifdef CONFIG_SYSCALL_6TH_ARG
-int do_syscall(unsigned int, int, int, int, int, int, int, struct sigcontext);
+int do_syscall(unsigned int, __sysarg_t, __sysarg_t, __sysarg_t, __sysarg_t,
+	__sysarg_t, __sysarg_t, struct sigcontext);
 #else
-int do_syscall(unsigned int, int, int, int, int, int, struct sigcontext);
+int do_syscall(unsigned int, __sysarg_t, __sysarg_t, __sysarg_t, __sysarg_t,
+	__sysarg_t, struct sigcontext);
 #endif /* CONFIG_SYSCALL_6TH_ARG */
 
 int sys_exit(int);
@@ -80,7 +85,7 @@ int sys_rmdir(const char *);
 int sys_dup(unsigned int);
 int sys_pipe(int *);
 int sys_times(struct tms *);
-int sys_brk(unsigned int);
+int sys_brk(__addr_t);
 int sys_setgid(__gid_t);
 int sys_getgid(void);
 unsigned int sys_signal(__sigset_t, void(*sighandler)(int));
