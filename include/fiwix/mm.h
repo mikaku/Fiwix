@@ -43,6 +43,11 @@
 #define PFAULT_W		0x02	/* during write */
 #define PFAULT_U		0x04	/* in user mode */
 
+#define PFAULT_RESOLVED		0
+#define PFAULT_SIGSEGV		1
+#define PFAULT_SIGKILL		2
+#define PFAULT_FATAL		3
+
 #define GET_PGDIR(address)	((unsigned int)((address) >> 22) & 0x3FF)
 #define GET_PGTBL(address)	((unsigned int)((address) >> 12) & 0x3FF)
 
@@ -122,6 +127,7 @@ int free_page_tables(struct proc *);
 __addr_t map_page(struct proc *, __addr_t, __addr_t, unsigned int);
 __addr_t map_page_flags(struct proc *, __addr_t, __addr_t, unsigned int, int);
 int unmap_page(__addr_t);
+int resolve_page_fault(__addr_t, unsigned int, __addr_t);
 void mem_init(void);
 void mem_stats(void);
 

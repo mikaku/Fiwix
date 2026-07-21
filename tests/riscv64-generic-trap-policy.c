@@ -1,13 +1,17 @@
 #include <fiwix/arch_process.h>
 #include <fiwix/kernel.h>
+#include <fiwix/mm.h>
+#include <fiwix/process.h>
 #include <fiwix/riscv64_trap.h>
 #include <fiwix/segments.h>
+#include <fiwix/signal.h>
 #include <fiwix/sigcontext.h>
 
 #define INTERRUPT_BIT	(1UL << 63)
 
 struct kernel_stat kstat;
 int need_resched;
+struct proc *current;
 
 static int clear_calls;
 static int enable_calls;
@@ -21,6 +25,16 @@ static int last_timer_cs;
 static int last_bottom_half_cs;
 static struct riscv64_trap_frame *last_frame;
 static unsigned long last_cause;
+static __addr_t mapped_address;
+static __addr_t fault_address;
+static __addr_t fault_user_sp;
+static unsigned int fault_flags;
+static int fault_calls;
+static int fault_result;
+static int signal_calls;
+static int last_signal;
+static struct proc test_process;
+static struct riscv64_trap_frame saved_user_frame;
 
 void memset_b(void *destination, unsigned char value, unsigned int count)
 {
@@ -77,6 +91,34 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 	return syscall_result;
 }
 
+__addr_t get_mapped_addr(struct proc *process, __addr_t address)
+{
+	if(process != current || address != mapped_address) {
+		return 0;
+	}
+	return address | PAGE_PRESENT;
+}
+
+int resolve_page_fault(__addr_t address, unsigned int flags,
+	__addr_t user_sp)
+{
+	fault_calls++;
+	fault_address = address;
+	fault_flags = flags;
+	fault_user_sp = user_sp;
+	return fault_result;
+}
+
+int send_sig(struct proc *process, __sigset_t signal)
+{
+	if(process != current) {
+		return -1;
+	}
+	signal_calls++;
+	last_signal = signal;
+	return 0;
+}
+
 void printk(const char *format, ...)
 {
 	(void)format;
@@ -100,7 +142,17 @@ static void clear_counts(void)
 	last_bottom_half_cs = 0;
 	last_frame = 0;
 	last_cause = 0;
+	mapped_address = 0;
+	fault_address = 0;
+	fault_user_sp = 0;
+	fault_flags = 0;
+	fault_calls = 0;
+	fault_result = PFAULT_RESOLVED;
+	signal_calls = 0;
+	last_signal = 0;
 	need_resched = 0;
+	current = &test_process;
+	current->sp = (__addr_t)&saved_user_frame;
 }
 
 int main(void)
@@ -149,6 +201,49 @@ int main(void)
 	if(riscv64_generic_user_trap(&frame, 8) != -1 || syscall_calls != 1 ||
 		bottom_half_calls || schedule_calls) {
 		return 6;
+	}
+
+	clear_counts();
+	frame.sp = 0x3000;
+	frame.stval = 0x4000;
+	if(riscv64_generic_user_trap(&frame, 13) || fault_calls != 1 ||
+		fault_address != 0x4000 || fault_flags != PFAULT_U ||
+		fault_user_sp != 0x3000 || bottom_half_calls != 1) {
+		return 7;
+	}
+
+	clear_counts();
+	frame.sp = 0x5000;
+	frame.stval = mapped_address = 0x6000;
+	if(riscv64_generic_user_trap(&frame, 15) || fault_calls != 1 ||
+		fault_flags != (PFAULT_U | PFAULT_V | PFAULT_W) ||
+		fault_user_sp != 0x5000) {
+		return 8;
+	}
+
+	clear_counts();
+	frame.stval = 0x7000;
+	fault_result = PFAULT_SIGSEGV;
+	if(riscv64_generic_user_trap(&frame, 13) != -1 ||
+		signal_calls != 1 || last_signal != SIGSEGV ||
+		bottom_half_calls) {
+		return 9;
+	}
+
+	clear_counts();
+	saved_user_frame.sp = 0x8000;
+	if(riscv64_generic_kernel_trap(13, 0x9000, 0xa000) ||
+		fault_calls != 1 || fault_address != 0xa000 || fault_flags ||
+		fault_user_sp != 0x8000 || bottom_half_calls != 1 ||
+		last_bottom_half_cs != KERNEL_CS || schedule_calls) {
+		return 10;
+	}
+
+	clear_counts();
+	current = 0;
+	if(riscv64_generic_kernel_trap(13, 0x9000, 0xa000) != -1 ||
+		fault_calls || signal_calls) {
+		return 11;
 	}
 
 	return 0;

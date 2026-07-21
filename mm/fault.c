@@ -31,33 +31,33 @@ static void send_sigsegv(struct sigcontext *sc)
 	send_sig(current, SIGSEGV);
 }
 
-static int page_protection_violation(struct vma *vma, __addr_t cr2, struct sigcontext *sc)
+static int page_protection_violation(struct vma *vma, __addr_t address)
 {
 	int status;
 
-	status = copy_on_write_page(vma, cr2);
+	status = copy_on_write_page(vma, address);
 	if(status < 0) {
-		send_sigsegv(sc);
-		return 0;
+		return PFAULT_SIGSEGV;
 	}
-	return status;
+	return status ? PFAULT_SIGKILL : PFAULT_RESOLVED;
 }
 
-static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc)
+static int page_not_present(struct vma *vma, __addr_t address,
+	__addr_t user_sp)
 {
 	unsigned int file_offset;
 	__addr_t addr;
 	struct page *pg;
 
 	if(!vma) {
-		if(cr2 >= (sc->oldesp - 32) && cr2 < PAGE_OFFSET) {
+		if(user_sp >= 32 && address >= (user_sp - 32) &&
+			address < PAGE_OFFSET) {
 			if(!(vma = find_vma_region(PAGE_OFFSET - 1))) {
 				printk("WARNING: %s(): process %d doesn't have an stack region in vma_table!\n", __FUNCTION__, current->pid);
-				send_sigsegv(sc);
-				return 0;
+				return PFAULT_SIGSEGV;
 			} else {
 				/* assuming stack will never reach heap */
-				vma->start = cr2;
+				vma->start = address;
 				vma->start = vma->start & PAGE_MASK;
 			}
 		}
@@ -65,22 +65,21 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 
 	/* if still a non-valid vma is found then kill the process! */
 	if(!vma || vma->prot == PROT_NONE) {
-		send_sigsegv(sc);
-		return 0;
+		return PFAULT_SIGSEGV;
 	}
 
 	/* fill the page with its corresponding file content */
 	if(vma->inode) {
-		file_offset = (cr2 & PAGE_MASK) - vma->start + vma->offset;
+		file_offset = (address & PAGE_MASK) - vma->start + vma->offset;
 		file_offset &= PAGE_MASK;
 		pg = NULL;
 
 		if(!(vma->prot & PROT_WRITE) || vma->flags & MAP_SHARED) {
 			/* check if it's already in cache */
 			if((pg = search_page_hash(vma->inode, file_offset))) {
-				if(!map_page(current, cr2, (__addr_t)V2P(pg->data), vma->prot)) {
+				if(!map_page(current, address, (__addr_t)V2P(pg->data), vma->prot)) {
 					printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
-					return 1;
+					return PFAULT_SIGKILL;
 				}
 				page_lock(pg);
 				addr = (__addr_t)pg->data;
@@ -88,14 +87,14 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 			}
 		}
 		if(!pg) {
-			if(!(addr = map_page(current, cr2, 0, vma->prot))) {
+			if(!(addr = map_page(current, address, 0, vma->prot))) {
 				printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
-				return 1;
+				return PFAULT_SIGKILL;
 			}
 			pg = &page_table[PHYS_TO_PAGE(V2P(addr))];
 			if(bread_page(pg, vma->inode, file_offset, vma->prot, vma->flags)) {
-				unmap_page(cr2);
-				return 1;
+				unmap_page(address);
+				return PFAULT_SIGKILL;
 			}
 			current->usage.ru_majflt++;
 		}
@@ -104,8 +103,8 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 		addr = 0;
 #ifdef CONFIG_SYSVIPC
 		if(vma->s_type == P_SHM) {
-			if(shm_map_page(vma, cr2)) {
-				return 1;
+			if(shm_map_page(vma, address)) {
+				return PFAULT_SIGKILL;
 			}
 		}
 #endif /* CONFIG_SYSVIPC */
@@ -113,15 +112,53 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 
 	if(vma->flags & ZERO_PAGE) {
 		if(!addr) {
-			if(!(addr = map_page(current, cr2, 0, vma->prot))) {
+			if(!(addr = map_page(current, address, 0, vma->prot))) {
 				printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
-				return 1;
+				return PFAULT_SIGKILL;
 			}
 		}
 		memset_b((void *)(addr & PAGE_MASK), 0, PAGE_SIZE);
 	}
 
-	return 0;
+	return PFAULT_RESOLVED;
+}
+
+int resolve_page_fault(__addr_t address, unsigned int flags,
+	__addr_t user_sp)
+{
+	struct vma *vma;
+
+	vma = find_vma_region(address);
+	if(vma) {
+		if(flags & PFAULT_U) {
+			if(flags & PFAULT_V) {
+				if(flags & PFAULT_W) {
+					return page_protection_violation(vma, address);
+				}
+				return PFAULT_SIGSEGV;
+			}
+			return page_not_present(vma, address, user_sp);
+		}
+		if(!(flags & PFAULT_V)) {
+			return page_not_present(vma, address, user_sp);
+		}
+		if(flags & PFAULT_W) {
+			return page_protection_violation(vma, address);
+		}
+		return PFAULT_FATAL;
+	}
+
+	if(flags & PFAULT_U) {
+		if(flags & PFAULT_V) {
+			return PFAULT_SIGSEGV;
+		}
+		return page_not_present(NULL, address, user_sp);
+	}
+	if(!(flags & PFAULT_V) && user_sp >= 32 &&
+		address >= user_sp - 32 && address < PAGE_OFFSET) {
+		return page_not_present(NULL, address, user_sp);
+	}
+	return PFAULT_FATAL;
 }
 
 /*
@@ -172,95 +209,34 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 void do_page_fault(unsigned int trap, struct sigcontext *sc)
 {
 	__addr_t cr2;
-	struct vma *vma;
-	int panic;
+	__addr_t user_sp;
+	struct sigcontext *usc;
+	int panic, result;
 
 	GET_CR2(cr2);
-	if((vma = find_vma_region(cr2))) {
-
-		/* in user mode */
-		if(sc->err & PFAULT_U) {
-			if(sc->err & PFAULT_V) {	/* violation */
-				if(sc->err & PFAULT_W) {
-					if((page_protection_violation(vma, cr2, sc))) {
-						send_sig(current, SIGKILL);
-					}
-					return;
-				}
-				send_sigsegv(sc);
-			} else {			/* page not present */
-				if((page_not_present(vma, cr2, sc))) {
-					send_sig(current, SIGKILL);
-				}
-			}
-			return;
-
-		/* in kernel mode */
-		} else {
-			/* 
-			 * WP bit marks the order: first check if the page is
-			 * present, then check for protection violation.
-			 */
-			if(!(sc->err & PFAULT_V)) {	/* page not present */
-				if((page_not_present(vma, cr2, sc))) {
-					send_sig(current, SIGKILL);
-					printk("%s(): kernel was unable to read a page of process '%s' (pid %d).\n", __FUNCTION__, current->argv0, current->pid);
-				}
-				return;
-			}
-			if(sc->err & PFAULT_W) {	/* copy-on-write? */
-				if((page_protection_violation(vma, cr2, sc))) {
-					send_sig(current, SIGKILL);
-					printk("%s(): kernel was unable to write a page of process '%s' (pid %d).\n", __FUNCTION__, current->argv0, current->pid);
-				}
-				return;
-			}
+	user_sp = sc->oldesp;
+	if(!(sc->err & PFAULT_U) && !find_vma_region(cr2)) {
+		usc = (struct sigcontext *)((__addr_t)sc->esp +
+			16 * sizeof(unsigned int));
+		usc += 1;
+		user_sp = usc->oldesp;
+	}
+	result = resolve_page_fault(cr2, sc->err, user_sp);
+	if(result == PFAULT_RESOLVED) {
+		return;
+	}
+	if(result == PFAULT_SIGSEGV) {
+		send_sigsegv(sc);
+		return;
+	}
+	if(result == PFAULT_SIGKILL) {
+		send_sig(current, SIGKILL);
+		if(!(sc->err & PFAULT_U)) {
+			printk("%s(): kernel was unable to %s a page of process '%s' (pid %d).\n",
+				__FUNCTION__, sc->err & PFAULT_W ? "write" : "read",
+				current->argv0, current->pid);
 		}
-	} else {
-		/* in user mode */
-		if(sc->err & PFAULT_U) {
-			if(sc->err & PFAULT_V) {	/* violation */
-				send_sigsegv(sc);
-			} else {			/* stack? */
-				if((page_not_present(vma, cr2, sc))) {
-					send_sig(current, SIGKILL);
-				}
-			}
-			return;
-
-		/* in kernel mode */
-		} else {
-			/*
-			 * The kernel may incur in a page fault when trying to
-			 * access a possible user stack address. In that case,
-			 * sc->oldesp doesn't point to the user stack, but to
-			 * the kernel stack, because the page fault was raised
-			 * in kernel mode.
-			 * We need to get the original user sigcontext struct
-			 * from the current kernel stack, in order to obtain
-			 * the user stack pointer sc->oldesp, and see if CR2
-			 * looks like a user stack address.
-			 */
-			struct sigcontext *usc;
-
-			/*
-			 * Since the page fault was raised in kernel mode, the
-			 * exception occurred at the same privilege level, hence
-			 * the %ss and %esp registers were not saved.
-			 */
-			usc = (struct sigcontext *)((__addr_t)sc->esp +
-				16 * sizeof(unsigned int));
-			usc += 1;
-
-			/* does it look like a user stack address? */
-			if(cr2 >= (usc->oldesp - 32) && cr2 < PAGE_OFFSET) {
-				if((!page_not_present(vma, cr2, usc))) {
-					return;
-				}
-			}
-
-			/* no */
-		}
+		return;
 	}
 
 	panic = dump_registers(trap, sc);

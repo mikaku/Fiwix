@@ -256,9 +256,9 @@ permissions, mapped program headers, file bounds, and the absence of
 VMAs, eagerly copies every file-backed byte, zeros BSS, and builds a 16-byte
 aligned LP64 `argc`/`argv`/`envp`/auxv stack.
 
-Eager population is deliberate: first execution does not depend on the generic
-page-fault path while that path still uses an i386 saved-context layout. This
-initial scope excludes dynamic linking, PIE, signals, and demand paging. The
+Eager population is deliberate: first execution remains deterministic without
+requiring a file-backed demand fault before the generic boot path is live. This
+initial scope excludes dynamic linking, PIE, signals, and lazy ELF paging. The
 loader enforces W^X by dropping write permission from executable segments. The
 bootstrap stage0 `hex0-seed` overstates its single segment as RWE, but static
 inspection confirms that it writes only to its stack, so it executes correctly
@@ -303,9 +303,31 @@ preempt at their return boundary.
 A firmware-free QEMU gate enters U mode, seeds registers, executes `ecall`, and
 checks frame offsets, `sepc` advancement, return-value replacement, user-stack
 restoration, and successful `sret`. A separate host policy test covers user and
-kernel timer paths, bottom-half accounting, scheduling, syscall failure, and
-unsupported causes. Page faults and RV64 signal-frame delivery are intentionally
-still fatal and are the next architecture gates.
+kernel timer paths, bottom-half accounting, scheduling, syscall failure, page-
+fault flag translation, and unsupported causes. RV64 signal-frame delivery is
+still absent, so a fault that queues a signal remains fatal at the generic trap
+boundary.
+
+## Generic page-fault design
+
+VMA lookup, protection checks, copy-on-write, demand loading, zero-page setup,
+and bounded stack growth now live in an architecture-neutral
+`resolve_page_fault()` operation. Architecture trap code supplies the fault
+address, read/write and user/kernel classification, whether a valid leaf is
+already mapped, and the saved user stack pointer. The resolver returns one of
+four typed outcomes: resolved, `SIGSEGV`, `SIGKILL`, or fatal kernel fault. The
+i386 wrapper retains its verbose register/VMA diagnostics and signal behavior;
+the RV64 wrapper translates instruction, load, and store page-fault causes and
+runs bottom halves after a resolved fault.
+
+For a fault raised while the RV64 kernel is accessing userspace, the wrapper
+uses the user stack pointer in the process's saved native trap frame rather
+than the current supervisor stack. A host policy gate links the real generic
+resolver against controlled VMA and page-map fixtures. It covers read
+violations, all copy-on-write outcomes, anonymous demand-zero pages, stack
+growth, invalid addresses, and kernel demand/fatal paths. Signal outcomes are
+queued, but returning to a user handler or applying default signal action
+requires the next RV64 signal-delivery milestone.
 
 ## Linux Image handoff
 
