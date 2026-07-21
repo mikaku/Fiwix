@@ -5,6 +5,7 @@
 	.globl _start
 
 	.equ SYS_WRITE, 64
+	.equ SYS_SYNC, 81
 	.equ SYS_EXIT, 93
 	.equ SYS_REBOOT, 142
 	.equ COMPLETION_MESSAGE_SIZE, 34
@@ -17,6 +18,9 @@ _start:
 	.option pop
 	li a2, COMPLETION_MESSAGE_SIZE
 	li a7, SYS_WRITE
+	ecall
+
+	li a7, SYS_SYNC
 	ecall
 
 	li a0, 0xfee1dead

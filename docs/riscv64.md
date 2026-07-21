@@ -574,10 +574,10 @@ acceptance boundaries. Each short gate includes every preceding phase. This is
 deliberate: it identifies the first broken bootstrap contract while the long
 gate remains the proof that no host process or pre-generated artifact was
 inserted between phases. After the nested kaem process returns, a dedicated
-assembly fixture prints the completion marker and invokes Linux RV64 syscall
-142 with Fiwix's reboot magic. This exits QEMU immediately through the existing
-SBI reset path, so the long gate does not confuse an arbitrary timeout with
-successful script completion.
+assembly fixture prints the completion marker, invokes Linux RV64 syscall 81
+to persist the output filesystem, and invokes syscall 142 with Fiwix's reboot
+magic. This exits QEMU through the existing SBI reset path, so the long gate
+does not confuse an arbitrary timeout with successful script completion.
 
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
@@ -604,7 +604,9 @@ i386 dispatcher. Generic syscall dispatch uses machine-word arguments even
 when a handler, such as `sys_reboot`, declares 32-bit `int` parameters. The
 RV64 syscall adapter now explicitly sign-extends reboot's three integer
 arguments before generic dispatch; otherwise the high-bit reboot magic reaches
-the handler zero-extended and is rejected.
+the handler zero-extended and is rejected. The completion path also maps the
+standard RV64 sync syscall before reset. Without it, an immediate SBI reset can
+discard dirty ext2 metadata even though every stage0 process completed.
 
 Constructing the complete source root found a host-side test bug as well:
 `git archive` emits a gitlink but no submodule contents. The root builder now

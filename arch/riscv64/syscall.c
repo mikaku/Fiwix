@@ -21,6 +21,7 @@
 #define RV_SYS_LSEEK		62
 #define RV_SYS_READ		63
 #define RV_SYS_WRITE		64
+#define RV_SYS_SYNC		81
 #define RV_SYS_EXIT		93
 #define RV_SYS_KILL		129
 #define RV_SYS_RT_SIGACTION	134
@@ -113,6 +114,9 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 		case RV_SYS_WRITE:
 			result = riscv64_call_fiwix(SYS_write, frame, frame->a0,
 				frame->a1, frame->a2, 0, 0, 0);
+			break;
+		case RV_SYS_SYNC:
+			result = riscv64_call_fiwix(SYS_sync, frame, 0, 0, 0, 0, 0, 0);
 			break;
 		case RV_SYS_EXIT:
 			result = riscv64_call_fiwix(SYS_exit, frame, frame->a0, 0,

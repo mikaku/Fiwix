@@ -91,6 +91,7 @@ int main(void)
 		{ 62, SYS_lseek },
 		{ 63, SYS_read },
 		{ 64, SYS_write },
+		{ 81, SYS_sync },
 		{ 93, SYS_exit },
 		{ 129, SYS_kill },
 		{ 142, SYS_reboot },
