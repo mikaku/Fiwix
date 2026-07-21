@@ -68,7 +68,7 @@ static void deallocate(struct bl_head *block)
 		if(level == BUDDY_MAX_LEVEL - 1) {
 			addr = (__addr_t)block;
 			paddr = V2P(addr);
-			pg = &page_table[paddr >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(paddr)];
 			pg->flags &= ~PAGE_BUDDYLOW;
 			kfree(addr);
 			kstat.buddy_low_num_pages--;
@@ -101,7 +101,7 @@ static struct bl_head *allocate(int size)
 	if(level == BUDDY_MAX_LEVEL) {
 		if((addr = kmalloc(PAGE_SIZE))) {
 			paddr = V2P(addr);
-			pg = &page_table[paddr >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(paddr)];
 			pg->flags |= PAGE_BUDDYLOW;
 			block = (struct bl_head *)addr;
 		} else {

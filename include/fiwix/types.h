@@ -19,8 +19,10 @@ typedef unsigned long long int __u64;
 
 #ifdef CONFIG_ARCH_RISCV64
 typedef unsigned long __addr_t;
+typedef unsigned long __pte_t;
 #else
 typedef unsigned int __addr_t;
+typedef unsigned int __pte_t;
 #endif
 
 typedef __u16 __uid_t;

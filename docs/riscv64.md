@@ -206,8 +206,11 @@ Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
 allocator addresses use `__addr_t`, which is `unsigned int` on i386 and
 `unsigned long` on riscv64. This removes allocator return truncation while
-preserving i386 layouts and call widths. The gate still emits 200 pointer-width
-warnings, primarily from 32-bit syscall arguments and x86 physical-memory
+preserving i386 layouts and call widths. Physical page conversion also accounts
+for QEMU RV64 RAM beginning at `0x80000000`; page-cache and buddy indexes are
+relative to that base while kernel pointers remain identity mapped. The gate
+still emits 190 pointer-width warnings, primarily from 32-bit syscall arguments
+and x86 physical-memory
 interfaces; compile success is not yet an LP64 correctness claim.
 
 ## Linux Image handoff

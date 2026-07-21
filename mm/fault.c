@@ -92,7 +92,7 @@ static int page_not_present(struct vma *vma, __addr_t cr2, struct sigcontext *sc
 				printk("%s(): Oops, map_page() returned 0!\n", __FUNCTION__);
 				return 1;
 			}
-			pg = &page_table[V2P(addr) >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(V2P(addr))];
 			if(bread_page(pg, vma->inode, file_offset, vma->prot, vma->flags)) {
 				unmap_page(cr2);
 				return 1;

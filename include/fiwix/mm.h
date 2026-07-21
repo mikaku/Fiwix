@@ -12,17 +12,27 @@
 #include <fiwix/segments.h>
 #include <fiwix/process.h>
 
+#ifdef CONFIG_ARCH_RISCV64
+#define PHYSICAL_MEMORY_BASE	0x80000000UL
+#define P2V(addr)		(addr)
+#define V2P(addr)		(addr)
+#else
+#define PHYSICAL_MEMORY_BASE	0
 /* convert from physical to virtual the addresses below PAGE_OFFSET only */
 #define P2V(addr)		(addr < PAGE_OFFSET ? addr + PAGE_OFFSET : addr)
-
 #define V2P(addr)		(addr - PAGE_OFFSET)
+#endif
 
 #define PAGE_SIZE		4096
 #define PAGE_SHIFT		0x0C
-#define PAGE_MASK		~(PAGE_SIZE - 1)	/* 0xFFFFF000 */
+#define PAGE_MASK		(~((__addr_t)PAGE_SIZE - 1))
 #define PAGE_ALIGN(addr)	(((addr) + (PAGE_SIZE - 1)) & PAGE_MASK)
-#define PT_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
-#define PD_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
+#define PT_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))
+#define PD_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))
+#define PAGE_TO_PHYS(page)	(PHYSICAL_MEMORY_BASE + \
+	((__addr_t)(page) << PAGE_SHIFT))
+#define PHYS_TO_PAGE(addr)	(((__addr_t)(addr) - PHYSICAL_MEMORY_BASE) \
+	>> PAGE_SHIFT)
 
 #define PAGE_LOCKED		0x001
 #define PAGE_BUDDYLOW		0x010	/* page belongs to buddy_low */
@@ -98,7 +108,7 @@ void update_page_cache(struct inode *, __off_t, const char *, int);
 int write_page(struct page *, struct inode *, __off_t, unsigned int);
 int bread_page(struct page *, struct inode *, __off_t, char, char);
 int file_read(struct inode *, struct fd *, char *, __size_t);
-void reserve_pages(unsigned int, unsigned int);
+void reserve_pages(__addr_t, __addr_t);
 void page_init(int);
 
 /* memory.c */

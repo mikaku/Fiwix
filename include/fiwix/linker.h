@@ -10,14 +10,20 @@
 
 #include <fiwix/config.h>
 
-#ifdef CONFIG_VM_SPLIT22
+#ifdef CONFIG_ARCH_RISCV64
+#define PAGE_OFFSET	0x0000004000000000UL /* top of the Sv39 user half */
+#define KERNEL_ADDR	0x80000000UL
+#define GDT_BASE	0x10000000UL	/* 256 MiB machine-memory limit */
+#elif defined(CONFIG_VM_SPLIT22)
 #define PAGE_OFFSET	0x80000000	/* VM split: 2GB user / 2GB kernel */
 #else
 #define PAGE_OFFSET	0xC0000000	/* VM split: 3GB user / 1GB kernel */
-#endif /* CONFIG_VM_SPLIT22 */
+#endif
 
+#ifndef CONFIG_ARCH_RISCV64
 #define KERNEL_ADDR	0x100000
-#define KERNEL_STACK	4096
 #define GDT_BASE	(0xFFFFFFFF - (PAGE_OFFSET - 1))
+#endif
+#define KERNEL_STACK	4096
 
 #endif /* _FIWIX_LINKER_H */

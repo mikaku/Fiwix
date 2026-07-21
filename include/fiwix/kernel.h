@@ -10,6 +10,7 @@
 
 #include <fiwix/limits.h>
 #include <fiwix/i386elf.h>
+#include <fiwix/types.h>
 
 #define QEMU_DEBUG_PORT		0xE9	/* for Bochs-style debug console */
 #define BUDDY_MAX_LEVEL		7
@@ -45,7 +46,7 @@ extern char *init_envp[];
 extern char *init_args;
 
 extern Elf32_Shdr *symtab, *strtab;
-extern unsigned int _last_data_addr;
+extern __addr_t _last_data_addr;
 
 extern int kexec_proto;
 extern int kexec_size;

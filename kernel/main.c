@@ -36,7 +36,7 @@
 
 struct kernel_params kparms;
 struct kernel_stat kstat;
-unsigned int _last_data_addr;
+__addr_t _last_data_addr;
 
 struct new_utsname sys_utsname = {
 	UTS_SYSNAME,

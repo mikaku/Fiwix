@@ -37,7 +37,7 @@ __addr_t kmalloc(__size_t size)
 	}
 
 	if((pg = get_free_page())) {
-		addr = pg->page << PAGE_SHIFT;
+		addr = PAGE_TO_PHYS(pg->page);
 		return P2V(addr);
 	}
 
@@ -51,7 +51,7 @@ void kfree(__addr_t addr)
 	__addr_t paddr;
 
 	paddr = V2P(addr);
-	pg = &page_table[paddr >> PAGE_SHIFT];
+	pg = &page_table[PHYS_TO_PAGE(paddr)];
 
 	if(pg->flags & PAGE_BUDDYLOW) {
 		bl_free(addr);

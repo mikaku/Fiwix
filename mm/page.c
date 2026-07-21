@@ -424,7 +424,8 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 int file_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	__size_t total_read;
-	unsigned int addr, poffset, bytes;
+	unsigned int poffset, bytes;
+	__addr_t addr;
 	struct page *pg;
 
 	inode_lock(i);
@@ -448,7 +449,7 @@ int file_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 				printk("%s(): returning -ENOMEM\n", __FUNCTION__);
 				return -ENOMEM;
 			}
-			pg = &page_table[V2P(addr) >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(V2P(addr))];
 			if(bread_page(pg, i, f->offset & PAGE_MASK, 0, MAP_SHARED)) {
 				kfree(addr);
 				inode_unlock(i);
@@ -456,7 +457,7 @@ int file_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 				return -EIO;
 			}
 		} else {
-			addr = (unsigned int)pg->data;
+			addr = (__addr_t)pg->data;
 		}
 
 		page_lock(pg);
@@ -474,12 +475,12 @@ int file_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	return total_read;
 }
 
-void reserve_pages(unsigned int from, unsigned int to)
+void reserve_pages(__addr_t from, __addr_t to)
 {
 	struct page *pg;
 
 	while(from < to) {
-		pg = &page_table[from >> PAGE_SHIFT];
+		pg = &page_table[PHYS_TO_PAGE(from)];
 		pg->data = NULL;
 		pg->flags = PAGE_RESERVED;
 		kstat.physical_reserved++;
@@ -496,7 +497,8 @@ void reserve_pages(unsigned int from, unsigned int to)
 void page_init(int pages)
 {
 	struct page *pg;
-	unsigned int n, addr;
+	unsigned int n;
+	__addr_t addr;
 
 	memset_b(page_table, 0, page_table_size);
 	memset_b(page_hash_table, 0, page_hash_table_size);
@@ -505,7 +507,16 @@ void page_init(int pages)
 		pg = &page_table[n];
 		pg->page = n;
 
-		addr = n << PAGE_SHIFT;
+		addr = PAGE_TO_PHYS(n);
+#ifdef CONFIG_ARCH_RISCV64
+		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
+			pg->flags = PAGE_RESERVED;
+			kstat.kernel_reserved++;
+			continue;
+		}
+		pg->data = (char *)P2V(addr);
+		insert_on_free_list(pg);
+#else
 		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.kernel_reserved++;
@@ -532,6 +543,7 @@ void page_init(int pages)
 
 		pg->data = (char *)P2V(addr);
 		insert_on_free_list(pg);
+#endif
 	}
 
 	kstat.total_mem_pages = kstat.free_pages;

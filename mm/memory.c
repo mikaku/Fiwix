@@ -150,7 +150,7 @@ int copy_on_write_page(struct vma *vma, __addr_t addr)
 	pte = GET_PGTBL(addr);
 	pgdir = (unsigned int *)P2V(current->arch.cr3);
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
-	page = (pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT;
+	page = PHYS_TO_PAGE(pgtbl[pte] & PAGE_MASK);
 	pg = &page_table[page];
 
 	if(pg->count > 1) {
@@ -164,9 +164,9 @@ int copy_on_write_page(struct vma *vma, __addr_t addr)
 		}
 		current->rss++;
 		memcpy_b((void *)newaddr,
-			(void *)P2V((page << PAGE_SHIFT)), PAGE_SIZE);
+			(void *)P2V(PAGE_TO_PHYS(page)), PAGE_SIZE);
 		pgtbl[pte] = V2P(newaddr) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-		kfree(P2V((page << PAGE_SHIFT)));
+		kfree(P2V(PAGE_TO_PHYS(page)));
 		current->rss--;
 		invalidate_tlb();
 		return 0;
@@ -176,7 +176,7 @@ int copy_on_write_page(struct vma *vma, __addr_t addr)
 			printk("Oops!, last page %d NOT marked for CoW.\n", pg->page);
 			return -1;
 		}
-		pgtbl[pte] = (page << PAGE_SHIFT) |
+		pgtbl[pte] = PAGE_TO_PHYS(page) |
 			PAGE_PRESENT | PAGE_RW | PAGE_USER;
 		invalidate_tlb();
 		return 0;
@@ -228,7 +228,7 @@ int clone_pages(struct proc *child)
 						dst_pgtbl[pte] = src_pgtbl[pte];
 						continue;
 					}
-					p_addr = src_pgtbl[pte] >> PAGE_SHIFT;
+					p_addr = PHYS_TO_PAGE(src_pgtbl[pte] & PAGE_MASK);
 					pg = &page_table[p_addr];
 					if(pg->flags & PAGE_RESERVED) {
 						continue;
@@ -239,10 +239,10 @@ int clone_pages(struct proc *child)
 						pg->flags |= PAGE_COW;
 					}
 					dst_pgtbl[pte] = src_pgtbl[pte];
-					if(!is_valid_page((dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT)) {
-						PANIC("%s: missing page %d during copy-on-write process.\n", __FUNCTION__, (dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT);
+					if(!is_valid_page(PHYS_TO_PAGE(dst_pgtbl[pte] & PAGE_MASK))) {
+						PANIC("%s: missing page %d during copy-on-write process.\n", __FUNCTION__, PHYS_TO_PAGE(dst_pgtbl[pte] & PAGE_MASK));
 					}
-					pg = &page_table[(dst_pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT];
+					pg = &page_table[PHYS_TO_PAGE(dst_pgtbl[pte] & PAGE_MASK)];
 					pg->count++;
 				}
 			}
@@ -358,7 +358,7 @@ void free_vma_pages(struct vma *vma, __addr_t start, __size_t length)
 			if(pgtbl[pte] & PAGE_PRESENT) {
 				if (!(pgtbl[pte] & PAGE_NOALLOC)) {
 					/* make sure to not free reserved pages */
-					page = pgtbl[pte] >> PAGE_SHIFT;
+					page = PHYS_TO_PAGE(pgtbl[pte] & PAGE_MASK);
 					pg = &page_table[page];
 					if(pg->flags & PAGE_RESERVED) {
 						continue;
