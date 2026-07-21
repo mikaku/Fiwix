@@ -17,6 +17,7 @@
 	.equ TIMER_INTERVAL, 100000
 	.equ MIP_SSIP,       0x2
 	.equ MIP_STIP,       0x20
+	.equ MIP_SEIP,       0x200
 	.equ MIE_MTIE,       0x80
 	.equ MSTATUS_MPP,    0x1800
 	.equ MSTATUS_MPP_S,  0x0800
@@ -47,7 +48,7 @@ _start:
 	/* Keep S-mode ecalls in M mode for SBI; delegate U traps and S timers. */
 	li t0, 0xb1ff
 	csrw medeleg, t0
-	li t0, MIP_SSIP | MIP_STIP
+	li t0, MIP_SSIP | MIP_STIP | MIP_SEIP
 	csrw mideleg, t0
 	li t0, 7
 	csrw mcounteren, t0

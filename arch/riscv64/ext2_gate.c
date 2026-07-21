@@ -120,6 +120,37 @@ static int find_root_file(const char *name, u32 *inode)
 	return -1;
 }
 
+static u32 file_block(const u8 *inode, u32 logical)
+{
+	u32 indirect;
+	u32 child;
+
+	if(logical < 12) {
+		return get32(inode + INODE_BLOCK_OFFSET + logical * 4);
+	}
+	logical -= 12;
+	if(logical < 256) {
+		indirect = get32(inode + INODE_BLOCK_OFFSET + 12 * 4);
+		if(!indirect || read_block(indirect) < 0) {
+			return 0;
+		}
+		return get32(block_buffer + logical * 4);
+	}
+	logical -= 256;
+	if(logical >= 256 * 256) {
+		return 0;
+	}
+	indirect = get32(inode + INODE_BLOCK_OFFSET + 13 * 4);
+	if(!indirect || read_block(indirect) < 0) {
+		return 0;
+	}
+	child = get32(block_buffer + (logical / 256) * 4);
+	if(!child || read_block(child) < 0) {
+		return 0;
+	}
+	return get32(block_buffer + (logical % 256) * 4);
+}
+
 int riscv64_ext2_gate(void)
 {
 	static const char expected[] =
@@ -174,13 +205,12 @@ int riscv64_ext2_load_file(const char *name, void *destination,
 		return -1;
 	}
 	file_size = get32(inode_data + INODE_SIZE_OFFSET);
-	if(!file_size || file_size > capacity || file_size > 12 * BLOCK_SIZE) {
+	if(!file_size || file_size > capacity) {
 		return -1;
 	}
 	output = (u8 *)destination;
 	for(copied = 0; copied < file_size; copied += chunk) {
-		block = get32(inode_data + INODE_BLOCK_OFFSET +
-			(copied / BLOCK_SIZE) * 4);
+		block = file_block(inode_data, copied / BLOCK_SIZE);
 		if(!block || read_block(block) < 0) {
 			return -1;
 		}

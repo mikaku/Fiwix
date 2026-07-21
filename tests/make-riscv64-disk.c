@@ -5,15 +5,16 @@
 #include <string.h>
 
 #define BLOCK_SIZE          1024U
-#define BLOCK_COUNT         1024U
+#define BLOCK_COUNT         8192U
 #define INODE_COUNT         128U
 #define BLOCK_BITMAP_BLOCK  3U
 #define INODE_BITMAP_BLOCK  4U
 #define INODE_TABLE_BLOCK   5U
 #define ROOT_DIR_BLOCK      21U
 #define FILE_DATA_BLOCK     22U
-#define LINUX_DATA_BLOCK    23U
+#define LINUX_METADATA_FIRST 23U
 #define ROOT_INODE          2U
+#define RESERVED_INODES     10U
 #define FILE_INODE          12U
 #define LINUX_INODE         13U
 #define INODE_SIZE          128U
@@ -41,6 +42,20 @@ static void mark_bits(unsigned char *bitmap, unsigned int count)
 	}
 }
 
+static void mark_bit(unsigned char *bitmap, unsigned int bit)
+{
+	bitmap[bit / 8] |= (unsigned char)(1U << (bit % 8));
+}
+
+static void mark_padding(unsigned char *bitmap, unsigned int valid_bits)
+{
+	unsigned int n;
+
+	for(n = valid_bits; n < BLOCK_SIZE * 8; n++) {
+		mark_bit(bitmap, n);
+	}
+}
+
 static void make_inode(unsigned char *inode, unsigned int mode,
 	unsigned int size, unsigned int links, unsigned int block)
 {
@@ -51,8 +66,13 @@ static void make_inode(unsigned char *inode, unsigned int mode,
 	put32(inode + 40, block);
 }
 
+static unsigned int minimum(unsigned int a, unsigned int b)
+{
+	return a < b ? a : b;
+}
+
 static void make_dirent(unsigned char *entry, unsigned int inode,
-	unsigned int record_length, unsigned int type, const char *name)
+	unsigned int record_length, const char *name)
 {
 	unsigned int length;
 
@@ -60,7 +80,7 @@ static void make_dirent(unsigned char *entry, unsigned int inode,
 	put32(entry + 0, inode);
 	put16(entry + 4, record_length);
 	entry[6] = (unsigned char)length;
-	entry[7] = (unsigned char)type;
+	entry[7] = 0;
 	memcpy(entry + 8, name, length);
 }
 
@@ -75,9 +95,23 @@ int main(int argc, char **argv)
 	unsigned char *group;
 	unsigned char *inodes;
 	unsigned char *directory;
+	unsigned char *linux_inode;
 	FILE *output;
 	FILE *linux_input;
 	long linux_size;
+	unsigned int linux_blocks;
+	unsigned int single_block;
+	unsigned int double_block;
+	unsigned int double_children;
+	unsigned int child_first;
+	unsigned int data_first;
+	unsigned int data_block;
+	unsigned int logical;
+	unsigned int child;
+	unsigned int slot;
+	unsigned int metadata_blocks;
+	unsigned int last_block;
+	unsigned int free_blocks;
 	size_t written;
 
 	if(argc != 3) {
@@ -94,8 +128,7 @@ int main(int argc, char **argv)
 	super = image + BLOCK_SIZE;
 	put32(super + 0, INODE_COUNT);
 	put32(super + 4, BLOCK_COUNT);
-	put32(super + 12, BLOCK_COUNT - (LINUX_DATA_BLOCK + 1));
-	put32(super + 16, INODE_COUNT - LINUX_INODE);
+	put32(super + 16, INODE_COUNT - RESERVED_INODES - 2);
 	put32(super + 20, 1);
 	put32(super + 24, 0);
 	put32(super + 28, 0);
@@ -114,11 +147,12 @@ int main(int argc, char **argv)
 	put32(group + 0, BLOCK_BITMAP_BLOCK);
 	put32(group + 4, INODE_BITMAP_BLOCK);
 	put32(group + 8, INODE_TABLE_BLOCK);
-	put16(group + 12, BLOCK_COUNT - (LINUX_DATA_BLOCK + 1));
-	put16(group + 14, INODE_COUNT - LINUX_INODE);
+	put16(group + 14, INODE_COUNT - RESERVED_INODES - 2);
 	put16(group + 16, 1);
-	mark_bits(image + BLOCK_BITMAP_BLOCK * BLOCK_SIZE, LINUX_DATA_BLOCK);
-	mark_bits(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, LINUX_INODE);
+	mark_bits(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, RESERVED_INODES);
+	mark_bit(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, FILE_INODE - 1);
+	mark_bit(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, LINUX_INODE - 1);
+	mark_padding(image + INODE_BITMAP_BLOCK * BLOCK_SIZE, INODE_COUNT);
 
 	inodes = image + INODE_TABLE_BLOCK * BLOCK_SIZE;
 	make_inode(inodes + (ROOT_INODE - 1) * INODE_SIZE,
@@ -133,29 +167,86 @@ int main(int argc, char **argv)
 		return 2;
 	}
 	linux_size = ftell(linux_input);
-	if(linux_size <= 0 || linux_size > (long)BLOCK_SIZE ||
+	if(linux_size <= 0 ||
 		fseek(linux_input, 0, SEEK_SET)) {
 		fprintf(stderr, "invalid Linux fixture size in %s\n", argv[2]);
 		fclose(linux_input);
 		free(image);
 		return 2;
 	}
-	if(fread(image + LINUX_DATA_BLOCK * BLOCK_SIZE, 1,
+	linux_blocks = ((unsigned long)linux_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+	single_block = 0;
+	double_block = 0;
+	double_children = 0;
+	data_first = LINUX_METADATA_FIRST;
+	if(linux_blocks > 12) {
+		single_block = data_first++;
+	}
+	if(linux_blocks > 12 + 256) {
+		double_block = data_first++;
+		double_children = (linux_blocks - 12 - 256 + 255) / 256;
+	}
+	child_first = data_first;
+	data_first += double_children;
+	if(data_first >= BLOCK_COUNT || linux_blocks > BLOCK_COUNT - data_first) {
+		fprintf(stderr, "Linux fixture is too large for the ext2 image\n");
+		fclose(linux_input);
+		free(image);
+		return 2;
+	}
+	if(fread(image + data_first * BLOCK_SIZE, 1,
 		(size_t)linux_size, linux_input) != (size_t)linux_size ||
 		fclose(linux_input)) {
 		fprintf(stderr, "unable to copy %s\n", argv[2]);
 		free(image);
 		return 2;
 	}
-	make_inode(inodes + (LINUX_INODE - 1) * INODE_SIZE,
-		0x81a4, (unsigned int)linux_size, 1, LINUX_DATA_BLOCK);
+	linux_inode = inodes + (LINUX_INODE - 1) * INODE_SIZE;
+	make_inode(linux_inode, 0x81a4, (unsigned int)linux_size, 1,
+		data_first);
+	for(logical = 0; logical < minimum(linux_blocks, 12); logical++) {
+		put32(linux_inode + 40 + logical * 4, data_first + logical);
+	}
+	if(single_block) {
+		put32(linux_inode + 40 + 12 * 4, single_block);
+		for(logical = 12; logical < minimum(linux_blocks, 12 + 256);
+			logical++) {
+			put32(image + single_block * BLOCK_SIZE +
+				(logical - 12) * 4, data_first + logical);
+		}
+	}
+	if(double_block) {
+		put32(linux_inode + 40 + 13 * 4, double_block);
+		for(child = 0; child < double_children; child++) {
+			put32(image + double_block * BLOCK_SIZE + child * 4,
+				child_first + child);
+			for(slot = 0; slot < 256; slot++) {
+				logical = 12 + 256 + child * 256 + slot;
+				if(logical >= linux_blocks) {
+					break;
+				}
+				data_block = data_first + logical;
+				put32(image + (child_first + child) * BLOCK_SIZE +
+					slot * 4, data_block);
+			}
+		}
+	}
+	metadata_blocks = (single_block ? 1 : 0) +
+		(double_block ? 1 + double_children : 0);
+	put32(linux_inode + 28, (linux_blocks + metadata_blocks) * 2);
+	last_block = data_first + linux_blocks - 1;
+	free_blocks = BLOCK_COUNT - (last_block + 1);
+	put32(super + 12, free_blocks);
+	put16(group + 12, free_blocks);
+	mark_bits(image + BLOCK_BITMAP_BLOCK * BLOCK_SIZE, last_block);
+	mark_padding(image + BLOCK_BITMAP_BLOCK * BLOCK_SIZE, BLOCK_COUNT - 1);
 
 	directory = image + ROOT_DIR_BLOCK * BLOCK_SIZE;
-	make_dirent(directory, ROOT_INODE, 12, 2, ".");
-	make_dirent(directory + 12, ROOT_INODE, 12, 2, "..");
-	make_dirent(directory + 24, FILE_INODE, 20, 1,
+	make_dirent(directory, ROOT_INODE, 12, ".");
+	make_dirent(directory + 12, ROOT_INODE, 12, "..");
+	make_dirent(directory + 24, FILE_INODE, 20,
 		"bootstrap");
-	make_dirent(directory + 44, LINUX_INODE, BLOCK_SIZE - 44, 1,
+	make_dirent(directory + 44, LINUX_INODE, BLOCK_SIZE - 44,
 		"linux");
 	memcpy(image + FILE_DATA_BLOCK * BLOCK_SIZE, file_marker,
 		sizeof(file_marker) - 1);

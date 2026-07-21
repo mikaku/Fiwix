@@ -2,6 +2,7 @@
 
 .DEFAULT_GOAL := all
 HOSTCC ?= cc
+LINUX_IMAGE ?= fixture/linux.bin
 
 .S.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -35,12 +36,16 @@ fixture/make-riscv64-disk: ../../tests/make-riscv64-disk.c
 	mkdir -p fixture
 	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
 
-fixture/disk.img: fixture/make-riscv64-disk fixture/linux.bin
-	$< $@ fixture/linux.bin
+fixture/disk.img: fixture/make-riscv64-disk $(LINUX_IMAGE) FORCE
+	fixture/make-riscv64-disk $@ $(LINUX_IMAGE)
 
 all: $(OBJS) fixture/disk.img
+
+FORCE:
 
 clean:
 	rm -f *.o fixture/*.o fixture/*.elf fixture/*.bin fixture/*.img \
 		fixture/make-riscv64-disk
 	rmdir fixture 2>/dev/null || true
+
+.PHONY: all clean FORCE

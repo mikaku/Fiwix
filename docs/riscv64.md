@@ -26,10 +26,29 @@ instructions disabled.
 ```sh
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 test-riscv64
+
+# Exercise direct, single-indirect, and double-indirect ext2 file blocks.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 test-riscv64-large-image
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
 The test uses `-bios none`; OpenSBI is not part of the runtime contract.
+
+An optional real-Linux oracle is reproducible from a Linux source tree:
+
+```sh
+JOBS=8 tests/build-riscv64-linux.sh /path/to/linux-6.12.1 /tmp/linux-build
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  LINUX_IMAGE=/tmp/linux-build/arch/riscv/boot/Image test-riscv64-linux
+```
+
+The recorded oracle uses upstream Linux 6.12.1 tarball SHA-256
+`0193b1d86dd372ec891bae799f6da20deef16fc199f30080a4ea9de8cef0c619`.
+The build script applies `tests/riscv64-linux.config` on top of `tinyconfig` and
+sets fixed build identity and timestamp values. It requires host `flex`,
+`bison`, and `bc` in addition to the cross toolchain.
 
 ## Current machine contract
 
@@ -39,7 +58,8 @@ The test uses `-bios none`; OpenSBI is not part of the runtime contract.
 - CLINT `mtimecmp` at `0x02004000` and `mtime` at `0x0200bff8`;
 - test finisher at `0x00100000`;
 - M mode grants S/U physical access with PMP, delegates synchronous traps, and
-  forwards machine timer interrupts as supervisor software interrupts.
+  delegates supervisor external interrupts, and forwards machine timer
+  interrupts as supervisor software interrupts.
 
 The fixed addresses are a deliberate first bring-up boundary. The saved DTB
 pointer will become the source of discoverable RAM and devices before the port
@@ -102,13 +122,27 @@ This queue code is not yet registered with Fiwix's generic block layer. Its
 purpose is to prove discovery, feature negotiation, DMA addresses, both queue
 layouts, and sector I/O before adapting the generic buffer cache.
 
-The generated disk is also a deterministic 1 MiB, 1 KiB-block, revision-0 ext2
+The generated disk is also a deterministic 8 MiB, 1 KiB-block, revision-0 ext2
 filesystem. A bounded read-only gate follows the superblock, group descriptor,
 root inode, root directory, `bootstrap` inode, and its direct data block, then
 checks the file contents. Fiwix's existing ext2 implementation supports this
 same original revision. The staging reader is deliberately small and will be
 removed once the virtio device is registered with the generic block layer and
 the existing buffer-cache/VFS/ext2 path reaches the same file.
+
+The staging reader resolves direct, single-indirect, and double-indirect file
+blocks. `test-riscv64-large-image` pads the executable fixture to 300 KiB, so a
+successful handoff proves all three tiers rather than only the first data
+block. The disk generator accepts `LINUX_IMAGE=/path/to/Image`; it computes the
+metadata layout and free-block counts from the selected image and rejects
+inputs that do not fit. The 8 MiB cap is deliberate: it is large enough for a
+purpose-built bootstrap kernel but rejects distribution kernels whose size and
+feature set would hide the actual handoff requirements.
+
+The smoke scripts run `e2fsck -fn` before QEMU when it is available in `PATH`
+or at `/sbin/e2fsck`. This independently checks the generated revision-0
+directory format, inode allocation, block accounting, indirect trees, and
+bitmap padding rather than relying only on the staging reader under test.
 
 ## Linux Image handoff
 
@@ -117,6 +151,9 @@ The ext2 fixture also contains a position-independent payload with a current
 (`0x80200000`), with a link-time assertion preventing the resident kernel from
 growing into that region. The loader checks the advertised offset and size,
 little-endian flags, header version 0.2, and both Image magic fields.
+The advertised memory size may exceed the file size because it includes
+zero-filled sections; the loader bounds that size against the 8 MiB reserved
+region and clears the tail before handoff.
 
 The final assembly boundary clears `sie`, `sstatus.SIE`, `sscratch`, and `satp`,
 flushes translation and instruction state, then enters with the original hart
@@ -124,14 +161,16 @@ ID in `a0` and QEMU DTB physical address in `a1`. The payload independently
 checks hart 0, the flattened-device-tree magic, `satp == 0`, and `sie == 0`
 before printing its success marker.
 
-This proves the bootloader register/CSR and Image placement contract, not a
-Linux boot. The resident M-mode shim now implements SBI 0.3 BASE discovery,
-TIME `set_timer`, and SRST reset, plus the legacy timer, console, and shutdown
-calls. The smoke gate probes BASE/TIME/SRST, programs a timer, observes the
-delegated supervisor timer pending bit, and cancels it. The M-mode trap frame
-preserves every caller-saved integer register except the SBI return pair.
+The resident M-mode shim implements SBI 0.3 BASE discovery, TIME `set_timer`,
+and SRST reset, plus the legacy timer, console, and shutdown calls. The fixture
+smoke gate probes BASE/TIME/SRST, programs a timer, observes the delegated
+supervisor timer pending bit, and cancels it. The M-mode trap frame preserves
+every caller-saved integer register except the SBI return pair.
 
-This bounded SBI implementation keeps OpenSBI out of the bootstrap runtime. A
-real Linux image remains required to determine whether further extensions or
-device-tree reservations are needed before the handoff can be considered
-complete.
+The optional Linux 6.12.1 gate loads a 1.9 MiB kernel from ext2, then verifies
+Linux's own version banner, SBI discovery, clocksource, PLIC, and interrupt-
+driven 16550 console initialization. The tiny kernel deliberately has no
+userspace, and the gate ends at its expected `No working init found` panic.
+This proves a real Linux boot through device initialization while keeping
+OpenSBI and a distribution kernel out of the bootstrap runtime. It does not
+yet prove a Linux initramfs or userspace handoff.

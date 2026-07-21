@@ -10,6 +10,8 @@ FIXTURE=${FIXTURE:-arch/riscv64/fixture/user.elf}
 LINUX_FIXTURE=${LINUX_FIXTURE:-arch/riscv64/fixture/linux.elf}
 DISK=${DISK:-arch/riscv64/fixture/disk.img}
 
+tests/riscv64-ext2-check.sh "$DISK"
+
 output=$(mktemp)
 modern_output=$(mktemp)
 trap 'rm -f "$output" "$modern_output"' EXIT HUP INT TERM

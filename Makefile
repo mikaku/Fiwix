@@ -115,4 +115,13 @@ test-riscv64: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64 requires TARGET_ARCH=riscv64" >&2; exit 1; }
 	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-smoke.sh ./fiwix
 
-.PHONY: all clean test-riscv64
+test-riscv64-large-image: all
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-large-image requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-large-image-smoke.sh ./fiwix
+
+test-riscv64-linux: all
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-linux requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	@test -n "$(LINUX_IMAGE)" || { echo "test-riscv64-linux requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-linux-smoke.sh ./fiwix
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux

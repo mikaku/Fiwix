@@ -4,7 +4,7 @@
  * RISC-V Linux Image header and load-address gate.
  */
 
-#define IMAGE_CAPACITY      4096UL
+#define IMAGE_CAPACITY      (8UL * 1024 * 1024)
 #define IMAGE_TEXT_OFFSET   0x00200000UL
 #define IMAGE_LOAD_ADDRESS  0x80200000UL
 #define IMAGE_MAGIC         0x0000005643534952UL
@@ -34,6 +34,7 @@ int riscv64_linux_image_gate(void)
 {
 	u64 file_size;
 	u64 image_size;
+	u64 n;
 
 	if((u64)linux_image != IMAGE_LOAD_ADDRESS ||
 		riscv64_ext2_load_file("linux", linux_image,
@@ -42,11 +43,14 @@ int riscv64_linux_image_gate(void)
 	}
 	image_size = get64(linux_image + 16);
 	if(get64(linux_image + 8) != IMAGE_TEXT_OFFSET || !image_size ||
-		image_size > file_size || get64(linux_image + 24) != 0 ||
+		image_size > IMAGE_CAPACITY || get64(linux_image + 24) != 0 ||
 		get32(linux_image + 32) != 2 ||
 		get64(linux_image + 48) != IMAGE_MAGIC ||
 		get32(linux_image + 56) != IMAGE_MAGIC2) {
 		return -1;
+	}
+	for(n = file_size; n < image_size; n++) {
+		linux_image[n] = 0;
 	}
 	return 0;
 }
