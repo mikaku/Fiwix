@@ -43,6 +43,10 @@ void riscv64_kernel_process_entry(void);
 void riscv64_user_process_entry(void);
 void riscv64_return_to_user(void);
 int riscv64_user_syscall(struct riscv64_trap_frame *, unsigned long);
+void riscv64_generic_traps_install(void);
+int riscv64_generic_user_trap(struct riscv64_trap_frame *, unsigned long);
+int riscv64_generic_kernel_trap(unsigned long, unsigned long, unsigned long);
+void riscv64_generic_trap_fatal(unsigned long, unsigned long, unsigned long);
 
 #else
 

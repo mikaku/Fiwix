@@ -188,8 +188,8 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 261 C files, including the RV64 process, fork, syscall,
-and ELF64 exec hooks.
+It currently compiles 262 C files, including the RV64 process, fork, syscall,
+trap, and ELF64 exec hooks.
 Three explicit architecture replacements remain excluded: i386 GDT/IDT and
 boot main.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
@@ -232,9 +232,8 @@ the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
 descriptors and clone sharing flags are rejected rather than silently given
 fork semantics. RV syscall 221 now enters shared `execve` policy, which selects
 the architecture ELF64 loader without passing its native trap frame to the
-ELF32 implementation. The translator remains compile-gated; the generic boot
-replacement must select it from the U-mode trap vector before these calls are
-exercised by PID 1.
+ELF32 implementation. A generic trap vector now dispatches these calls, but the
+generic boot replacement must install it before they are exercised by PID 1.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
@@ -284,6 +283,29 @@ Three generic exec bugs were fixed while adding this path:
 - A nonzero `PT_PHDR` address was previously enough to satisfy planning. The
   planner now requires the complete program-header table to lie in file-backed
   bytes of a validated load segment.
+
+## Generic trap design
+
+The generic RV64 vector saves the complete 272-byte integer frame used by fork
+and exec. `sscratch` exchanges the U-mode stack for the current process's kernel
+stack. The entry clears `sscratch` before enabling supervisor interrupts in
+bottom-half processing, so a nested timer is classified as a kernel trap rather
+than swapping onto the saved user stack. Immediately before `sret`, it restores
+the process kernel-stack top to `sscratch` and the user stack from the frame.
+
+User ecalls enter the Linux-number translator and then generic bottom halves.
+Supervisor software timer interrupts clear `sip.SSIP`, call the existing timer
+IRQ and bottom-half policy through a compatibility context that records whether
+the interrupted mode was user or supervisor, and schedule only when returning
+to userspace. This matches the i386 rule that nested kernel interrupts do not
+preempt at their return boundary.
+
+A firmware-free QEMU gate enters U mode, seeds registers, executes `ecall`, and
+checks frame offsets, `sepc` advancement, return-value replacement, user-stack
+restoration, and successful `sret`. A separate host policy test covers user and
+kernel timer paths, bottom-half accounting, scheduling, syscall failure, and
+unsupported causes. Page faults and RV64 signal-frame delivery are intentionally
+still fatal and are the next architecture gates.
 
 ## Linux Image handoff
 
