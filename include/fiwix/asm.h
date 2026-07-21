@@ -101,6 +101,7 @@ unsigned long riscv64_read_stval(void);
 unsigned long riscv64_read_sp(void);
 void riscv64_set_sp(unsigned long);
 void riscv64_wait_for_interrupt(void);
+void riscv64_vm_install(unsigned long);
 unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
 	unsigned long, unsigned long);
 

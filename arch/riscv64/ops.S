@@ -21,6 +21,7 @@
 	.globl riscv64_context_activate
 	.globl riscv64_read_satp
 	.globl riscv64_make_satp
+	.globl invalidate_tlb
 
 riscv64_wait_for_interrupt:
 	wfi
@@ -101,6 +102,10 @@ riscv64_make_satp:
 	li t0, 8
 	slli t0, t0, 60
 	or a0, a0, t0
+	ret
+
+invalidate_tlb:
+	sfence.vma zero, zero
 	ret
 
 /* Activate a complete process SATP value and reset kernel trap selection. */

@@ -67,7 +67,7 @@ extern struct page **page_hash_table;
 extern unsigned int page_table_size;		/* size in bytes */
 extern unsigned int page_hash_table_size;	/* size in bytes */
 
-extern unsigned int *kpage_dir;
+extern __pte_t *kpage_dir;
 
 
 /* buddy_low.c */
