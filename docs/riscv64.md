@@ -509,7 +509,8 @@ The 265 compiled translation units are recorded in
 `tests/riscv64-generic-sources.list` rather than discovered with
 `find -name`. Commencement's Gash `find` lacks that predicate, and an exact
 manifest also makes additions to the reviewed kernel closure fail the expected
-count until they are deliberately classified.
+count until they are deliberately classified. Object names use the manifest
+index, avoiding one emulated Gash/Guile `tr` process per source file.
 
 TinyCC also accepts but does not implement `-ffunction-sections`. Its image
 therefore retains dormant `inport_b` and `outport_b` references from mixed

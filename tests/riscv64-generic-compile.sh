@@ -32,7 +32,7 @@ fi
 while IFS= read -r source; do
 	test -n "$source" || continue
 	test -f "$source"
-	output=$temporary/$(printf '%s' "$source" | tr / _).o
+	output=$temporary/generic-$compiled.o
 	"$GENERIC_CC" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
 		-mcmodel=medany -msmall-data-limit=0 -std=c89 -D__KERNEL__ \
 		-DCONFIG_ARCH_RISCV64 -I"$root/include" -O2 -fno-pie \
