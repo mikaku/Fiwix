@@ -64,7 +64,8 @@ struct vma *find_vma_region(__addr_t);
 struct vma *find_vma_intersection(__addr_t, __addr_t);
 int expand_heap(__addr_t);
 __addr_t get_unmapped_vma_region(__size_t);
-int do_mmap(struct inode *, __addr_t, __size_t, unsigned int, unsigned int, unsigned int, char, char, void *);
+signed long do_mmap(struct inode *, __addr_t, __size_t, unsigned int,
+	unsigned int, unsigned int, char, char, void *);
 int do_munmap(__addr_t, __size_t);
 int do_mprotect(struct vma *, __addr_t, __size_t, int);
 

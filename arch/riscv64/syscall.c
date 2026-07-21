@@ -126,7 +126,8 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 			result = riscv64_call_fiwix(SYS_fork, frame, 0, 0, 0, 0, 0, 0);
 			break;
 		case RV_SYS_EXECVE:
-			result = -ENOSYS;
+			result = riscv64_call_fiwix(SYS_execve, frame, frame->a0,
+				frame->a1, frame->a2, 0, 0, 0);
 			break;
 		case RV_SYS_WAIT4:
 			result = riscv64_call_fiwix(SYS_wait4, frame, frame->a0,

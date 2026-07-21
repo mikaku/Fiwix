@@ -152,6 +152,7 @@ test-riscv64-tcc:
 test-riscv64-generic-compile:
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-generic-compile requires TARGET_ARCH=riscv64" >&2; exit 1; }
 	GENERIC_CC="$(CROSS_COMPILE)gcc" tests/riscv64-generic-compile.sh
+	HOSTCC="$(HOSTCC)" tests/riscv64-elf64-plan.sh
 	HOSTCC="$(HOSTCC)" tests/riscv64-syscall-translation.sh
 
 .PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile

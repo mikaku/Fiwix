@@ -58,6 +58,7 @@ int main(void)
 		{ 173, SYS_getppid },
 		{ 214, SYS_brk },
 		{ 220, SYS_fork },
+		{ 221, SYS_execve },
 		{ 260, SYS_wait4 }
 	};
 	struct riscv64_trap_frame frame;
@@ -124,13 +125,6 @@ int main(void)
 	if(riscv64_user_syscall(&frame, 8) ||
 		(signed long)frame.a0 != -EINVAL || called_num != ~0U) {
 		return 5;
-	}
-
-	clear_frame(&frame);
-	frame.a7 = 221;
-	if(riscv64_user_syscall(&frame, 8) ||
-		(signed long)frame.a0 != -ENOSYS || called_num != ~0U) {
-		return 6;
 	}
 
 	clear_frame(&frame);

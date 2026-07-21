@@ -377,7 +377,9 @@ __addr_t get_unmapped_vma_region(__size_t length)
 	return 0;
 }
 
-int do_mmap(struct inode *i, __addr_t start, __size_t length, unsigned int prot, unsigned int flags, unsigned int offset, char type, char mode, void *object)
+signed long do_mmap(struct inode *i, __addr_t start, __size_t length,
+	unsigned int prot, unsigned int flags, unsigned int offset, char type,
+	char mode, void *object)
 {
 	struct vma *vma;
 	int errno;

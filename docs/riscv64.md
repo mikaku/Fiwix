@@ -188,8 +188,8 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 259 C files, including the RV64 process, fork, and
-syscall hooks.
+It currently compiles 261 C files, including the RV64 process, fork, syscall,
+and ELF64 exec hooks.
 Three explicit architecture replacements remain excluded: i386 GDT/IDT and
 boot main.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
@@ -230,10 +230,11 @@ the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
 `lseek`, `unlinkat`, `faccessat`, `chdir`, `fchmodat`, `brk`, fork-style
 `clone`, `wait4`, `exit`, `getpid`, and `getppid`. Unsupported `*at` directory
 descriptors and clone sharing flags are rejected rather than silently given
-fork semantics. `execve` remains `ENOSYS` until the ELF64 loader and LP64
-initial stack replace the current ELF32 implementation. The translator is
-compile-gated; the generic boot replacement must select it from the U-mode trap
-vector before these calls are exercised by PID 1.
+fork semantics. RV syscall 221 now enters shared `execve` policy, which selects
+the architecture ELF64 loader without passing its native trap frame to the
+ELF32 implementation. The translator remains compile-gated; the generic boot
+replacement must select it from the U-mode trap vector before these calls are
+exercised by PID 1.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal
@@ -242,9 +243,47 @@ allocator addresses use `__addr_t`, which is `unsigned int` on i386 and
 preserving i386 layouts and call widths. Physical page conversion also accounts
 for QEMU RV64 RAM beginning at `0x80000000`; page-cache and buddy indexes are
 relative to that base while kernel pointers remain identity mapped. The gate
-still emits 190 pointer-width warnings, primarily from 32-bit syscall arguments
-and x86 physical-memory
-interfaces; compile success is not yet an LP64 correctness claim.
+still emits 188 pointer-width warnings, primarily from 32-bit syscall arguments
+and x86 physical-memory interfaces; compile success is not yet an LP64
+correctness claim.
+
+## Generic ELF64 exec design
+
+The first filesystem-backed RV64 loader accepts little-endian static RISC-V
+`ET_EXEC` files whose program-header table fits in the first filesystem block.
+A pure planning pass validates all load ranges, page-rounded overlap, entry
+permissions, mapped program headers, file bounds, and the absence of
+`PT_INTERP` before the old image is released. The kernel then creates anonymous
+VMAs, eagerly copies every file-backed byte, zeros BSS, and builds a 16-byte
+aligned LP64 `argc`/`argv`/`envp`/auxv stack.
+
+Eager population is deliberate: first execution does not depend on the generic
+page-fault path while that path still uses an i386 saved-context layout. This
+initial scope excludes dynamic linking, PIE, signals, and demand paging. The
+loader enforces W^X by dropping write permission from executable segments. The
+bootstrap stage0 `hex0-seed` overstates its single segment as RWE, but static
+inspection confirms that it writes only to its stack, so it executes correctly
+when normalized to RX.
+
+The host-side ELF plan gate mirrors the seed's 392-byte image shape and rejects
+wrong class or machine, truncated headers and files, dynamic interpreters,
+overlapping or oversized segments, non-executable entry points, and unmapped
+program-header metadata. The new ELF, exec, `execve`, and mmap units compile
+with both bootstrap TinyCC rungs. A whole-tree `tcc-boot0` audit reaches these
+units but still stops later at the pre-existing `net/ipv4.c` return from a
+`void` function; only the GCC whole-tree audit is currently claimed.
+
+Three generic exec bugs were fixed while adding this path:
+
+- `do_mmap()` returned `int`, so a successful RV64 stack address near
+  `0x4000000000` was truncated into a negative result. Its internal return type
+  is now signed `long`, which remains 32-bit on i386.
+- Fresh argument-staging pages retained allocator contents. Script rewriting
+  could inspect stale bytes, and copying complete pages to userspace could
+  disclose kernel allocation data. Both allocation paths now zero those pages.
+- A nonzero `PT_PHDR` address was previously enough to satisfy planning. The
+  planner now requires the complete program-header table to lie in file-backed
+  bytes of a validated load segment.
 
 ## Linux Image handoff
 
