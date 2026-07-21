@@ -15,6 +15,14 @@ SECTIONS
 		*(.text*)
 	}
 
+	.user : ALIGN(4096)
+	{
+		__user_text_start = .;
+		KEEP(*(.user.text))
+		__user_text_end = .;
+		. = ALIGN(4096);
+	}
+
 	.rodata : ALIGN(4096)
 	{
 		*(.rodata*)
@@ -37,6 +45,8 @@ SECTIONS
 		. = ALIGN(16);
 		. += 16384;
 		__supervisor_stack_top = .;
+		. += 8192;
+		__supervisor_trap_stack_top = .;
 		. += 4096;
 		__machine_stack_top = .;
 		__boot_stack_top = __machine_stack_top;

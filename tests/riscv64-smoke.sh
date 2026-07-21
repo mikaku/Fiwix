@@ -23,6 +23,9 @@ grep -q '^firmware-free machine-mode entry passed' "$output"
 grep -q '^Fiwix riscv64 S-mode entry passed' "$output"
 grep -q '^Fiwix riscv64 context-switch gate passed: 6 switches' "$output"
 grep -q '^Fiwix riscv64 timer gate passed: 3 ticks' "$output"
+grep -q '^Fiwix riscv64 Sv39 gate passed' "$output"
+grep -q '^Fiwix riscv64 U-mode write syscall passed' "$output"
+grep -q '^Fiwix riscv64 U-mode exit syscall passed: 42' "$output"
 if grep -q 'fatal .* trap' "$output"; then
 	cat "$output" >&2
 	exit 1

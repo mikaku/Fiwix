@@ -3,8 +3,9 @@
 The experimental riscv64 target boots directly on the single-hart QEMU `virt`
 machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
-context-switch primitive with two kernel tasks. It does not yet run the generic
-Fiwix scheduler or userspace.
+context-switch primitive with two kernel tasks, Sv39 address translation, and a
+small U-mode RV64 syscall fixture. It does not yet run the generic Fiwix
+scheduler or a filesystem-backed userspace.
 
 ## Build
 
@@ -57,3 +58,23 @@ The smoke kernel initializes two independent kernel stacks and performs six
 cooperative switches before returning to the boot context. This gate checks the
 assembly offsets against the C structure and gives later generic-scheduler work
 a known-good low-level primitive.
+
+## Sv39 and U-mode design
+
+The bring-up page tables keep a supervisor-only 1 GiB identity mapping for the
+kernel and add supervisor-only low leaves for the QEMU UART and test finisher.
+Two 4 KiB user leaves map the fixture text read/execute and its stack
+read/write. No user mapping is writable and executable at the same time.
+
+The supervisor trap entry uses `sscratch` to distinguish U-mode traps from
+S-mode interrupts without destroying a general register. User traps run on a
+dedicated 8 KiB kernel stack and save all integer registers, `sepc`, `sstatus`,
+and `stval`. The initial RV64 syscall dispatcher implements Linux-compatible
+numbers 64 (`write`) and 93 (`exit`); it validates the fixture's output buffer
+before temporarily reading its mapped page with `SUM` enabled. The smoke test
+requires a U-mode `write` marker and an `exit(42)` return to the suspended
+supervisor context.
+
+The embedded fixture is intentionally not treated as the final user ABI. It is
+a deterministic privilege/MMU/trap gate that must remain green while ELF64
+loading, generic process state, and filesystem-backed binaries are added.

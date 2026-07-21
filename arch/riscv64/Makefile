@@ -5,7 +5,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o main.o
+OBJS = boot.o context.o main.o user.o vm.o
 
 all: $(OBJS)
 

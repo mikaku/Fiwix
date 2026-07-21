@@ -128,6 +128,7 @@ machine_trap_fatal:
 supervisor_entry:
 	la sp, __supervisor_stack_top
 	andi sp, sp, -16
+	csrw sscratch, zero
 	la t0, supervisor_trap
 	csrw stvec, t0
 	li t0, SIE_SSIE
@@ -142,6 +143,11 @@ supervisor_entry:
 
 	.align 4
 supervisor_trap:
+	csrrw sp, sscratch, sp
+	bnez sp, riscv64_user_trap_entry
+	csrrw sp, sscratch, sp
+
+supervisor_kernel_trap:
 	addi sp, sp, -32
 	sd t0, 0(sp)
 	sd t1, 8(sp)

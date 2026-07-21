@@ -14,11 +14,19 @@
 #define TEST_FINISHER  0x00100000UL
 #define TEST_PASS      0x00005555U
 #define TEST_FAIL      0x00013333U
+#define USER_TEXT_VA   0x00400000UL
+#define PAGE_SIZE      4096UL
+#define SCAUSE_IRQ     (1UL << 63)
+#define SCAUSE_SSIP    1UL
+#define SCAUSE_U_ECALL 8UL
+#define SYS_WRITE      64UL
+#define SYS_EXIT       93UL
 
 typedef unsigned long u64;
 typedef unsigned char u8;
 
 volatile u64 riscv64_timer_ticks;
+volatile u64 riscv64_user_exit_status;
 
 #define TASK_STACK_WORDS 512
 
@@ -31,6 +39,52 @@ static volatile unsigned int task_switches;
 
 extern void riscv64_context_switch(struct arch_context *,
 	struct arch_context *);
+extern void riscv64_vm_enable(void);
+extern u64 riscv64_user_entry(void);
+extern u64 riscv64_user_stack_top(void);
+extern u64 riscv64_enter_user(u64, u64);
+
+struct riscv64_trap_frame {
+	u64 ra;
+	u64 sp;
+	u64 gp;
+	u64 tp;
+	u64 t0;
+	u64 t1;
+	u64 t2;
+	u64 s0;
+	u64 s1;
+	u64 a0;
+	u64 a1;
+	u64 a2;
+	u64 a3;
+	u64 a4;
+	u64 a5;
+	u64 a6;
+	u64 a7;
+	u64 s2;
+	u64 s3;
+	u64 s4;
+	u64 s5;
+	u64 s6;
+	u64 s7;
+	u64 s8;
+	u64 s9;
+	u64 s10;
+	u64 s11;
+	u64 t3;
+	u64 t4;
+	u64 t5;
+	u64 t6;
+	u64 sepc;
+	u64 sstatus;
+	u64 stval;
+};
+
+typedef char arch_context_size_must_be_128[
+	(sizeof(struct arch_context) == 128) ? 1 : -1];
+typedef char trap_frame_size_must_be_272[
+	(sizeof(struct riscv64_trap_frame) == 272) ? 1 : -1];
 
 static void uart_putc(char c)
 {
@@ -123,6 +177,8 @@ void riscv64_machine_main(u64 hartid, u64 dtb)
 
 void riscv64_supervisor_main(u64 hartid, u64 dtb)
 {
+	u64 status;
+
 	(void)hartid;
 	(void)dtb;
 	uart_puts("Fiwix riscv64 S-mode entry passed\n");
@@ -131,6 +187,15 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 		__asm__ __volatile__("wfi");
 	}
 	uart_puts("Fiwix riscv64 timer gate passed: 3 ticks\n");
+	riscv64_vm_enable();
+	uart_puts("Fiwix riscv64 Sv39 gate passed\n");
+	status = riscv64_enter_user(riscv64_user_entry(),
+		riscv64_user_stack_top());
+	if(status != 42) {
+		uart_puts("Fiwix riscv64 U-mode exit syscall failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 U-mode exit syscall passed: 42\n");
 	finish(TEST_PASS);
 }
 
@@ -156,4 +221,51 @@ void riscv64_supervisor_trap(u64 cause, u64 epc, u64 value)
 	uart_puthex(value);
 	uart_putc('\n');
 	finish(TEST_FAIL);
+}
+
+u64 riscv64_user_trap(struct riscv64_trap_frame *frame, u64 cause)
+{
+	u64 address;
+	u64 count;
+	u64 n;
+	const char *buffer;
+
+	if(cause & SCAUSE_IRQ) {
+		if((cause & ~SCAUSE_IRQ) == SCAUSE_SSIP) {
+			__asm__ __volatile__("csrc sip, %0" : : "r"(SCAUSE_SSIP));
+			riscv64_timer_ticks++;
+			return 0;
+		}
+		riscv64_supervisor_trap(cause, frame->sepc, frame->stval);
+	}
+
+	if(cause != SCAUSE_U_ECALL) {
+		riscv64_supervisor_trap(cause, frame->sepc, frame->stval);
+	}
+	frame->sepc += 4;
+
+	if(frame->a7 == SYS_WRITE) {
+		address = frame->a1;
+		count = frame->a2;
+		if(frame->a0 != 1 || address < USER_TEXT_VA ||
+			count > PAGE_SIZE || address + count < address ||
+			address + count > USER_TEXT_VA + PAGE_SIZE) {
+			frame->a0 = (u64)-14;
+			return 0;
+		}
+		buffer = (const char *)address;
+		for(n = 0; n < count; n++) {
+			uart_putc(buffer[n]);
+		}
+		frame->a0 = count;
+		return 0;
+	}
+
+	if(frame->a7 == SYS_EXIT) {
+		riscv64_user_exit_status = frame->a0;
+		return 1;
+	}
+
+	frame->a0 = (u64)-38;
+	return 0;
 }
