@@ -9,7 +9,7 @@ LINUX_IMAGE ?= fixture/linux.bin
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o ext2_gate.o handoff.o linux.o main.o ops.o user.o \
+OBJS = boot.o context.o elf.o ext2_gate.o handoff.o init_trampoline.o linux.o main.o ops.o user.o \
 	user_fixture_blob.o virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf

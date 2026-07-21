@@ -54,12 +54,66 @@ unsigned int page_hash_table_size = 0;
 #define RV_PTE_FLAGS	0x3ffUL
 #define RV_SATP_PPN	0x00000fffffffffffUL
 
+static int riscv64_pte_is_leaf(__pte_t);
+static __addr_t riscv64_pte_physical(__pte_t);
+static __pte_t riscv64_table_pte(__addr_t);
+
 static __pte_t *riscv64_root_table(struct proc *p)
 {
 	__addr_t physical;
 
 	physical = (p->arch.satp & RV_SATP_PPN) << PAGE_SHIFT;
 	return (__pte_t *)P2V(physical);
+}
+
+int riscv64_address_space_create(struct proc *p)
+{
+	__pte_t *root;
+	__pte_t *low;
+	__pte_t *kernel_low;
+
+	root = (__pte_t *)kmalloc(PAGE_SIZE);
+	if(!root) {
+		return -1;
+	}
+	low = (__pte_t *)kmalloc(PAGE_SIZE);
+	if(!low) {
+		kfree((__addr_t)root);
+		return -1;
+	}
+	memcpy_b(root, kpage_dir, PAGE_SIZE);
+	if(root[0] & RV_PTE_V) {
+		kernel_low = (__pte_t *)P2V(riscv64_pte_physical(root[0]));
+		memcpy_b(low, kernel_low, PAGE_SIZE);
+	} else {
+		memset_b(low, 0, PAGE_SIZE);
+	}
+	root[0] = riscv64_table_pte(V2P((__addr_t)low));
+	p->arch.satp = riscv64_make_satp(V2P((__addr_t)root) >> PAGE_SHIFT);
+	p->rss += 2;
+	return 0;
+}
+
+void riscv64_address_space_release(struct proc *p)
+{
+	__pte_t *root;
+	__pte_t *low;
+	int count;
+
+	root = riscv64_root_table(p);
+	if(!root || root == kpage_dir) {
+		return;
+	}
+	count = free_page_tables(p);
+	p->rss -= count;
+	if(root[0] & RV_PTE_V && !riscv64_pte_is_leaf(root[0])) {
+		low = (__pte_t *)P2V(riscv64_pte_physical(root[0]));
+		kfree((__addr_t)low);
+		p->rss--;
+	}
+	kfree((__addr_t)root);
+	p->rss--;
+	p->arch.satp = 0;
 }
 
 static int riscv64_pte_is_leaf(__pte_t pte)

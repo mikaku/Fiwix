@@ -188,9 +188,9 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 256 C files, including the RV64 process hooks. Five
+It currently compiles 257 C files, including the RV64 process hooks. Four
 explicit architecture boundaries remain excluded: i386 GDT/IDT and boot main,
-init, and fork.
+and fork.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 activates the selected process address space first, and `ioperm` returns
 `ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures
@@ -204,6 +204,15 @@ pages as COW, releases empty tables, and builds a 256 MiB identity-mapped kernel
 root with supervisor-only finisher, PLIC, UART, and virtio windows. This backend
 passes GCC and both bootstrap TinyCC compile gates, but remains compile-gated
 until generic init/fork invoke it at runtime.
+
+Generic PID 1 now has an RV64 construction path: it clones the supervisor root
+and its low device table, maps a private RX page at the top of the Sv39 user
+half, allocates a per-process kernel stack, and starts through an `sret`
+trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
+`execve`, and `exit` numbers and builds `argv`/`envp` on its user stack, so it
+contains no absolute kernel-address relocations. This path compiles under both
+bootstrap TinyCC rungs; runtime syscall dispatch and filesystem integration
+remain the next gate.
 
 Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
 stack, wait, and U-mode syscall operations use architecture helpers. Internal

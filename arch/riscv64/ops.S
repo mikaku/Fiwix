@@ -18,6 +18,7 @@
 	.globl riscv64_set_sp
 	.globl riscv64_user_syscall3
 	.globl riscv64_kernel_process_entry
+	.globl riscv64_user_process_entry
 	.globl riscv64_context_activate
 	.globl riscv64_read_satp
 	.globl riscv64_make_satp
@@ -125,3 +126,17 @@ riscv64_kernel_process_entry:
 1:
 	wfi
 	j 1b
+
+/* First entry for a generic userspace process: s0=PC, s1=user SP. */
+riscv64_user_process_entry:
+	csrci sstatus, 2
+	csrw sscratch, sp
+	csrw sepc, s0
+	csrr t0, sstatus
+	li t1, 0x100
+	not t1, t1
+	and t0, t0, t1
+	ori t0, t0, 0x20
+	csrw sstatus, t0
+	mv sp, s1
+	sret

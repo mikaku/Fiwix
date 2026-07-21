@@ -125,6 +125,11 @@ int unmap_page(__addr_t);
 void mem_init(void);
 void mem_stats(void);
 
+#ifdef CONFIG_ARCH_RISCV64
+int riscv64_address_space_create(struct proc *);
+void riscv64_address_space_release(struct proc *);
+#endif
+
 /* swapper.c */
 int kswapd(void);
 
