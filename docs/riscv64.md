@@ -12,6 +12,9 @@ policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
 RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
 chain and verify its final M1, hex2, and kaem binaries.
+The first live-bootstrap continuation then completes stage0 phases 12-23 and
+uses those native tools to build the unmodified riscv64 checksum-transcriber
+manifest entry.
 The final chain gate then asks Fiwix to load Linux from that same mutated ext2
 root, preserves the original hart ID and DTB contract, mounts the root under
 Linux, and executes a static Linux PID 1.
@@ -81,6 +84,13 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
 make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   QEMU=/path/to/qemu-system-riscv64 \
   STAGE0_DIR=/path/to/stage0-posix test-riscv64-kaem-mini
+
+# Complete stage0 and build the first live-bootstrap package (long-running).
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
+  test-riscv64-kaem-manifest1
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -379,6 +389,11 @@ and only then may delegated software timer interrupts enter generic
 `irq_timer()` and bottom-half policy. The boot gate waits for three ticks rather
 than accepting successful construction alone.
 
+The QEMU `virt` Goldfish RTC at `0x101000` supplies the initial Unix time. Its
+low register latches the matching high half, and the nanosecond value is reduced
+to Fiwix's 32-bit seconds representation before the first filesystem operation.
+The generic runtime gate rejects an epoch-zero clock.
+
 Fiwix's private `stdarg.h` remains unchanged for i386, but non-i386 targets use
 the compiler's ABI-aware `<stdarg.h>`. The old implementation advanced a byte
 pointer through a presumed 32-bit stack and cannot represent the RV64 register
@@ -622,6 +637,70 @@ must reach a clean Linux poweroff. The final acceptance run also uses the
 complete generic kernel compiled by `tcc-musl` and linked by bootstrap
 binutils 2.30.
 
+## Live-bootstrap continuation
+
+The first manifest-resume gate pins live-bootstrap commit
+`9a268c4c39cae952b268bc86da342be2175f03d4`. It first runs stage0's unmodified
+`mescc-tools-full-kaem.kaem` and `mescc-tools-extra.kaem`, then verifies the
+complete riscv64 answers file before installing the generated tools under
+`/usr/bin`. Package inputs are archived from that exact commit, so changes in
+the host checkout's working tree cannot enter the root image. The gate runs
+live-bootstrap's unmodified
+`checksum-transcriber-1.0/pass1.kaem` and requires the resulting executable to
+match its canonical riscv64 SHA-256,
+`1c3021d8051fefd615edb50907e3015d810f974b5b9461f8f9aa383478620a0d`, on
+both legacy and modern virtio transports.
+
+The launcher deliberately has two scripts. The seed script is restricted to
+the minimal kaem command language through phase 11; its final command starts
+the newly generated full kaem. Only that continuation assigns environment
+variables, changes directories, and drives phases 12-23 and live-bootstrap.
+The first attempt put those assignments in the minimal script, which treated
+`ARCH=riscv64` as a program and aborted. An earlier acceptance wrapper also
+assumed phase 11 had produced `mkdir`, `cp`, and the rest of the installation
+tool set. Those utilities are outputs of the later stage0 phases, so the
+manifest gate now completes and checks the entire stage0 answers set rather
+than injecting host-built substitutes.
+
+The first installation attempt then reached all canonical stage0 answers but
+failed when native `cp` called `getcwd()` while examining an absolute
+destination. Linux RV64 assigns `getcwd` syscall 17, which was missing from
+the architecture translator even though generic Fiwix already implements the
+same buffer, size, and return-value contract as `sys_getcwd`. After that call
+was mapped, the generated `mkdir` exposed the same omission for `mkdirat`
+syscall 34. The utility did not propagate `ENOSYS`, so `cp` later received
+`ENOENT` while creating `/usr/bin/blood-elf`; its historical null `FILE *`
+check used `fdest < 0` and the process faulted in `fputc`. Mapping `AT_FDCWD`
+`mkdirat` directly to generic `sys_mkdir` fixes the original directory-creation
+failure. Host unit gates preserve full-width pointers and modes and reject
+unsupported directory descriptors. These are kernel ABI fixes; the generated
+utilities and upstream package recipe remain unchanged.
+
+The first complete package invocation also inherited stage0's relative
+`TMPDIR=../riscv64/artifact`. That path is valid while building from the source
+root but not after entering the live-bootstrap package directory, so
+`M2-Mesoplanet` rejected it before compilation. The continuation now resets
+`PATH`, `M2LIBC_PATH`, and `TMPDIR` to absolute installed-root paths at the
+manifest boundary. This keeps later package behavior independent of the
+stage0 driver's working directory.
+
+The successful package build initially failed only its post-run filesystem
+check. Four compiler temporaries had been unlinked correctly: their directory
+entries, data blocks, and inode bitmap bits were all released. Their deletion
+times were nevertheless near January 1970 because the initial riscv64 port set
+the wall clock to zero, while the host-created ext2 image was dated later.
+`e2fsck` classified those stale times as remnants of a corrupt orphan list. The
+QEMU `virt` Goldfish RTC initialization fixes the filesystem metadata at its
+source; weakening the integrity gate or repairing the image on the host would
+have hidden a kernel timekeeping defect.
+
+The continuation plan advances one upstream manifest entry at a time. The
+next boundary is `simple-patch`; later boundaries bring up Mes and TinyCC
+before reconnecting to the already-proven Fiwix-to-Linux root handoff. Each
+boundary will retain the pinned source revision, native output hash, dual
+virtio boot coverage, and a distinct completion marker so failures identify
+the first unsupported package contract.
+
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
 (`SIGCHLD` only) make Linux ignore those arguments; the hand-written kaem seed
@@ -663,7 +742,7 @@ as an I/O failure. It now distinguishes failed indirect-block reads from valid
 sparse mappings and explicitly zero-fills holes before validating and entering
 the kernel.
 
-The 267 compiled translation units are recorded in
+The 268 compiled translation units are recorded in
 `tests/riscv64-generic-sources.list` rather than discovered with
 `find -name`. Commencement's Gash `find` lacks that predicate, and an exact
 manifest also makes additions to the reviewed kernel closure fail the expected

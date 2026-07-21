@@ -5,6 +5,7 @@ arch/riscv64/ext2_gate.c
 arch/riscv64/generic-boot.c
 arch/riscv64/linux.c
 arch/riscv64/process.c
+arch/riscv64/rtc.c
 arch/riscv64/signal.c
 arch/riscv64/syscall.c
 arch/riscv64/trap.c

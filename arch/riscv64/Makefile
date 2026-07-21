@@ -9,7 +9,7 @@ LINUX_IMAGE ?= fixture/linux.bin
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o ext2_gate.o handoff.o init_trampoline.o linux.o main.o ops.o user.o \
+OBJS = boot.o context.o elf.o ext2_gate.o handoff.o init_trampoline.o linux.o main.o ops.o rtc.o user.o \
 	user_fixture_blob.o virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf
@@ -55,6 +55,13 @@ fixture/kaem-linux-complete.o: kaem-linux-complete.S
 	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/kaem-linux-complete.elf: fixture/kaem-linux-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/kaem-manifest1-complete.o: kaem-manifest1-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-manifest1-complete.elf: fixture/kaem-manifest1-complete.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
 fixture/linux-root-init.o: linux-root-init.S

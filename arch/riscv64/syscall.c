@@ -11,7 +11,9 @@
 #define RV_AT_FDCWD		(-100L)
 #define RV_CLONE_FORK_FLAGS	17UL	/* SIGCHLD only */
 
+#define RV_SYS_GETCWD		17
 #define RV_SYS_DUP		23
+#define RV_SYS_MKDIRAT		34
 #define RV_SYS_UNLINKAT		35
 #define RV_SYS_FACCESSAT	48
 #define RV_SYS_CHDIR		49
@@ -59,9 +61,21 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 	frame->sepc += 4;
 
 	switch(frame->a7) {
+		case RV_SYS_GETCWD:
+			result = riscv64_call_fiwix(SYS_getcwd, frame, frame->a0,
+				frame->a1, 0, 0, 0, 0);
+			break;
 		case RV_SYS_DUP:
 			result = riscv64_call_fiwix(SYS_dup, frame, frame->a0, 0,
 				0, 0, 0, 0);
+			break;
+		case RV_SYS_MKDIRAT:
+			if(!riscv64_at_cwd(frame->a0)) {
+				result = -EBADF;
+				break;
+			}
+			result = riscv64_call_fiwix(SYS_mkdir, frame, frame->a1,
+				frame->a2, 0, 0, 0, 0);
 			break;
 		case RV_SYS_UNLINKAT:
 			if(!riscv64_at_cwd(frame->a0) || frame->a2) {

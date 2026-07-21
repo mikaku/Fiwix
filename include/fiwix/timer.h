@@ -47,5 +47,8 @@ void get_system_time(void);
 void set_system_time(__time_t);
 int gettimeoffset(void);
 void timer_init(void);
+#ifdef CONFIG_ARCH_RISCV64
+__time_t riscv64_get_system_time(void);
+#endif
 
 #endif /* _FIWIX_TIMER_H */

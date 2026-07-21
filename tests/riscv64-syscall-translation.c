@@ -81,7 +81,9 @@ int main(void)
 		unsigned long riscv64_num;
 		unsigned int fiwix_num;
 	} mappings[] = {
+		{ 17, SYS_getcwd },
 		{ 23, SYS_dup },
+		{ 34, SYS_mkdir },
 		{ 35, SYS_unlink },
 		{ 48, SYS_access },
 		{ 49, SYS_chdir },
@@ -114,7 +116,7 @@ int main(void)
 	for(n = 0; n < sizeof(mappings) / sizeof(mappings[0]); n++) {
 		clear_frame(&frame);
 		frame.a7 = mappings[n].riscv64_num;
-		if(frame.a7 == 35 || frame.a7 == 48 || frame.a7 == 53 ||
+		if(frame.a7 == 34 || frame.a7 == 35 || frame.a7 == 48 || frame.a7 == 53 ||
 			frame.a7 == 56) {
 			frame.a0 = (unsigned long)-100L;
 		}
@@ -141,6 +143,36 @@ int main(void)
 		called_args[2] != 0644 ||
 		called_frame != (struct sigcontext *)&frame) {
 		return 2;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 17;
+	frame.a0 = 0x100000001UL;
+	frame.a1 = 4096;
+	syscall_result = 8;
+	if(riscv64_user_syscall(&frame, 8) || frame.a0 != 8 ||
+		called_num != SYS_getcwd || called_args[0] != 0x100000001UL ||
+		called_args[1] != 4096 ||
+		called_frame != (struct sigcontext *)&frame) {
+		return 42;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 34;
+	frame.a0 = (unsigned long)-100L;
+	frame.a1 = 0x100000001UL;
+	frame.a2 = 0755;
+	if(riscv64_user_syscall(&frame, 8) || called_num != SYS_mkdir ||
+		called_args[0] != 0x100000001UL || called_args[1] != 0755) {
+		return 43;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 34;
+	frame.a0 = 5;
+	if(riscv64_user_syscall(&frame, 8) ||
+		(signed long)frame.a0 != -EBADF || called_num != ~0U) {
+		return 44;
 	}
 
 	clear_frame(&frame);

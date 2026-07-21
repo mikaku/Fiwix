@@ -34,7 +34,8 @@ run_qemu()
 		cat "$output" >&2
 		exit "$status"
 	fi
-	if ! grep -q 'Fiwix riscv64 generic PID 1 construction passed' \
+	if ! grep -q 'Fiwix riscv64 Goldfish RTC gate passed' "$output" ||
+		! grep -q 'Fiwix riscv64 generic PID 1 construction passed' \
 		"$output" ||
 		! grep -q 'Fiwix riscv64 PID 1 userspace passed' "$output"; then
 		cat "$output" >&2

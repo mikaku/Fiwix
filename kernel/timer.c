@@ -363,7 +363,7 @@ void do_callouts_bh(struct sigcontext *sc)
 void get_system_time(void)
 {
 #ifdef CONFIG_ARCH_RISCV64
-	kstat.boot_time = CURRENT_TIME = 0;
+	kstat.boot_time = CURRENT_TIME = riscv64_get_system_time();
 #else
 	short int cmos_century;
 	struct tm tm;

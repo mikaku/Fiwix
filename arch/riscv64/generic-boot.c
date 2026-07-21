@@ -130,12 +130,13 @@ void riscv64_generic_runtime_ready(void)
 		proc_table[INIT].state != PROC_RUNNING ||
 		!proc_table[INIT].arch.satp ||
 		!proc_table[INIT].arch.kernel_sp || !kstat.free_pages ||
-		CURRENT_TICKS < 3 || kparms.rootdev != block_dev ||
+		!CURRENT_TIME || CURRENT_TICKS < 3 || kparms.rootdev != block_dev ||
 		!get_device(CHR_DEV, uart_dev) || !get_tty(uart_dev) ||
 		!get_device(BLK_DEV, block_dev) || !valid) {
 		riscv64_uart_puts("Fiwix riscv64 generic runtime init failed\n");
 		riscv64_finish(TEST_FAIL);
 	}
+	riscv64_uart_puts("Fiwix riscv64 Goldfish RTC gate passed\n");
 	riscv64_uart_puts("Fiwix riscv64 generic PID 1 construction passed\n");
 }
 
