@@ -188,10 +188,16 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 263 C files, including the RV64 process, fork, syscall,
-trap, signal, and ELF64 exec hooks.
+It currently compiles 260 C translation units, including the RV64 process,
+fork, syscall, trap, signal, and ELF64 exec hooks.
 Three explicit architecture replacements remain excluded: i386 GDT/IDT and
 boot main.
+The same gate relocatably links those objects with the real RV64 context
+switch, generic trap vector, init trampoline, and privileged-operation
+assembly. All `riscv64_*` references resolve. An exact 46-symbol allowlist
+records the remaining generic startup, i386 CPU/I/O, optional external-network,
+and final-linker boundaries, so additions or removals require an explicit
+review rather than disappearing in compile-only coverage.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
 activates the selected process address space first, and `ioperm` returns
 `ENOSYS` because RISC-V has no x86 I/O bitmap. Kernel-process creation captures
@@ -409,3 +415,10 @@ stale `libtcc1.a` path from a removed musl store item; the Makefile derives the
 working archive from TinyCC's `install:` directory and allows an explicit
 override. Both compiler rungs boot the fixture kernel, and both enter the real
 Linux oracle successfully.
+
+The first whole-tree compile audit counted `font-lat9-8x8.c`,
+`font-lat9-8x14.c`, and `font-lat9-8x16.c` as standalone units even though the
+normal video build includes them textually from `fonts.c`. Compiling and
+relocating those objects exposed duplicate font definitions. The manifest now
+matches the Makefile and reports 260 real C translation units; this correction
+does not remove any kernel code from the audit.

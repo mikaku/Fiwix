@@ -151,7 +151,9 @@ test-riscv64-tcc:
 
 test-riscv64-generic-compile:
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-generic-compile requires TARGET_ARCH=riscv64" >&2; exit 1; }
-	GENERIC_CC="$(CROSS_COMPILE)gcc" tests/riscv64-generic-compile.sh
+	GENERIC_CC="$(CROSS_COMPILE)gcc" GENERIC_LD="$(CROSS_COMPILE)ld" \
+		AS="$(CROSS_COMPILE)as" NM="$(CROSS_COMPILE)nm" \
+		tests/riscv64-generic-link.sh
 	AS="$(CROSS_COMPILE)as" NM="$(CROSS_COMPILE)nm" tests/riscv64-generic-trap.sh
 	HOSTCC="$(HOSTCC)" tests/riscv64-generic-trap-policy.sh
 	HOSTCC="$(HOSTCC)" tests/riscv64-page-fault-policy.sh
