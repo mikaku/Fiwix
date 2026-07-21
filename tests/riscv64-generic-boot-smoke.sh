@@ -19,6 +19,6 @@ if test "$status" -ne 0; then
 	cat "$temporary" >&2
 	exit "$status"
 fi
-grep -q 'Fiwix riscv64 generic kernel entry passed' "$temporary"
+grep -q 'Fiwix riscv64 generic memory/timer init passed' "$temporary"
 
 echo "Fiwix riscv64 generic boot smoke passed"

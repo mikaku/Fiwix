@@ -2,7 +2,10 @@
 
 #include <fiwix/arch_process.h>
 #include <fiwix/kernel.h>
+#include <fiwix/mm.h>
+#include <fiwix/process.h>
 #include <fiwix/riscv64_trap.h>
+#include <fiwix/timer.h>
 
 #define UART0_BASE	0x10000000UL
 #define UART_THR	0
@@ -61,9 +64,15 @@ void riscv64_supervisor_main(unsigned long hartid, unsigned long dtb)
 	riscv64_finish(TEST_FAIL);
 }
 
-void riscv64_generic_boot_ready(void)
+void riscv64_generic_runtime_ready(void)
 {
-	riscv64_uart_puts("Fiwix riscv64 generic kernel entry passed\n");
+	if(!kpage_dir || !page_table || !current || current->pid != IDLE ||
+		proc_table[INIT].pid != INIT || !kstat.free_pages ||
+		CURRENT_TICKS < 3) {
+		riscv64_uart_puts("Fiwix riscv64 generic runtime init failed\n");
+		riscv64_finish(TEST_FAIL);
+	}
+	riscv64_uart_puts("Fiwix riscv64 generic memory/timer init passed\n");
 	riscv64_finish(TEST_PASS);
 }
 

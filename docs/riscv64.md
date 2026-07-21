@@ -5,8 +5,10 @@ machine. It currently proves the firmware-free M-mode entry, the transition to
 S mode, fatal trap reporting, machine-timer forwarding, and the architecture
 context-switch primitive with two kernel tasks, Sv39 address translation, and a
 small U-mode RV64 syscall fixture, polled virtio-mmio block reads, and a
-read-only ext2 file lookup. It does not yet run the generic Fiwix scheduler or
-a filesystem-backed userspace process.
+read-only ext2 file lookup. A separate generic image now activates its Sv39
+root, initializes allocator and process metadata, reserves idle and PID 1, and
+handles delegated timer ticks. It does not yet schedule a filesystem-backed
+userspace process.
 
 ## Build
 
@@ -192,8 +194,8 @@ It currently compiles 262 C translation units, including the RV64 boot,
 process, fork, syscall, trap, signal, and ELF64 exec hooks.
 Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
 retains ownership of common kernel globals and now has an RV64 entry that
-installs the generic trap vector before idling; the complete device, memory,
-process, and PID 1 initialization sequence is still the next runtime milestone.
+installs the generic trap vector, activates the kernel Sv39 root, initializes
+the allocator and generic kernel tables, and reserves idle and PID 1.
 An architecture CPU implementation reports `riscv64` and the fixed
 RV64IMA/Zicsr/Zifencei contract without emulating x86 CPUID, TSC, or port I/O.
 The same gate relocatably links those objects with the real RV64 context
@@ -223,9 +225,12 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
 ```
 
 `fiwix-generic` enters through the proven M/S-mode boot assembly, calls the
-shared `start_kernel()`, installs the complete generic trap vector, disables
-interrupts while no current process exists, and emits its acceptance marker
-after the vector installation. The final link uses individual function/data
+shared `start_kernel()`, and installs the complete generic trap vector with
+interrupts disabled. It then activates the 256 MiB identity-mapped Sv39 root,
+initializes memory, process, sleep, buffer, scheduler, inode, and descriptor
+state, creates idle and reserves PID 1, and enables interrupts only after timer
+bottom halves exist. Its acceptance marker requires three delegated ticks and
+nonempty allocator metadata. The final link uses individual function/data
 sections and rejects undefined symbols. Weak per-symbol sentinels make legacy
 port-I/O and external-network relocations linkable during garbage collection,
 then fail the gate if any sentinel survives into the ELF. This proves those
@@ -238,7 +243,8 @@ ATA, floppy, PC serial, or parallel-port devices. Timer policy uses delegated
 supervisor ticks without PIT/PIC setup, the absent CMOS RTC reports no procfs
 data, keyboard LEDs and console beep have no PS/2/PIT side effects, and reboot
 uses SBI SRST. A native UART character device, virtio block registration,
-memory/process initialization, and the transition into `kswapd` remain open.
+creation of the `kswapd` continuation, and the transition from reserved PID 1
+to `/sbin/init` remain open.
 
 VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
@@ -246,8 +252,9 @@ copy-on-write entry updates are owned by `mm/memory.c`. Its RV64 backend now
 walks all three Sv39 levels, maps and unmaps 4 KiB user leaves, clones writable
 pages as COW, releases empty tables, and builds a 256 MiB identity-mapped kernel
 root with supervisor-only finisher, PLIC, UART, and virtio windows. This backend
-passes GCC and both bootstrap TinyCC compile gates, but remains compile-gated
-until generic init/fork invoke it at runtime.
+passes GCC and both bootstrap TinyCC compile gates. Generic boot now activates
+its kernel root and allocator at runtime; per-process root creation, fork, and
+user mappings remain policy/compile gated until PID 1 runs.
 
 Generic PID 1 now has an RV64 construction path: it clones the supervisor root
 and its low device table, maps separate private RX text and RW stack pages at
@@ -287,9 +294,33 @@ allocator addresses use `__addr_t`, which is `unsigned int` on i386 and
 preserving i386 layouts and call widths. Physical page conversion also accounts
 for QEMU RV64 RAM beginning at `0x80000000`; page-cache and buddy indexes are
 relative to that base while kernel pointers remain identity mapped. The gate
-still emits 188 pointer-width warnings, primarily from 32-bit syscall arguments
+still emits 158 pointer-width warnings, primarily from 32-bit syscall arguments
 and x86 physical-memory interfaces; compile success is not yet an LP64
 correctness claim.
+
+## Generic runtime initialization
+
+Supervisor interrupts are disabled before the generic trap vector is installed
+and stay disabled through memory, process-table, queue, and timer
+initialization. Idle captures the active `satp`, reserved PID 1 receives PID 1,
+and only then may delegated software timer interrupts enter generic
+`irq_timer()` and bottom-half policy. The boot gate waits for three ticks rather
+than accepting successful construction alone.
+
+Fiwix's private `stdarg.h` remains unchanged for i386, but non-i386 targets use
+the compiler's ABI-aware `<stdarg.h>`. The old implementation advanced a byte
+pointer through a presumed 32-bit stack and cannot represent the RV64 register
+argument save area. Both bootstrap TinyCC packages provide their own RISC-V
+implementation, and the same `printk` unit compiles under those packages and
+cross GCC.
+
+This milestone exposed two startup bugs. Installing the delegated timer vector
+while `sstatus.SIE` was still set allowed a pending SSIP to enter generic timer
+policy before `current` existed; startup now disables interrupts first and
+enables them only after idle and timer bottom halves are ready. The first
+`sprintk("%s")` then faulted because the bundled i386-only varargs walker read a
+bogus RV64 pointer. The compiler-owned non-i386 varargs branch fixes that fault
+without changing the i386 bootstrap path.
 
 ## Generic ELF64 exec design
 

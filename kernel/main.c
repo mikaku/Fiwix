@@ -69,13 +69,46 @@ static void set_default_values(void)
 void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_addr)
 {
 #ifdef CONFIG_ARCH_RISCV64
+	struct proc *init;
+	unsigned int start_ticks;
+
 	(void)magic;
 	(void)info;
 	(void)last_boot_addr;
-	memset_b(&kstat, 0, sizeof(kstat));
-	riscv64_generic_traps_install();
 	CLI();
-	riscv64_generic_boot_ready();
+	memset_b(&kstat, 0, sizeof(kstat));
+	_last_data_addr = (__addr_t)_end;
+	sysconsole_init();
+	riscv64_generic_traps_install();
+	cpu_init();
+	dev_init();
+	irq_init();
+	mem_init();
+	proc_init();
+	sleep_init();
+	buffer_init();
+	sched_init();
+	inode_init();
+	fd_init();
+
+	current = get_proc_free();
+	proc_slot_init(current);
+	current->arch.satp = riscv64_read_satp();
+	current->flags |= PF_KPROC;
+	sprintk(current->argv0, "%s", "idle");
+
+	init = get_proc_free();
+	proc_slot_init(init);
+	init->pid = get_unused_pid();
+
+	timer_init();
+	start_ticks = CURRENT_TICKS;
+	STI();
+	while(CURRENT_TICKS - start_ticks < 3) {
+		HLT();
+	}
+	CLI();
+	riscv64_generic_runtime_ready();
 	for(;;) {
 		HLT();
 	}

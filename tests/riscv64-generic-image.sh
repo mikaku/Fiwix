@@ -52,7 +52,7 @@ done < "$temporary/dead-symbols"
 grep -q ' T _start$' "$temporary/symbols"
 grep -q ' T start_kernel$' "$temporary/symbols"
 grep -q ' T riscv64_generic_trap_entry$' "$temporary/symbols"
-grep -q ' T riscv64_generic_boot_ready$' "$temporary/symbols"
+grep -q ' T riscv64_generic_runtime_ready$' "$temporary/symbols"
 "$READELF" -h "$GENERIC_IMAGE" | grep -q 'Class:.*ELF64'
 "$READELF" -h "$GENERIC_IMAGE" | grep -q 'Machine:.*RISC-V'
 if "$READELF" -lW "$GENERIC_IMAGE" | grep -q 'LOAD.*RWE'; then
