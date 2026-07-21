@@ -4,6 +4,9 @@ set -eu
 
 GENERIC_CC=${GENERIC_CC:-riscv64-linux-gnu-gcc}
 GENERIC_LD=${GENERIC_LD:-riscv64-linux-gnu-ld}
+GENERIC_LDFLAGS=${GENERIC_LDFLAGS:-}
+GENERIC_RUNTIME=${GENERIC_RUNTIME:-}
+GENERIC_RETAINED_STUBS=${GENERIC_RETAINED_STUBS:-}
 AS=${AS:-riscv64-linux-gnu-as}
 NM=${NM:-riscv64-linux-gnu-nm}
 READELF=${READELF:-riscv64-linux-gnu-readelf}
@@ -27,13 +30,19 @@ done
 	"$root/tests/riscv64-generic-dead-stubs.S"
 objects="$objects $temporary/dead-stubs.o"
 
-libgcc=$(
-	"$GENERIC_CC" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
-		-print-libgcc-file-name
-)
-"$GENERIC_LD" -m elf64lriscv --gc-sections \
+if test -z "$GENERIC_RUNTIME"; then
+	GENERIC_RUNTIME=$(
+		"$GENERIC_CC" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
+			-print-libgcc-file-name
+	)
+fi
+test -f "$GENERIC_RUNTIME" || {
+	echo "Fiwix riscv64 runtime archive not found: $GENERIC_RUNTIME" >&2
+	exit 1
+}
+"$GENERIC_LD" -m elf64lriscv --gc-sections $GENERIC_LDFLAGS \
 	-T "$root/arch/riscv64/generic.ld" \
-	-o "$GENERIC_IMAGE" $objects "$libgcc"
+	-o "$GENERIC_IMAGE" $objects "$GENERIC_RUNTIME"
 
 "$NM" "$GENERIC_IMAGE" > "$temporary/symbols"
 if "$NM" -u "$GENERIC_IMAGE" | grep -q .; then
@@ -43,12 +52,25 @@ if "$NM" -u "$GENERIC_IMAGE" | grep -q .; then
 fi
 "$NM" --defined-only "$temporary/dead-stubs.o" | \
 	awk '$2 == "W" { print $3 }' > "$temporary/dead-symbols"
+> "$temporary/retained-dead-symbols"
 while read symbol; do
 	if grep -q " [TW] $symbol\$" "$temporary/symbols"; then
-		echo "Fiwix riscv64 generic image retained dead boundary: $symbol" >&2
-		exit 1
+		echo "$symbol" >> "$temporary/retained-dead-symbols"
 	fi
 done < "$temporary/dead-symbols"
+if test -n "$GENERIC_RETAINED_STUBS"; then
+	if ! cmp -s "$GENERIC_RETAINED_STUBS" \
+		"$temporary/retained-dead-symbols"; then
+		diff -u "$GENERIC_RETAINED_STUBS" \
+			"$temporary/retained-dead-symbols" || true
+		echo "Fiwix riscv64 generic image retained-stub contract changed" >&2
+		exit 1
+	fi
+elif test -s "$temporary/retained-dead-symbols"; then
+	sed 's/^/Fiwix riscv64 generic image retained dead boundary: /' \
+		"$temporary/retained-dead-symbols" >&2
+	exit 1
+fi
 grep -q ' T _start$' "$temporary/symbols"
 grep -q ' T start_kernel$' "$temporary/symbols"
 grep -q ' T riscv64_generic_trap_entry$' "$temporary/symbols"

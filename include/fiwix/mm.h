@@ -25,7 +25,11 @@
 
 #define PAGE_SIZE		4096
 #define PAGE_SHIFT		0x0C
+#ifdef CONFIG_ARCH_RISCV64
+#define PAGE_MASK		0xFFFFFFFFFFFFF000UL
+#else
 #define PAGE_MASK		(~((__addr_t)PAGE_SIZE - 1))
+#endif
 #define PAGE_ALIGN(addr)	(((addr) + (PAGE_SIZE - 1)) & PAGE_MASK)
 #define PT_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))
 #define PD_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))

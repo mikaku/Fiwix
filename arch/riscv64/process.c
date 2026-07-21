@@ -5,6 +5,8 @@
 #include <fiwix/riscv64_trap.h>
 #include <fiwix/string.h>
 
+#define RISCV64_ALIGN16_MASK	0xFFFFFFFFFFFFFFF0UL
+
 int riscv64_process_setup(struct proc *p, int (*fn)(void))
 {
 	__addr_t stack;
@@ -14,7 +16,7 @@ int riscv64_process_setup(struct proc *p, int (*fn)(void))
 		return -1;
 	}
 	p->arch.kernel_sp = stack;
-	p->arch.sp = (stack + PAGE_SIZE) & ~15UL;
+	p->arch.sp = (stack + PAGE_SIZE) & RISCV64_ALIGN16_MASK;
 	p->arch.ra = (unsigned long)riscv64_kernel_process_entry;
 	p->arch.s0 = (unsigned long)fn;
 	p->arch.satp = riscv64_read_satp();
@@ -32,7 +34,7 @@ int riscv64_user_process_setup(struct proc *p, unsigned long entry,
 		return -1;
 	}
 	p->arch.kernel_sp = stack;
-	p->arch.sp = (stack + PAGE_SIZE) & ~15UL;
+	p->arch.sp = (stack + PAGE_SIZE) & RISCV64_ALIGN16_MASK;
 	p->arch.ra = (unsigned long)riscv64_user_process_entry;
 	p->arch.s0 = entry;
 	p->arch.s1 = user_sp;

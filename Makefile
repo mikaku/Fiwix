@@ -166,10 +166,27 @@ test-riscv64-generic-compile:
 
 riscv64-generic-image:
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "riscv64-generic-image requires TARGET_ARCH=riscv64" >&2; exit 1; }
-	GENERIC_CC="$(CROSS_COMPILE)gcc" GENERIC_LD="$(CROSS_COMPILE)ld" \
+	GENERIC_CC="$(if $(GENERIC_CC),$(GENERIC_CC),$(CROSS_COMPILE)gcc)" \
+		GENERIC_LD="$(CROSS_COMPILE)ld" GENERIC_LDFLAGS="$(GENERIC_LDFLAGS)" \
+		GENERIC_RUNTIME="$(GENERIC_RUNTIME)" \
+		GENERIC_RETAINED_STUBS="$(GENERIC_RETAINED_STUBS)" \
 		AS="$(CROSS_COMPILE)as" NM="$(CROSS_COMPILE)nm" \
 		READELF="$(CROSS_COMPILE)readelf" GENERIC_IMAGE=fiwix-generic \
 		tests/riscv64-generic-image.sh
+
+riscv64-generic-image-tcc:
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "riscv64-generic-image-tcc requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	@test -f "$(TCC_LIBTCC1)" || { echo "riscv64-generic-image-tcc requires TCC_LIBTCC1=/path/to/libtcc1.a" >&2; exit 1; }
+	$(MAKE) TARGET_ARCH=riscv64 CROSS_COMPILE="$(CROSS_COMPILE)" \
+		GENERIC_CC="$(TCC)" GENERIC_RUNTIME="$(TCC_LIBTCC1)" \
+		GENERIC_LDFLAGS="--no-warn-mismatch" \
+		GENERIC_RETAINED_STUBS="tests/riscv64-generic-tcc-stubs.expected" \
+		riscv64-generic-image
+
+test-riscv64-generic-tcc: riscv64-generic-image-tcc riscv64-generic-disk
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" \
+		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic \
+		arch/riscv64/fixture/disk.img
 
 riscv64-generic-disk:
 	$(MAKE) -C arch/riscv64 fixture/disk.img
@@ -179,4 +196,4 @@ test-riscv64-generic-boot: riscv64-generic-image riscv64-generic-disk
 		tests/riscv64-generic-boot-smoke.sh ./fiwix-generic \
 		arch/riscv64/fixture/disk.img
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-disk test-riscv64-generic-boot
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot

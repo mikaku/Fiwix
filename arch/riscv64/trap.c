@@ -14,8 +14,7 @@
 #include <fiwix/string.h>
 #include <fiwix/timer.h>
 
-#define RV_SCAUSE_INTERRUPT	(1UL << 63)
-#define RV_SCAUSE_CODE		(~RV_SCAUSE_INTERRUPT)
+#define RV_SCAUSE_CODE		0xffUL
 #define RV_SCAUSE_SSIP		1UL
 #define RV_SCAUSE_U_ECALL	8UL
 #define RV_SCAUSE_INST_PAGE	12UL
@@ -125,7 +124,7 @@ int riscv64_generic_user_trap(struct riscv64_trap_frame *frame,
 		return -1;
 	}
 	current->sp = (__addr_t)frame;
-	if(cause & RV_SCAUSE_INTERRUPT) {
+	if((long)cause < 0) {
 		if((cause & RV_SCAUSE_CODE) != RV_SCAUSE_SSIP) {
 			return -1;
 		}
@@ -155,7 +154,7 @@ int riscv64_generic_kernel_trap(unsigned long cause, unsigned long epc,
 	unsigned long value)
 {
 	(void)epc;
-	if((cause & RV_SCAUSE_INTERRUPT) &&
+	if((long)cause < 0 &&
 		(cause & RV_SCAUSE_CODE) == RV_SCAUSE_SSIP) {
 		riscv64_timer_trap(0);
 		riscv64_run_bottom_halves(0);

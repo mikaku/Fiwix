@@ -359,6 +359,21 @@ int memcmp(const void *str1, const void *str2, unsigned int count)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_RISCV64
+/* Freestanding compiler-lowering entry points for bootstrap TinyCC. */
+void *memcpy(void *dest, const void *src, __size_t count)
+{
+	memcpy_b(dest, src, count);
+	return dest;
+}
+
+void *memset(void *dest, int value, __size_t count)
+{
+	memset_b(dest, (unsigned char)value, count);
+	return dest;
+}
+#endif
+
 void *memmove(void *dest, void const *src, int count)
 {
 	if (dest < src) {

@@ -11,6 +11,8 @@
 #include <fiwix/string.h>
 #include <fiwix/syscalls.h>
 
+#define RISCV64_ALIGN16_MASK	0xFFFFFFFFFFFFFFF0UL
+
 #define RV_SSTATUS_SIE		0x00000002UL
 #define RV_SSTATUS_SPIE		0x00000020UL
 #define RV_SSTATUS_SPP		0x00000100UL
@@ -170,7 +172,8 @@ int riscv64_signal_deliver(struct riscv64_trap_frame *frame,
 	if(frame->sp < sizeof(*signal_frame)) {
 		return -EFAULT;
 	}
-	address = (frame->sp - sizeof(*signal_frame)) & ~15UL;
+	address = (frame->sp - sizeof(*signal_frame)) &
+		RISCV64_ALIGN16_MASK;
 	if(riscv64_signal_stack_map(address, frame->sp)) {
 		return -EFAULT;
 	}

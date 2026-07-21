@@ -16,6 +16,7 @@
 #define PROT_READ	1
 #define PROT_WRITE	2
 #define PROT_EXEC	4
+#define RISCV64_PAGE_MASK	0xFFFFFFFFFFFFF000UL
 
 typedef char riscv64_elf_header_size_must_be_64[
 	(sizeof(struct riscv64_elf64_header) == 64) ? 1 : -1];
@@ -93,15 +94,17 @@ int riscv64_elf_plan(const void *header_data, unsigned long header_size,
 				(program->align - 1))))) {
 			return -1;
 		}
-		start = program->vaddr & ~4095UL;
-		end = (program->vaddr + program->memsz + 4095UL) & ~4095UL;
+		start = program->vaddr & RISCV64_PAGE_MASK;
+		end = (program->vaddr + program->memsz + 4095UL) &
+			RISCV64_PAGE_MASK;
 		if(!start || end < start || end - start > 0xffffffffUL) {
 			return -1;
 		}
 		for(other = 0; other < plan->load_count; other++) {
-			other_start = plan->load[other].vaddr & ~4095UL;
+			other_start = plan->load[other].vaddr & RISCV64_PAGE_MASK;
 			other_end = (plan->load[other].vaddr +
-				plan->load[other].memsz + 4095UL) & ~4095UL;
+				plan->load[other].memsz + 4095UL) &
+				RISCV64_PAGE_MASK;
 			if(start < other_end && other_start < end) {
 				return -1;
 			}

@@ -486,6 +486,42 @@ yet prove a Linux initramfs or userspace handoff.
 
 ## Bootstrap compiler findings
 
+The complete 265-unit generic kernel can be built with the pinned bootstrap
+TinyCC by invoking `riscv64-generic-image-tcc` and supplying `TCC` plus
+`TCC_LIBTCC1`. The target passes `--no-warn-mismatch` only at this boundary:
+TinyCC currently tags its integer-only RV64 output as double-float ABI even
+when passed `-mabi=lp64`, while GNU `as` correctly tags the kernel assembly as
+soft-float. Fiwix does not enable or use floating point in either set of
+objects. The normal GCC image link remains strict.
+
+TinyCC also accepts but does not implement `-ffunction-sections`. Its image
+therefore retains dormant `inport_b` and `outport_b` references from mixed
+legacy/generic translation units. The TinyCC target permits exactly those two
+weak dead stubs through `riscv64-generic-tcc-stubs.expected`; the image build
+fails if the retained set changes. Neither stub is reachable from the RV64
+startup path, and the resulting image must still pass the v1 and v2 virtio
+userspace boot gates.
+
+The first full TinyCC image also exposed a 64-bit constant-folding defect:
+TinyCC compiled `(1UL << 63)` as bit 31, causing a supervisor software
+interrupt to enter the fatal path. Trap dispatch now tests the sign of the
+64-bit `scause` value and masks the low cause code explicitly. This avoids
+constructing the high interrupt bit and preserves the same RISC-V policy.
+
+TinyCC similarly zero-extended the constant-folded RV64 expression
+`~((unsigned long)4096 - 1)`, reducing `PAGE_MASK` to 32 bits and turning the
+initial high user-stack mapping into a multi-billion-page loop. It does
+materialize the equivalent `0xFFFFFFFFFFFFF000UL` correctly, so RV64 defines
+that width-explicit mask while i386 retains the original expression. The same
+rule is applied to RV64's 16-byte stack masks, ELF page masks, and `sstatus`
+SPP-clear mask; all were audited after the defect was found.
+
+The later pinned TinyCC also lowers some aggregate initialization in
+`printk.c` to a freestanding `memset` call. Fiwix now exports conventional
+`memset` and `memcpy` compiler entry points as thin wrappers around its existing
+`memset_b` and `memcpy_b` implementations, so compiler lowering does not depend
+on a hosted libc.
+
 The RISC-V TinyCC integrated assembler does not accept all privileged CSR and
 fence forms used by the kernel. Those operations live in `ops.S` and are built
 with the same GNU assembler needed for the other architecture entry files.

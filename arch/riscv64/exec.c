@@ -22,6 +22,8 @@
 #define AT_EUID		12
 #define AT_GID		13
 #define AT_EGID		14
+#define RISCV64_ALIGN16_MASK	0xFFFFFFFFFFFFFFF0UL
+#define RISCV64_SSTATUS_NO_SPP	0xFFFFFFFFFFFFFEFFUL
 
 static int riscv64_read_inode(struct inode *inode, unsigned long offset,
 	void *destination, unsigned long count)
@@ -175,8 +177,9 @@ static int riscv64_create_stack(struct binargs *barg,
 
 	string = riscv64_barg_start(barg);
 	slots = 1 + barg->argc + 1 + barg->envc + 1 + 20;
-	stack = (string & ~15UL) - slots * sizeof(unsigned long);
-	stack &= ~15UL;
+	stack = (string & RISCV64_ALIGN16_MASK) -
+		slots * sizeof(unsigned long);
+	stack &= RISCV64_ALIGN16_MASK;
 	if((error = riscv64_map_range(stack & PAGE_MASK,
 		RISCV64_USER_STACK_TOP,
 		PROT_READ | PROT_WRITE, P_STACK))) {
@@ -194,7 +197,6 @@ static int riscv64_create_stack(struct binargs *barg,
 		}
 		memcpy_b((void *)page, (void *)barg->page[n], PAGE_SIZE);
 	}
-
 	address = stack;
 #define PUSH_WORD(value) \
 	do { \
@@ -276,7 +278,7 @@ int riscv64_elf_load(struct inode *inode, struct binargs *barg,
 	memset_b(frame, 0, sizeof(*frame));
 	frame->sp = stack;
 	frame->sepc = plan.entry;
-	frame->sstatus = (sstatus & ~0x100UL) | 0x20UL;
+	frame->sstatus = (sstatus & RISCV64_SSTATUS_NO_SPP) | 0x20UL;
 	return 0;
 
 failed:
