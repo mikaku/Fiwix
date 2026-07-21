@@ -33,6 +33,9 @@ static int fault_calls;
 static int fault_result;
 static int signal_calls;
 static int last_signal;
+static int pending_signal;
+static int psig_calls;
+static __addr_t psig_stack;
 static struct proc test_process;
 static struct riscv64_trap_frame saved_user_frame;
 
@@ -116,7 +119,20 @@ int send_sig(struct proc *process, __sigset_t signal)
 	}
 	signal_calls++;
 	last_signal = signal;
+	pending_signal = signal;
 	return 0;
+}
+
+int issig(void)
+{
+	return pending_signal;
+}
+
+void psig(__addr_t stack)
+{
+	psig_calls++;
+	psig_stack = stack;
+	pending_signal = 0;
 }
 
 void printk(const char *format, ...)
@@ -150,6 +166,9 @@ static void clear_counts(void)
 	fault_result = PFAULT_RESOLVED;
 	signal_calls = 0;
 	last_signal = 0;
+	pending_signal = 0;
+	psig_calls = 0;
+	psig_stack = 0;
 	need_resched = 0;
 	current = &test_process;
 	current->sp = (__addr_t)&saved_user_frame;
@@ -165,7 +184,8 @@ int main(void)
 		last_frame != &frame || last_cause != 8 || clear_calls ||
 		timer_calls || bottom_half_calls != 1 ||
 		last_bottom_half_cs != USER_CS || enable_calls != 1 ||
-		disable_calls != 1 || schedule_calls != 1) {
+		disable_calls != 1 || schedule_calls != 1 ||
+		current->sp != (__addr_t)&frame) {
 		return 1;
 	}
 
@@ -188,9 +208,15 @@ int main(void)
 	}
 
 	clear_counts();
-	if(riscv64_generic_user_trap(&frame, 2) != -1 || syscall_calls ||
-		bottom_half_calls || schedule_calls) {
+	if(riscv64_generic_user_trap(&frame, 2) || syscall_calls ||
+		bottom_half_calls != 1 || schedule_calls || signal_calls != 1 ||
+		last_signal != SIGILL || psig_calls != 1) {
 		return 4;
+	}
+	clear_counts();
+	if(riscv64_generic_user_trap(&frame, 10) != -1 || syscall_calls ||
+		bottom_half_calls || signal_calls || psig_calls) {
+		return 13;
 	}
 	if(riscv64_generic_kernel_trap(INTERRUPT_BIT | 9, 2, 3) != -1) {
 		return 5;
@@ -224,9 +250,10 @@ int main(void)
 	clear_counts();
 	frame.stval = 0x7000;
 	fault_result = PFAULT_SIGSEGV;
-	if(riscv64_generic_user_trap(&frame, 13) != -1 ||
+	if(riscv64_generic_user_trap(&frame, 13) ||
 		signal_calls != 1 || last_signal != SIGSEGV ||
-		bottom_half_calls) {
+		bottom_half_calls != 1 || psig_calls != 1 ||
+		psig_stack != (__addr_t)&frame) {
 		return 9;
 	}
 
@@ -244,6 +271,13 @@ int main(void)
 	if(riscv64_generic_kernel_trap(13, 0x9000, 0xa000) != -1 ||
 		fault_calls || signal_calls) {
 		return 11;
+	}
+
+	clear_counts();
+	current = 0;
+	if(riscv64_generic_user_trap(&frame, 8) != -1 || syscall_calls ||
+		bottom_half_calls || psig_calls) {
+		return 12;
 	}
 
 	return 0;

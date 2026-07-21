@@ -128,7 +128,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 	child->sigpending = 0;
 	child->sigexecuting = 0;
-	memset_b(&child->sc, 0, sizeof(struct sigcontext));
+	memset_b(&child->sc, 0, sizeof(child->sc));
 	memset_b(&child->usage, 0, sizeof(struct rusage));
 	memset_b(&child->cusage, 0, sizeof(struct rusage));
 	child->it_real_interval = 0;

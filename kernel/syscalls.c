@@ -19,7 +19,7 @@
 
 static int verify_address(int type, const void *addr, unsigned int size)
 {
-	struct vma *vma;
+	struct vma *vma, *stack;
 	unsigned int gs;
 	__addr_t start;
 
@@ -46,12 +46,15 @@ static int verify_address(int type, const void *addr, unsigned int size)
 		 * and let 'do_page_fault()' to handle the imminent page
 		 * fault as soon as the kernel will try to access it.
 		 */
-		vma = current->vma_table->prev;
-		if(vma) {
-			if(vma->s_type == P_STACK) {
-				if(start < vma->start && start > vma->prev->end) {
-					return 0;
-				}
+		stack = current->vma_table;
+		while(stack && stack->s_type != P_STACK) {
+			stack = stack->next;
+		}
+		if(stack) {
+			if(start < stack->start &&
+				(stack == current->vma_table ||
+				start > stack->prev->end)) {
+				return 0;
 			}
 		}
 		return -EFAULT;

@@ -9,6 +9,7 @@
 	.globl riscv64_fence_write
 	.globl riscv64_fence_full
 	.globl riscv64_fence_read
+	.globl riscv64_fence_i
 	.globl riscv64_interrupt_disable
 	.globl riscv64_interrupt_enable
 	.globl riscv64_interrupt_state
@@ -53,6 +54,10 @@ riscv64_fence_full:
 
 riscv64_fence_read:
 	fence r, r
+	ret
+
+riscv64_fence_i:
+	fence.i
 	ret
 
 riscv64_interrupt_disable:

@@ -104,6 +104,7 @@ int sys_getppid(void);
 int sys_getpgrp(void);
 int sys_setsid(void);
 int sys_sigaction(__sigset_t, const struct sigaction *, struct sigaction *);
+int do_sigaction(__sigset_t, const struct sigaction *, struct sigaction *);
 int sys_sgetmask(void);
 int sys_ssetmask(int);
 int sys_setreuid(__uid_t, __uid_t);

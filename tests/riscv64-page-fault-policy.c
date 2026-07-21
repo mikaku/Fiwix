@@ -7,6 +7,7 @@ static struct proc process;
 struct proc *current = &process;
 static struct vma region;
 static struct vma stack_region;
+static struct vma trampoline_region;
 static int use_region;
 static int use_stack;
 static int copy_result;
@@ -110,15 +111,17 @@ static void reset(void)
 	memset_b(&process, 0, sizeof(process));
 	memset_b(&region, 0, sizeof(region));
 	memset_b(&stack_region, 0, sizeof(stack_region));
+	memset_b(&trampoline_region, 0, sizeof(trampoline_region));
 	memset_b(mapped_page, 0xa5, sizeof(mapped_page));
 	region.start = 0x4000;
 	region.end = 0x5000;
 	region.prot = PROT_READ | PROT_WRITE;
 	region.flags = MAP_PRIVATE | ZERO_PAGE;
-	stack_region.start = PAGE_OFFSET - PAGE_SIZE;
-	stack_region.end = PAGE_OFFSET;
+	stack_region.start = PAGE_OFFSET - (2 * PAGE_SIZE);
+	stack_region.end = PAGE_OFFSET - PAGE_SIZE;
 	stack_region.prot = PROT_READ | PROT_WRITE;
 	stack_region.flags = MAP_PRIVATE | ZERO_PAGE;
+	stack_region.s_type = P_STACK;
 	use_region = 1;
 	use_stack = 0;
 	copy_result = 0;
@@ -164,10 +167,17 @@ int main(void)
 	reset();
 	use_region = 0;
 	use_stack = 1;
-	result = resolve_page_fault(PAGE_OFFSET - PAGE_SIZE - 16, PFAULT_U,
-		PAGE_OFFSET - PAGE_SIZE);
+	process.vma_table = &stack_region;
+	stack_region.prev = &trampoline_region;
+	stack_region.next = &trampoline_region;
+	trampoline_region.start = PAGE_OFFSET - PAGE_SIZE;
+	trampoline_region.end = PAGE_OFFSET;
+	trampoline_region.s_type = P_TEXT;
+	trampoline_region.prev = &stack_region;
+	result = resolve_page_fault(PAGE_OFFSET - (2 * PAGE_SIZE) - 16,
+		PFAULT_U, PAGE_OFFSET - (2 * PAGE_SIZE));
 	if(result != PFAULT_RESOLVED || map_calls != 1 ||
-		stack_region.start != PAGE_OFFSET - (2 * PAGE_SIZE)) {
+		stack_region.start != PAGE_OFFSET - (3 * PAGE_SIZE)) {
 		return 6;
 	}
 

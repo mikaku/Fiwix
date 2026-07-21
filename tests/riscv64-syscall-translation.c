@@ -8,6 +8,9 @@ static unsigned int called_num;
 static __sysarg_t called_args[6];
 static struct sigcontext *called_frame;
 static int syscall_result;
+static unsigned long signal_args[4];
+static int signal_call;
+static int signal_result;
 
 int do_syscall_frame(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
 	__sysarg_t arg3, __sysarg_t arg4, __sysarg_t arg5, __sysarg_t arg6,
@@ -24,6 +27,38 @@ int do_syscall_frame(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
 	return syscall_result;
 }
 
+int riscv64_rt_sigaction(unsigned long arg1, const void *arg2, void *arg3,
+	unsigned long arg4)
+{
+	signal_call = 1;
+	signal_args[0] = arg1;
+	signal_args[1] = (unsigned long)arg2;
+	signal_args[2] = (unsigned long)arg3;
+	signal_args[3] = arg4;
+	return signal_result;
+}
+
+int riscv64_rt_sigprocmask(unsigned long arg1, const void *arg2, void *arg3,
+	unsigned long arg4)
+{
+	signal_call = 2;
+	signal_args[0] = arg1;
+	signal_args[1] = (unsigned long)arg2;
+	signal_args[2] = (unsigned long)arg3;
+	signal_args[3] = arg4;
+	return signal_result;
+}
+
+int riscv64_signal_return(struct riscv64_trap_frame *frame)
+{
+	signal_call = 3;
+	if(!signal_result) {
+		frame->a0 = 0x123456789UL;
+		frame->sepc = 0x987654321UL;
+	}
+	return signal_result;
+}
+
 static void clear_frame(struct riscv64_trap_frame *frame)
 {
 	unsigned long *word;
@@ -36,6 +71,8 @@ static void clear_frame(struct riscv64_trap_frame *frame)
 	called_num = ~0U;
 	called_frame = 0;
 	syscall_result = 0;
+	signal_call = 0;
+	signal_result = 0;
 }
 
 int main(void)
@@ -54,6 +91,7 @@ int main(void)
 		{ 63, SYS_read },
 		{ 64, SYS_write },
 		{ 93, SYS_exit },
+		{ 129, SYS_kill },
 		{ 172, SYS_getpid },
 		{ 173, SYS_getppid },
 		{ 214, SYS_brk },
@@ -138,6 +176,40 @@ int main(void)
 		called_args[1] != 0x200000002UL || called_args[2] != 1 ||
 		called_args[3] != 0x300000003UL) {
 		return 7;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 134;
+	frame.a0 = 10;
+	frame.a1 = 0x100000001UL;
+	frame.a2 = 0x200000002UL;
+	frame.a3 = 8;
+	signal_result = -EINVAL;
+	if(riscv64_user_syscall(&frame, 8) || signal_call != 1 ||
+		signal_args[0] != 10 || signal_args[1] != 0x100000001UL ||
+		signal_args[2] != 0x200000002UL || signal_args[3] != 8 ||
+		(signed long)frame.a0 != -EINVAL) {
+		return 8;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 135;
+	frame.a0 = 2;
+	frame.a1 = 0x300000003UL;
+	frame.a2 = 0x400000004UL;
+	frame.a3 = 8;
+	if(riscv64_user_syscall(&frame, 8) || signal_call != 2 ||
+		signal_args[0] != 2 || signal_args[1] != 0x300000003UL ||
+		signal_args[2] != 0x400000004UL || signal_args[3] != 8) {
+		return 9;
+	}
+
+	clear_frame(&frame);
+	frame.a7 = 139;
+	frame.sepc = 0x1000;
+	if(riscv64_user_syscall(&frame, 8) || signal_call != 3 ||
+		frame.a0 != 0x123456789UL || frame.sepc != 0x987654321UL) {
+		return 40;
 	}
 
 	return 0;

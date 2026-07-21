@@ -19,6 +19,9 @@
 #include <fiwix/unistd.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/riscv64_signal.h>
+#endif
 
 #define INIT_TRAMPOLINE_SIZE	256	/* max. size of init_trampoline() */
 
@@ -115,16 +118,23 @@ void init_init(void)
 
 	/* setup the stack */
 #ifdef CONFIG_ARCH_RISCV64
-	page = map_page(init, PAGE_OFFSET - PAGE_SIZE, 0,
+	page = map_page(init, RISCV64_SIGNAL_TRAMPOLINE, 0,
 		PROT_READ | PROT_EXEC);
 	if(!page || riscv64_init_trampoline_end -
 		riscv64_init_trampoline_start > PAGE_SIZE) {
 		goto init_init__die;
 	}
+	memset_b((void *)page, 0, PAGE_SIZE);
 	memcpy_b((void *)page, riscv64_init_trampoline_start,
 		riscv64_init_trampoline_end - riscv64_init_trampoline_start);
-	if(riscv64_user_process_setup(init, PAGE_OFFSET - PAGE_SIZE,
-		PAGE_OFFSET - 16) < 0) {
+	page = map_page(init, RISCV64_SIGNAL_TRAMPOLINE - PAGE_SIZE, 0,
+		PROT_READ | PROT_WRITE);
+	if(!page) {
+		goto init_init__die;
+	}
+	memset_b((void *)page, 0, PAGE_SIZE);
+	if(riscv64_user_process_setup(init, RISCV64_SIGNAL_TRAMPOLINE,
+		RISCV64_SIGNAL_TRAMPOLINE - 16) < 0) {
 		goto init_init__die;
 	}
 #else

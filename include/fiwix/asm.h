@@ -103,6 +103,7 @@ void riscv64_set_sp(unsigned long);
 void riscv64_wait_for_interrupt(void);
 void riscv64_clear_ssip(void);
 void riscv64_vm_install(unsigned long);
+void riscv64_fence_i(void);
 unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
 	unsigned long, unsigned long);
 

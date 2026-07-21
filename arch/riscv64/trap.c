@@ -22,6 +22,34 @@
 #define RV_SCAUSE_LOAD_PAGE	13UL
 #define RV_SCAUSE_STORE_PAGE	15UL
 
+static int riscv64_user_exception(unsigned long cause)
+{
+	int signum;
+
+	switch(cause) {
+		case 2:
+			signum = SIGILL;
+			break;
+		case 3:
+			signum = SIGTRAP;
+			break;
+		case 0:
+		case 4:
+		case 6:
+			signum = SIGBUS;
+			break;
+		case 1:
+		case 5:
+		case 7:
+			signum = SIGSEGV;
+			break;
+		default:
+			return -1;
+	}
+	send_sig(current, signum);
+	return 0;
+}
+
 static void riscv64_run_bottom_halves(int from_user)
 {
 	struct sigcontext compat;
@@ -41,8 +69,18 @@ static int riscv64_timer_trap(int from_user)
 	memset_b(&compat, 0, sizeof(compat));
 	compat.cs = from_user ? USER_CS : KERNEL_CS;
 	irq_timer(TIMER_IRQ, &compat);
-	riscv64_run_bottom_halves(from_user);
 	return 0;
+}
+
+static void riscv64_user_return(struct riscv64_trap_frame *frame)
+{
+	riscv64_run_bottom_halves(1);
+	if(issig()) {
+		psig((__addr_t)frame);
+	}
+	if(need_resched) {
+		do_sched();
+	}
 }
 
 static int riscv64_page_fault(struct riscv64_trap_frame *frame,
@@ -72,8 +110,10 @@ static int riscv64_page_fault(struct riscv64_trap_frame *frame,
 	}
 	if(result == PFAULT_SIGSEGV) {
 		send_sig(current, SIGSEGV);
+		return 0;
 	} else if(result == PFAULT_SIGKILL) {
 		send_sig(current, SIGKILL);
+		return 0;
 	}
 	return -1;
 }
@@ -81,6 +121,10 @@ static int riscv64_page_fault(struct riscv64_trap_frame *frame,
 int riscv64_generic_user_trap(struct riscv64_trap_frame *frame,
 	unsigned long cause)
 {
+	if(!current) {
+		return -1;
+	}
+	current->sp = (__addr_t)frame;
 	if(cause & RV_SCAUSE_INTERRUPT) {
 		if((cause & RV_SCAUSE_CODE) != RV_SCAUSE_SSIP) {
 			return -1;
@@ -98,13 +142,12 @@ int riscv64_generic_user_trap(struct riscv64_trap_frame *frame,
 				return -1;
 			}
 		} else {
-			return -1;
+			if(riscv64_user_exception(cause)) {
+				return -1;
+			}
 		}
-		riscv64_run_bottom_halves(1);
 	}
-	if(need_resched) {
-		do_sched();
-	}
+	riscv64_user_return(frame);
 	return 0;
 }
 
@@ -114,7 +157,9 @@ int riscv64_generic_kernel_trap(unsigned long cause, unsigned long epc,
 	(void)epc;
 	if((cause & RV_SCAUSE_INTERRUPT) &&
 		(cause & RV_SCAUSE_CODE) == RV_SCAUSE_SSIP) {
-		return riscv64_timer_trap(0);
+		riscv64_timer_trap(0);
+		riscv64_run_bottom_halves(0);
+		return 0;
 	}
 	if(cause == RV_SCAUSE_INST_PAGE || cause == RV_SCAUSE_LOAD_PAGE ||
 		cause == RV_SCAUSE_STORE_PAGE) {

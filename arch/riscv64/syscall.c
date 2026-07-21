@@ -2,6 +2,7 @@
 
 #include <fiwix/arch_process.h>
 #include <fiwix/errno.h>
+#include <fiwix/riscv64_signal.h>
 #include <fiwix/riscv64_trap.h>
 #include <fiwix/syscalls.h>
 #include <fiwix/unistd.h>
@@ -20,6 +21,10 @@
 #define RV_SYS_READ		63
 #define RV_SYS_WRITE		64
 #define RV_SYS_EXIT		93
+#define RV_SYS_KILL		129
+#define RV_SYS_RT_SIGACTION	134
+#define RV_SYS_RT_SIGPROCMASK	135
+#define RV_SYS_RT_SIGRETURN	139
 #define RV_SYS_GETPID		172
 #define RV_SYS_GETPPID		173
 #define RV_SYS_BRK		214
@@ -106,6 +111,28 @@ int riscv64_user_syscall(struct riscv64_trap_frame *frame,
 		case RV_SYS_EXIT:
 			result = riscv64_call_fiwix(SYS_exit, frame, frame->a0, 0,
 				0, 0, 0, 0);
+			break;
+		case RV_SYS_KILL:
+			if(frame->a1 >= NSIG) {
+				result = -EINVAL;
+				break;
+			}
+			result = riscv64_call_fiwix(SYS_kill, frame,
+				frame->a0, frame->a1, 0, 0, 0, 0);
+			break;
+		case RV_SYS_RT_SIGACTION:
+			result = riscv64_rt_sigaction(frame->a0,
+				(const void *)frame->a1, (void *)frame->a2, frame->a3);
+			break;
+		case RV_SYS_RT_SIGPROCMASK:
+			result = riscv64_rt_sigprocmask(frame->a0,
+				(const void *)frame->a1, (void *)frame->a2, frame->a3);
+			break;
+		case RV_SYS_RT_SIGRETURN:
+			result = riscv64_signal_return(frame);
+			if(!result) {
+				return 0;
+			}
 			break;
 		case RV_SYS_GETPID:
 			result = riscv64_call_fiwix(SYS_getpid, frame, 0, 0, 0, 0, 0, 0);

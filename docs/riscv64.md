@@ -188,8 +188,8 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 262 C files, including the RV64 process, fork, syscall,
-trap, and ELF64 exec hooks.
+It currently compiles 263 C files, including the RV64 process, fork, syscall,
+trap, signal, and ELF64 exec hooks.
 Three explicit architecture replacements remain excluded: i386 GDT/IDT and
 boot main.
 The generic scheduler now calls the tested RV64 callee-saved context switch,
@@ -207,9 +207,9 @@ passes GCC and both bootstrap TinyCC compile gates, but remains compile-gated
 until generic init/fork invoke it at runtime.
 
 Generic PID 1 now has an RV64 construction path: it clones the supervisor root
-and its low device table, maps a private RX page at the top of the Sv39 user
-half, allocates a per-process kernel stack, and starts through an `sret`
-trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
+and its low device table, maps separate private RX text and RW stack pages at
+the top of the Sv39 user half, allocates a per-process kernel stack, and starts
+through an `sret` trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
 `execve`, and `exit` numbers and builds `argv`/`envp` on its user stack, so it
 contains no absolute kernel-address relocations. This path compiles under both
 bootstrap TinyCC rungs; runtime syscall dispatch and filesystem integration
@@ -228,7 +228,9 @@ an existing saved frame. Its table bound uses the actual pointer element size
 and rejects an index equal to the element count. The RV64 translator implements
 the compatible stage0 syscall subset: `openat`, `close`, `read`, `write`,
 `lseek`, `unlinkat`, `faccessat`, `chdir`, `fchmodat`, `brk`, fork-style
-`clone`, `wait4`, `exit`, `getpid`, and `getppid`. Unsupported `*at` directory
+`clone`, `wait4`, `exit`, `getpid`, and `getppid`. Signal translation adds
+`kill`, `rt_sigaction`, `rt_sigprocmask`, and `rt_sigreturn`. Unsupported
+`*at` directory
 descriptors and clone sharing flags are rejected rather than silently given
 fork semantics. RV syscall 221 now enters shared `execve` policy, which selects
 the architecture ELF64 loader without passing its native trap frame to the
@@ -258,7 +260,7 @@ aligned LP64 `argc`/`argv`/`envp`/auxv stack.
 
 Eager population is deliberate: first execution remains deterministic without
 requiring a file-backed demand fault before the generic boot path is live. This
-initial scope excludes dynamic linking, PIE, signals, and lazy ELF paging. The
+initial scope excludes dynamic linking, PIE, and lazy ELF paging. The
 loader enforces W^X by dropping write permission from executable segments. The
 bootstrap stage0 `hex0-seed` overstates its single segment as RWE, but static
 inspection confirms that it writes only to its stack, so it executes correctly
@@ -304,9 +306,10 @@ A firmware-free QEMU gate enters U mode, seeds registers, executes `ecall`, and
 checks frame offsets, `sepc` advancement, return-value replacement, user-stack
 restoration, and successful `sret`. A separate host policy test covers user and
 kernel timer paths, bottom-half accounting, scheduling, syscall failure, page-
-fault flag translation, and unsupported causes. RV64 signal-frame delivery is
-still absent, so a fault that queues a signal remains fatal at the generic trap
-boundary.
+fault flag translation, and unsupported causes. Synchronous user exceptions
+are translated to `SIGILL`, `SIGTRAP`, `SIGBUS`, or `SIGSEGV`; fault signals
+now pass through normal signal disposition instead of making the architecture
+trap fatal.
 
 ## Generic page-fault design
 
@@ -326,8 +329,39 @@ than the current supervisor stack. A host policy gate links the real generic
 resolver against controlled VMA and page-map fixtures. It covers read
 violations, all copy-on-write outcomes, anonymous demand-zero pages, stack
 growth, invalid addresses, and kernel demand/fatal paths. Signal outcomes are
-queued, but returning to a user handler or applying default signal action
-requires the next RV64 signal-delivery milestone.
+queued and consumed by generic signal disposition before scheduling on the
+user-return path.
+
+## Generic signal design
+
+Generic `psig()` still owns pending-mask selection, default stop/continue/exit
+actions, handler masking, and one-shot disposition. RV64 owns only the native
+user-frame transition. It writes the Linux RISC-V real-time signal ABI: a
+128-byte `siginfo`, 960-byte `ucontext`, complete 32-register context, and
+16-byte-aligned 1088-byte frame. The handler receives the signal number,
+`siginfo` pointer, and `ucontext` pointer in `a0` through `a2`.
+
+Every ELF64 image receives a fixed read/execute page immediately below the
+Sv39 user limit. Its three-instruction trampoline invokes Linux RV64 syscall
+139 (`rt_sigreturn`) and cannot be modified through the non-executable stack.
+The initial generic PID 1 trampoline now uses separate RX text and RW stack
+pages; `execve` removes both before installing the signal page and final stack.
+Signal return validates an executable user PC, restores all integer registers
+and the old signal mask, and forces `sstatus.SPP` and `sstatus.SIE` clear before
+`sret`.
+
+Host gates exercise generic disposition, masking, frame build/restore, invalid
+return PCs, and trampoline bytes. A cross-compiler gate checks the local frame
+sizes and offsets against installed Linux RISC-V headers. Alternate signal
+stacks and real-time signals above Fiwix's historical 31-signal range remain
+unsupported.
+
+This milestone also fixed four shared bugs. The original `SIG_BLOCKABLE`
+expression accidentally allowed `SIGSTOP` to be blocked; signal 32 could be
+queued but was never scanned; fork cleared only one of its saved signal
+contexts; and stack-fault helpers assumed the highest VMA was always
+`P_STACK`. The last assumption became observable as soon as the RX signal page
+was placed above the stack.
 
 ## Linux Image handoff
 

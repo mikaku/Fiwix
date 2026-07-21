@@ -42,6 +42,20 @@ static int page_protection_violation(struct vma *vma, __addr_t address)
 	return status ? PFAULT_SIGKILL : PFAULT_RESOLVED;
 }
 
+static struct vma *find_stack_region(void)
+{
+	struct vma *vma;
+
+	vma = current->vma_table;
+	while(vma) {
+		if(vma->s_type == P_STACK) {
+			return vma;
+		}
+		vma = vma->next;
+	}
+	return NULL;
+}
+
 static int page_not_present(struct vma *vma, __addr_t address,
 	__addr_t user_sp)
 {
@@ -52,10 +66,14 @@ static int page_not_present(struct vma *vma, __addr_t address,
 	if(!vma) {
 		if(user_sp >= 32 && address >= (user_sp - 32) &&
 			address < PAGE_OFFSET) {
-			if(!(vma = find_vma_region(PAGE_OFFSET - 1))) {
+			if(!(vma = find_stack_region())) {
 				printk("WARNING: %s(): process %d doesn't have an stack region in vma_table!\n", __FUNCTION__, current->pid);
 				return PFAULT_SIGSEGV;
 			} else {
+				if(vma != current->vma_table &&
+					(address & PAGE_MASK) < vma->prev->end) {
+					return PFAULT_SIGSEGV;
+				}
 				/* assuming stack will never reach heap */
 				vma->start = address;
 				vma->start = vma->start & PAGE_MASK;

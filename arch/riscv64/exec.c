@@ -8,6 +8,7 @@
 #include <fiwix/mman.h>
 #include <fiwix/process.h>
 #include <fiwix/riscv64_elf.h>
+#include <fiwix/riscv64_signal.h>
 #include <fiwix/riscv64_trap.h>
 #include <fiwix/string.h>
 
@@ -121,11 +122,12 @@ static unsigned long riscv64_barg_start(struct binargs *barg)
 
 	for(n = 0; n < ARG_MAX; n++) {
 		if(barg->page[n]) {
-			return PAGE_OFFSET - ((ARG_MAX - n) * PAGE_SIZE) +
+			return RISCV64_USER_STACK_TOP -
+				((ARG_MAX - n) * PAGE_SIZE) +
 				barg->offset;
 		}
 	}
-	return PAGE_OFFSET - 4;
+	return RISCV64_USER_STACK_TOP - 4;
 }
 
 static unsigned char riscv64_barg_byte(struct binargs *barg,
@@ -134,12 +136,12 @@ static unsigned char riscv64_barg_byte(struct binargs *barg,
 	unsigned long page_base;
 	int n;
 
-	n = ARG_MAX - (int)((PAGE_OFFSET - address + PAGE_SIZE - 1) /
+	n = ARG_MAX - (int)((RISCV64_USER_STACK_TOP - address + PAGE_SIZE - 1) /
 		PAGE_SIZE);
 	if(n < 0 || n >= ARG_MAX || !barg->page[n]) {
 		return 0;
 	}
-	page_base = PAGE_OFFSET - ((ARG_MAX - n) * PAGE_SIZE);
+	page_base = RISCV64_USER_STACK_TOP - ((ARG_MAX - n) * PAGE_SIZE);
 	return *((unsigned char *)barg->page[n] + address - page_base);
 }
 
@@ -175,7 +177,8 @@ static int riscv64_create_stack(struct binargs *barg,
 	slots = 1 + barg->argc + 1 + barg->envc + 1 + 20;
 	stack = (string & ~15UL) - slots * sizeof(unsigned long);
 	stack &= ~15UL;
-	if((error = riscv64_map_range(stack & PAGE_MASK, PAGE_OFFSET,
+	if((error = riscv64_map_range(stack & PAGE_MASK,
+		RISCV64_USER_STACK_TOP,
 		PROT_READ | PROT_WRITE, P_STACK))) {
 		return error;
 	}
@@ -183,7 +186,8 @@ static int riscv64_create_stack(struct binargs *barg,
 		if(!barg->page[n]) {
 			continue;
 		}
-		address = PAGE_OFFSET - ((ARG_MAX - n) * PAGE_SIZE);
+		address = RISCV64_USER_STACK_TOP -
+			((ARG_MAX - n) * PAGE_SIZE);
 		page = map_page(current, address, 0, PROT_READ | PROT_WRITE);
 		if(!page) {
 			return -ENOMEM;
@@ -239,15 +243,22 @@ int riscv64_elf_load(struct inode *inode, struct binargs *barg,
 	int error;
 
 	if(riscv64_elf_plan(header_data, header_size, inode->i_size,
-		PAGE_OFFSET, &plan)) {
+		RISCV64_SIGNAL_TRAMPOLINE, &plan)) {
 		return -ENOEXEC;
 	}
 
+	if(!current->vma_table) {
+		unmap_page(RISCV64_SIGNAL_TRAMPOLINE);
+		unmap_page(RISCV64_SIGNAL_TRAMPOLINE - PAGE_SIZE);
+	}
 	release_binary();
 	for(n = 0; n < plan.load_count; n++) {
 		if((error = riscv64_load_segment(inode, &plan.load[n]))) {
 			goto failed;
 		}
+	}
+	if((error = riscv64_signal_map())) {
+		goto failed;
 	}
 	heap = PAGE_ALIGN(plan.image_end);
 	if((error = riscv64_map_range(heap, heap + PAGE_SIZE,
