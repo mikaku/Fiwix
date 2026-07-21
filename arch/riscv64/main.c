@@ -40,8 +40,8 @@ static volatile unsigned int task_switches;
 extern void riscv64_context_switch(struct arch_context *,
 	struct arch_context *);
 extern void riscv64_vm_enable(void);
-extern u64 riscv64_user_entry(void);
-extern u64 riscv64_user_stack_top(void);
+extern u64 riscv64_load_user_elf(void);
+extern u64 riscv64_prepare_user_stack(u64);
 extern u64 riscv64_enter_user(u64, u64);
 
 struct riscv64_trap_frame {
@@ -177,6 +177,7 @@ void riscv64_machine_main(u64 hartid, u64 dtb)
 
 void riscv64_supervisor_main(u64 hartid, u64 dtb)
 {
+	u64 entry;
 	u64 status;
 
 	(void)hartid;
@@ -187,10 +188,15 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 		__asm__ __volatile__("wfi");
 	}
 	uart_puts("Fiwix riscv64 timer gate passed: 3 ticks\n");
+	entry = riscv64_load_user_elf();
+	if(!entry) {
+		uart_puts("Fiwix riscv64 ELF64 loader gate failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 ELF64 loader gate passed\n");
 	riscv64_vm_enable();
 	uart_puts("Fiwix riscv64 Sv39 gate passed\n");
-	status = riscv64_enter_user(riscv64_user_entry(),
-		riscv64_user_stack_top());
+	status = riscv64_enter_user(entry, riscv64_prepare_user_stack(entry));
 	if(status != 42) {
 		uart_puts("Fiwix riscv64 U-mode exit syscall failed\n");
 		finish(TEST_FAIL);

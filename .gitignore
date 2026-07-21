@@ -1,6 +1,7 @@
 *.o
 /fiwix
 System.map.gz
+/arch/riscv64/fixture/
 include/fiwix/custom_config.h
 include/fiwix/custom_limits.h
 include/fiwix/custom_kernel.h

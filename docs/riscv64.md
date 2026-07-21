@@ -75,6 +75,15 @@ before temporarily reading its mapped page with `SUM` enabled. The smoke test
 requires a U-mode `write` marker and an `exit(42)` return to the suspended
 supervisor context.
 
-The embedded fixture is intentionally not treated as the final user ABI. It is
-a deterministic privilege/MMU/trap gate that must remain green while ELF64
-loading, generic process state, and filesystem-backed binaries are added.
+The build produces a standalone ELF64/RISC-V executable at
+`arch/riscv64/fixture/user.elf` and embeds its bytes as immutable loader input.
+The kernel validates the ELF identity, machine, executable type, program-header
+bounds, one-page RX load segment, alignment, entry point, and W^X policy before
+copying the segment into its user page. The fixture then verifies an
+ABI-shaped initial stack containing `argc`, `argv`, a null environment, and
+`AT_PAGESZ`, `AT_ENTRY`, and `AT_NULL` auxiliary-vector entries.
+
+Embedding the standalone ELF is intentionally not treated as the final
+filesystem path. It is a deterministic loader/privilege/MMU/trap gate that must
+remain green while generic process state and filesystem-backed binaries are
+added.

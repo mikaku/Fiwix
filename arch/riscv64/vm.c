@@ -10,6 +10,11 @@
 #define USER_STACK_VA   0x00800000UL
 #define KERNEL_RAM_PA   0x80000000UL
 #define UART_PA         0x10000000UL
+#define STACK_FRAME_SIZE 128UL
+#define STACK_ARGV0      96UL
+#define AT_NULL          0UL
+#define AT_PAGESZ        6UL
+#define AT_ENTRY         9UL
 
 #define SATP_SV39       (8UL << 60)
 #define PTE_V           0x001UL
@@ -26,11 +31,10 @@ static u64 root_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 low_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 user_text_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 user_stack_page_table[512] __attribute__((aligned(PAGE_SIZE)));
+static u64 user_text[PAGE_SIZE / sizeof(u64)]
+	__attribute__((aligned(PAGE_SIZE)));
 static u64 user_stack[PAGE_SIZE / sizeof(u64)]
 	__attribute__((aligned(PAGE_SIZE)));
-
-extern char __user_text_start[];
-extern void riscv64_user_start(void);
 
 static u64 table_entry(void *table)
 {
@@ -55,7 +59,7 @@ void riscv64_vm_enable(void)
 	low_page_table[UART_PA >> 21] = leaf_entry(UART_PA, PTE_R | PTE_W);
 
 	low_page_table[USER_TEXT_VA >> 21] = table_entry(user_text_page_table);
-	user_text_page_table[0] = leaf_entry((u64)__user_text_start,
+	user_text_page_table[0] = leaf_entry((u64)user_text,
 		PTE_R | PTE_X | PTE_U);
 
 	low_page_table[USER_STACK_VA >> 21] = table_entry(user_stack_page_table);
@@ -70,13 +74,36 @@ void riscv64_vm_enable(void)
 		: : : "t0", "memory");
 }
 
-u64 riscv64_user_entry(void)
+unsigned char *riscv64_user_text_page(void)
 {
-	return USER_TEXT_VA + ((u64)riscv64_user_start -
-		(u64)__user_text_start);
+	return (unsigned char *)user_text;
 }
 
-u64 riscv64_user_stack_top(void)
+u64 riscv64_prepare_user_stack(u64 entry)
 {
-	return USER_STACK_VA + PAGE_SIZE;
+	u64 *words;
+	unsigned char *name;
+	u64 n;
+	static const char process_name[] = "fiwix-riscv64-fixture";
+
+	for(n = 0; n < PAGE_SIZE / sizeof(u64); n++) {
+		user_stack[n] = 0;
+	}
+	words = (u64 *)((unsigned char *)user_stack + PAGE_SIZE -
+		STACK_FRAME_SIZE);
+	name = (unsigned char *)words + STACK_ARGV0;
+	for(n = 0; n < sizeof(process_name); n++) {
+		name[n] = process_name[n];
+	}
+	words[0] = 1;
+	words[1] = USER_STACK_VA + PAGE_SIZE - STACK_FRAME_SIZE + STACK_ARGV0;
+	words[2] = 0;
+	words[3] = 0;
+	words[4] = AT_PAGESZ;
+	words[5] = PAGE_SIZE;
+	words[6] = AT_ENTRY;
+	words[7] = entry;
+	words[8] = AT_NULL;
+	words[9] = 0;
+	return USER_STACK_VA + PAGE_SIZE - STACK_FRAME_SIZE;
 }

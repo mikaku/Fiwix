@@ -15,7 +15,6 @@
 	.equ SSTATUS_SPIE, 0x20
 	.equ SSTATUS_SPP,  0x100
 	.equ TRAP_FRAME_SIZE, 272
-	.equ USER_MESSAGE_SIZE, 42
 
 /* Enter U mode and retain the supervisor call continuation for sys_exit. */
 riscv64_enter_user:
@@ -137,37 +136,6 @@ riscv64_leave_user:
 	ld ra, 0(t0)
 	csrsi sstatus, SSTATUS_SIE
 	ret
-
-	.section .user.text,"ax",@progbits
-	.globl riscv64_user_start
-riscv64_user_start:
-	li a0, 1
-	.option push
-	.option norelax
-	lla a1, user_message
-	.option pop
-	li a2, USER_MESSAGE_SIZE
-	li a7, 64
-	ecall
-	li t0, USER_MESSAGE_SIZE
-	bne a0, t0, user_write_failed
-	li a0, 42
-	li a7, 93
-	ecall
-	ebreak
-
-user_write_failed:
-	li a0, 1
-	li a7, 93
-	ecall
-	ebreak
-
-user_message:
-	.ascii "Fiwix riscv64 U-mode write syscall passed\n"
-user_message_end:
-	.if (user_message_end - user_message) != USER_MESSAGE_SIZE
-	.error "USER_MESSAGE_SIZE is stale"
-	.endif
 
 	.section .bss
 	.balign 8
