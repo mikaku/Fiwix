@@ -53,6 +53,10 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long u64;
 
+extern void riscv64_fence_write(void);
+extern void riscv64_fence_full(void);
+extern void riscv64_fence_read(void);
+
 struct virtq_descriptor {
 	u64 address;
 	u32 length;
@@ -238,13 +242,13 @@ int riscv64_virtio_read_sector(u64 sector, void *buffer)
 	used_before = used->index;
 	available_index = available->index;
 	available->ring[available_index % queue_size] = 0;
-	__asm__ __volatile__("fence w, w" : : : "memory");
+	riscv64_fence_write();
 	available->index = available_index + 1;
-	__asm__ __volatile__("fence rw, rw" : : : "memory");
+	riscv64_fence_full();
 	mmio_write(MMIO_QUEUE_NOTIFY, 0);
 
 	for(poll = 0; poll < POLL_LIMIT; poll++) {
-		__asm__ __volatile__("fence r, r" : : : "memory");
+		riscv64_fence_read();
 		if(used->index != used_before) {
 			break;
 		}

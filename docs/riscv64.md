@@ -21,6 +21,23 @@ The resulting `fiwix` is an ELF64 kernel linked at `0x80000000`. It uses
 RV64IMA plus `Zicsr` and `Zifencei`, with floating-point and compressed
 instructions disabled.
 
+The riscv64 C target also builds with the bootstrap TinyCC while GNU binutils
+assemble and link the architecture files:
+
+```sh
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  TCC=/path/to/riscv64-tcc QEMU=/path/to/qemu-system-riscv64 \
+  test-riscv64-tcc
+```
+
+This gate passes with both the Mes-built riscv64 `tcc-boot0` 0.9.27 and the
+final `tcc-musl` 0.9.28rc artifacts from the bootstrap chain. `TCC_LIBTCC1`
+can override the compiler-runtime archive when a package uses a different
+layout. The linker accepts TinyCC's LP64D object marker because the kernel C
+surface has no floating-point types or calls; the assembly-first final ELF is
+marked soft-float, and compile-time assertions require 64-bit pointers and
+`unsigned long`.
+
 ## Test
 
 ```sh
@@ -174,3 +191,19 @@ userspace, and the gate ends at its expected `No working init found` panic.
 This proves a real Linux boot through device initialization while keeping
 OpenSBI and a distribution kernel out of the bootstrap runtime. It does not
 yet prove a Linux initramfs or userspace handoff.
+
+## Bootstrap compiler findings
+
+The RISC-V TinyCC integrated assembler does not accept all privileged CSR and
+fence forms used by the kernel. Those operations live in `ops.S` and are built
+with the same GNU assembler needed for the other architecture entry files.
+This also keeps compiler memory-order assumptions out of the virtio queue
+contract.
+
+The Mes-built `tcc-boot0` miscompiles the constant expression `8UL << 60` as
+`0x80000000`. The Sv39 mode field is therefore constructed in assembly while C
+passes only the root page-table PPN. The final `tcc-musl` package also reports a
+stale `libtcc1.a` path from a removed musl store item; the Makefile derives the
+working archive from TinyCC's `install:` directory and allows an explicit
+override. Both compiler rungs boot the fixture kernel, and both enter the real
+Linux oracle successfully.

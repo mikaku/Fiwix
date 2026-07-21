@@ -5,26 +5,26 @@ HOSTCC ?= cc
 LINUX_IMAGE ?= fixture/linux.bin
 
 .S.o:
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(AS) $(ASFLAGS) -o $@ $<
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o ext2_gate.o handoff.o linux.o main.o user.o \
+OBJS = boot.o context.o elf.o ext2_gate.o handoff.o linux.o main.o ops.o user.o \
 	user_fixture_blob.o virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/user.o: user-fixture.S
 	mkdir -p fixture
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/user.elf: fixture/user.o user-fixture.ld
 	$(LD) $(LDFLAGS) -T user-fixture.ld -o $@ $<
 
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/linux.elf: fixture/linux.o linux-fixture.ld
 	$(LD) $(LDFLAGS) -T linux-fixture.ld -o $@ $<

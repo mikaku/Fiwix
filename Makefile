@@ -16,6 +16,7 @@ ARCH_DEFINES =
 # CCEXE can be overridden at the command line. For example: make CCEXE="tcc"
 # To use tcc see docs/tcc.txt
 CCEXE=gcc
+TCC ?= tcc
 
 ifeq ($(TARGET_ARCH),i386)
 ARCH = -m32
@@ -63,7 +64,13 @@ ifeq ($(filter $(TARGET_ARCH),i386 riscv64),)
 $(error unsupported TARGET_ARCH '$(TARGET_ARCH)'; expected i386 or riscv64)
 endif
 
-CC = $(CROSS_COMPILE)$(CCEXE) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(ARCH_DEFINES) $(CONFFLAGS) #-D__DEBUG__
+CC_DRIVER = $(CROSS_COMPILE)$(CCEXE)
+ifeq ($(CCEXE),tcc)
+CC_DRIVER = $(TCC)
+endif
+CC = $(CC_DRIVER) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(ARCH_DEFINES) $(CONFFLAGS) #-D__DEBUG__
+AS = $(CROSS_COMPILE)as
+ASFLAGS = $(ARCH)
 CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-pic -fno-common -fno-stack-protector -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
 
 ifeq ($(CCEXE),gcc)
@@ -80,17 +87,23 @@ endif
 endif
 
 ifeq ($(CCEXE),tcc)
-ifneq ($(TARGET_ARCH),i386)
-$(error CCEXE=tcc is not implemented for TARGET_ARCH '$(TARGET_ARCH)' yet)
-endif
+ifeq ($(TARGET_ARCH),i386)
 LD = $(CROSS_COMPILE)$(CCEXE) $(ARCH)
 LDFLAGS = -static -nostdlib -nostdinc
 # If you define CONFIG_VM_SPLIT22 this should be 0x80100000: make CCEXE="tcc" TEXTADDR="0x80100000"
 TEXTADDR = 0xC0100000
 endif
+ifeq ($(TARGET_ARCH),riscv64)
+LD = $(CROSS_COMPILE)ld
+NM = $(CROSS_COMPILE)nm
+LDFLAGS = -m elf64lriscv --no-warn-mismatch
+TCC_PRIVATE_DIR ?= $(shell $(TCC) -vv 2>&1 | awk '/^install:/{print $$2; exit}')
+TCC_LIBTCC1 ?= $(TCC_PRIVATE_DIR)/libtcc1.a
+endif
+endif
 
 
-export CC LD CFLAGS LDFLAGS INCLUDE
+export CC AS ASFLAGS LD CFLAGS LDFLAGS INCLUDE
 
 all:
 ifeq ($(TARGET_ARCH),i386)
@@ -104,7 +117,13 @@ ifeq ($(CCEXE),gcc)
 	$(NM) fiwix | sort | gzip -9c > System.map.gz
 endif
 ifeq ($(CCEXE),tcc)
+ifeq ($(TARGET_ARCH),i386)
 	$(LD) -Wl,-Ttext=$(TEXTADDR) $(LDFLAGS) $(OBJS) -o fiwix
+endif
+ifeq ($(TARGET_ARCH),riscv64)
+	$(LD) -T $(KERNEL_LDSCRIPT) $(LDFLAGS) $(OBJS) $(TCC_LIBTCC1) -o fiwix
+	$(NM) fiwix | sort | gzip -9c > System.map.gz
+endif
 endif
 
 clean:
@@ -124,4 +143,9 @@ test-riscv64-linux: all
 	@test -n "$(LINUX_IMAGE)" || { echo "test-riscv64-linux requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
 	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-linux-smoke.sh ./fiwix
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux
+test-riscv64-tcc:
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-tcc requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	$(MAKE) TARGET_ARCH=riscv64 CROSS_COMPILE="$(CROSS_COMPILE)" CCEXE=tcc TCC="$(TCC)" clean
+	$(MAKE) TARGET_ARCH=riscv64 CROSS_COMPILE="$(CROSS_COMPILE)" CCEXE=tcc TCC="$(TCC)" QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" test-riscv64
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc

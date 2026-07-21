@@ -16,7 +16,6 @@
 #define TEST_FAIL      0x00013333U
 #define USER_TEXT_VA   0x00400000UL
 #define PAGE_SIZE      4096UL
-#define SCAUSE_IRQ     (1UL << 63)
 #define SCAUSE_SSIP    1UL
 #define SCAUSE_U_ECALL 8UL
 #define SYS_WRITE      64UL
@@ -49,6 +48,8 @@ extern int riscv64_linux_image_gate(void);
 extern u64 riscv64_linux_image_entry(void);
 extern void riscv64_linux_handoff(u64, u64, u64);
 extern int riscv64_sbi_gate(void);
+extern void riscv64_wait_for_interrupt(void);
+extern void riscv64_clear_ssip(void);
 
 struct riscv64_trap_frame {
 	u64 ra;
@@ -91,6 +92,9 @@ typedef char arch_context_size_must_be_128[
 	(sizeof(struct arch_context) == 128) ? 1 : -1];
 typedef char trap_frame_size_must_be_272[
 	(sizeof(struct riscv64_trap_frame) == 272) ? 1 : -1];
+typedef char pointer_size_must_be_64[(sizeof(void *) == 8) ? 1 : -1];
+typedef char unsigned_long_size_must_be_64[
+	(sizeof(unsigned long) == 8) ? 1 : -1];
 
 static void uart_putc(char c)
 {
@@ -190,7 +194,7 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 	uart_puts("Fiwix riscv64 S-mode entry passed\n");
 	context_switch_gate();
 	while(riscv64_timer_ticks < 3) {
-		__asm__ __volatile__("wfi");
+		riscv64_wait_for_interrupt();
 	}
 	uart_puts("Fiwix riscv64 timer gate passed: 3 ticks\n");
 	if(riscv64_sbi_gate() < 0) {
@@ -266,9 +270,10 @@ u64 riscv64_user_trap(struct riscv64_trap_frame *frame, u64 cause)
 	u64 n;
 	const char *buffer;
 
-	if(cause & SCAUSE_IRQ) {
-		if((cause & ~SCAUSE_IRQ) == SCAUSE_SSIP) {
-			__asm__ __volatile__("csrc sip, %0" : : "r"(SCAUSE_SSIP));
+	if((signed long)cause < 0) {
+		cause = (cause << 1) >> 1;
+		if(cause == SCAUSE_SSIP) {
+			riscv64_clear_ssip();
 			riscv64_timer_ticks++;
 			return 0;
 		}

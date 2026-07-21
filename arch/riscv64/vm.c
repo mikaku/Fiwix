@@ -16,7 +16,6 @@
 #define AT_PAGESZ        6UL
 #define AT_ENTRY         9UL
 
-#define SATP_SV39       (8UL << 60)
 #define PTE_V           0x001UL
 #define PTE_R           0x002UL
 #define PTE_W           0x004UL
@@ -26,6 +25,8 @@
 #define PTE_D           0x080UL
 
 typedef unsigned long u64;
+
+extern void riscv64_vm_install(u64);
 
 static u64 root_page_table[512] __attribute__((aligned(PAGE_SIZE)));
 static u64 low_page_table[512] __attribute__((aligned(PAGE_SIZE)));
@@ -66,12 +67,9 @@ void riscv64_vm_enable(void)
 	user_stack_page_table[0] = leaf_entry((u64)user_stack,
 		PTE_R | PTE_W | PTE_U);
 
-	satp = SATP_SV39 | ((u64)root_page_table >> 12);
-	__asm__ __volatile__("csrw satp, %0\n\tsfence.vma zero, zero"
-		: : "r"(satp) : "memory");
-	/* Permit supervisor syscall handlers to read validated user pages. */
-	__asm__ __volatile__("li t0, 0x40000\n\tcsrs sstatus, t0"
-		: : : "t0", "memory");
+	satp = (u64)root_page_table >> 12;
+	/* The assembly helper also enables SUM for validated syscall buffers. */
+	riscv64_vm_install(satp);
 }
 
 unsigned char *riscv64_user_text_page(void)
