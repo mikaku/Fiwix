@@ -48,6 +48,7 @@ extern int riscv64_ext2_gate(void);
 extern int riscv64_linux_image_gate(void);
 extern u64 riscv64_linux_image_entry(void);
 extern void riscv64_linux_handoff(u64, u64, u64);
+extern int riscv64_sbi_gate(void);
 
 struct riscv64_trap_frame {
 	u64 ra;
@@ -192,6 +193,11 @@ void riscv64_supervisor_main(u64 hartid, u64 dtb)
 		__asm__ __volatile__("wfi");
 	}
 	uart_puts("Fiwix riscv64 timer gate passed: 3 ticks\n");
+	if(riscv64_sbi_gate() < 0) {
+		uart_puts("Fiwix riscv64 SBI gate failed\n");
+		finish(TEST_FAIL);
+	}
+	uart_puts("Fiwix riscv64 SBI base/time gate passed\n");
 	entry = riscv64_load_user_elf();
 	if(!entry) {
 		uart_puts("Fiwix riscv64 ELF64 loader gate failed\n");

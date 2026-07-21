@@ -36,6 +36,12 @@ payload_start:
 	bnez t0, payload_failed
 	csrr t0, sie
 	bnez t0, payload_failed
+	li a7, 0x10
+	li a6, 0
+	ecall
+	bnez a0, payload_failed
+	li t0, 3
+	bne a1, t0, payload_failed
 
 	.option push
 	.option norelax

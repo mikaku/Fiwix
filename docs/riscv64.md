@@ -125,7 +125,13 @@ checks hart 0, the flattened-device-tree magic, `satp == 0`, and `sie == 0`
 before printing its success marker.
 
 This proves the bootloader register/CSR and Image placement contract, not a
-Linux boot. A real S-mode Linux kernel additionally needs a resident machine
-firmware interface for timer and reset services. The firmware-free port will
-extend its bounded M-mode shim with the required SBI calls rather than add an
-OpenSBI binary to the bootstrap runtime.
+Linux boot. The resident M-mode shim now implements SBI 0.3 BASE discovery,
+TIME `set_timer`, and SRST reset, plus the legacy timer, console, and shutdown
+calls. The smoke gate probes BASE/TIME/SRST, programs a timer, observes the
+delegated supervisor timer pending bit, and cancels it. The M-mode trap frame
+preserves every caller-saved integer register except the SBI return pair.
+
+This bounded SBI implementation keeps OpenSBI out of the bootstrap runtime. A
+real Linux image remains required to determine whether further extensions or
+device-tree reservations are needed before the handoff can be considered
+complete.
