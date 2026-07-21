@@ -47,7 +47,7 @@ void gdt_init(void)
 	gdt_set_entry(USER_DS, 0, 0xFFFFFFFF, loflags, SD_OPSIZE32 | SD_PAGE4KB);
 
 	loflags = SD_TSSPRESENT;
-	gdt_set_entry(TSS, 0, sizeof(struct i386tss), loflags, SD_OPSIZE32);
+	gdt_set_entry(TSS, 0, sizeof(struct arch_context), loflags, SD_OPSIZE32);
 
 	load_gdt((unsigned int)&gdtr);
 }

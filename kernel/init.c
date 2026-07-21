@@ -62,7 +62,7 @@ void init_init(void)
 	}
 	init->rss++;
 	memcpy_b(pgdir, kpage_dir, PAGE_SIZE);
-	init->tss.cr3 = V2P((unsigned int)pgdir);
+	init->arch.cr3 = V2P((unsigned int)pgdir);
 
 	init->ppid = &proc_table[IDLE];
 	init->pgid = 0;
@@ -99,19 +99,19 @@ void init_init(void)
 	init->umask = 0022;
 
 	/* setup the stack */
-	if(!(init->tss.esp0 = kmalloc(PAGE_SIZE))) {
+	if(!(init->arch.esp0 = kmalloc(PAGE_SIZE))) {
 		goto init_init__die;
 	}
-	init->tss.esp0 += PAGE_SIZE - 4;
+	init->arch.esp0 += PAGE_SIZE - 4;
 	init->rss++;
-	init->tss.ss0 = KERNEL_DS;
+	init->arch.ss0 = KERNEL_DS;
 
 	/* setup the init_trampoline */
 	page = map_page(init, PAGE_OFFSET - PAGE_SIZE, 0, PROT_READ | PROT_WRITE);
 	memcpy_b((void *)page, init_trampoline, INIT_TRAMPOLINE_SIZE);
 
-	init->tss.eip = (unsigned int)switch_to_user_mode;
-	init->tss.esp = page + PAGE_SIZE - 4;
+	init->arch.eip = (unsigned int)switch_to_user_mode;
+	init->arch.esp = page + PAGE_SIZE - 4;
 
 	runnable(init);
 	nr_processes++;

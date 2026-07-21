@@ -281,13 +281,13 @@ BUILD_IRQ(15, irq15)
 	pushfl
 	movl	%esp, %ebx
 	addl	$0x24, %ebx
-	movl	0x4(%ebx), %eax		# save ESP to 'prev->tss.esp'
+	movl	0x4(%ebx), %eax		# save ESP to 'prev->arch.esp'
 	movl	%esp, (%eax)
-	movl	0x8(%ebx), %eax		# save EIP to 'prev->tss.eip'
+	movl	0x8(%ebx), %eax		# save EIP to 'prev->arch.eip'
 	movl	$1f, (%eax)
-	movl	0xC(%ebx), %esp		# load 'next->tss.esp' into ESP
-	pushl	0x10(%ebx)		# push 'next->tss.eip' into ESP
-	movl	0x14(%ebx), %eax	# load 'next->tss.cr3' into CR3
+	movl	0xC(%ebx), %esp		# load 'next->arch.esp' into ESP
+	pushl	0x10(%ebx)		# push 'next->arch.eip' into ESP
+	movl	0x14(%ebx), %eax	# load 'next->arch.cr3' into CR3
 	ltr	0x18(%ebx)		# load TSS
 	movl	%eax, %cr3
 	ret

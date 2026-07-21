@@ -279,7 +279,7 @@ void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 	struct page *pg;
 	int page;
 
-	pgdir = (unsigned int *)P2V(current->tss.cr3);
+	pgdir = (unsigned int *)P2V(current->arch.cr3);
 	pgtbl = NULL;
 
 	for(n = 0; n < (length / PAGE_SIZE); n++) {

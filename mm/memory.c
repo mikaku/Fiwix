@@ -129,7 +129,7 @@ unsigned int get_mapped_addr(struct proc *p, unsigned int addr)
 	unsigned int *pgdir, *pgtbl;
 	unsigned int pde, pte;
 
-	pgdir = (unsigned int *)P2V(p->tss.cr3);
+	pgdir = (unsigned int *)P2V(p->arch.cr3);
 	pde = GET_PGDIR(addr);
 	pte = GET_PGTBL(addr);
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
@@ -146,8 +146,8 @@ int clone_pages(struct proc *child)
 	struct page *pg;
 	struct vma *vma;
 
-	src_pgdir = (unsigned int *)P2V(current->tss.cr3);
-	dst_pgdir = (unsigned int *)P2V(child->tss.cr3);
+	src_pgdir = (unsigned int *)P2V(current->arch.cr3);
+	dst_pgdir = (unsigned int *)P2V(child->arch.cr3);
 	vma = current->vma_table;
 	pages = 0;
 
@@ -206,7 +206,7 @@ int free_page_tables(struct proc *p)
 	unsigned int *pgdir;
 	int n, count;
 
-	pgdir = (unsigned int *)P2V(p->tss.cr3);
+	pgdir = (unsigned int *)P2V(p->arch.cr3);
 	for(n = 0, count = 0; n < PD_ENTRIES; n++) {
 		if((pgdir[n] & (PAGE_PRESENT | PAGE_RW | PAGE_USER)) == (PAGE_PRESENT | PAGE_RW | PAGE_USER)) {
 			kfree(P2V(pgdir[n]) & PAGE_MASK);
@@ -228,7 +228,7 @@ unsigned int map_page_flags(struct proc *p, unsigned int vaddr, unsigned int add
 	unsigned int newaddr;
 	int pde, pte;
 
-	pgdir = (unsigned int *)P2V(p->tss.cr3);
+	pgdir = (unsigned int *)P2V(p->arch.cr3);
 	pde = GET_PGDIR(vaddr);
 	pte = GET_PGTBL(vaddr);
 
@@ -263,7 +263,7 @@ int unmap_page(unsigned int vaddr)
 	unsigned int addr, desc;
 	int pde, pte;
 
-	pgdir = (unsigned int *)P2V(current->tss.cr3);
+	pgdir = (unsigned int *)P2V(current->arch.cr3);
 	pde = GET_PGDIR(vaddr);
 	pte = GET_PGTBL(vaddr);
 	if(!(pgdir[pde] & PAGE_PRESENT)) {

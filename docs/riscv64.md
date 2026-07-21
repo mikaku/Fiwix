@@ -2,8 +2,9 @@
 
 The experimental riscv64 target boots directly on the single-hart QEMU `virt`
 machine. It currently proves the firmware-free M-mode entry, the transition to
-S mode, fatal trap reporting, and machine-timer forwarding. It does not yet run
-the generic Fiwix scheduler or userspace.
+S mode, fatal trap reporting, machine-timer forwarding, and the architecture
+context-switch primitive with two kernel tasks. It does not yet run the generic
+Fiwix scheduler or userspace.
 
 ## Build
 
@@ -41,3 +42,18 @@ The test uses `-bios none`; OpenSBI is not part of the runtime contract.
 The fixed addresses are a deliberate first bring-up boundary. The saved DTB
 pointer will become the source of discoverable RAM and devices before the port
 is considered hardware-portable.
+
+## Process-context design
+
+The first member of `struct proc` is now an architecture-owned
+`struct arch_context`. Its i386 definition preserves the former TSS layout, so
+the existing hardware-facing offsets and generated code remain unchanged. The
+riscv64 definition stores `ra`, `sp`, the twelve callee-saved registers, `satp`,
+and the per-process kernel stack pointer. The switch primitive deliberately
+handles only the callee-saved execution state; address-space activation and
+trap-stack selection belong at the scheduler boundary.
+
+The smoke kernel initializes two independent kernel stacks and performs six
+cooperative switches before returning to the boot context. This gate checks the
+assembly offsets against the C structure and gives later generic-scheduler work
+a known-good low-level primitive.

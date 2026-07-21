@@ -120,7 +120,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	proc_slot_init(current);
 	set_tss(current);
 	load_tr(TSS);
-	current->tss.cr3 = V2P((unsigned int)kpage_dir);
+	current->arch.cr3 = V2P((unsigned int)kpage_dir);
 	current->flags |= PF_KPROC;
 	sprintk(current->argv0, "%s", "idle");
 

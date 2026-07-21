@@ -84,7 +84,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	}
 	child->rss++;
 	memcpy_b(child_pgdir, kpage_dir, PAGE_SIZE);
-	child->tss.cr3 = V2P((unsigned int)child_pgdir);
+	child->arch.cr3 = V2P((unsigned int)child_pgdir);
 
 	child->ppid = current;
 	child->flags = 0;
@@ -133,7 +133,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 #endif /* CONFIG_SYSVIPC */
 
 
-	if(!(child->tss.esp0 = kmalloc(PAGE_SIZE))) {
+	if(!(child->arch.esp0 = kmalloc(PAGE_SIZE))) {
 		kfree((unsigned int)child_pgdir);
 		free_vma_table(child);
 		release_proc(child);
@@ -151,15 +151,15 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->rss += pages;
 	invalidate_tlb();
 
-	child->tss.esp0 += PAGE_SIZE - 4;
+	child->arch.esp0 += PAGE_SIZE - 4;
 	child->rss++;
-	child->tss.ss0 = KERNEL_DS;
+	child->arch.ss0 = KERNEL_DS;
 
-	memcpy_b((unsigned int *)(child->tss.esp0 & PAGE_MASK), (void *)((unsigned int)(sc) & PAGE_MASK), PAGE_SIZE);
-	stack = (struct sigcontext *)((child->tss.esp0 & PAGE_MASK) + ((unsigned int)(sc) & ~PAGE_MASK));
+	memcpy_b((unsigned int *)(child->arch.esp0 & PAGE_MASK), (void *)((unsigned int)(sc) & PAGE_MASK), PAGE_SIZE);
+	stack = (struct sigcontext *)((child->arch.esp0 & PAGE_MASK) + ((unsigned int)(sc) & ~PAGE_MASK));
 
-	child->tss.eip = (unsigned int)return_from_syscall;
-	child->tss.esp = (unsigned int)stack;
+	child->arch.eip = (unsigned int)return_from_syscall;
+	child->arch.esp = (unsigned int)stack;
 	stack->eax = 0;		/* child returns 0 */
 
 	/* increase file descriptors usage */

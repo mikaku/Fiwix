@@ -21,6 +21,7 @@ timeout "$TIMEOUT" "$QEMU" \
 grep -q '^Fiwix riscv64 milestone 1' "$output"
 grep -q '^firmware-free machine-mode entry passed' "$output"
 grep -q '^Fiwix riscv64 S-mode entry passed' "$output"
+grep -q '^Fiwix riscv64 context-switch gate passed: 6 switches' "$output"
 grep -q '^Fiwix riscv64 timer gate passed: 3 ticks' "$output"
 if grep -q 'fatal .* trap' "$output"; then
 	cat "$output" >&2

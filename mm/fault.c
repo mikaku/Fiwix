@@ -41,7 +41,7 @@ static int page_protection_violation(struct vma *vma, unsigned int cr2, struct s
 
 	pde = GET_PGDIR(cr2);
 	pte = GET_PGTBL(cr2);
-	pgdir = (unsigned int *)P2V(current->tss.cr3);
+	pgdir = (unsigned int *)P2V(current->arch.cr3);
 	pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
 	page = (pgtbl[pte] & PAGE_MASK) >> PAGE_SHIFT;
 

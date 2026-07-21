@@ -228,10 +228,10 @@ void kexec_multiboot1(void)
 
 	/* the IDLE process will do the job */
 	idle = &proc_table[IDLE];
-	idle->tss.eip = (unsigned int)KEXEC_BOOT_ADDR;
+	idle->arch.eip = (unsigned int)KEXEC_BOOT_ADDR;
 
-	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
-	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(current->arch.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(idle->arch.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + PAGE_SIZE, 0, PAGE_PRESENT | PAGE_RW);
 	invalidate_tlb();
 
 	memcpy_b((void *)KEXEC_BOOT_ADDR, multiboot1_trampoline, PAGE_SIZE);
@@ -295,12 +295,12 @@ void kexec_multiboot1(void)
 	esp--;
 	*esp = V2P(ramdisk_addr);
 	esp--;
-	idle->tss.esp = (unsigned int)esp;
+	idle->arch.esp = (unsigned int)esp;
 
 	printk("%s(): jumping to multiboot1_trampoline() ...\n", __FUNCTION__);
 	prev = current;
 	set_tss(idle);
-	do_switch(&prev->tss.esp, &prev->tss.eip, idle->tss.esp, idle->tss.eip, idle->tss.cr3, TSS);
+	do_switch(&prev->arch.esp, &prev->arch.eip, idle->arch.esp, idle->arch.eip, idle->arch.cr3, TSS);
 	/* not reached */
 	return;
 }
@@ -509,10 +509,10 @@ void kexec_linux(void)
 
 	/* the IDLE process will do the job */
 	idle = &proc_table[IDLE];
-	idle->tss.eip = (unsigned int)KEXEC_BOOT_ADDR;
+	idle->arch.eip = (unsigned int)KEXEC_BOOT_ADDR;
 
-	map_kaddr((unsigned int *)P2V(current->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
-	map_kaddr((unsigned int *)P2V(idle->tss.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(current->arch.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
+	map_kaddr((unsigned int *)P2V(idle->arch.cr3), KEXEC_BOOT_ADDR, KEXEC_BOOT_ADDR + (PAGE_SIZE * 2), 0, PAGE_PRESENT | PAGE_RW);
 	invalidate_tlb();
 
 	memcpy_b((void *)KEXEC_BOOT_ADDR, linux_trampoline, PAGE_SIZE);
@@ -624,7 +624,7 @@ void kexec_linux(void)
 	esp--;
 	*esp = (unsigned int)V2P(kernel_src_addr + real_mode_code_size);
 	esp--;
-	idle->tss.esp = (unsigned int)esp;
+	idle->arch.esp = (unsigned int)esp;
 
 	printk("kexec_linux: boot_params: %x\n", boot_params);
 	printk("kexec_linux: modules_mem_base: %x\n", modules_mem_base);
@@ -638,7 +638,7 @@ void kexec_linux(void)
 	printk("kexec_linux: jumping to linux_trampoline() ...\n");
 	prev = current;
 	set_tss(idle);
-	do_switch(&prev->tss.esp, &prev->tss.eip, idle->tss.esp, idle->tss.eip, idle->tss.cr3, TSS);
+	do_switch(&prev->arch.esp, &prev->arch.eip, idle->arch.esp, idle->arch.eip, idle->arch.cr3, TSS);
 	/* not reached */
 	return;
 }

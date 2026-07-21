@@ -46,9 +46,9 @@ int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 
 	for(n = from; n < (from + num); n++) {
 		if(!turn_on) {
-			current->tss.io_bitmap[n / 8] &= ~(1 << (n % 8));
+			current->arch.io_bitmap[n / 8] &= ~(1 << (n % 8));
 		} else {
-			current->tss.io_bitmap[n / 8] |= ~(1 << (n % 8));
+			current->arch.io_bitmap[n / 8] |= ~(1 << (n % 8));
 		}
 	}
 

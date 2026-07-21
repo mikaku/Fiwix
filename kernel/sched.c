@@ -28,7 +28,7 @@ static void context_switch(struct proc *next)
 	prev = current;
 	set_tss(next);
 	current = next;
-	do_switch(&prev->tss.esp, &prev->tss.eip, next->tss.esp, next->tss.eip, next->tss.cr3, TSS);
+	do_switch(&prev->arch.esp, &prev->arch.eip, next->arch.esp, next->arch.eip, next->arch.cr3, TSS);
 	STI();
 }
 
@@ -38,9 +38,9 @@ void set_tss(struct proc *p)
 
 	g = &gdt[TSS / sizeof(struct seg_desc)];
 
-	g->sd_lobase = (unsigned int)&p->tss;
+	g->sd_lobase = (unsigned int)&p->arch;
 	g->sd_loflags = SD_TSSPRESENT;
-	g->sd_hibase = (char)(((unsigned int)&p->tss) >> 24);
+	g->sd_hibase = (char)(((unsigned int)&p->arch) >> 24);
 }
 
 /* Round Robin algorithm */

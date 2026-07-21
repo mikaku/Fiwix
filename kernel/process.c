@@ -132,9 +132,9 @@ __pid_t remove_zombie(struct proc *p)
 	__pid_t pid;
 
 	pid = p->pid;
-	kfree(p->tss.esp0);
+	kfree(p->arch.esp0);
 	p->rss--;
-	kfree(P2V(p->tss.cr3));
+	kfree(P2V(p->arch.cr3));
 	p->rss--;
 	pp = p->ppid;
 	release_proc(p);
@@ -283,17 +283,17 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	p->ppid = &proc_table[IDLE];
 	p->flags |= PF_KPROC;
 	p->priority = DEF_PRIORITY;
-	if(!(p->tss.esp0 = kmalloc(PAGE_SIZE))) {
+	if(!(p->arch.esp0 = kmalloc(PAGE_SIZE))) {
 		release_proc(p);
 		return NULL;
 	}
 	p->entry_address = PAGE_OFFSET;
 	p->end_code = (int)_end;
-	p->tss.esp0 += PAGE_SIZE - 4;
+	p->arch.esp0 += PAGE_SIZE - 4;
 	p->rss++;
-	p->tss.cr3 = V2P((unsigned int)kpage_dir);
-	p->tss.eip = (unsigned int)fn;
-	p->tss.esp = p->tss.esp0;
+	p->arch.cr3 = V2P((unsigned int)kpage_dir);
+	p->arch.eip = (unsigned int)fn;
+	p->arch.esp = p->arch.esp0;
 	sprintk(p->pidstr, "%d", p->pid);
 	sprintk(p->argv0, "%s", name);
 	runnable(p);
@@ -318,13 +318,13 @@ void proc_slot_init(struct proc *p)
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
-	memset_b(&p->tss, 0, sizeof(struct i386tss) - IO_BITMAP_SIZE);
-	p->tss.io_bitmap_addr = offsetof(struct i386tss, io_bitmap);
+	memset_b(&p->arch, 0, sizeof(struct arch_context) - IO_BITMAP_SIZE);
+	p->arch.io_bitmap_addr = offsetof(struct arch_context, io_bitmap);
 
 	/* I/O permissions are not inherited by the child */
-	memset_l(&p->tss.io_bitmap, ~0, IO_BITMAP_SIZE / sizeof(unsigned int));
+	memset_l(&p->arch.io_bitmap, ~0, IO_BITMAP_SIZE / sizeof(unsigned int));
 
-	p->tss.io_bitmap[IO_BITMAP_SIZE] = ~0;	/* extra byte must be all 1's */
+	p->arch.io_bitmap[IO_BITMAP_SIZE] = ~0;	/* extra byte must be all 1's */
 	p->state = PROC_IDLE;
 }
 

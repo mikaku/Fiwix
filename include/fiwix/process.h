@@ -47,6 +47,8 @@ struct vma {
 
 #define IO_BITMAP_SIZE	8192		/* 8192*8bit = all I/O address space */
 
+#include <fiwix/arch_process.h>
+
 #define PG_LEADER(p)	((p)->pid == (p)->pgid)
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
 
@@ -70,40 +72,8 @@ struct binargs {
 	int offset;
 };
 
-/* Intel 386 Task Switch State */
-struct i386tss {
-	unsigned int prev_tss;
-	unsigned int esp0;
-	unsigned int ss0;
-	unsigned int esp1;
-	unsigned int ss1;
-	unsigned int esp2;
-	unsigned int ss2;
-	unsigned int cr3;
-	unsigned int eip;
-	unsigned int eflags;
-	unsigned int eax;
-	unsigned int ecx;
-	unsigned int edx;
-	unsigned int ebx;
-	unsigned int esp;
-	unsigned int ebp;
-	unsigned int esi;
-	unsigned int edi;
-	unsigned int es;
-	unsigned int cs;
-	unsigned int ss;
-	unsigned int ds;
-	unsigned int fs;
-	unsigned int gs;
-	unsigned int ldt;
-	unsigned short int debug_trap;
-	unsigned short int io_bitmap_addr;
-	unsigned char io_bitmap[IO_BITMAP_SIZE + 1];
-};
-
 struct proc {
-	struct i386tss tss;
+	struct arch_context arch;
 	struct proc *ppid;		/* pointer to parent process */
 	__pid_t pid;			/* process ID */
 	__pid_t pgid;			/* process group ID */
