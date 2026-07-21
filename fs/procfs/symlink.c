@@ -75,7 +75,7 @@ int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 			}
 			memcpy_b(buffer, buf, size_read);
 		}
-		kfree((unsigned int)buf);
+		kfree((__addr_t)buf);
 		return size_read;
 	}
 
@@ -97,7 +97,7 @@ int procfs_readlink(struct inode *i, char *buffer, __size_t count)
 		}
 		memcpy_b(buffer, buf, size_read);
 	}
-	kfree((unsigned int)buf);
+	kfree((__addr_t)buf);
 	return size_read;
 }
 

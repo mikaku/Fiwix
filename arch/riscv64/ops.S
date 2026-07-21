@@ -8,6 +8,14 @@
 	.globl riscv64_fence_write
 	.globl riscv64_fence_full
 	.globl riscv64_fence_read
+	.globl riscv64_interrupt_disable
+	.globl riscv64_interrupt_enable
+	.globl riscv64_interrupt_state
+	.globl riscv64_interrupt_restore
+	.globl riscv64_read_stval
+	.globl riscv64_read_sp
+	.globl riscv64_set_sp
+	.globl riscv64_user_syscall3
 
 riscv64_wait_for_interrupt:
 	wfi
@@ -37,4 +45,45 @@ riscv64_fence_full:
 
 riscv64_fence_read:
 	fence r, r
+	ret
+
+riscv64_interrupt_disable:
+	csrci sstatus, 2
+	ret
+
+riscv64_interrupt_enable:
+	csrsi sstatus, 2
+	ret
+
+riscv64_interrupt_state:
+	csrr a0, sstatus
+	ret
+
+riscv64_interrupt_restore:
+	andi a0, a0, 2
+	beqz a0, 1f
+	csrsi sstatus, 2
+	ret
+1:
+	csrci sstatus, 2
+	ret
+
+riscv64_read_stval:
+	csrr a0, stval
+	ret
+
+riscv64_read_sp:
+	mv a0, sp
+	ret
+
+riscv64_set_sp:
+	mv sp, a0
+	ret
+
+riscv64_user_syscall3:
+	mv a7, a0
+	mv a0, a1
+	mv a1, a2
+	mv a2, a3
+	ecall
 	ret

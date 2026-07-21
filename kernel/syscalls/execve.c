@@ -265,33 +265,33 @@ static int do_execve(const char *filename, char *argv[], char *envp[], struct si
 loop:
 	if((errno = namei(name, &i, NULL, FOLLOW_LINKS))) {
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return errno;
 	}
 
 	if(!S_ISREG(i->i_mode)) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EACCES;
 	}
 	if(check_permission(TO_EXEC, i) < 0) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EACCES;
 	}
 
 	if((block = bmap(i, 0, FOR_READING)) < 0) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return block;
 	}
 	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EIO;
 	}
 
@@ -314,7 +314,7 @@ loop:
 			iput(i);
 			if((errno = add_strings(&barg, name, interpreter, args))) {
 				free_barg_pages(&barg);
-				kfree((unsigned int)data);
+				kfree((__addr_t)data);
 				return errno;
 			}
 			strcpy(name, interpreter);
@@ -333,7 +333,7 @@ loop:
 
 	iput(i);
 	free_barg_pages(&barg);
-	kfree((unsigned int)data);
+	kfree((__addr_t)data);
 	return errno;
 }
 

@@ -105,7 +105,7 @@ int sys_msgrcv(int msqid, void *msgp, __size_t msgsz, int msgtyp, int msgflg)
 	memcpy_b(mb->mtext, m->msg_spot, count);
 
 	lock_resource(&ipcmsg_resource);
-	kfree((unsigned int)m->msg_spot);
+	kfree((__addr_t)m->msg_spot);
 	if(!mprev) {
 		mq->msg_first = m->msg_next;
 	} else {

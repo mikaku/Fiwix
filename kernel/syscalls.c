@@ -78,7 +78,7 @@ static int verify_address(int type, const void *addr, unsigned int size)
 
 void free_name(const char *name)
 {
-	kfree((unsigned int)name);
+	kfree((__addr_t)name);
 }
 
 /*

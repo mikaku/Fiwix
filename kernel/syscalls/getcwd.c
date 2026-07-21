@@ -67,7 +67,7 @@ int sys_getcwd(char *buf, __size_t size)
 			if(cur != current->pwd) {
 				iput(cur);
 			}
-			kfree((unsigned int)dirent_buf);
+			kfree((__addr_t)dirent_buf);
 			return errno;
 		}
 		if((tmp_fd = get_new_fd(up)) < 0) {
@@ -75,7 +75,7 @@ int sys_getcwd(char *buf, __size_t size)
 			if(cur != current->pwd) {
 				iput(cur);
 			}
-			kfree((unsigned int)dirent_buf);
+			kfree((__addr_t)dirent_buf);
 			return tmp_fd;
 		}
 		do {
@@ -87,7 +87,7 @@ int sys_getcwd(char *buf, __size_t size)
 				if(cur != current->pwd) {
 					iput(cur);
 				}
-				kfree((unsigned int)dirent_buf);
+				kfree((__addr_t)dirent_buf);
 				return bytes_read;
 			}
 			d_ptr = dirent_buf;
@@ -115,7 +115,7 @@ int sys_getcwd(char *buf, __size_t size)
 							if(diff_dev) {
 								iput(tmp_ino);
 							}
-							kfree((unsigned int)dirent_buf);
+							kfree((__addr_t)dirent_buf);
 							return -ERANGE;
 						}
 						while(--namelength >= 0) {
@@ -143,7 +143,7 @@ int sys_getcwd(char *buf, __size_t size)
 			if(cur != current->pwd) {
 				iput(cur);
 			}
-			kfree((unsigned int)dirent_buf);
+			kfree((__addr_t)dirent_buf);
 			return -ENOENT;
 		}
 		if(cur != current->pwd) {
@@ -152,7 +152,7 @@ int sys_getcwd(char *buf, __size_t size)
 		cur = up;
 	} while(cur != current->root);
 
-	kfree((unsigned int)dirent_buf);
+	kfree((__addr_t)dirent_buf);
 	iput(cur);
 	/* move the string to the start of the buffer */
 	for(x = ++marker; x < size; x++) {

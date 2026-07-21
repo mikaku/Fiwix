@@ -38,7 +38,7 @@ void swap_asc_word(char *str, int len)
 		}
 	}
 	memcpy_b(str, buf, len);
-	kfree((unsigned int)buf);
+	kfree((__addr_t)buf);
 }
 
 int strcmp(const char *str1, const char *str2)

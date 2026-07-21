@@ -160,7 +160,7 @@ int ext2_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t 
 				}
 			}
 			tmp = br->next_group;
-			kfree((unsigned int)br);
+			kfree((__addr_t)br);
 			br = tmp;
 		}
 	} else {

@@ -529,6 +529,6 @@ int snprintk(char *str, unsigned int size, const char *format, ...)
         va_end(args);
         strncpy(str, buffer, size);
         str[size - 1] = '\0';
-        kfree((unsigned int)buffer);
+        kfree((__addr_t)buffer);
 	return strlen(str);
 }

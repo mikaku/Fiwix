@@ -161,6 +161,30 @@ or at `/sbin/e2fsck`. This independently checks the generated revision-0
 directory format, inode allocation, block accounting, indirect trees, and
 bitmap padding rather than relying only on the staging reader under test.
 
+## Generic-kernel compile boundary
+
+The architecture-independent compile audit is available separately from the
+bring-up kernel:
+
+```sh
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  test-riscv64-generic-compile
+```
+
+It currently compiles 251 generic C files. Nine explicit architecture
+boundaries remain excluded: i386 GDT/IDT and boot main, process creation and
+init, fork, and the three x86 page-table modules for fault, memory, and mmap.
+The generic scheduler now calls the tested RV64 callee-saved context switch,
+and `ioperm` returns `ENOSYS` because RISC-V has no x86 I/O bitmap.
+
+Shared interrupt save/restore macros map to `sstatus.SIE`, and trap-value,
+stack, wait, and U-mode syscall operations use architecture helpers. Internal
+allocator addresses use `__addr_t`, which is `unsigned int` on i386 and
+`unsigned long` on riscv64. This removes allocator return truncation while
+preserving i386 layouts and call widths. The gate still emits 214 pointer-width
+warnings, primarily from 32-bit syscall arguments and x86 physical-memory
+interfaces; compile success is not yet an LP64 correctness claim.
+
 ## Linux Image handoff
 
 The ext2 fixture also contains a position-independent payload with a current

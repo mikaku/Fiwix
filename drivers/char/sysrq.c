@@ -34,7 +34,7 @@ static void memory(void)
 	data_proc_buddyinfo(buf, 0);
 	printk("%s", buf);
 	printk("\n");
-	kfree((unsigned int)buf);
+	kfree((__addr_t)buf);
 }
 
 static void proc_list(void)

@@ -78,13 +78,13 @@ struct bl_head {
 	struct bl_head *next;
 };
 
-unsigned int bl_malloc(__size_t);
-void bl_free(unsigned int);
+__addr_t bl_malloc(__size_t);
+void bl_free(__addr_t);
 void buddy_low_init(void);
 
 /* alloc.c */
-unsigned int kmalloc(__size_t);
-void kfree(unsigned int);
+__addr_t kmalloc(__size_t);
+void kfree(__addr_t);
 
 /* page.c */
 void page_lock(struct page *);

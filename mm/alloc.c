@@ -17,11 +17,11 @@
  * - buddy_low() for requests up to 2048KB.
  * - get_free_page() rest of requests up to PAGE_SIZE.
  */
-unsigned int kmalloc(__size_t size)
+__addr_t kmalloc(__size_t size)
 {
 	struct page *pg;
 	int max_size;
-	unsigned int addr;
+	__addr_t addr;
 
 	/* check if size can be managed by buddy_low */
 	max_size = bl_blocksize[BUDDY_MAX_LEVEL - 1];
@@ -45,10 +45,10 @@ unsigned int kmalloc(__size_t size)
 	return 0;
 }
 
-void kfree(unsigned int addr)
+void kfree(__addr_t addr)
 {
 	struct page *pg;
-	unsigned paddr;
+	__addr_t paddr;
 
 	paddr = V2P(addr);
 	pg = &page_table[paddr >> PAGE_SHIFT];

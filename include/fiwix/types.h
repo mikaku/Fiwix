@@ -17,6 +17,12 @@ typedef unsigned int __u32;
 typedef __signed__ long long int __s64;
 typedef unsigned long long int __u64;
 
+#ifdef CONFIG_ARCH_RISCV64
+typedef unsigned long __addr_t;
+#else
+typedef unsigned int __addr_t;
+#endif
+
 typedef __u16 __uid_t;
 typedef __u16 __gid_t;
 typedef __u32 __ino_t;

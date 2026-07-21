@@ -174,7 +174,7 @@ static void del_vma_region(struct vma *vma)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 }
 
 static int can_be_merged(struct vma *a, struct vma *b)
@@ -264,7 +264,7 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 			del_vma_region(a);
 		}
 		if(new->start >= new->end) {
-			kfree((unsigned int)new);
+			kfree((__addr_t)new);
 		} else {
 			insert_vma_region(new);
 		}
@@ -318,7 +318,7 @@ void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
 					}
 				}
 				if(pte == PT_ENTRIES) {
-					kfree((unsigned int)pgtbl & PAGE_MASK);
+					kfree((__addr_t)pgtbl & PAGE_MASK);
 					current->rss--;
 					pgdir[pde] = 0;
 				}
@@ -523,7 +523,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {
 			free_vma_region(vma, start, length);
-			kfree((unsigned int)vma);
+			kfree((__addr_t)vma);
 			return errno;
 		}
 	}

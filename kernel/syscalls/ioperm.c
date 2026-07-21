@@ -19,6 +19,12 @@
  */
 int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	(void)from;
+	(void)num;
+	(void)turn_on;
+	return -ENOSYS;
+#else
 	unsigned int n;
 
 #ifdef __DEBUG__
@@ -53,4 +59,5 @@ int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 	}
 
 	return 0;
+#endif
 }

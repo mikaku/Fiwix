@@ -95,7 +95,7 @@ static void del_inode_from_pool(struct inode *i)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 	kstat.nr_inodes--;
 }
 

@@ -94,10 +94,10 @@ void unix_free(struct socket *s)
 	u = &s->u.unix_info;
 	if(!(--u->count)) {
 		if(u->data) {
-			kfree((unsigned int)u->data);
+			kfree((__addr_t)u->data);
 		}
 		if(u->sun) {
-			kfree((unsigned int)u->sun);
+			kfree((__addr_t)u->sun);
 		}
 		if(u->inode) {
 			iput(u->inode);
@@ -147,7 +147,7 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 
 	errno = do_mknod((char *)su->sun_path, S_IFSOCK | (S_IRWXU | S_IRWXG | S_IRWXO), 0);
 	if(errno < 0) {
-		kfree((unsigned int)s->u.unix_info.sun);
+		kfree((__addr_t)s->u.unix_info.sun);
 		s->u.unix_info.sun = NULL;
 		if(errno == -EEXIST) {
 			errno = -EADDRINUSE;
@@ -155,7 +155,7 @@ int unix_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 		return errno;
 	}
 	if((errno = namei(su->sun_path, &i, NULL, FOLLOW_LINKS))) {
-		kfree((unsigned int)s->u.unix_info.sun);
+		kfree((__addr_t)s->u.unix_info.sun);
 		s->u.unix_info.sun = NULL;
 		return errno;
 	}
@@ -359,7 +359,7 @@ int unix_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t cou
 	}
 	memset_b(p, 0, sizeof(struct packet));
 	if(!(p->data = (char *)kmalloc(count + 1))) {
-		kfree((unsigned int)p);
+		kfree((__addr_t)p);
 		return -ENOMEM;
 	}
 	memset_b(p->data, 0, count + 1);
@@ -401,8 +401,8 @@ int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, 
 	p->offset += size;
 	if(!(flags & MSG_PEEK)) {
 		p = remove_packet_from_queue(&u->packet_queue);
-		kfree((unsigned int)p->data);
-		kfree((unsigned int)p);
+		kfree((__addr_t)p->data);
+		kfree((__addr_t)p);
 	}
 	unlock_resource(&packet_resource);
 

@@ -74,7 +74,7 @@ int iso9660_readlink(struct inode *i, char *buffer, __size_t count)
 		size_read = MIN(size_read, count);
 		memcpy_b(buffer, name, size_read);
 	}
-	kfree((unsigned int)name);
+	kfree((__addr_t)name);
 	inode_unlock(i);
 	return size_read;
 }
@@ -100,10 +100,10 @@ int iso9660_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	if(get_rrip_symlink(i, name)) {
 		iput(i);
 		if((errno = parse_namei(name, dir, i_res, NULL, FOLLOW_LINKS))) {
-			kfree((unsigned int)name);
+			kfree((__addr_t)name);
 			return errno;
 		}
 	}
-	kfree((unsigned int)name);
+	kfree((__addr_t)name);
 	return 0;
 }

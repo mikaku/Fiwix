@@ -16,7 +16,12 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+#ifndef CONFIG_ARCH_RISCV64
 extern struct seg_desc gdt[NR_GDT_ENTRIES];
+#else
+extern void riscv64_context_switch(struct arch_context *,
+	struct arch_context *);
+#endif
 int need_resched = 0;
 
 static void context_switch(struct proc *next)
@@ -26,14 +31,22 @@ static void context_switch(struct proc *next)
 	CLI();
 	kstat.ctxt++;
 	prev = current;
+#ifdef CONFIG_ARCH_RISCV64
+	current = next;
+	riscv64_context_switch(&prev->arch, &next->arch);
+#else
 	set_tss(next);
 	current = next;
 	do_switch(&prev->arch.esp, &prev->arch.eip, next->arch.esp, next->arch.eip, next->arch.cr3, TSS);
+#endif
 	STI();
 }
 
 void set_tss(struct proc *p)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	(void)p;
+#else
 	struct seg_desc *g;
 
 	g = &gdt[TSS / sizeof(struct seg_desc)];
@@ -41,6 +54,7 @@ void set_tss(struct proc *p)
 	g->sd_lobase = (unsigned int)&p->arch;
 	g->sd_loflags = SD_TSSPRESENT;
 	g->sd_hibase = (char)(((unsigned int)&p->arch) >> 24);
+#endif
 }
 
 /* Round Robin algorithm */

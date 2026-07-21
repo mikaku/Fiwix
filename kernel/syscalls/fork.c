@@ -26,7 +26,7 @@ static void free_vma_table(struct proc *p)
 	while(vma) {
 		tmp = vma;
 		vma = vma->next;
-		kfree((unsigned int)tmp);
+		kfree((__addr_t)tmp);
 	}
 }
 
@@ -97,7 +97,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->vma_table = NULL;
 	while(vma) {
 		if(!(child_vma = (struct vma *)kmalloc(sizeof(struct vma)))) {
-			kfree((unsigned int)child_pgdir);
+			kfree((__addr_t)child_pgdir);
 			free_vma_table(child);
 			release_proc(child);
 			return -ENOMEM;
@@ -134,7 +134,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 
 	if(!(child->arch.esp0 = kmalloc(PAGE_SIZE))) {
-		kfree((unsigned int)child_pgdir);
+		kfree((__addr_t)child_pgdir);
 		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;
@@ -143,7 +143,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	if(!(pages = clone_pages(child))) {
 		printk("WARNING: %s(): not enough memory when cloning pages.\n", __FUNCTION__);
 		free_page_tables(child);
-		kfree((unsigned int)child_pgdir);
+		kfree((__addr_t)child_pgdir);
 		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;

@@ -214,9 +214,9 @@ int iso9660_read_superblock(__dev_t dev, struct superblock *sb)
 
 void iso9660_release_superblock(struct superblock *sb)
 {
-	kfree((unsigned int)sb->u.iso9660.sb);
-	kfree((unsigned int)sb->u.iso9660.pathtable);
-	kfree((unsigned int)sb->u.iso9660.pathtable_raw);
+	kfree((__addr_t)sb->u.iso9660.sb);
+	kfree((__addr_t)sb->u.iso9660.pathtable);
+	kfree((__addr_t)sb->u.iso9660.pathtable_raw);
 }
 
 int iso9660_init(void)

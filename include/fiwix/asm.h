@@ -91,6 +91,38 @@ void load_tr(unsigned int);
 unsigned long long int get_rdtsc(void);
 void invalidate_tlb(void);
 
+#ifdef CONFIG_ARCH_RISCV64
+
+void riscv64_interrupt_disable(void);
+void riscv64_interrupt_enable(void);
+unsigned long riscv64_interrupt_state(void);
+void riscv64_interrupt_restore(unsigned long);
+unsigned long riscv64_read_stval(void);
+unsigned long riscv64_read_sp(void);
+void riscv64_set_sp(unsigned long);
+void riscv64_wait_for_interrupt(void);
+unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
+	unsigned long, unsigned long);
+
+#define CLI() riscv64_interrupt_disable()
+#define STI() riscv64_interrupt_enable()
+#define NOP() __asm__ __volatile__ ("nop":::"memory")
+#define HLT() riscv64_wait_for_interrupt()
+
+#define GET_CR2(cr2) ((cr2) = riscv64_read_stval())
+#define GET_ESP(esp) ((esp) = riscv64_read_sp())
+#define SET_ESP(esp) riscv64_set_sp((unsigned long)(esp))
+#define GET_GS(gs) ((gs) = 0)
+
+#define SAVE_FLAGS(flags) ((flags) = riscv64_interrupt_state())
+#define RESTORE_FLAGS(flags) riscv64_interrupt_restore(flags)
+
+#define USER_SYSCALL(num, arg1, arg2, arg3) \
+	riscv64_user_syscall3((unsigned long)(num), (unsigned long)(arg1), \
+		(unsigned long)(arg2), (unsigned long)(arg3))
+
+#else
+
 #define CLI() __asm__ __volatile__ ("cli":::"memory")
 #define STI() __asm__ __volatile__ ("sti":::"memory")
 #define NOP() __asm__ __volatile__ ("nop":::"memory")
@@ -141,6 +173,8 @@ void invalidate_tlb(void);
 		: "eax"((unsigned int)num), "ebx"((unsigned int)arg1), "ecx"((unsigned int)arg2), "edx"((unsigned int)arg3)	\
 	);
 #endif
+
+#endif /* CONFIG_ARCH_RISCV64 */
 
 /*
 static inline unsigned long long int get_rdtsc(void)

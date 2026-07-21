@@ -148,4 +148,8 @@ test-riscv64-tcc:
 	$(MAKE) TARGET_ARCH=riscv64 CROSS_COMPILE="$(CROSS_COMPILE)" CCEXE=tcc TCC="$(TCC)" clean
 	$(MAKE) TARGET_ARCH=riscv64 CROSS_COMPILE="$(CROSS_COMPILE)" CCEXE=tcc TCC="$(TCC)" QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" test-riscv64
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc
+test-riscv64-generic-compile:
+	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-generic-compile requires TARGET_ARCH=riscv64" >&2; exit 1; }
+	GENERIC_CC="$(CROSS_COMPILE)gcc" tests/riscv64-generic-compile.sh
+
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux test-riscv64-tcc test-riscv64-generic-compile

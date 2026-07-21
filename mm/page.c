@@ -413,7 +413,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 			brelse(br->buffer);
 		}
 		tmp = br->next_group;
-		kfree((unsigned int)br);
+		kfree((__addr_t)br);
 		br = tmp;
 	}
 

@@ -87,7 +87,7 @@ int iso9660_lookup(const char *name, struct inode *dir, struct inode **i_res)
 						}
 					}
 				}
-				kfree((unsigned int)nm_name);
+				kfree((__addr_t)nm_name);
 				doffset += isonum_711(d->length);
 			} while((doffset < blksize) && (!inode));
 			brelse(buf);
