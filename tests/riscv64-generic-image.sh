@@ -7,12 +7,24 @@ GENERIC_LD=${GENERIC_LD:-riscv64-linux-gnu-ld}
 GENERIC_LDFLAGS=${GENERIC_LDFLAGS:-}
 GENERIC_RUNTIME=${GENERIC_RUNTIME:-}
 GENERIC_RETAINED_STUBS=${GENERIC_RETAINED_STUBS:-}
+GENERIC_WORKDIR=${GENERIC_WORKDIR:-}
+GENERIC_MARCH=${GENERIC_MARCH:-rv64ima_zicsr_zifencei}
 AS=${AS:-riscv64-linux-gnu-as}
 NM=${NM:-riscv64-linux-gnu-nm}
 READELF=${READELF:-riscv64-linux-gnu-readelf}
 GENERIC_IMAGE=${GENERIC_IMAGE:-fiwix-generic}
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-temporary=$(mktemp -d)
+if test -n "$GENERIC_WORKDIR"; then
+	test "$GENERIC_WORKDIR" != / || {
+		echo "refusing unsafe GENERIC_WORKDIR=/" >&2
+		exit 1
+	}
+	temporary=$GENERIC_WORKDIR
+	rm -rf "$temporary"
+	mkdir -p "$temporary"
+else
+	temporary=$(mktemp -d)
+fi
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 
 GENERIC_CC="$GENERIC_CC" GENERIC_LD="$GENERIC_LD" \
@@ -21,11 +33,11 @@ GENERIC_CC="$GENERIC_CC" GENERIC_LD="$GENERIC_LD" \
 
 objects=$(find "$temporary/generic-c" -name '*.o' | sort)
 for source in boot context generic-trap init_trampoline ops user; do
-	"$AS" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
+	"$AS" -march="$GENERIC_MARCH" -mabi=lp64 \
 		-o "$temporary/$source.o" "$root/arch/riscv64/$source.S"
 	objects="$objects $temporary/$source.o"
 done
-"$AS" -march=rv64ima_zicsr_zifencei -mabi=lp64 \
+"$AS" -march="$GENERIC_MARCH" -mabi=lp64 \
 	-o "$temporary/dead-stubs.o" \
 	"$root/tests/riscv64-generic-dead-stubs.S"
 objects="$objects $temporary/dead-stubs.o"

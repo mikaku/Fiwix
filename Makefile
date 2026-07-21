@@ -6,9 +6,10 @@
 
 TOPDIR := $(shell if [ "$$PWD" != "" ] ; then echo $$PWD ; else pwd ; fi)
 INCLUDE = $(TOPDIR)/include
-TMPFILE := $(shell mktemp)
+TMPFILE = $(shell mktemp)
 LANG = -std=c89
 TARGET_ARCH ?= i386
+RISCV_MARCH ?= rv64ima_zicsr_zifencei
 QEMU ?= qemu-system-riscv64
 TIMEOUT ?= 10
 HOSTCC ?= cc
@@ -53,7 +54,7 @@ OBJS = 	kernel/*.o \
 endif
 
 ifeq ($(TARGET_ARCH),riscv64)
-ARCH = -march=rv64ima_zicsr_zifencei -mabi=lp64
+ARCH = -march=$(RISCV_MARCH) -mabi=lp64
 CPU = -mcmodel=medany -msmall-data-limit=0
 ARCH_DEFINES = -DCONFIG_ARCH_RISCV64
 KERNEL_LDSCRIPT = arch/riscv64/fiwix.ld
@@ -170,6 +171,8 @@ riscv64-generic-image:
 		GENERIC_LD="$(CROSS_COMPILE)ld" GENERIC_LDFLAGS="$(GENERIC_LDFLAGS)" \
 		GENERIC_RUNTIME="$(GENERIC_RUNTIME)" \
 		GENERIC_RETAINED_STUBS="$(GENERIC_RETAINED_STUBS)" \
+		GENERIC_WORKDIR="$(GENERIC_WORKDIR)" \
+		GENERIC_MARCH="$(if $(GENERIC_MARCH),$(GENERIC_MARCH),$(RISCV_MARCH))" \
 		AS="$(CROSS_COMPILE)as" NM="$(CROSS_COMPILE)nm" \
 		READELF="$(CROSS_COMPILE)readelf" GENERIC_IMAGE=fiwix-generic \
 		tests/riscv64-generic-image.sh

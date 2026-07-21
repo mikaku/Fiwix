@@ -494,6 +494,17 @@ when passed `-mabi=lp64`, while GNU `as` correctly tags the kernel assembly as
 soft-float. Fiwix does not enable or use floating point in either set of
 objects. The normal GCC image link remains strict.
 
+Minimal package environments may set `GENERIC_WORKDIR` to an owned build
+directory when they do not yet provide `mktemp`. The image script recreates
+and removes only that explicit directory. This keeps the source build usable
+with commencement's Gash utilities without adding a later coreutils input.
+The same recipe sets `GENERIC_MARCH=rv64ima` for bootstrap binutils 2.30,
+whose assembler implements the CSR and instruction-fence operations but
+predates their later `_zicsr_zifencei` command-line spelling.
+The top-level Makefile also defers its unrelated GCC linker-script `mktemp`
+until that value is used; parsing a TinyCC-only target must not add an absent
+utility to the package closure.
+
 TinyCC also accepts but does not implement `-ffunction-sections`. Its image
 therefore retains dormant `inport_b` and `outport_b` references from mixed
 legacy/generic translation units. The TinyCC target permits exactly those two
