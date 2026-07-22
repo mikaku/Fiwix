@@ -47,7 +47,7 @@ static int dev_ifsioc(int cmd, void *arg)
 	struct netdevice *netdev;
 	struct netif *netif;
 	struct sockaddr_in *addr;
-	int retval;
+	int oldflags, retval;
 
 	ifr = (struct ifreq *)arg;
 	if((retval = check_user_area(VERIFY_WRITE, ifr, sizeof(struct ifreq)))) {
@@ -58,6 +58,7 @@ static int dev_ifsioc(int cmd, void *arg)
 		if(!(netdev = netdev_find(BY_NAME, ifr))) {
 			return -ENODEV;
 		}
+		/*netif = netif_get_by_index(netdev->num + 1);	/* lwIP index starts at 1 */
 		netif = (struct netif *)netdev->lwip_netif;
 	}
 
@@ -76,8 +77,19 @@ static int dev_ifsioc(int cmd, void *arg)
 				printk("WARNING: %s(): unsupported flags (%x).\n", __FUNCTION__, ifr->ifr_flags);
 				return -EINVAL;
 			}
+			retval = 0;
+			oldflags = netdev->flags;
 			netdev->flags = ifr->ifr_flags & (IFF_UP | IFF_BROADCAST);
-			return 0;
+			if((oldflags ^ ifr->ifr_flags) & IFF_UP) {
+				if(oldflags & IFF_UP) {
+					retval = netdev->close(netdev);
+				} else {
+					if((retval = netdev->open(netdev)) < 0) {
+						netdev->flags &= ~IFF_UP;
+					}
+				}
+			}
+			return retval;
 		case SIOCGIFADDR:
 			ifr->ifr_addr.sa_family = netdev->family;
 			addr = (struct sockaddr_in *)&ifr->ifr_addr;

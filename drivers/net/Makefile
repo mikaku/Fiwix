@@ -7,7 +7,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = netdevice.o loopback.o
+OBJS = netdevice.o loopback.o rtl8139.o
 
 all:	$(OBJS)
 

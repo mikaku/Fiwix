@@ -78,7 +78,7 @@ int sleep(void *address, int state)
 	}
 
 	if(current->state == PROC_SLEEPING) {
-		printk("WARNING: %s(): process with pid '%d' is already sleeping!\n", __FUNCTION__, current->pid);
+		printk("WARNING: %s(): process with pid %d is already sleeping!\n", __FUNCTION__, current->pid);
 		RESTORE_FLAGS(flags);
 		return 0;
 	}

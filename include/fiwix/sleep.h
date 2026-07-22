@@ -10,10 +10,10 @@
 
 #include <fiwix/process.h>
 
-#define AREA_BH			0x00000001
-#define AREA_CALLOUT		0x00000002
-#define AREA_TTY_READ		0x00000004
-#define AREA_SERIAL_READ	0x00000008
+#define AREA_CALLOUT		0x00000001
+#define AREA_TTY_READ		0x00000002
+#define AREA_SERIAL_READ	0x00000004
+#define AREA_NETDEVICE		0x00000008
 
 extern struct proc *proc_run_head;
 
