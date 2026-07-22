@@ -64,6 +64,13 @@ fixture/kaem-manifest1-complete.o: kaem-manifest1-complete.S
 fixture/kaem-manifest1-complete.elf: fixture/kaem-manifest1-complete.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/kaem-manifest2-complete.o: kaem-manifest2-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-manifest2-complete.elf: fixture/kaem-manifest2-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux-root-init.o: linux-root-init.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<

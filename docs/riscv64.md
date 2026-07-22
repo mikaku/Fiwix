@@ -12,9 +12,9 @@ policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
 RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
 chain and verify its final M1, hex2, and kaem binaries.
-The first live-bootstrap continuation then completes stage0 phases 12-23 and
-uses those native tools to build the unmodified riscv64 checksum-transcriber
-manifest entry.
+The first two live-bootstrap continuations then complete stage0 phases 12-23
+and use those native tools to build the unmodified riscv64
+checksum-transcriber and simple-patch manifest entries.
 The final chain gate then asks Fiwix to load Linux from that same mutated ext2
 root, preserves the original hart ID and DTB contract, mounts the root under
 Linux, and executes a static Linux PID 1.
@@ -91,6 +91,13 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   STAGE0_DIR=/path/to/stage0-posix \
   LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
   test-riscv64-kaem-manifest1
+
+# Replay that boundary and add the second live-bootstrap package.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
+  test-riscv64-kaem-manifest2
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -653,7 +660,7 @@ are not allowed to supply undeclared directory state.
 
 ## Live-bootstrap continuation
 
-The first manifest-resume gate pins live-bootstrap commit
+The manifest-resume gates pin live-bootstrap commit
 `9a268c4c39cae952b268bc86da342be2175f03d4`. It first runs stage0's unmodified
 `mescc-tools-full-kaem.kaem` and `mescc-tools-extra.kaem`, then verifies the
 complete riscv64 answers file before installing the generated tools under
@@ -663,7 +670,13 @@ live-bootstrap's unmodified
 `checksum-transcriber-1.0/pass1.kaem` and requires the resulting executable to
 match its canonical riscv64 SHA-256,
 `1c3021d8051fefd615edb50907e3015d810f974b5b9461f8f9aa383478620a0d`, on
-both legacy and modern virtio transports.
+both legacy and modern virtio transports. The second gate deliberately replays
+that complete boundary before running the unmodified
+`simple-patch-1.0/pass1.kaem`; its `/usr/bin/simple-patch` must match upstream's
+canonical riscv64 SHA-256,
+`dc72b76c8835b1a08b1ecaa2ab8e9179c290805dd2c8bf3636004f375948c238`.
+Keeping the manifests cumulative proves the package ordering and prevents a
+host-produced first package from becoming an undeclared input to the second.
 
 The launcher deliberately has two scripts. The seed script is restricted to
 the minimal kaem command language through phase 11; its final command starts
@@ -709,7 +722,7 @@ source; weakening the integrity gate or repairing the image on the host would
 have hidden a kernel timekeeping defect.
 
 The continuation plan advances one upstream manifest entry at a time. The
-next boundary is `simple-patch`; later boundaries bring up Mes and TinyCC
+next boundary is Mes 0.27; later boundaries bring up TinyCC
 before reconnecting to the already-proven Fiwix-to-Linux root handoff. Each
 boundary will retain the pinned source revision, native output hash, dual
 virtio boot coverage, and a distinct completion marker so failures identify

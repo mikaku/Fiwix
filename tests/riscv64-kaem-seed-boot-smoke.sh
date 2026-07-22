@@ -23,7 +23,7 @@ stage0=$(cd "$STAGE0_DIR" && pwd)
 completion=${3:-$root/arch/riscv64/fixture/kaem-complete.elf}
 
 case $KAEM_STAGE in
-	seed|phase2|phase3|phase4|mini|manifest1|linux) ;;
+	seed|phase2|phase3|phase4|mini|manifest1|manifest2|linux) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
 case $KAEM_TRANSPORT in
@@ -99,7 +99,7 @@ if test "$KAEM_STAGE" != seed; then
 	mkdir -p "$rootfs"
 	git -C "$stage0" archive --format=tar HEAD | "$TAR" -xf - -C "$rootfs"
 	git -C "$stage0" submodule status --recursive > "$work/submodules"
-	while read revision path description; do
+	while read -r revision path _; do
 		case $revision in
 			[-+U]*)
 				echo "stage0-posix submodule is not pinned: $path" >&2
@@ -128,9 +128,9 @@ if test "$KAEM_STAGE" != seed; then
 		install -m 644 \
 			"$root/tests/fixtures/riscv64-kaem-phase4-body.kaem" \
 			"$rootfs/riscv64/mescc-tools-phase4-kaem.kaem"
-	elif test "$KAEM_STAGE" = manifest1; then
+	elif test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2; then
 		git -C "$LIVE_BOOTSTRAP_DIR" rev-parse --git-dir >/dev/null 2>&1 || {
-			echo "KAEM_STAGE=manifest1 requires LIVE_BOOTSTRAP_DIR" >&2
+			echo "KAEM_STAGE=$KAEM_STAGE requires LIVE_BOOTSTRAP_DIR" >&2
 			exit 1
 		}
 		expected_live_bootstrap_commit=9a268c4c39cae952b268bc86da342be2175f03d4
@@ -141,17 +141,20 @@ if test "$KAEM_STAGE" != seed; then
 		}
 		live_bootstrap_source=$work/live-bootstrap-source
 		mkdir -p "$live_bootstrap_source"
+		set -- steps/checksum-transcriber-1.0
+		if test "$KAEM_STAGE" = manifest2; then
+			set -- "$@" steps/simple-patch-1.0
+		fi
 		git -C "$LIVE_BOOTSTRAP_DIR" archive --format=tar \
-			"$expected_live_bootstrap_commit" \
-			steps/checksum-transcriber-1.0 | \
+			"$expected_live_bootstrap_commit" "$@" | \
 			"$TAR" -xf - -C "$live_bootstrap_source"
 		install -m 644 \
-			"$root/tests/fixtures/riscv64-kaem-manifest1.kaem" \
+			"$root/tests/fixtures/riscv64-kaem-$KAEM_STAGE.kaem" \
 			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
 		mkdir -p "$rootfs/steps/checksum-transcriber-1.0/src"
 		install -m 644 \
-			"$root/tests/fixtures/riscv64-live-bootstrap-manifest1.kaem" \
-			"$rootfs/steps/live-bootstrap-manifest1.kaem"
+			"$root/tests/fixtures/riscv64-live-bootstrap-$KAEM_STAGE.kaem" \
+			"$rootfs/steps/live-bootstrap-$KAEM_STAGE.kaem"
 		for input in pass1.kaem \
 			checksum-transcriber-1.0.riscv64.checksums; do
 			install -m 644 \
@@ -161,6 +164,17 @@ if test "$KAEM_STAGE" != seed; then
 		install -m 644 \
 			"$live_bootstrap_source/steps/checksum-transcriber-1.0/src/checksum-transcriber.c" \
 			"$rootfs/steps/checksum-transcriber-1.0/src/checksum-transcriber.c"
+		if test "$KAEM_STAGE" = manifest2; then
+			mkdir -p "$rootfs/steps/simple-patch-1.0/src"
+			for input in pass1.kaem simple-patch-1.0.riscv64.checksums; do
+				install -m 644 \
+					"$live_bootstrap_source/steps/simple-patch-1.0/$input" \
+					"$rootfs/steps/simple-patch-1.0/$input"
+			done
+			install -m 644 \
+				"$live_bootstrap_source/steps/simple-patch-1.0/src/simple-patch.c" \
+				"$rootfs/steps/simple-patch-1.0/src/simple-patch.c"
+		fi
 	else
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-mini.kaem" \
 			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
@@ -179,6 +193,7 @@ if test "$KAEM_STAGE" != seed; then
 		fi
 	fi
 	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
+		test "$KAEM_STAGE" = manifest2 ||
 		test "$KAEM_STAGE" = linux; then
 		test -f "$completion" || {
 			echo "missing kaem completion fixture: $completion" >&2
@@ -242,6 +257,7 @@ run_qemu()
 		exit "$status"
 	fi
 	if { test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
+		test "$KAEM_STAGE" = manifest2 ||
 		test "$KAEM_STAGE" = linux; } &&
 		test "$status" -ne 0; then
 		cat "$serial" >&2
@@ -260,6 +276,12 @@ run_qemu()
 	fi
 	if test "$KAEM_STAGE" = manifest1 &&
 		! grep -q '^Fiwix riscv64 live-bootstrap manifest 1 completed' \
+		"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = manifest2 &&
+		! grep -q '^Fiwix riscv64 live-bootstrap manifest 2 completed' \
 		"$serial"; then
 		cat "$serial" >&2
 		exit 1
@@ -288,6 +310,7 @@ run_qemu()
 		exit 1
 	fi
 	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
+		test "$KAEM_STAGE" = manifest2 ||
 		test "$KAEM_STAGE" = linux; then
 		"$DEBUGFS" -R 'cat /riscv64/bin/M1' "$run_disk" \
 			> "$mini_m1_actual" 2>/dev/null
@@ -353,12 +376,19 @@ run_qemu()
 				fe337e9c2d9b6e6a550561491b7d2640d088975e107ee9b522641428e1362685
 		fi
 	fi
-	if test "$KAEM_STAGE" = manifest1; then
+	if test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2; then
 		manifest1_actual=$work/$name.checksum-transcriber
 		"$DEBUGFS" -R 'cat /usr/bin/checksum-transcriber' "$run_disk" \
 			> "$manifest1_actual" 2>/dev/null
 		check_hash "$manifest1_actual" \
 			1c3021d8051fefd615edb50907e3015d810f974b5b9461f8f9aa383478620a0d
+	fi
+	if test "$KAEM_STAGE" = manifest2; then
+		manifest2_actual=$work/$name.simple-patch
+		"$DEBUGFS" -R 'cat /usr/bin/simple-patch' "$run_disk" \
+			> "$manifest2_actual" 2>/dev/null
+		check_hash "$manifest2_actual" \
+			dc72b76c8835b1a08b1ecaa2ab8e9179c290805dd2c8bf3636004f375948c238
 	fi
 	"$root/tests/riscv64-ext2-check.sh" "$run_disk"
 }
