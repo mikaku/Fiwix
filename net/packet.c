@@ -29,15 +29,12 @@ struct packet *remove_packet_from_queue(struct packet **queue_head)
 
 void append_packet_to_queue(struct packet *p, struct packet **queue_head)
 {
-	struct packet *h;
-
-	if((h = *queue_head)) {
-		while(h->next) {
-			h = h->next;
-		}
-		h->next = p;
-	} else {
+	if(!(*queue_head)) {
 		*queue_head = p;
+	} else {
+		p->prev = (*queue_head)->next;
+		(*queue_head)->prev->next = p;
 	}
+	(*queue_head)->prev = p;
 }
 #endif /* CONFIG_NET */
