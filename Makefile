@@ -148,6 +148,12 @@ test-riscv64-linux: all
 riscv64-linux-root-init:
 	$(MAKE) -C arch/riscv64 fixture/linux-root-init.elf
 
+riscv64-linux-kaem-init:
+	$(MAKE) -C arch/riscv64 fixture/linux-kaem-init.elf
+
+riscv64-linux-stage0-complete:
+	$(MAKE) -C arch/riscv64 fixture/linux-stage0-complete.elf
+
 riscv64-linux-root-disk: riscv64-linux-root-init
 	@test -n "$(LINUX_IMAGE)" || { echo "riscv64-linux-root-disk requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
 	$(MAKE) -C arch/riscv64 LINUX_IMAGE="$(LINUX_IMAGE)" fixture/linux-root-disk.img
@@ -337,6 +343,17 @@ test-riscv64-kaem-manifest5: riscv64-generic-image riscv64-kaem-seed-init riscv6
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-manifest5-complete.elf
 
+test-riscv64-kaem-stage0-linux: TIMEOUT=3600
+test-riscv64-kaem-stage0-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-kaem-linux-complete riscv64-linux-kaem-init riscv64-linux-stage0-complete
+	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-stage0-linux requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
+	@test -n "$(LINUX_IMAGE)" || { echo "test-riscv64-kaem-stage0-linux requires LINUX_IMAGE=/path/to/Image" >&2; exit 1; }
+	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" STAGE0_DIR="$(STAGE0_DIR)" \
+		LINUX_IMAGE="$(LINUX_IMAGE)" \
+		LINUX_INIT=arch/riscv64/fixture/linux-kaem-init.elf \
+		KAEM_STAGE=stage0-linux tests/riscv64-kaem-seed-boot-smoke.sh \
+		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
+		arch/riscv64/fixture/linux-stage0-complete.elf
+
 test-riscv64-kaem-linux: TIMEOUT=3600
 test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-kaem-linux-complete riscv64-linux-root-init
 	@test -n "$(STAGE0_DIR)" || { echo "test-riscv64-kaem-linux requires STAGE0_DIR=/path/to/stage0-posix" >&2; exit 1; }
@@ -348,4 +365,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-linux
+.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

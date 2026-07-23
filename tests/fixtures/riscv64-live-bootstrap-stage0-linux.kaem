@@ -1,0 +1,5 @@
+set -ex
+
+cd /
+/riscv64/bin/sha256sum -c riscv64-linux.answers
+/sbin/kaem-complete

@@ -11,6 +11,9 @@
 #define FDT_HEADER_SIZE	40
 #define FDT_MAX_SIZE	(2 * 1024 * 1024)
 
+static unsigned long boot_blob_address;
+static unsigned long boot_blob_size;
+
 static unsigned long read_be32(const unsigned char *data)
 {
 	return ((unsigned long)data[0] << 24) |
@@ -44,6 +47,68 @@ static int bounded_string_equal(const unsigned char *text,
 		}
 	}
 	return 0;
+}
+
+unsigned long riscv64_fdt_size(const void *blob)
+{
+	const unsigned char *bytes;
+	unsigned long total;
+
+	if(!blob) {
+		return 0;
+	}
+	bytes = (const unsigned char *)blob;
+	if(read_be32(bytes) != FDT_MAGIC) {
+		return 0;
+	}
+	total = read_be32(bytes + 4);
+	if(total < FDT_HEADER_SIZE || total > FDT_MAX_SIZE) {
+		return 0;
+	}
+	return total;
+}
+
+void riscv64_fdt_set_boot_blob(const void *blob, unsigned long physical_base,
+	unsigned long memory_limit)
+{
+	unsigned long address, memory_end, size;
+
+	boot_blob_address = 0;
+	boot_blob_size = 0;
+	size = riscv64_fdt_size(blob);
+	if(!size || size > memory_limit) {
+		return;
+	}
+	address = (unsigned long)blob;
+	memory_end = physical_base + memory_limit;
+	if(memory_end < physical_base || address < physical_base ||
+		address > memory_end - size) {
+		return;
+	}
+	boot_blob_address = address;
+	boot_blob_size = size;
+}
+
+int riscv64_boot_blob_selected(void)
+{
+	return boot_blob_size != 0;
+}
+
+int riscv64_boot_page_reserved(unsigned long address)
+{
+	unsigned long blob_end;
+
+	if(!boot_blob_size) {
+		return 0;
+	}
+	blob_end = boot_blob_address + boot_blob_size;
+	if(address >= blob_end) {
+		return 0;
+	}
+	if(address >= boot_blob_address) {
+		return 1;
+	}
+	return boot_blob_address - address < PAGE_SIZE;
 }
 
 static int memory_node_name(const unsigned char *name,
@@ -121,15 +186,12 @@ unsigned long riscv64_fdt_memory_pages(const void *blob,
 	unsigned long pages, candidate_pages;
 	int depth, address_cells, size_cells, candidate_memory;
 
-	if(!blob || !memory_limit) {
+	if(!memory_limit) {
 		return 0;
 	}
 	bytes = (const unsigned char *)blob;
-	if(read_be32(bytes) != FDT_MAGIC) {
-		return 0;
-	}
-	total = read_be32(bytes + 4);
-	if(total < FDT_HEADER_SIZE || total > FDT_MAX_SIZE) {
+	total = riscv64_fdt_size(blob);
+	if(!total) {
 		return 0;
 	}
 	structure_offset = read_be32(bytes + 8);

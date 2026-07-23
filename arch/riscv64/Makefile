@@ -99,6 +99,20 @@ fixture/linux-root-init.o: linux-root-init.S
 fixture/linux-root-init.elf: fixture/linux-root-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/linux-kaem-init.o: linux-kaem-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-kaem-init.elf: fixture/linux-kaem-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/linux-stage0-complete.o: linux-stage0-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-stage0-complete.elf: fixture/linux-stage0-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/linux.o: linux-fixture.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<

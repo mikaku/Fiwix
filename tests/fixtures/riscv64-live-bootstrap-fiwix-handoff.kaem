@@ -1,0 +1,21 @@
+set -ex
+
+ARCH=riscv64
+ARCH_DIR=riscv64
+M2LIBC=../M2libc
+TOOLS=../riscv64/bin
+BLOOD_FLAG=--64
+BASE_ADDRESS=0x00600000
+ENDIAN_FLAG=--little-endian
+BINDIR=../riscv64/bin
+BUILDDIR=../riscv64/artifact
+TMPDIR=../riscv64/artifact
+OPERATING_SYSTEM=Linux
+
+./riscv64/bin/kaem --verbose --strict --file ./riscv64/mescc-tools-full-kaem.kaem
+cd mescc-tools-extra
+../riscv64/bin/kaem --verbose --strict --file mescc-tools-extra.kaem
+cd ..
+./riscv64/bin/sha256sum -c riscv64.answers
+
+/sbin/fiwix-linux-handoff

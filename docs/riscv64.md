@@ -124,6 +124,13 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
   LIVE_BOOTSTRAP_DISTFILES=/path/to/distfiles \
   test-riscv64-kaem-manifest5
+
+# Complete stage0 under Fiwix, then re-verify it under Linux on the same root.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LINUX_IMAGE=/path/to/linux/arch/riscv/boot/Image \
+  test-riscv64-kaem-stage0-linux
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -828,6 +835,57 @@ remains a fresh cumulative run with pinned native output hashes. Each boundary
 retains the pinned source revision, native output hash, dual virtio boot
 coverage, and a distinct completion marker so failures identify the first
 unsupported package contract.
+
+## Same-root stage0 handoff
+
+The `stage0-linux` continuation has four explicit steps. Fiwix runs stage0
+phases 1-23 and verifies the complete `riscv64.answers` set. Its completion
+fixture syncs the ext2 root and enters the pinned Linux Image through the reboot
+kexec command. Linux mounts that same block device read-write, and a static PID
+1 executes the generated `/riscv64/bin/kaem`. The generated sha256sum then
+re-verifies canonical kaem, sha256sum, M1, and M2-Mesoplanet outputs before a
+Linux-only completion fixture syncs and powers off the machine. The host
+requires both completion markers, checks the canonical stage0 hashes, and runs
+the ext2 integrity gate.
+
+This target is the dual-transport acceptance gate for the Fiwix-to-Linux
+boundary. It does not extract or inject an artifact between kernels. Keeping
+the Fiwix and Linux scripts separate makes the privilege transition explicit,
+and the second answer check proves that generated executables still obey the
+Linux RV64 ABI after running through Fiwix's loader and syscall translation.
+
+Fiwix checks all 19 entries in `riscv64.answers`; Linux deliberately repeats a
+smaller ABI-boundary set. Repeating the full answer file made the 674 KiB
+M2-Planet hash consume several guest CPU minutes without a boundary marker,
+even after the first nine entries had passed under both transports. The
+selected set includes the interpreter running the continuation, the checksum
+implementation, the assembler, and the final stage0 C compiler.
+
+An earlier design handed off after stage0 phase 11 and repeated phases 12-23
+under Linux. A second version completed stage0 under Fiwix and then started the
+first live-bootstrap package under Linux. Both proved that the generated kaem
+could become Linux PID 1, but byte-at-a-time bootstrap I/O made package builds
+under full-system Linux unsuitable as a routine acceptance path. Under the
+loaded validation host, the first `M2-Mesoplanet` compile had not returned after
+more than 14 vCPU minutes, while the same generated tools built that package in
+2.16 seconds under qemu-user. The native Fiwix manifest gates remain the package
+acceptance path; moving this transition to an answer-only re-verification keeps
+the kernel-boundary test focused and bounded.
+
+The split also found a host staging order bug. The first replay tried to install
+the Fiwix continuation before the archived source had created `/steps`. The
+root builder now creates that declared directory before installing either
+continuation; a retained work directory cannot hide the dependency.
+
+The first full-stage0 handoff reached the final Fiwix marker but Linux stopped
+before its early console. QEMU places the firmware DTB in ordinary RAM, and the
+RV64 page initializer had classified every non-kernel page as allocatable.
+Short tests preserved the blob by accident. The longer process tree cycled
+enough allocations through the free list to overwrite it before kexec. The FDT
+parser now validates the header's total size, confines the blob to discovered
+RAM, and reserves every intersecting physical page. The host FDT gate checks
+the first and last page of the range, while generic boot verifies the actual
+page-table entry is `PAGE_RESERVED` before constructing PID 1.
 
 Mes exposed two independent memory bugs. First, the generic kernel hard-coded
 256 MiB and mapped only one RAM leaf. Boot now reads the root memory node from

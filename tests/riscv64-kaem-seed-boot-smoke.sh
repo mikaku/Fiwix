@@ -17,7 +17,7 @@ LIVE_BOOTSTRAP_DISTFILES=${LIVE_BOOTSTRAP_DISTFILES:-}
 QEMU_MEMORY=${QEMU_MEMORY:-}
 LINUX_IMAGE=${LINUX_IMAGE:-}
 LINUX_INIT=${LINUX_INIT:-}
-LINUX_CMDLINE=${LINUX_CMDLINE:-earlycon=uart8250,mmio,0x10000000 console=ttyS0,115200 root=/dev/vda ro rootfstype=ext2 init=/sbin/linux-init}
+LINUX_CMDLINE=${LINUX_CMDLINE:-}
 kernel=${1:-./fiwix-generic}
 launcher=${2:-arch/riscv64/fixture/kaem-seed-init.elf}
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -50,9 +50,20 @@ command -v "$MKE2FS" >/dev/null
 command -v "$DEBUGFS" >/dev/null
 
 case $KAEM_STAGE in
-	seed|phase2|phase3|phase4|mini|manifest1|manifest2|manifest3|manifest4|manifest5|linux) ;;
+	seed|phase2|phase3|phase4|mini|manifest1|manifest2|manifest3|manifest4|manifest5|linux|stage0-linux) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
+linux_boot=false
+if test "$KAEM_STAGE" = linux || test "$KAEM_STAGE" = stage0-linux; then
+	linux_boot=true
+fi
+if test -z "$LINUX_CMDLINE"; then
+	if test "$KAEM_STAGE" = stage0-linux; then
+		LINUX_CMDLINE='earlycon=uart8250,mmio,0x10000000 console=ttyS0,115200 root=/dev/vda rw rootfstype=ext2 init=/sbin/linux-init'
+	else
+		LINUX_CMDLINE='earlycon=uart8250,mmio,0x10000000 console=ttyS0,115200 root=/dev/vda ro rootfstype=ext2 init=/sbin/linux-init'
+	fi
+fi
 case $KAEM_TRANSPORT in
 	all|legacy|modern) ;;
 	*) echo "unsupported KAEM_TRANSPORT: $KAEM_TRANSPORT" >&2; exit 1 ;;
@@ -144,7 +155,26 @@ if test "$KAEM_STAGE" != seed; then
 			--prefix="$path/" HEAD > "$work/submodule.tar"
 		"$TAR" -xf "$work/submodule.tar" -C "$rootfs"
 	done < "$work/submodules"
-	if test "$KAEM_STAGE" = phase2; then
+	if test "$KAEM_STAGE" = stage0-linux; then
+		seed_fixture=$root/tests/fixtures/riscv64-kaem-linux-continuation.kaem
+		mkdir -p "$rootfs/steps"
+		install -m 644 "$seed_fixture" \
+			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
+		install -m 644 \
+			"$root/tests/fixtures/riscv64-live-bootstrap-fiwix-handoff.kaem" \
+			"$rootfs/steps/live-bootstrap-fiwix.kaem"
+		install -m 644 \
+			"$root/tests/fixtures/riscv64-live-bootstrap-stage0-linux.kaem" \
+			"$rootfs/steps/live-bootstrap-linux.kaem"
+		linux_answers=$root/tests/fixtures/riscv64-linux.answers
+		while IFS= read -r answer; do
+			grep -Fqx "$answer" "$rootfs/riscv64.answers" || {
+				echo "noncanonical Linux answer: $answer" >&2
+				exit 1
+			}
+		done < "$linux_answers"
+		install -m 644 "$linux_answers" "$rootfs/riscv64-linux.answers"
+	elif test "$KAEM_STAGE" = phase2; then
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-phase2.kaem" \
 			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
 		install -m 644 \
@@ -287,18 +317,26 @@ if test "$KAEM_STAGE" != seed; then
 	else
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-mini.kaem" \
 			"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
-		if test "$KAEM_STAGE" = linux; then
-			test -f "$LINUX_IMAGE" || {
-				echo "KAEM_STAGE=linux requires LINUX_IMAGE" >&2
+	fi
+	if test "$linux_boot" = true; then
+		test -f "$LINUX_IMAGE" || {
+			echo "KAEM_STAGE=$KAEM_STAGE requires LINUX_IMAGE" >&2
+			exit 1
+		}
+		test -f "$LINUX_INIT" || {
+			echo "KAEM_STAGE=$KAEM_STAGE requires LINUX_INIT" >&2
+			exit 1
+		}
+		mkdir -p "$rootfs/sbin"
+		install -m 644 "$LINUX_IMAGE" "$rootfs/linux"
+		install -m 755 "$LINUX_INIT" "$rootfs/sbin/linux-init"
+		if test "$KAEM_STAGE" = stage0-linux; then
+			handoff=$root/arch/riscv64/fixture/kaem-linux-complete.elf
+			test -f "$handoff" || {
+				echo "missing Fiwix-to-Linux handoff fixture: $handoff" >&2
 				exit 1
 			}
-			test -f "$LINUX_INIT" || {
-				echo "KAEM_STAGE=linux requires LINUX_INIT" >&2
-				exit 1
-			}
-			mkdir -p "$rootfs/sbin"
-			install -m 644 "$LINUX_IMAGE" "$rootfs/linux"
-			install -m 755 "$LINUX_INIT" "$rootfs/sbin/linux-init"
+			install -m 755 "$handoff" "$rootfs/sbin/fiwix-linux-handoff"
 		fi
 	fi
 	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
@@ -306,7 +344,8 @@ if test "$KAEM_STAGE" != seed; then
 		test "$KAEM_STAGE" = manifest3 ||
 		test "$KAEM_STAGE" = manifest4 ||
 		test "$KAEM_STAGE" = manifest5 ||
-		test "$KAEM_STAGE" = linux; then
+		test "$KAEM_STAGE" = linux ||
+		test "$KAEM_STAGE" = stage0-linux; then
 		test -f "$completion" || {
 			echo "missing kaem completion fixture: $completion" >&2
 			exit 1
@@ -364,7 +403,7 @@ run_qemu()
 	mini_m1_actual=$work/$name.M1
 	mini_hex2_actual=$work/$name.hex2
 	mini_kaem_actual=$work/$name.kaem
-	if test "$KAEM_STAGE" = linux; then
+	if test "$linux_boot" = true; then
 		set -- "$@" -append "$LINUX_CMDLINE"
 	fi
 	if timeout "$TIMEOUT" "$QEMU" -machine virt -m "$qemu_memory" -smp 1 \
@@ -384,7 +423,8 @@ run_qemu()
 		test "$KAEM_STAGE" = manifest3 ||
 		test "$KAEM_STAGE" = manifest4 ||
 		test "$KAEM_STAGE" = manifest5 ||
-		test "$KAEM_STAGE" = linux; } &&
+		test "$KAEM_STAGE" = linux ||
+		test "$KAEM_STAGE" = stage0-linux; } &&
 		test "$status" -ne 0; then
 		cat "$serial" >&2
 		exit 1
@@ -430,15 +470,31 @@ run_qemu()
 		cat "$serial" >&2
 		exit 1
 	fi
-	if test "$KAEM_STAGE" = linux && {
+	if test "$linux_boot" = true && {
 		! grep -q '^Fiwix riscv64 kaem Linux handoff' "$serial" ||
 		! grep -q '^Fiwix riscv64 Linux Image header gate passed' "$serial" ||
 		! grep -q '^Fiwix riscv64 Linux root handoff' "$serial" ||
 		! grep -q '^Linux version ' "$serial" ||
-		! grep -q 'VFS: Mounted root (ext2 filesystem) readonly' "$serial" ||
-		! grep -q '^Fiwix riscv64 Linux root PID 1 passed' "$serial" ||
+		! grep -q 'VFS: Mounted root (ext2 filesystem)' "$serial" ||
 		grep -q 'Kernel panic' "$serial"
 	}; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = linux &&
+		! grep -q '^Fiwix riscv64 Linux root PID 1 passed' "$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = stage0-linux &&
+		! grep -q '^Fiwix riscv64 Linux stage0 continuation entered' \
+			"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = stage0-linux &&
+		! grep -q '^Fiwix riscv64 Linux stage0 re-verification completed' \
+			"$serial"; then
 		cat "$serial" >&2
 		exit 1
 	fi
@@ -458,7 +514,8 @@ run_qemu()
 		test "$KAEM_STAGE" = manifest3 ||
 		test "$KAEM_STAGE" = manifest4 ||
 		test "$KAEM_STAGE" = manifest5 ||
-		test "$KAEM_STAGE" = linux; then
+		test "$KAEM_STAGE" = linux ||
+		test "$KAEM_STAGE" = stage0-linux; then
 		"$DEBUGFS" -R 'cat /riscv64/bin/M1' "$run_disk" \
 			> "$mini_m1_actual" 2>/dev/null
 		"$DEBUGFS" -R 'cat /riscv64/bin/hex2' "$run_disk" \

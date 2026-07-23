@@ -38,6 +38,8 @@ unsigned long riscv64_boot_memory_pages(void)
 	if(!pages) {
 		pages = RISCV64_MEMORY_FALLBACK >> PAGE_SHIFT;
 	}
+	riscv64_fdt_set_boot_blob((const void *)riscv64_boot_dtb,
+		PHYSICAL_MEMORY_BASE, pages << PAGE_SHIFT);
 	return pages;
 }
 
@@ -131,6 +133,7 @@ void riscv64_generic_runtime_ready(void)
 	__dev_t uart_dev;
 	__dev_t block_dev;
 	int valid;
+	unsigned long dtb_page;
 
 	uart_dev = MKDEV(RISCV64_UART_MAJOR, RISCV64_UART_MINOR);
 	block_dev = MKDEV(RISCV64_VIRTIO_BLK_MAJOR,
@@ -149,16 +152,24 @@ void riscv64_generic_runtime_ready(void)
 	if(inode) {
 		iput(inode);
 	}
+	dtb_page = riscv64_boot_dtb & PAGE_MASK;
 	if(!kpage_dir || !page_table || !current || current->pid != IDLE ||
 		proc_table[INIT].pid != INIT ||
 		proc_table[INIT].state != PROC_RUNNING ||
 		!proc_table[INIT].arch.satp ||
 		!proc_table[INIT].arch.kernel_sp || !kstat.free_pages ||
-		!CURRENT_TIME || CURRENT_TICKS < 3 || kparms.rootdev != block_dev ||
+		!CURRENT_TIME || CURRENT_TICKS < 3 ||
+		(riscv64_boot_blob_selected() &&
+		(!riscv64_boot_page_reserved(dtb_page) ||
+		!(page_table[PHYS_TO_PAGE(dtb_page)].flags & PAGE_RESERVED))) ||
+		kparms.rootdev != block_dev ||
 		!get_device(CHR_DEV, uart_dev) || !get_tty(uart_dev) ||
 		!get_device(BLK_DEV, block_dev) || !valid) {
 		riscv64_uart_puts("Fiwix riscv64 generic runtime init failed\n");
 		riscv64_finish(TEST_FAIL);
+	}
+	if(riscv64_boot_blob_selected()) {
+		riscv64_uart_puts("Fiwix riscv64 firmware DTB reservation gate passed\n");
 	}
 	riscv64_uart_puts("Fiwix riscv64 Goldfish RTC gate passed\n");
 	riscv64_uart_puts("Fiwix riscv64 generic PID 1 construction passed\n");
