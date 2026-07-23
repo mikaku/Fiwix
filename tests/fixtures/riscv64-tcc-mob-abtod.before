@@ -1,0 +1,31 @@
+double
+abtod (char const **p, int base)
+{
+  char const *s = *p;
+  double d = 0;
+  int sign_p = 0;
+  if (!base)
+    base = 10;
+  double dbase = base;
+  long i = abtol (&s, base);
+  long f = 0;
+  long e = 0;
+  if (*s == '.')
+    {
+      s++;
+      f = abtol (&s, base);
+    }
+  if (*s == 'e')
+    {
+      s++;
+      e = abtol (&s, base);
+    }
+  d = i + f / dbase;
+  if (e < 0)
+    while (e++)
+      d = d / dbase;
+  while (e--)
+    d = d * dbase;
+  *p = s;
+  return sign_p ? -d : d;
+}

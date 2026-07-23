@@ -13,9 +13,10 @@ RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
 chain and verify its final M1, hex2, and kaem binaries.
 The first four live-bootstrap continuations then complete stage0 phases 12-23
-and use those native tools to build the unmodified riscv64
-checksum-transcriber, simple-patch, Mes 0.27.1, and TinyCC 0.9.26 manifest
-entries.
+and use those native tools to build the riscv64 checksum-transcriber,
+simple-patch, Mes 0.27.1, and TinyCC 0.9.26 manifest entries. The first three
+package recipes are unmodified; the TinyCC boundary has a checksum-pinned
+RISC-V compatibility wrapper described below.
 The final chain gate then asks Fiwix to load Linux from that same mutated ext2
 root, preserves the original hart ID and DTB contract, mounts the root under
 Linux, and executes a static Linux PID 1.
@@ -723,17 +724,31 @@ legacy and modern virtio transports each receive a fresh disk and must satisfy
 the same contract. Its 96-hour timeout is only a failure ceiling; the
 completion fixture resets QEMU as soon as the package is installed and synced.
 
-The fourth gate adds the unmodified TinyCC 0.9.26 recipe. It accepts only the
-source archive with SHA-256
-`6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f`
-and checks the ten canonical riscv64 outputs: the Mes-compiled bridge, two
-self-hosting intermediates, final compiler, and its Mes runtime objects and
-archives. The host checks that every path is a regular ext2 file before hashing
-it, which is necessary because two valid runtime objects are empty files and
-`debugfs cat` otherwise cannot distinguish them from a missing path. A separate
-completion marker and 96-hour failure ceiling keep this long boundary
-distinguishable from Mes while still exiting as soon as the guest syncs its
-installed output.
+The fourth gate adds TinyCC 0.9.26 revision 1157. It admits only archive
+SHA-256
+`3748c0aacd1e7b3805de09f28a4ef396392b2c838f78c59d23bfd9d68312232e`.
+Mes 0.27.1 compiles the RV64 `tcc-mes` bridge directly; an independent Mes
+0.26.1 replay produced the same bridge executable byte for byte, so no older
+runtime source is added to the package closure. MesCC's library search always
+inserts its `${ARCH}-mes` subdirectory. The link must therefore search
+`/usr/lib`, not `/usr/lib/riscv64-mes`; the latter incorrectly looks for
+`riscv64-mes/libc+tcc.a` below the architecture directory.
+
+The bridge then enables compiler features in explicit stages. `tcc-mes` starts
+with bootstrap long-long support; boot0 adds `setjmp`, boot1 adds bitfields,
+boot2 adds the float stub, and boot3 and later use full float support. Each
+generation rebuilds the three CRT objects and the RISC-V `libtcc1` plus
+`lib-arm64` runtime before compiling its successor. Boot4, boot5, and boot6
+produce identical compilers, while the boot5 and boot6 runtime objects are
+also identical. Boot5 is installed, and boot6 remains as independent
+fixed-point evidence.
+
+The host hashes the Mes bridge, feature intermediates, both final compilers,
+both final runtime generations, installed libc, libgetopt, CRT, and compiler
+runtime. It first requires every path to be a regular ext2 file, so a missing
+artifact cannot be confused with valid empty output. A separate completion
+marker and 96-hour failure ceiling keep this long boundary distinguishable
+from Mes while still exiting as soon as the guest syncs its installed output.
 
 The launcher deliberately has two scripts. The seed script is restricted to
 the minimal kaem command language through phase 11; its final command starts
@@ -784,18 +799,29 @@ reconnecting to the already-proven Fiwix-to-Linux root handoff. The checked-in
 live-bootstrap 0.9.27 pass is not an RV64 recipe: it hard-codes
 `TCC_TARGET_I386`, x86 Mes libc paths, and an x86-only checksum, while its
 official source archive contains no RISC-V backend. Manifest 5 therefore pins
-the `ekaitz-zarraga/tcc` source at commit
-`8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0` (archive SHA-256
-`750a6ecddefa485b1ad821611de11479c519ea7056d8a8535a945d598328aeed`).
-Its recipe follows commencement: the newly bootstrapped 0.9.26 compiler builds
-the RISC-V backend with `ONE_SOURCE`, forces static linking at state creation,
-builds `libtcc1.a` with the architecture helper, and rebuilds Mes libc,
-libgetopt, and startup objects. It installs under `/usr/bin/tcc-mob` and
-`/usr/lib/tcc-mob` instead of replacing the manifest4 compiler, preserving the
-input hashes as provenance for the new outputs. The package then uses the
-installed compiler, CRT, libc, and compiler runtime to link and execute a
-static RV64 smoke program. Manifest5 uses a 512 MiB ext2 image to retain both
-build trees without relying on host cleanup.
+`ekaitz-zarraga/tcc` commit
+`923fba83f1e541750c4dd48a4ec02af831ee5af8` (archive SHA-256
+`aec6a2a3e2b1b2c8c5a8507a0677a6556b9b20a55e4af17d8aa6a04e7cb75a45`).
+The package applies four narrow compatibility repairs with the native
+`simple-patch`: new compiler states default to static linking; a local
+binary128 exponent scaler replaces unavailable `ldexpl` and decimal
+long-double constants; `tcc -ar` replaces unavailable `strpbrk` with a
+`strchr` loop; and Mes's unified-libc decimal parser consumes every fractional
+digit instead of parsing the fraction as an integer and dividing only once.
+
+The libc correction must be compiled before tcc-mob generation 1 is linked.
+If it is delayed until generation 1, the old parser turns decimal constants
+into bad values which later self-hosting generations reproduce. The corrected
+ordering reaches identical compiler generations 4 and 5, identical libc and
+compiler-runtime generations 3 and 4, and the expected IEEE-754 bits
+`0x3fd34413509f6000` for `3.01029995663611771306e-01`. The installed compiler
+also links and executes a separate static RV64 smoke program.
+
+The final compiler, CRT, libc, libgetopt, and compiler runtime are installed
+under `/usr/bin/tcc-mob` and `/usr/lib/tcc-mob` instead of replacing the
+manifest4 compiler. The host checks those installed paths and both fixed-point
+generations against native hashes. Manifest5 uses a 512 MiB ext2 image to
+retain both build trees without relying on host cleanup.
 
 A completed manifest4 disk may accelerate recipe development, but acceptance
 remains a fresh cumulative run with pinned native output hashes. Each boundary

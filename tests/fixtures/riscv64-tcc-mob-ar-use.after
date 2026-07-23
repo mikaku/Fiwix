@@ -1,0 +1,1 @@
+            if (ar_has_option(a, ops_conflict))

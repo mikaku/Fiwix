@@ -1,0 +1,2 @@
+/* parse number in null terminated string 'p' and return it in the
+   current token */

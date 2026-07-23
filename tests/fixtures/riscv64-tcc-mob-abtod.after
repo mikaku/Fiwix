@@ -1,0 +1,74 @@
+static int
+abtod_digit (int c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  return -1;
+}
+
+double
+abtod (char const **p, int base)
+{
+  char const *s = *p;
+  long double d = 0;
+  long double place;
+  int digit;
+  int exponent = 0;
+  int exponent_base;
+  int exponent_sign = 1;
+  int sign = 1;
+
+  if (!base)
+    base = 10;
+  if (*s == '-' || *s == '+')
+    {
+      if (*s == '-')
+        sign = -1;
+      s++;
+    }
+  while ((digit = abtod_digit (*s)) >= 0 && digit < base)
+    {
+      d = d * base + digit;
+      s++;
+    }
+  if (*s == '.')
+    {
+      s++;
+      place = 1.0 / base;
+      while ((digit = abtod_digit (*s)) >= 0 && digit < base)
+        {
+          d = d + digit * place;
+          place = place / base;
+          s++;
+        }
+    }
+  if ((base == 10 && (*s == 'e' || *s == 'E'))
+      || (base == 16 && (*s == 'p' || *s == 'P')))
+    {
+      exponent_base = base == 16 ? 2 : 10;
+      s++;
+      if (*s == '-' || *s == '+')
+        {
+          if (*s == '-')
+            exponent_sign = -1;
+          s++;
+        }
+      while (*s >= '0' && *s <= '9')
+        {
+          exponent = exponent * 10 + *s - '0';
+          s++;
+        }
+      if (exponent_sign < 0)
+        while (exponent--)
+          d = d / exponent_base;
+      else
+        while (exponent--)
+          d = d * exponent_base;
+    }
+  *p = s;
+  return sign * d;
+}

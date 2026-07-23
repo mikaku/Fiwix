@@ -1,0 +1,10 @@
+static int ar_has_option(const char *options, const char *set)
+{
+    while (*options) {
+        if (strchr(set, *options++))
+            return 1;
+    }
+    return 0;
+}
+
+ST_FUNC int tcc_tool_ar(int argc, char **argv)

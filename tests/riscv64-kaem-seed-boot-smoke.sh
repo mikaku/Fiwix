@@ -241,19 +241,24 @@ if test "$KAEM_STAGE" != seed; then
 			"$TAR" -C "$rootfs" -xf "$work/mes-package.tar"
 		fi
 		if test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
-			tcc_distfile=$LIVE_BOOTSTRAP_DISTFILES/tcc-0.9.26.tar.gz
+			tcc_distfile=$LIVE_BOOTSTRAP_DISTFILES/tcc-0.9.26-1157-gdd46e018.tar.gz
 			check_hash "$tcc_distfile" \
-				6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f
-			install -m 644 "$tcc_distfile" "$rootfs/distfiles/tcc-0.9.26.tar.gz"
-			"$TAR" -C "$live_bootstrap_source" -cf "$work/tcc-package.tar" \
-				steps/tcc-0.9.26
-			"$TAR" -C "$rootfs" -xf "$work/tcc-package.tar"
+				3748c0aacd1e7b3805de09f28a4ef396392b2c838f78c59d23bfd9d68312232e
+			install -m 644 "$tcc_distfile" \
+				"$rootfs/distfiles/tcc-0.9.26-1157-gdd46e018.tar.gz"
+			mkdir -p "$rootfs/steps/tcc-0.9.26"
+			for fixture in pass1.kaem compile.kaem runtime.kaem \
+				unified-libc.kaem config.h sources.SHA256SUM; do
+				install -m 644 \
+					"$root/tests/fixtures/riscv64-tcc-0.9.26-$fixture" \
+					"$rootfs/steps/tcc-0.9.26/$fixture"
+			done
 		fi
 		if test "$KAEM_STAGE" = manifest5; then
-			tcc_mob_commit=8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0
+			tcc_mob_commit=923fba83f1e541750c4dd48a4ec02af831ee5af8
 			tcc_mob_distfile=$LIVE_BOOTSTRAP_DISTFILES/tcc-mob-$tcc_mob_commit.tar.gz
 			check_hash "$tcc_mob_distfile" \
-				750a6ecddefa485b1ad821611de11479c519ea7056d8a8535a945d598328aeed
+				aec6a2a3e2b1b2c8c5a8507a0677a6556b9b20a55e4af17d8aa6a04e7cb75a45
 			install -m 644 "$tcc_mob_distfile" \
 				"$rootfs/distfiles/tcc-mob-$tcc_mob_commit.tar.gz"
 			mkdir -p "$rootfs/steps/tcc-mob"
@@ -267,11 +272,17 @@ if test "$KAEM_STAGE" != seed; then
 				"$root/tests/fixtures/riscv64-tcc-mob-smoke.c" \
 				"$rootfs/steps/tcc-mob/smoke.c"
 			install -m 644 \
-				"$root/tests/fixtures/riscv64-tcc-mob-static-link.before" \
-				"$rootfs/steps/tcc-mob/static-link.before"
-			install -m 644 \
-				"$root/tests/fixtures/riscv64-tcc-mob-static-link.after" \
-				"$rootfs/steps/tcc-mob/static-link.after"
+				"$root/tests/fixtures/riscv64-tcc-mob-decimal.c" \
+				"$rootfs/steps/tcc-mob/decimal.c"
+			for fixture in static-link.before static-link.after \
+				ldexpl-helper.before ldexpl-helper.after \
+				ldexpl-use.before ldexpl-use.after \
+				ar-helper.before ar-helper.after ar-use.before \
+				ar-use.after abtod.before abtod.after; do
+				install -m 644 \
+					"$root/tests/fixtures/riscv64-tcc-mob-$fixture" \
+					"$rootfs/steps/tcc-mob/$fixture"
+			done
 		fi
 	else
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-mini.kaem" \
@@ -557,16 +568,46 @@ EOF
 			extract_guest_file "$guest_path" "$run_disk" "$actual"
 			check_hash "$actual" "$expected"
 		done <<'EOF'
-3e2d226b84b3bacb53ddb5606fc7e92aef7bd0dc234a898f17e350d147c3629b /usr/bin/tcc-mes tcc-mes
-6988d95a422ddc969845e2e7486ab4d665d5f3e14cc741033fcf23ee9e9c5d01 /usr/bin/tcc-boot0 tcc-boot0
-8ce16ed1026ff9d1365eb4ee1fe0d4ed08cc0c088821faa601165b16e39fd82f /usr/bin/tcc-boot1 tcc-boot1
-1366a81f8b5da46be87b93c07e13e4fdcdfa9496c7f01b971eab29fb98d62e07 /usr/bin/tcc tcc
-abce24b52227a6327f70c569d52bae51475ac819f12ce693113260a2707a1010 /usr/lib/mes/libc.a tcc-libc.a
-3f5bde2387cb55014faae2a250f9f1d4ee8fe9bc477ff8365ad8773ad9c949bc /usr/lib/mes/libgetopt.a libgetopt.a
-cc417e9d50f035f01d831ab28a0c5f665e89ef8fdf04c87a0b0f50587aed33aa /usr/lib/mes/crt1.o tcc-crt1.o
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 /usr/lib/mes/crti.o tcc-crti.o
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 /usr/lib/mes/crtn.o tcc-crtn.o
-6e6bb64d4563514c4490563061f960512019902a10fe664f31f6cba48b58e4f0 /usr/lib/mes/tcc/libtcc1.a libtcc1.a
+bff3b8f34dcbc57475d5cdd1bfda7c790bd2c9573c919e903957721e60ed002c /usr/bin/tcc-mes tcc-mes
+330965425b1410b373d1e6f43422fff73426b4435d8809d4b88affc342df129f /usr/bin/tcc-boot0 tcc-boot0
+4dec33f2526cfc78ba823e40c857180d3fed1ac2ac4f993c6fe27d5f1fc7f636 /usr/bin/tcc-boot1 tcc-boot1
+dac055050305d336943176c92cc7b46a529d99a102930fa4b981db0a204621f8 /usr/bin/tcc tcc
+dac055050305d336943176c92cc7b46a529d99a102930fa4b981db0a204621f8 /usr/bin/tcc-boot5 tcc-boot5
+dac055050305d336943176c92cc7b46a529d99a102930fa4b981db0a204621f8 /usr/bin/tcc-boot6 tcc-boot6
+328f78c7a0143c0336df95ebe4d7bcf82dd43f5686141f2181542a379278b794 /usr/lib/mes/libc.a tcc-libc.a
+a814fbf14822b22447730e8fcd8e6769e71c867ab15a2ed10ac2d6afb960eac4 /usr/lib/mes/libgetopt.a libgetopt.a
+4717d74cca709ddccfa9ecd95a16aa9c35645edb69be6de393b87483aca253d6 /usr/lib/mes/crt1.o tcc-crt1.o
+441299442aaff2ab97626bf57bfe54d04b56e5e76893ff0f164514b70abb504b /usr/lib/mes/crti.o tcc-crti.o
+a4ce786a49fa20a61ee1ca1174436f758e42dbf0502378c4c5c09b97a3dfd571 /usr/lib/mes/crtn.o tcc-crtn.o
+9d6490529e28e66abe85bbe720f0ef97d94d240a75fd3dbb182fb6c1a0544a67 /usr/lib/mes/tcc/libtcc1.a libtcc1.a
+9aa300aae3fe00e4e2270216bdeea96480f797c8e63205c5c09ad44012e67be0 /steps/tcc-0.9.26/build/tcc-0.9.26-1157-gdd46e018/libtcc1-boot5.o libtcc1-boot5.o
+9aa300aae3fe00e4e2270216bdeea96480f797c8e63205c5c09ad44012e67be0 /steps/tcc-0.9.26/build/tcc-0.9.26-1157-gdd46e018/libtcc1-boot6.o libtcc1-boot6.o
+4930b25f87a20c82ffd027ce333ff20cd268a8909a0b41edd99bc7b3b83b78e9 /steps/tcc-0.9.26/build/tcc-0.9.26-1157-gdd46e018/lib-arm64-boot5.o lib-arm64-boot5.o
+4930b25f87a20c82ffd027ce333ff20cd268a8909a0b41edd99bc7b3b83b78e9 /steps/tcc-0.9.26/build/tcc-0.9.26-1157-gdd46e018/lib-arm64-boot6.o lib-arm64-boot6.o
+EOF
+	fi
+	if test "$KAEM_STAGE" = manifest5; then
+		while read -r expected guest_path artifact; do
+			actual=$work/$name.$artifact
+			extract_guest_file "$guest_path" "$run_disk" "$actual"
+			check_hash "$actual" "$expected"
+		done <<'EOF'
+559380cc6155a2b06f1fed1c1c5d46fb9029fe567633e6e142aeba17d7c240c9 /usr/bin/tcc-mob tcc-mob
+618a5f65985beb751a677a32a66a215fd3d1f40f5a9878142063255ddb8db6ae /usr/lib/tcc-mob/libtcc1.a tcc-mob-libtcc1.a
+618a5f65985beb751a677a32a66a215fd3d1f40f5a9878142063255ddb8db6ae /usr/lib/tcc-mob/tcc/libtcc1.a tcc-mob-tcc-libtcc1.a
+b3bc954df2ba9732c7656c14e9876968493c6c4a08c55e435af6d155317a10e7 /usr/lib/tcc-mob/libc.a tcc-mob-libc.a
+ed4b7bb4021302ff03dcdd7fdb0c4be5216580b5c993290ecd7b469725b44328 /usr/lib/tcc-mob/libgetopt.a tcc-mob-libgetopt.a
+6c3a74fa5494eb407160c0c97439fda27c08977ddcdba491314a7ba509488221 /usr/lib/tcc-mob/crt1.o tcc-mob-crt1.o
+441299442aaff2ab97626bf57bfe54d04b56e5e76893ff0f164514b70abb504b /usr/lib/tcc-mob/crti.o tcc-mob-crti.o
+a4ce786a49fa20a61ee1ca1174436f758e42dbf0502378c4c5c09b97a3dfd571 /usr/lib/tcc-mob/crtn.o tcc-mob-crtn.o
+559380cc6155a2b06f1fed1c1c5d46fb9029fe567633e6e142aeba17d7c240c9 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/tcc-mob-stage4 tcc-mob-stage4
+559380cc6155a2b06f1fed1c1c5d46fb9029fe567633e6e142aeba17d7c240c9 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/tcc-mob-stage5 tcc-mob-stage5
+0296de667ae8f49fedf69dbdbc34505e6fe5fda5c6b6e51fc046c772458de141 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/libc-stage3.o tcc-mob-libc-stage3.o
+0296de667ae8f49fedf69dbdbc34505e6fe5fda5c6b6e51fc046c772458de141 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/libc-stage4.o tcc-mob-libc-stage4.o
+a4fb54c25b25fea0dcfddd8ecb1021b445f7a3c0c5b9392a1afe2b2ec827bf95 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/libtcc1-stage3.o tcc-mob-libtcc1-stage3.o
+a4fb54c25b25fea0dcfddd8ecb1021b445f7a3c0c5b9392a1afe2b2ec827bf95 /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/libtcc1-stage4.o tcc-mob-libtcc1-stage4.o
+3a30f95e1c8f9fe94c43e74c7910d76178d94689494f8f8204a9afc5e23142cb /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/lib-arm64-stage3.o tcc-mob-lib-arm64-stage3.o
+3a30f95e1c8f9fe94c43e74c7910d76178d94689494f8f8204a9afc5e23142cb /steps/tcc-mob/build/tinycc-923fba83f1e541750c4dd48a4ec02af831ee5af8/lib-arm64-stage4.o tcc-mob-lib-arm64-stage4.o
 EOF
 	fi
 	"$root/tests/riscv64-ext2-check.sh" "$run_disk"

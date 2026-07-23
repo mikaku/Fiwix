@@ -4,9 +4,9 @@ PATH=/usr/bin
 DISTFILES=/distfiles
 LIBDIR=/usr/lib/mes
 INCDIR=/usr/include/mes
-TCC_MOB_COMMIT=8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0
+TCC_MOB_COMMIT=923fba83f1e541750c4dd48a4ec02af831ee5af8
 TCC_MOB_TAR=tcc-mob-${TCC_MOB_COMMIT}
-TCC_MOB_PKG=tcc-${TCC_MOB_COMMIT}
+TCC_MOB_PKG=tinycc-${TCC_MOB_COMMIT}
 TCC_MOB_LIBDIR=/usr/lib/tcc-mob
 MES_SOURCE=/steps/tcc-0.9.26/build/mes-0.27.1
 
@@ -18,72 +18,305 @@ ungz --file ${DISTFILES}/${TCC_MOB_TAR}.tar.gz --output ${TCC_MOB_TAR}.tar
 untar --non-strict --file ${TCC_MOB_TAR}.tar
 simple-patch ${TCC_MOB_PKG}/libtcc.c \
     /steps/tcc-mob/static-link.before /steps/tcc-mob/static-link.after
+simple-patch ${TCC_MOB_PKG}/tccpp.c \
+    /steps/tcc-mob/ldexpl-helper.before /steps/tcc-mob/ldexpl-helper.after
+simple-patch ${TCC_MOB_PKG}/tccpp.c \
+    /steps/tcc-mob/ldexpl-use.before /steps/tcc-mob/ldexpl-use.after
+simple-patch ${TCC_MOB_PKG}/tcctools.c \
+    /steps/tcc-mob/ar-helper.before /steps/tcc-mob/ar-helper.after
+simple-patch ${TCC_MOB_PKG}/tcctools.c \
+    /steps/tcc-mob/ar-use.before /steps/tcc-mob/ar-use.after
 cd ${TCC_MOB_PKG}
 catm config.h
+mkdir -p include/mes
+cp ${MES_SOURCE}/include/mes/config.h include/mes/config.h
+cp ${MES_SOURCE}/unified-libc-gcc.c unified-libc-fixed.c
+simple-patch unified-libc-fixed.c \
+    /steps/tcc-mob/abtod.before /steps/tcc-mob/abtod.after
+mkdir -p ${TCC_MOB_LIBDIR} ${TCC_MOB_LIBDIR}/include ${TCC_MOB_LIBDIR}/tcc
+cp include/float.h ${TCC_MOB_LIBDIR}/include/float.h
+cp include/stdalign.h ${TCC_MOB_LIBDIR}/include/stdalign.h
+cp include/stdarg.h ${TCC_MOB_LIBDIR}/include/stdarg.h
+cp include/stdatomic.h ${TCC_MOB_LIBDIR}/include/stdatomic.h
+cp include/stdbool.h ${TCC_MOB_LIBDIR}/include/stdbool.h
+cp include/stddef.h ${TCC_MOB_LIBDIR}/include/stddef.h
+cp include/stdnoreturn.h ${TCC_MOB_LIBDIR}/include/stdnoreturn.h
+cp include/tccdefs.h ${TCC_MOB_LIBDIR}/include/tccdefs.h
+cp include/tgmath.h ${TCC_MOB_LIBDIR}/include/tgmath.h
+cp include/varargs.h ${TCC_MOB_LIBDIR}/include/varargs.h
+cp ${LIBDIR}/crt1.o crt1.o
+cp ${LIBDIR}/crti.o crti.o
+cp ${LIBDIR}/crtn.o crtn.o
+cp ${LIBDIR}/crt1.o ${TCC_MOB_LIBDIR}/crt1.o
+cp ${LIBDIR}/crti.o ${TCC_MOB_LIBDIR}/crti.o
+cp ${LIBDIR}/crtn.o ${TCC_MOB_LIBDIR}/crtn.o
 
+# Replace Mes's decimal parser before it can become self-reproducing in TCC.
+# The replacement only uses integer literals, so the 0.9.26 bridge can build it.
 tcc \
     -g \
-    -vvv \
-    -D ONE_SOURCE=1 \
-    -D TCC_TARGET_RISCV64=1 \
-    -D TCC_VERSION=\"0.9.28rc\" \
-    -D CONFIG_TCC_STATIC=1 \
-    -D CONFIG_USE_LIBGCC=1 \
-    -D CONFIG_TCC_SEMLOCK=0 \
-    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
-    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${LIBDIR}:.\" \
-    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
-    -D CONFIG_TCC_LIBPATHS=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:${LIBDIR}:.\" \
-    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
-    -D TCC_LIBGCC=\"${TCC_MOB_LIBDIR}/libc.a\" \
-    -o tcc-mob \
-    tcc.c
-
-./tcc-mob -version
-
-./tcc-mob \
-    -g \
-    -vvv \
-    -I include \
-    -D TCC_TARGET_RISCV64=1 \
     -c \
-    -o libtcc1.o \
-    lib/libtcc1.c
-./tcc-mob \
-    -g \
-    -vvv \
-    -I include \
-    -D TCC_TARGET_RISCV64=1 \
-    -c \
-    -o lib-arm64.o \
-    lib/lib-arm64.c
-./tcc-mob -ar rc libtcc1.a libtcc1.o lib-arm64.o
-
-./tcc-mob \
-    -g \
-    -vvv \
-    -c \
-    -o libc.o \
+    -D HAVE_CONFIG_H=1 \
     -I ${INCDIR} \
     -I ${INCDIR}/linux/riscv64 \
     -I include \
-    ${MES_SOURCE}/unified-libc.c
-./tcc-mob -ar rc libc.a libc.o
+    -o libc-stage0.o \
+    unified-libc-fixed.c
+tcc -ar cr libc.a libc-stage0.o
 
-./tcc-mob \
+# Generation 1 is linked with the corrected Mes runtime. Each later
+# generation uses libc and libtcc1 rebuilt by its immediate predecessor.
+tcc \
     -g \
-    -vvv \
+    -static \
+    -L . \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc-923\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D TCC_LIBGCC=\"libc.a\" \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\".:${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${TCC_MOB_LIBDIR}/include:${INCDIR}\" \
+    -o tcc-mob-stage1 \
+    tcc.c
+
+rm libc.a
+./tcc-mob-stage1 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    -o libc-stage1.o \
+    unified-libc-fixed.c
+./tcc-mob-stage1 -ar cr libc.a libc-stage1.o
+./tcc-mob-stage1 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o libtcc1-stage1.o \
+    lib/libtcc1.c
+./tcc-mob-stage1 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o lib-arm64-stage1.o \
+    lib/lib-arm64.c
+./tcc-mob-stage1 -ar cr libtcc1.a libtcc1-stage1.o lib-arm64-stage1.o
+
+./tcc-mob-stage1 \
+    -g \
+    -static \
+    -L . \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc-923\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D TCC_LIBGCC=\"libc.a\" \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\".:${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${TCC_MOB_LIBDIR}/include:${INCDIR}\" \
+    -o tcc-mob-stage2 \
+    tcc.c
+
+rm libc.a libtcc1.a
+./tcc-mob-stage2 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    -o libc-stage2.o \
+    unified-libc-fixed.c
+./tcc-mob-stage2 -ar cr libc.a libc-stage2.o
+./tcc-mob-stage2 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o libtcc1-stage2.o \
+    lib/libtcc1.c
+./tcc-mob-stage2 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o lib-arm64-stage2.o \
+    lib/lib-arm64.c
+./tcc-mob-stage2 -ar cr libtcc1.a libtcc1-stage2.o lib-arm64-stage2.o
+
+./tcc-mob-stage2 \
+    -g \
+    -static \
+    -L . \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc-923\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D TCC_LIBGCC=\"libc.a\" \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\".:${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${TCC_MOB_LIBDIR}/include:${INCDIR}\" \
+    -o tcc-mob-stage3 \
+    tcc.c
+
+rm libc.a libtcc1.a
+./tcc-mob-stage3 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    -o libc-stage3.o \
+    unified-libc-fixed.c
+./tcc-mob-stage3 -ar cr libc.a libc-stage3.o
+./tcc-mob-stage3 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o libtcc1-stage3.o \
+    lib/libtcc1.c
+./tcc-mob-stage3 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o lib-arm64-stage3.o \
+    lib/lib-arm64.c
+./tcc-mob-stage3 -ar cr libtcc1.a libtcc1-stage3.o lib-arm64-stage3.o
+
+./tcc-mob-stage3 \
+    -g \
+    -static \
+    -L . \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc-923\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D TCC_LIBGCC=\"libc.a\" \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\".:${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${TCC_MOB_LIBDIR}/include:${INCDIR}\" \
+    -o tcc-mob-stage4 \
+    tcc.c
+
+rm libc.a libtcc1.a
+./tcc-mob-stage4 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    -o libc-stage4.o \
+    unified-libc-fixed.c
+./tcc-mob-stage4 -ar cr libc.a libc-stage4.o
+./tcc-mob-stage4 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o libtcc1-stage4.o \
+    lib/libtcc1.c
+./tcc-mob-stage4 \
+    -g \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_FLOAT=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -I ${INCDIR} \
+    -I include \
+    -o lib-arm64-stage4.o \
+    lib/lib-arm64.c
+./tcc-mob-stage4 -ar cr libtcc1.a libtcc1-stage4.o lib-arm64-stage4.o
+
+./tcc-mob-stage4 \
+    -g \
+    -static \
+    -L . \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc-923\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D TCC_LIBGCC=\"libc.a\" \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\".:${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${TCC_MOB_LIBDIR}/include:${INCDIR}\" \
+    -o tcc-mob-stage5 \
+    tcc.c
+
+./tcc-mob-stage4 \
+    -g \
     -c \
     -o libgetopt.o \
     -I ${INCDIR} \
     -I ${INCDIR}/linux/riscv64 \
     -I include \
     ${MES_SOURCE}/lib/posix/getopt.c
-./tcc-mob -ar rc libgetopt.a libgetopt.o
-
-./tcc-mob \
+./tcc-mob-stage4 -ar cr libgetopt.a libgetopt.o
+./tcc-mob-stage4 \
     -g \
-    -vvv \
     -c \
     -o crt1.o \
     -I ${INCDIR} \
@@ -91,8 +324,7 @@ tcc \
     -I include \
     ${MES_SOURCE}/lib/linux/riscv64-mes-gcc/crt1.c
 
-mkdir -p ${TCC_MOB_LIBDIR} ${TCC_MOB_LIBDIR}/tcc
-cp tcc-mob /usr/bin/tcc-mob
+cp tcc-mob-stage4 /usr/bin/tcc-mob
 chmod 755 /usr/bin/tcc-mob
 cp libtcc1.a ${TCC_MOB_LIBDIR}/libtcc1.a
 cp libtcc1.a ${TCC_MOB_LIBDIR}/tcc/libtcc1.a
@@ -104,8 +336,18 @@ cp ${LIBDIR}/crtn.o ${TCC_MOB_LIBDIR}/crtn.o
 
 /usr/bin/tcc-mob -static -o /tmp/tcc-mob-smoke /steps/tcc-mob/smoke.c
 /tmp/tcc-mob-smoke
+/usr/bin/tcc-mob -static -o /tmp/tcc-mob-decimal /steps/tcc-mob/decimal.c
+/tmp/tcc-mob-decimal
 
 sha256sum \
+    tcc-mob-stage4 \
+    tcc-mob-stage5 \
+    libc-stage3.o \
+    libc-stage4.o \
+    libtcc1-stage3.o \
+    libtcc1-stage4.o \
+    lib-arm64-stage3.o \
+    lib-arm64-stage4.o \
     /usr/bin/tcc-mob \
     ${TCC_MOB_LIBDIR}/libtcc1.a \
     ${TCC_MOB_LIBDIR}/libc.a \
