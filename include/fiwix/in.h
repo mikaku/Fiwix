@@ -1,3 +1,5 @@
+#ifdef CONFIG_NET
+
 #ifndef _FIWIX_IN_H
 #define _FIWIX_IN_H
 
@@ -31,3 +33,5 @@ struct sockaddr_in {
 };
 
 #endif /* _FIWIX_IN_H */
+
+#endif /* CONFIG_NET */

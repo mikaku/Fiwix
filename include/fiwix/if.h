@@ -1,3 +1,5 @@
+#ifdef CONFIG_NET
+
 #ifndef _FIWIX_IF_H
 #define _FIWIX_IF_H
 
@@ -88,3 +90,5 @@ struct ifconf
 #define ifc_req		ifc_ifcu.ifcu_req
 
 #endif /* _FIWIX_IF_H */
+
+#endif /* CONFIG_NET */
