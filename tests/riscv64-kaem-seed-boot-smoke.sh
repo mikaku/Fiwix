@@ -4,8 +4,8 @@ set -eu
 
 QEMU=${QEMU:-qemu-system-riscv64}
 TIMEOUT=${TIMEOUT:-20}
-MKE2FS=${MKE2FS:-mke2fs}
-DEBUGFS=${DEBUGFS:-debugfs}
+MKE2FS=${MKE2FS:-}
+DEBUGFS=${DEBUGFS:-}
 SHA256SUM=${SHA256SUM:-sha256sum}
 TAR=${TAR:-tar}
 STAGE0_DIR=${STAGE0_DIR:?set STAGE0_DIR to the stage0-posix checkout}
@@ -13,6 +13,8 @@ KAEM_WORKDIR=${KAEM_WORKDIR:-}
 KAEM_STAGE=${KAEM_STAGE:-seed}
 KAEM_TRANSPORT=${KAEM_TRANSPORT:-all}
 LIVE_BOOTSTRAP_DIR=${LIVE_BOOTSTRAP_DIR:-}
+LIVE_BOOTSTRAP_DISTFILES=${LIVE_BOOTSTRAP_DISTFILES:-}
+QEMU_MEMORY=${QEMU_MEMORY:-}
 LINUX_IMAGE=${LINUX_IMAGE:-}
 LINUX_INIT=${LINUX_INIT:-}
 LINUX_CMDLINE=${LINUX_CMDLINE:-earlycon=uart8250,mmio,0x10000000 console=ttyS0,115200 root=/dev/vda ro rootfstype=ext2 init=/sbin/linux-init}
@@ -22,8 +24,33 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 stage0=$(cd "$STAGE0_DIR" && pwd)
 completion=${3:-$root/arch/riscv64/fixture/kaem-complete.elf}
 
+if test -z "$MKE2FS"; then
+	MKE2FS=mke2fs
+	if ! command -v "$MKE2FS" >/dev/null 2>&1; then
+		for candidate in /usr/sbin/mke2fs /sbin/mke2fs; do
+			if test -x "$candidate"; then
+				MKE2FS=$candidate
+				break
+			fi
+		done
+	fi
+fi
+if test -z "$DEBUGFS"; then
+	DEBUGFS=debugfs
+	if ! command -v "$DEBUGFS" >/dev/null 2>&1; then
+		for candidate in /usr/sbin/debugfs /sbin/debugfs; do
+			if test -x "$candidate"; then
+				DEBUGFS=$candidate
+				break
+			fi
+		done
+	fi
+fi
+command -v "$MKE2FS" >/dev/null
+command -v "$DEBUGFS" >/dev/null
+
 case $KAEM_STAGE in
-	seed|phase2|phase3|phase4|mini|manifest1|manifest2|linux) ;;
+	seed|phase2|phase3|phase4|mini|manifest1|manifest2|manifest3|manifest4|manifest5|linux) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
 case $KAEM_TRANSPORT in
@@ -71,19 +98,26 @@ check_hash()
 		exit 1
 	}
 }
+extract_guest_file()
+{
+	guest_path=$1
+	disk_path=$2
+	output_path=$3
+	metadata=$output_path.stat
+	"$DEBUGFS" -R "stat $guest_path" "$disk_path" \
+		> "$metadata" 2>/dev/null
+	if ! grep -q 'Type: regular' "$metadata"; then
+		echo "missing regular guest file: $guest_path" >&2
+		return 1
+	fi
+	rm -f "$metadata"
+	"$DEBUGFS" -R "cat $guest_path" "$disk_path" \
+		> "$output_path" 2>/dev/null
+}
 check_hash "$hex0_seed" \
 	1b50ceef632b83b79aef0cf91d60bc0cb242a3b2bfba22cb5115d80112b50ac9
 check_hash "$kaem_seed" \
 	12c0a7d01f2e369598ffdfc6e0881d62d20621d5f0d9fa9580ee511d72300650
-
-if ! command -v "$MKE2FS" >/dev/null 2>&1 && test -x /sbin/mke2fs; then
-	MKE2FS=/sbin/mke2fs
-fi
-if ! command -v "$DEBUGFS" >/dev/null 2>&1 && test -x /sbin/debugfs; then
-	DEBUGFS=/sbin/debugfs
-fi
-command -v "$MKE2FS" >/dev/null
-command -v "$DEBUGFS" >/dev/null
 
 rootfs=$work/rootfs
 disk=$work/kaem-seed.img
@@ -128,7 +162,9 @@ if test "$KAEM_STAGE" != seed; then
 		install -m 644 \
 			"$root/tests/fixtures/riscv64-kaem-phase4-body.kaem" \
 			"$rootfs/riscv64/mescc-tools-phase4-kaem.kaem"
-	elif test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2; then
+	elif test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2 ||
+		test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5; then
 		git -C "$LIVE_BOOTSTRAP_DIR" rev-parse --git-dir >/dev/null 2>&1 || {
 			echo "KAEM_STAGE=$KAEM_STAGE requires LIVE_BOOTSTRAP_DIR" >&2
 			exit 1
@@ -142,8 +178,16 @@ if test "$KAEM_STAGE" != seed; then
 		live_bootstrap_source=$work/live-bootstrap-source
 		mkdir -p "$live_bootstrap_source"
 		set -- steps/checksum-transcriber-1.0
-		if test "$KAEM_STAGE" = manifest2; then
+		if test "$KAEM_STAGE" = manifest2 || test "$KAEM_STAGE" = manifest3 ||
+			test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
 			set -- "$@" steps/simple-patch-1.0
+		fi
+		if test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+			test "$KAEM_STAGE" = manifest5; then
+			set -- "$@" steps/mes-0.27.1
+		fi
+		if test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
+			set -- "$@" steps/tcc-0.9.26
 		fi
 		git -C "$LIVE_BOOTSTRAP_DIR" archive --format=tar \
 			"$expected_live_bootstrap_commit" "$@" | \
@@ -164,7 +208,8 @@ if test "$KAEM_STAGE" != seed; then
 		install -m 644 \
 			"$live_bootstrap_source/steps/checksum-transcriber-1.0/src/checksum-transcriber.c" \
 			"$rootfs/steps/checksum-transcriber-1.0/src/checksum-transcriber.c"
-		if test "$KAEM_STAGE" = manifest2; then
+		if test "$KAEM_STAGE" = manifest2 || test "$KAEM_STAGE" = manifest3 ||
+			test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
 			mkdir -p "$rootfs/steps/simple-patch-1.0/src"
 			for input in pass1.kaem simple-patch-1.0.riscv64.checksums; do
 				install -m 644 \
@@ -174,6 +219,59 @@ if test "$KAEM_STAGE" != seed; then
 			install -m 644 \
 				"$live_bootstrap_source/steps/simple-patch-1.0/src/simple-patch.c" \
 				"$rootfs/steps/simple-patch-1.0/src/simple-patch.c"
+		fi
+		if test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+			test "$KAEM_STAGE" = manifest5; then
+			test -d "$LIVE_BOOTSTRAP_DISTFILES" || {
+				echo "KAEM_STAGE=$KAEM_STAGE requires LIVE_BOOTSTRAP_DISTFILES" >&2
+				exit 1
+			}
+			mes_distfile=$LIVE_BOOTSTRAP_DISTFILES/mes-0.27.1.tar.gz
+			nyacc_distfile=$LIVE_BOOTSTRAP_DISTFILES/nyacc-1.00.2-lb1.tar.gz
+			check_hash "$mes_distfile" \
+				183a40ea47ea49f8a1e3bd1b9d12e676374d64d63bc79e7bc1ae7d673dfdf25d
+			check_hash "$nyacc_distfile" \
+				708c943f89c972910e9544ee077771acbd0a2c0fc6d33496fe158264ddb65327
+			mkdir -p "$rootfs/distfiles"
+			install -m 644 "$mes_distfile" "$rootfs/distfiles/mes-0.27.1.tar.gz"
+			install -m 644 "$nyacc_distfile" \
+				"$rootfs/distfiles/nyacc-1.00.2-lb1.tar.gz"
+			"$TAR" -C "$live_bootstrap_source" -cf "$work/mes-package.tar" \
+				steps/mes-0.27.1
+			"$TAR" -C "$rootfs" -xf "$work/mes-package.tar"
+		fi
+		if test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
+			tcc_distfile=$LIVE_BOOTSTRAP_DISTFILES/tcc-0.9.26.tar.gz
+			check_hash "$tcc_distfile" \
+				6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f
+			install -m 644 "$tcc_distfile" "$rootfs/distfiles/tcc-0.9.26.tar.gz"
+			"$TAR" -C "$live_bootstrap_source" -cf "$work/tcc-package.tar" \
+				steps/tcc-0.9.26
+			"$TAR" -C "$rootfs" -xf "$work/tcc-package.tar"
+		fi
+		if test "$KAEM_STAGE" = manifest5; then
+			tcc_mob_commit=8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0
+			tcc_mob_distfile=$LIVE_BOOTSTRAP_DISTFILES/tcc-mob-$tcc_mob_commit.tar.gz
+			check_hash "$tcc_mob_distfile" \
+				750a6ecddefa485b1ad821611de11479c519ea7056d8a8535a945d598328aeed
+			install -m 644 "$tcc_mob_distfile" \
+				"$rootfs/distfiles/tcc-mob-$tcc_mob_commit.tar.gz"
+			mkdir -p "$rootfs/steps/tcc-mob"
+			install -m 644 \
+				"$root/tests/fixtures/riscv64-tcc-mob-pass1.kaem" \
+				"$rootfs/steps/tcc-mob/pass1.kaem"
+			install -m 644 \
+				"$root/tests/fixtures/riscv64-tcc-mob-sources.SHA256SUM" \
+				"$rootfs/steps/tcc-mob/sources.SHA256SUM"
+			install -m 644 \
+				"$root/tests/fixtures/riscv64-tcc-mob-smoke.c" \
+				"$rootfs/steps/tcc-mob/smoke.c"
+			install -m 644 \
+				"$root/tests/fixtures/riscv64-tcc-mob-static-link.before" \
+				"$rootfs/steps/tcc-mob/static-link.before"
+			install -m 644 \
+				"$root/tests/fixtures/riscv64-tcc-mob-static-link.after" \
+				"$rootfs/steps/tcc-mob/static-link.after"
 		fi
 	else
 		install -m 644 "$root/tests/fixtures/riscv64-kaem-mini.kaem" \
@@ -194,6 +292,9 @@ if test "$KAEM_STAGE" != seed; then
 	fi
 	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
 		test "$KAEM_STAGE" = manifest2 ||
+		test "$KAEM_STAGE" = manifest3 ||
+		test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5 ||
 		test "$KAEM_STAGE" = linux; then
 		test -f "$completion" || {
 			echo "missing kaem completion fixture: $completion" >&2
@@ -202,7 +303,17 @@ if test "$KAEM_STAGE" != seed; then
 		mkdir -p "$rootfs/sbin"
 		install -m 755 "$completion" "$rootfs/sbin/kaem-complete"
 	fi
-	disk_blocks=131072
+	if test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5; then
+		disk_blocks=262144
+		if test "$KAEM_STAGE" = manifest5; then
+			disk_blocks=524288
+		fi
+		qemu_memory=${QEMU_MEMORY:-2G}
+	else
+		disk_blocks=131072
+		qemu_memory=${QEMU_MEMORY:-256M}
+	fi
 else
 	mkdir -p "$rootfs/bootstrap-seeds/POSIX/riscv64" \
 		"$rootfs/riscv64/artifact"
@@ -215,6 +326,7 @@ else
 	install -m 644 "$seed_script" \
 		"$rootfs/riscv64/mescc-tools-seed-kaem.kaem"
 	disk_blocks=8192
+	qemu_memory=${QEMU_MEMORY:-256M}
 fi
 mkdir -p "$rootfs/dev" "$rootfs/sbin"
 install -m 755 "$launcher" "$rootfs/sbin/init"
@@ -244,7 +356,7 @@ run_qemu()
 	if test "$KAEM_STAGE" = linux; then
 		set -- "$@" -append "$LINUX_CMDLINE"
 	fi
-	if timeout "$TIMEOUT" "$QEMU" -machine virt -m 256M -smp 1 \
+	if timeout "$TIMEOUT" "$QEMU" -machine virt -m "$qemu_memory" -smp 1 \
 		-nographic -bios none -kernel "$kernel" -no-reboot \
 		-drive file="$run_disk",format=raw,if=none,id=drive0 \
 		-device virtio-blk-device,drive=drive0 "$@" > "$serial" 2>&1; then
@@ -258,6 +370,9 @@ run_qemu()
 	fi
 	if { test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
 		test "$KAEM_STAGE" = manifest2 ||
+		test "$KAEM_STAGE" = manifest3 ||
+		test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5 ||
 		test "$KAEM_STAGE" = linux; } &&
 		test "$status" -ne 0; then
 		cat "$serial" >&2
@@ -282,6 +397,24 @@ run_qemu()
 	fi
 	if test "$KAEM_STAGE" = manifest2 &&
 		! grep -q '^Fiwix riscv64 live-bootstrap manifest 2 completed' \
+		"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = manifest3 &&
+		! grep -q '^Fiwix riscv64 live-bootstrap manifest 3 completed' \
+		"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = manifest4 &&
+		! grep -q '^Fiwix riscv64 live-bootstrap manifest 4 completed' \
+		"$serial"; then
+		cat "$serial" >&2
+		exit 1
+	fi
+	if test "$KAEM_STAGE" = manifest5 &&
+		! grep -q '^Fiwix riscv64 live-bootstrap manifest 5 completed' \
 		"$serial"; then
 		cat "$serial" >&2
 		exit 1
@@ -311,6 +444,9 @@ run_qemu()
 	fi
 	if test "$KAEM_STAGE" = mini || test "$KAEM_STAGE" = manifest1 ||
 		test "$KAEM_STAGE" = manifest2 ||
+		test "$KAEM_STAGE" = manifest3 ||
+		test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5 ||
 		test "$KAEM_STAGE" = linux; then
 		"$DEBUGFS" -R 'cat /riscv64/bin/M1' "$run_disk" \
 			> "$mini_m1_actual" 2>/dev/null
@@ -376,19 +512,62 @@ run_qemu()
 				fe337e9c2d9b6e6a550561491b7d2640d088975e107ee9b522641428e1362685
 		fi
 	fi
-	if test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2; then
+	if test "$KAEM_STAGE" = manifest1 || test "$KAEM_STAGE" = manifest2 ||
+		test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5; then
 		manifest1_actual=$work/$name.checksum-transcriber
 		"$DEBUGFS" -R 'cat /usr/bin/checksum-transcriber' "$run_disk" \
 			> "$manifest1_actual" 2>/dev/null
 		check_hash "$manifest1_actual" \
 			1c3021d8051fefd615edb50907e3015d810f974b5b9461f8f9aa383478620a0d
 	fi
-	if test "$KAEM_STAGE" = manifest2; then
+	if test "$KAEM_STAGE" = manifest2 || test "$KAEM_STAGE" = manifest3 ||
+		test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
 		manifest2_actual=$work/$name.simple-patch
 		"$DEBUGFS" -R 'cat /usr/bin/simple-patch' "$run_disk" \
 			> "$manifest2_actual" 2>/dev/null
 		check_hash "$manifest2_actual" \
 			dc72b76c8835b1a08b1ecaa2ab8e9179c290805dd2c8bf3636004f375948c238
+	fi
+	if test "$KAEM_STAGE" = manifest3 || test "$KAEM_STAGE" = manifest4 ||
+		test "$KAEM_STAGE" = manifest5; then
+		while read -r expected guest_path artifact; do
+			actual=$work/$name.$artifact
+			extract_guest_file "$guest_path" "$run_disk" "$actual"
+			check_hash "$actual" "$expected"
+		done <<'EOF'
+132066ae1e8fc55c3bd256623d918b86a6dcec2bc6379e2f273f2733fb7f57be /usr/bin/mes-m2 mes-m2
+11f33b019f78c90fcbd2385ebb037ee4e36984117799207497c3c83e8d537d1d /usr/bin/mescc.scm mescc.scm
+50441b03b915bd51fb811749901a56b3c42186b45f7f466dbf23337eafad520c /usr/lib/riscv64-mes/crt1.s crt1.s
+a96a0a8f1b2dd1e5a7dad8264c92b5448be7d29aa7706d40d67be978d5ddc305 /usr/lib/riscv64-mes/crt1.o crt1.o
+1511e99da81caa02490078c7a880ac97d439b6fec99cf846dc2044468e2444b8 /usr/lib/riscv64-mes/riscv64.M1 riscv64.M1
+ea93d84ef2e599b27b463ba1218836d4abf38873f6a67e5412e8f32096c954e5 /usr/lib/riscv64-mes/libmescc.s libmescc.s
+b448e95afd22a07fea99b0b4a21ae5ef6c3e22d9f20e6b6a8c81fb9daeb3e5ee /usr/lib/riscv64-mes/libc+tcc.s libc+tcc.s
+31e81fc37dc0c4f9ee0feeba011d29dea1b1a8e84a766c34d79682174c52e281 /usr/lib/riscv64-mes/libc.s libc.s
+0edca3696ee26a869e31ed55f43ab084a4063f8dc62438c1902d04b17de2e6ab /usr/lib/riscv64-mes/libmescc.a libmescc.a
+e1822748703bf89714f876c2527db8c020b3fb44ec64ff8d93ed55a1922dcda9 /usr/lib/riscv64-mes/libc+tcc.a libc+tcc.a
+d7be5dac4a1d11055f830a65d3373ddfcf7c6f1f6c12cec0e47501203fa10bc6 /usr/lib/riscv64-mes/libc.a libc.a
+22ad5f7b6e5ea07b275619956bddd913b061d6ad492a442e4b6b2f28898e50ae /usr/lib/linux/riscv64-mes/elf64-header.hex2 elf64-header.hex2
+94c796cb34a6e581491d0cf609e7fad01715c84a17b8b2017178a36568a80e48 /usr/lib/linux/riscv64-mes/elf64-footer-single-main.hex2 elf64-footer-single-main.hex2
+EOF
+	fi
+	if test "$KAEM_STAGE" = manifest4 || test "$KAEM_STAGE" = manifest5; then
+		while read -r expected guest_path artifact; do
+			actual=$work/$name.$artifact
+			extract_guest_file "$guest_path" "$run_disk" "$actual"
+			check_hash "$actual" "$expected"
+		done <<'EOF'
+3e2d226b84b3bacb53ddb5606fc7e92aef7bd0dc234a898f17e350d147c3629b /usr/bin/tcc-mes tcc-mes
+6988d95a422ddc969845e2e7486ab4d665d5f3e14cc741033fcf23ee9e9c5d01 /usr/bin/tcc-boot0 tcc-boot0
+8ce16ed1026ff9d1365eb4ee1fe0d4ed08cc0c088821faa601165b16e39fd82f /usr/bin/tcc-boot1 tcc-boot1
+1366a81f8b5da46be87b93c07e13e4fdcdfa9496c7f01b971eab29fb98d62e07 /usr/bin/tcc tcc
+abce24b52227a6327f70c569d52bae51475ac819f12ce693113260a2707a1010 /usr/lib/mes/libc.a tcc-libc.a
+3f5bde2387cb55014faae2a250f9f1d4ee8fe9bc477ff8365ad8773ad9c949bc /usr/lib/mes/libgetopt.a libgetopt.a
+cc417e9d50f035f01d831ab28a0c5f665e89ef8fdf04c87a0b0f50587aed33aa /usr/lib/mes/crt1.o tcc-crt1.o
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 /usr/lib/mes/crti.o tcc-crti.o
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 /usr/lib/mes/crtn.o tcc-crtn.o
+6e6bb64d4563514c4490563061f960512019902a10fe664f31f6cba48b58e4f0 /usr/lib/mes/tcc/libtcc1.a libtcc1.a
+EOF
 	fi
 	"$root/tests/riscv64-ext2-check.sh" "$run_disk"
 }

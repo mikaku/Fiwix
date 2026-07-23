@@ -8,7 +8,7 @@ GENERIC_OUTPUT=${GENERIC_OUTPUT:-}
 GENERIC_OBJECT_DIR=${GENERIC_OBJECT_DIR:-}
 GENERIC_OBJECT_LIST=${GENERIC_OBJECT_LIST:-}
 GENERIC_SOURCE_LIST=${GENERIC_SOURCE_LIST:-}
-root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 GENERIC_SOURCE_LIST=${GENERIC_SOURCE_LIST:-$root/tests/riscv64-generic-sources.list}
 if test -n "$GENERIC_OBJECT_DIR"; then
 	temporary=$GENERIC_OBJECT_DIR
@@ -46,8 +46,9 @@ while IFS= read -r source; do
 	compiled=$((compiled + 1))
 done < "$GENERIC_SOURCE_LIST"
 
-test "$compiled" -eq 268
+test "$compiled" -eq 269
 if test -n "$GENERIC_OUTPUT"; then
+	# shellcheck disable=SC2086 # The list contains one controlled path per word.
 	"$GENERIC_LD" -m elf64lriscv -r $objects -o "$GENERIC_OUTPUT"
 fi
 echo "Fiwix riscv64 generic compile gate passed: $compiled files; 2 architecture boundaries remain"

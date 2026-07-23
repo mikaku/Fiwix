@@ -389,7 +389,7 @@ int mem_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
-	physical_memory = (kstat.physical_pages << PAGE_SHIFT);
+	physical_memory = (unsigned int)kstat.physical_pages << PAGE_SHIFT;
 	if(f->offset >= physical_memory) {
 		return 0;
 	}
@@ -403,7 +403,7 @@ int mem_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
-	physical_memory = (kstat.physical_pages << PAGE_SHIFT);
+	physical_memory = (unsigned int)kstat.physical_pages << PAGE_SHIFT;
 	if(f->offset >= physical_memory) {
 		return 0;
 	}
@@ -432,7 +432,7 @@ int kmem_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 {
 	unsigned int physical_memory;
 
-	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
+	physical_memory = P2V((unsigned int)kstat.physical_pages << PAGE_SHIFT);
 	if(P2V(f->offset + count) < physical_memory) {
 		memcpy_b(buffer, (void *)P2V((unsigned int)f->offset), count);
 		f->offset += count;
@@ -446,7 +446,7 @@ int kmem_write(struct inode *i, struct fd *f, const char *buffer, __size_t count
 {
 	unsigned int physical_memory;
 
-	physical_memory = P2V((kstat.physical_pages << PAGE_SHIFT));
+	physical_memory = P2V((unsigned int)kstat.physical_pages << PAGE_SHIFT);
 	if(P2V(f->offset + count) < physical_memory) {
 		memcpy_b((void *)P2V((unsigned int)f->offset), buffer, count);
 		f->offset += count;

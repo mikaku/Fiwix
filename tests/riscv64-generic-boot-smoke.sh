@@ -4,6 +4,7 @@ set -eu
 
 QEMU=${QEMU:-qemu-system-riscv64}
 TIMEOUT=${TIMEOUT:-10}
+QEMU_MEMORY=${QEMU_MEMORY:-256M}
 kernel=${1:-./fiwix-generic}
 disk=${2:-arch/riscv64/fixture/disk.img}
 temporary=$(mktemp)
@@ -42,7 +43,7 @@ run_qemu()
 	output=$1
 	run_disk=$2
 	shift 2
-	"$QEMU" -machine virt -m 256M -smp 1 \
+	"$QEMU" -machine virt -m "$QEMU_MEMORY" -smp 1 \
 		-nographic -bios none -kernel "$kernel" -no-reboot \
 		-drive file="$run_disk",format=raw,if=none,id=drive0 \
 		-device virtio-blk-device,drive=drive0 "$@" > "$output" 2>&1 &

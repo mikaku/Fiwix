@@ -4,8 +4,10 @@
  * Polled virtio-mmio block gate for QEMU virt.
  */
 
-#define VIRTIO_FIRST            0x10001000UL
-#define VIRTIO_END              0x10009000UL
+#include <fiwix/riscv64_devices.h>
+
+#define VIRTIO_FIRST            (RISCV64_VIRTIO_VIRTUAL_BASE + 0x1000UL)
+#define VIRTIO_END              (RISCV64_VIRTIO_VIRTUAL_BASE + 0x9000UL)
 #define VIRTIO_MAGIC            0x74726976U
 #define VIRTIO_DEVICE_BLOCK     2U
 #define VIRTIO_VERSION_LEGACY   1U

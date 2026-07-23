@@ -9,7 +9,7 @@ LINUX_IMAGE ?= fixture/linux.bin
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o context.o elf.o ext2_gate.o handoff.o init_trampoline.o linux.o main.o ops.o rtc.o user.o \
+OBJS = boot.o context.o elf.o ext2_gate.o fdt.o handoff.o init_trampoline.o linux.o main.o ops.o rtc.o user.o \
 	user_fixture_blob.o virtio.o vm.o
 
 user_fixture_blob.o: user_fixture_blob.S fixture/user.elf
@@ -69,6 +69,27 @@ fixture/kaem-manifest2-complete.o: kaem-manifest2-complete.S
 	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/kaem-manifest2-complete.elf: fixture/kaem-manifest2-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/kaem-manifest3-complete.o: kaem-manifest3-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-manifest3-complete.elf: fixture/kaem-manifest3-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/kaem-manifest4-complete.o: kaem-manifest4-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-manifest4-complete.elf: fixture/kaem-manifest4-complete.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/kaem-manifest5-complete.o: kaem-manifest5-complete.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/kaem-manifest5-complete.elf: fixture/kaem-manifest5-complete.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
 fixture/linux-root-init.o: linux-root-init.S

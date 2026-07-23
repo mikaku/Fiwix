@@ -1,10 +1,11 @@
 /* QEMU virt Goldfish real-time clock support. */
 
 #include <fiwix/asm.h>
+#include <fiwix/riscv64_devices.h>
 #include <fiwix/timer.h>
 #include <fiwix/types.h>
 
-#define GOLDFISH_RTC_BASE	0x00101000UL
+#define GOLDFISH_RTC_BASE	RISCV64_RTC_VIRTUAL_BASE
 #define GOLDFISH_TIME_LOW	0x00
 #define GOLDFISH_TIME_HIGH	0x04
 #define NSEC_PER_SEC		1000000000ULL

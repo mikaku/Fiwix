@@ -6,7 +6,7 @@ GENERIC_CC=${GENERIC_CC:-riscv64-linux-gnu-gcc}
 GENERIC_LD=${GENERIC_LD:-riscv64-linux-gnu-ld}
 AS=${AS:-riscv64-linux-gnu-as}
 NM=${NM:-riscv64-linux-gnu-nm}
-root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 
@@ -21,6 +21,7 @@ for source in context generic-trap handoff init_trampoline ops; do
 	objects="$objects $temporary/$source.o"
 done
 
+# shellcheck disable=SC2086 # The list contains one controlled path per word.
 "$GENERIC_LD" -m elf64lriscv -r $objects -o "$temporary/generic.o"
 "$NM" -u "$temporary/generic.o" | sed 's/^ *U //' | sort -u \
 	> "$temporary/unresolved"
@@ -38,4 +39,4 @@ if grep -q '^riscv64_' "$temporary/unresolved"; then
 	exit 1
 fi
 
-echo "Fiwix riscv64 generic link gate passed: 268 C files, 5 assembly files; 9 platform/linker boundaries remain"
+echo "Fiwix riscv64 generic link gate passed: 269 C files, 5 assembly files; 9 platform/linker boundaries remain"

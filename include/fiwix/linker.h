@@ -13,7 +13,9 @@
 #ifdef CONFIG_ARCH_RISCV64
 #define PAGE_OFFSET	0x0000004000000000UL /* top of the Sv39 user half */
 #define KERNEL_ADDR	0x80000000UL
-#define GDT_BASE	0x10000000UL	/* 256 MiB machine-memory limit */
+#define RISCV64_MEMORY_FALLBACK	0x10000000UL	/* 256 MiB without a DTB */
+#define RISCV64_MEMORY_LIMIT	0x80000000UL	/* two Sv39 leaves: 2 GiB */
+#define GDT_BASE	RISCV64_MEMORY_LIMIT
 #elif defined(CONFIG_VM_SPLIT22)
 #define PAGE_OFFSET	0x80000000	/* VM split: 2GB user / 2GB kernel */
 #else

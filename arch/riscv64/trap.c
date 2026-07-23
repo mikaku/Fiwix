@@ -111,6 +111,10 @@ static int riscv64_page_fault(struct riscv64_trap_frame *frame,
 		send_sig(current, SIGSEGV);
 		return 0;
 	} else if(result == PFAULT_SIGKILL) {
+		printk("RV64 page fault allocation failed: pid=%d address=%lx "
+			"rss=%u free=%d buffers=%dKB\n", current->pid,
+			frame->stval, current->rss, kstat.free_pages,
+			kstat.buffers_size);
 		send_sig(current, SIGKILL);
 		return 0;
 	}

@@ -12,9 +12,10 @@ policy. A writable-root gate then execs the unmodified 392-byte stage0-posix
 RV64 `hex0-seed` as PID 1 and verifies its decoded output from the disk image.
 The nested process-tree gates reproduce the complete phase 1-11 stage0 tool
 chain and verify its final M1, hex2, and kaem binaries.
-The first two live-bootstrap continuations then complete stage0 phases 12-23
+The first four live-bootstrap continuations then complete stage0 phases 12-23
 and use those native tools to build the unmodified riscv64
-checksum-transcriber and simple-patch manifest entries.
+checksum-transcriber, simple-patch, Mes 0.27.1, and TinyCC 0.9.26 manifest
+entries.
 The final chain gate then asks Fiwix to load Linux from that same mutated ext2
 root, preserves the original hart ID and DTB contract, mounts the root under
 Linux, and executes a static Linux PID 1.
@@ -98,6 +99,30 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   STAGE0_DIR=/path/to/stage0-posix \
   LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
   test-riscv64-kaem-manifest2
+
+# Replay both boundaries and build Mes 0.27.1 (long-running, 2 GiB RAM).
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
+  LIVE_BOOTSTRAP_DISTFILES=/path/to/distfiles \
+  test-riscv64-kaem-manifest3
+
+# Replay the first three boundaries and bootstrap TinyCC 0.9.26.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
+  LIVE_BOOTSTRAP_DISTFILES=/path/to/distfiles \
+  test-riscv64-kaem-manifest4
+
+# Replay through TinyCC 0.9.26 and build the pinned RV64 tcc-mob transition.
+make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
+  QEMU=/path/to/qemu-system-riscv64 \
+  STAGE0_DIR=/path/to/stage0-posix \
+  LIVE_BOOTSTRAP_DIR=/path/to/live-bootstrap \
+  LIVE_BOOTSTRAP_DISTFILES=/path/to/distfiles \
+  test-riscv64-kaem-manifest5
 ```
 
 QEMU must provide its standard `virt` 16550 UART, CLINT, and test finisher.
@@ -135,7 +160,8 @@ sets fixed build identity and timestamp values. It requires host `flex`,
 
 ## Current machine contract
 
-- one hart and 256 MiB RAM;
+- one hart and a DTB-described RAM span starting at `0x80000000`, with a
+  256 MiB fallback and a 2 GiB implementation limit;
 - direct kernel entry at `0x80000000` with hart ID in `a0` and DTB in `a1`;
 - UART at `0x10000000`;
 - CLINT `mtimecmp` at `0x02004000` and `mtime` at `0x0200bff8`;
@@ -144,9 +170,9 @@ sets fixed build identity and timestamp values. It requires host `flex`,
   delegates supervisor external interrupts, and forwards machine timer
   interrupts as supervisor software interrupts.
 
-The fixed addresses are a deliberate first bring-up boundary. The saved DTB
-pointer will become the source of discoverable RAM and devices before the port
-is considered hardware-portable.
+RAM size is discovered from the root memory node in QEMU's flattened device
+tree. The fixed device addresses remain a deliberate bring-up boundary; device
+discovery must also move to the DTB before the port is hardware-portable.
 
 ## Process-context design
 
@@ -175,8 +201,15 @@ a known-good low-level primitive.
 
 ## Sv39 and U-mode design
 
-The bring-up page tables keep a supervisor-only 1 GiB identity mapping for the
-kernel and add supervisor-only low leaves for the QEMU UART and test finisher.
+The bring-up page tables identity-map the DTB-described RAM with one or two
+supervisor-only 1 GiB leaves. The kernel root also has low identity leaves for
+early QEMU device access. Runtime RTC, UART, and virtio accesses use a canonical
+Sv39 high-half alias rooted at `0xffffffc000000000`, so process roots can clear
+the low finisher/RTC, PLIC, and UART/virtio leaves instead of reserving those
+user addresses.
+Early helpers use physical MMIO before `satp` is active, and the fatal M-mode
+trap path always uses physical addresses because M-mode accesses remain
+untranslated even when the saved supervisor `satp` is nonzero.
 Two 4 KiB user leaves map the fixture text read/execute and its stack
 read/write. No user mapping is writable and executable at the same time.
 
@@ -277,7 +310,7 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
   test-riscv64-generic-compile
 ```
 
-It currently compiles 267 C translation units, including the RV64 boot,
+It currently compiles 269 C translation units, including the RV64 boot,
 process, fork, syscall, trap, signal, and ELF64 exec hooks.
 Only the i386 GDT and IDT implementations remain excluded. `kernel/main.c`
 retains ownership of common kernel globals and now has an RV64 entry that
@@ -313,7 +346,7 @@ make TARGET_ARCH=riscv64 CROSS_COMPILE=riscv64-linux-gnu- \
 
 `fiwix-generic` enters through the proven M/S-mode boot assembly, calls the
 shared `start_kernel()`, and installs the complete generic trap vector with
-interrupts disabled. It then activates the 256 MiB identity-mapped Sv39 root,
+interrupts disabled. It then activates the DTB-sized identity-mapped Sv39 root,
 initializes memory, process, sleep, buffer, scheduler, inode, and descriptor
 state, creates idle and reserves PID 1, and enables interrupts only after timer
 bottom halves exist. It registers a polled UART tty and writable virtio block
@@ -338,15 +371,16 @@ VMA management and page-fault policy no longer inspect `cr3` or x86 page-table
 entries directly. Mapping addresses use `__addr_t`, and page release plus
 copy-on-write entry updates are owned by `mm/memory.c`. Its RV64 backend now
 walks all three Sv39 levels, maps and unmaps 4 KiB user leaves, clones writable
-pages as COW, releases empty tables, and builds a 256 MiB identity-mapped kernel
-root with supervisor-only finisher, PLIC, UART, and virtio windows. This backend
+pages as COW, releases empty tables, and builds an identity-mapped kernel root
+for up to 2 GiB of RAM plus supervisor-only device windows. This backend
 passes GCC and both bootstrap TinyCC compile gates. Generic boot now activates
 the kernel root and allocator, creates a private PID 1 root, maps U-mode pages,
 and switches `satp` at runtime; fork remains policy/compile gated.
 
 Generic PID 1 now has an RV64 construction path: it clones the supervisor root
-and its low device table, maps separate private RX text and RW stack pages at
-the top of the Sv39 user half, allocates a per-process kernel stack, and starts
+and its low table without the PLIC or UART/virtio leaves, maps separate private
+RX text and RW stack pages at the top of the Sv39 user half, allocates a
+per-process kernel stack, and starts
 through an `sret` trampoline. The copied 182-byte assembly stub uses Linux RV64 `openat`, `dup`,
 `execve`, and `exit` numbers and builds `argv`/`envp` on its user stack, so it
 contains no absolute kernel-address relocations. The generic image now runs the
@@ -590,7 +624,7 @@ firmware-free entry code first receives them.
 
 ## Bootstrap compiler findings
 
-The complete 267-unit generic kernel can be built with the pinned bootstrap
+The complete 269-unit generic kernel can be built with the pinned bootstrap
 TinyCC by invoking `riscv64-generic-image-tcc` and supplying `TCC` plus
 `TCC_LIBTCC1`. The target passes `--no-warn-mismatch` only at this boundary:
 TinyCC currently tags its integer-only RV64 output as double-float ABI even
@@ -678,6 +712,29 @@ canonical riscv64 SHA-256,
 Keeping the manifests cumulative proves the package ordering and prevents a
 host-produced first package from becoming an undeclared input to the second.
 
+The third gate adds live-bootstrap's unmodified Mes 0.27.1 recipe. The host
+harness admits only Mes and Nyacc archives with SHA-256
+`183a40ea47ea49f8a1e3bd1b9d12e676374d64d63bc79e7bc1ae7d673dfdf25d`
+and `708c943f89c972910e9544ee077771acbd0a2c0fc6d33496fe158264ddb65327`.
+After the guest completion marker and clean reset, it extracts and checks all
+13 installed Mes executables, sources, archives, and ELF templates against the
+canonical riscv64 checksum set before running the ext2 integrity gate. The
+legacy and modern virtio transports each receive a fresh disk and must satisfy
+the same contract. Its 96-hour timeout is only a failure ceiling; the
+completion fixture resets QEMU as soon as the package is installed and synced.
+
+The fourth gate adds the unmodified TinyCC 0.9.26 recipe. It accepts only the
+source archive with SHA-256
+`6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f`
+and checks the ten canonical riscv64 outputs: the Mes-compiled bridge, two
+self-hosting intermediates, final compiler, and its Mes runtime objects and
+archives. The host checks that every path is a regular ext2 file before hashing
+it, which is necessary because two valid runtime objects are empty files and
+`debugfs cat` otherwise cannot distinguish them from a missing path. A separate
+completion marker and 96-hour failure ceiling keep this long boundary
+distinguishable from Mes while still exiting as soon as the guest syncs its
+installed output.
+
 The launcher deliberately has two scripts. The seed script is restricted to
 the minimal kaem command language through phase 11; its final command starts
 the newly generated full kaem. Only that continuation assigns environment
@@ -721,12 +778,75 @@ QEMU `virt` Goldfish RTC initialization fixes the filesystem metadata at its
 source; weakening the integrity gate or repairing the image on the host would
 have hidden a kernel timekeeping defect.
 
-The continuation plan advances one upstream manifest entry at a time. The
-next boundary is Mes 0.27; later boundaries bring up TinyCC
-before reconnecting to the already-proven Fiwix-to-Linux root handoff. Each
-boundary will retain the pinned source revision, native output hash, dual
-virtio boot coverage, and a distinct completion marker so failures identify
-the first unsupported package contract.
+The continuation plan advances one package boundary at a time. The boundary
+after TinyCC 0.9.26 is commencement's RISC-V-capable `tcc-mob`, before
+reconnecting to the already-proven Fiwix-to-Linux root handoff. The checked-in
+live-bootstrap 0.9.27 pass is not an RV64 recipe: it hard-codes
+`TCC_TARGET_I386`, x86 Mes libc paths, and an x86-only checksum, while its
+official source archive contains no RISC-V backend. Manifest 5 therefore pins
+the `ekaitz-zarraga/tcc` source at commit
+`8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0` (archive SHA-256
+`750a6ecddefa485b1ad821611de11479c519ea7056d8a8535a945d598328aeed`).
+Its recipe follows commencement: the newly bootstrapped 0.9.26 compiler builds
+the RISC-V backend with `ONE_SOURCE`, forces static linking at state creation,
+builds `libtcc1.a` with the architecture helper, and rebuilds Mes libc,
+libgetopt, and startup objects. It installs under `/usr/bin/tcc-mob` and
+`/usr/lib/tcc-mob` instead of replacing the manifest4 compiler, preserving the
+input hashes as provenance for the new outputs. The package then uses the
+installed compiler, CRT, libc, and compiler runtime to link and execute a
+static RV64 smoke program. Manifest5 uses a 512 MiB ext2 image to retain both
+build trees without relying on host cleanup.
+
+A completed manifest4 disk may accelerate recipe development, but acceptance
+remains a fresh cumulative run with pinned native output hashes. Each boundary
+retains the pinned source revision, native output hash, dual virtio boot
+coverage, and a distinct completion marker so failures identify the first
+unsupported package contract.
+
+Mes exposed two independent memory bugs. First, the generic kernel hard-coded
+256 MiB and mapped only one RAM leaf. Boot now reads the root memory node from
+the firmware DTB, clamps it to the two-leaf 2 GiB implementation boundary, and
+falls back to 256 MiB only when the DTB is absent or malformed. Host tests parse
+actual QEMU DTBs for 256 MiB, 512 MiB, 2 GiB, and a 4 GiB input that must clamp
+to 2 GiB. The associated page-count conversions cast to unsigned before the
+page-size shift; without that cast, exactly 2 GiB crossed signed `int` range and
+made the C expression undefined. An exact tcc-musl before/after comparison has
+identical loaded binary images; the full ELF differs only because TinyCC records
+temporary build paths in non-loaded debug sections. Manifest3 defaults to 2 GiB
+because the Nyacc table generator consumes the practical 512 MiB guest budget
+without completing.
+
+Second, every process root inherited supervisor identity leaves for QEMU's
+finisher/RTC, PLIC, and UART/virtio windows. Mes grew its userspace heap to exactly
+`0x0c000000`, where the existing 2 MiB PLIC leaf prevented the Sv39 walker from
+creating a user page; the fault path consequently sent `SIGKILL` despite more
+than 100,000 free pages. Runtime devices now use shared canonical high-half
+aliases, and each new process root clears all low device leaves. A focused
+Mes replay at 512 MiB now crosses that address and prints its expected
+`Hello,M2-mes!` marker.
+
+The long package harness also exposed a host-tool lookup bug. On systems where
+an unprivileged `PATH` omits `/usr/sbin`, the guest could finish successfully
+and then lose its host-side evidence because `debugfs` was not found during
+artifact extraction. The harness now resolves `mke2fs` and `debugfs` from
+`/usr/sbin` or `/sbin` when their default command names are not on `PATH`;
+explicit `MKE2FS` and `DEBUGFS` overrides still take precedence.
+
+Shared-host contention exposed a second harness-only failure mode: the original
+six-hour manifest3 wall-clock ceiling could expire while QEMU's vCPU was still
+making steady progress, and the final runs remained in Nyacc after 20 wall
+hours, before later Mes and TinyCC work. All long package gates use a 96-hour
+upper bound. This does not extend successful runs because each completion
+fixture syncs the disk and resets QEMU immediately.
+An exact canonical `mes-m2` replay of `gen-c99-files.scm` under RV64 user-mode
+emulation took 1:03:31 wall time, 3,626 seconds of user CPU, and 915 MiB maximum
+RSS on the same loaded host. It confirms that the long silent interval is
+parser construction followed by four file writes; it calibrates the timeout
+but does not replace the Fiwix completion, hash, and ext2 checks.
+The companion `gen-cpp-files.scm` replay took 1:01 under user-mode emulation
+but about 68 minutes in Fiwix, a roughly 67-fold full-system slowdown. Applying
+that measured ratio to the C99 replay projects about 72 hours for the native
+C99 generator, which is why the failure ceiling is 96 hours rather than 48.
 
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
@@ -769,7 +889,7 @@ as an I/O failure. It now distinguishes failed indirect-block reads from valid
 sparse mappings and explicitly zero-fills holes before validating and entering
 the kernel.
 
-The 268 compiled translation units are recorded in
+The 269 compiled translation units are recorded in
 `tests/riscv64-generic-sources.list` rather than discovered with
 `find -name`. Commencement's Gash `find` lacks that predicate, and an exact
 manifest also makes additions to the reviewed kernel closure fail the expected
@@ -823,6 +943,5 @@ The first whole-tree compile audit counted `font-lat9-8x8.c`,
 normal video build includes them textually from `fonts.c`. Compiling and
 relocating those objects exposed duplicate font definitions. The manifest now
 matched the Makefile at 260 real C translation units; subsequent boot, CPU,
-UART, virtio, ext2 handoff, and Linux Image additions raise the current count
-to 267 without
-reintroducing the textual includes.
+UART, virtio, ext2 handoff, Linux Image, and DTB memory additions raise the
+current count to 269 without reintroducing the textual includes.

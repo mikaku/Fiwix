@@ -1,0 +1,117 @@
+set -ex
+
+PATH=/usr/bin
+DISTFILES=/distfiles
+LIBDIR=/usr/lib/mes
+INCDIR=/usr/include/mes
+TCC_MOB_COMMIT=8cd21e91ccee3baf15ad2f8cba9cbc4b618695a0
+TCC_MOB_TAR=tcc-mob-${TCC_MOB_COMMIT}
+TCC_MOB_PKG=tcc-${TCC_MOB_COMMIT}
+TCC_MOB_LIBDIR=/usr/lib/tcc-mob
+MES_SOURCE=/steps/tcc-0.9.26/build/mes-0.27.1
+
+sha256sum -c /steps/tcc-mob/sources.SHA256SUM
+
+mkdir -p /steps/tcc-mob/build
+cd /steps/tcc-mob/build
+ungz --file ${DISTFILES}/${TCC_MOB_TAR}.tar.gz --output ${TCC_MOB_TAR}.tar
+untar --non-strict --file ${TCC_MOB_TAR}.tar
+simple-patch ${TCC_MOB_PKG}/libtcc.c \
+    /steps/tcc-mob/static-link.before /steps/tcc-mob/static-link.after
+cd ${TCC_MOB_PKG}
+catm config.h
+
+tcc \
+    -g \
+    -vvv \
+    -D ONE_SOURCE=1 \
+    -D TCC_TARGET_RISCV64=1 \
+    -D TCC_VERSION=\"0.9.28rc\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D CONFIG_TCC_SEMLOCK=0 \
+    -D CONFIG_TCCDIR=\"${TCC_MOB_LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${TCC_MOB_LIBDIR}:${LIBDIR}:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"${TCC_MOB_LIBDIR}:${TCC_MOB_LIBDIR}/tcc:${LIBDIR}:.\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+    -D TCC_LIBGCC=\"${TCC_MOB_LIBDIR}/libc.a\" \
+    -o tcc-mob \
+    tcc.c
+
+./tcc-mob -version
+
+./tcc-mob \
+    -g \
+    -vvv \
+    -I include \
+    -D TCC_TARGET_RISCV64=1 \
+    -c \
+    -o libtcc1.o \
+    lib/libtcc1.c
+./tcc-mob \
+    -g \
+    -vvv \
+    -I include \
+    -D TCC_TARGET_RISCV64=1 \
+    -c \
+    -o lib-arm64.o \
+    lib/lib-arm64.c
+./tcc-mob -ar rc libtcc1.a libtcc1.o lib-arm64.o
+
+./tcc-mob \
+    -g \
+    -vvv \
+    -c \
+    -o libc.o \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    ${MES_SOURCE}/unified-libc.c
+./tcc-mob -ar rc libc.a libc.o
+
+./tcc-mob \
+    -g \
+    -vvv \
+    -c \
+    -o libgetopt.o \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    ${MES_SOURCE}/lib/posix/getopt.c
+./tcc-mob -ar rc libgetopt.a libgetopt.o
+
+./tcc-mob \
+    -g \
+    -vvv \
+    -c \
+    -o crt1.o \
+    -I ${INCDIR} \
+    -I ${INCDIR}/linux/riscv64 \
+    -I include \
+    ${MES_SOURCE}/lib/linux/riscv64-mes-gcc/crt1.c
+
+mkdir -p ${TCC_MOB_LIBDIR} ${TCC_MOB_LIBDIR}/tcc
+cp tcc-mob /usr/bin/tcc-mob
+chmod 755 /usr/bin/tcc-mob
+cp libtcc1.a ${TCC_MOB_LIBDIR}/libtcc1.a
+cp libtcc1.a ${TCC_MOB_LIBDIR}/tcc/libtcc1.a
+cp libc.a ${TCC_MOB_LIBDIR}/libc.a
+cp libgetopt.a ${TCC_MOB_LIBDIR}/libgetopt.a
+cp crt1.o ${TCC_MOB_LIBDIR}/crt1.o
+cp ${LIBDIR}/crti.o ${TCC_MOB_LIBDIR}/crti.o
+cp ${LIBDIR}/crtn.o ${TCC_MOB_LIBDIR}/crtn.o
+
+/usr/bin/tcc-mob -static -o /tmp/tcc-mob-smoke /steps/tcc-mob/smoke.c
+/tmp/tcc-mob-smoke
+
+sha256sum \
+    /usr/bin/tcc-mob \
+    ${TCC_MOB_LIBDIR}/libtcc1.a \
+    ${TCC_MOB_LIBDIR}/libc.a \
+    ${TCC_MOB_LIBDIR}/libgetopt.a \
+    ${TCC_MOB_LIBDIR}/crt1.o \
+    ${TCC_MOB_LIBDIR}/crti.o \
+    ${TCC_MOB_LIBDIR}/crtn.o
+
+/sbin/kaem-complete

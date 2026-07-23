@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#define UART0_BASE	0x10000000UL
+#define UART0_BASE	RISCV64_UART_VIRTUAL_BASE
 
 static struct fs_operations riscv64_uart_fsop = {
 	0,

@@ -10,6 +10,7 @@
 #include <fiwix/riscv64_elf.h>
 #include <fiwix/riscv64_signal.h>
 #include <fiwix/riscv64_trap.h>
+#include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
 #define AT_NULL		0
@@ -240,6 +241,7 @@ int riscv64_elf_load(struct inode *inode, struct binargs *barg,
 	unsigned long header_size)
 {
 	struct riscv64_elf_plan plan;
+	const char *stage;
 	unsigned long heap, stack, sstatus;
 	unsigned short n;
 	int error;
@@ -254,20 +256,24 @@ int riscv64_elf_load(struct inode *inode, struct binargs *barg,
 		unmap_page(RISCV64_SIGNAL_TRAMPOLINE - PAGE_SIZE);
 	}
 	release_binary();
+	stage = "load segment";
 	for(n = 0; n < plan.load_count; n++) {
 		if((error = riscv64_load_segment(inode, &plan.load[n]))) {
 			goto failed;
 		}
 	}
+	stage = "map signal trampoline";
 	if((error = riscv64_signal_map())) {
 		goto failed;
 	}
 	heap = PAGE_ALIGN(plan.image_end);
+	stage = "map heap";
 	if((error = riscv64_map_range(heap, heap + PAGE_SIZE,
 		PROT_READ | PROT_WRITE, P_HEAP))) {
 		goto failed;
 	}
 	current->brk_lower = current->brk = heap;
+	stage = "create stack";
 	if((error = riscv64_create_stack(barg, &plan, &stack))) {
 		goto failed;
 	}
@@ -282,6 +288,8 @@ int riscv64_elf_load(struct inode *inode, struct binargs *barg,
 	return 0;
 
 failed:
+	printk("WARNING: riscv64 ELF load failed for pid %d at %s: error %d.\n",
+		current->pid, stage, error);
 	release_binary();
 	send_sig(current, SIGKILL);
 	return error;

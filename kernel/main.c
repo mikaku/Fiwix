@@ -37,6 +37,7 @@
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/arch_process.h>
 #include <fiwix/riscv64_devices.h>
+#include <fiwix/riscv64_fdt.h>
 #endif
 
 struct kernel_params kparms;
@@ -79,6 +80,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	(void)last_boot_addr;
 	CLI();
 	memset_b(&kstat, 0, sizeof(kstat));
+	kstat.physical_pages = riscv64_boot_memory_pages();
 	_last_data_addr = (__addr_t)_end;
 	sysconsole_init();
 	riscv64_generic_traps_install();

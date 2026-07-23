@@ -21,6 +21,9 @@
 #include <fiwix/shm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/riscv64_devices.h>
+#endif
 
 #ifdef CONFIG_ARCH_RISCV64
 #define KERNEL_TEXT_SIZE	((__addr_t)_etext - KERNEL_ADDR)
@@ -85,6 +88,9 @@ int riscv64_address_space_create(struct proc *p)
 	if(root[0] & RV_PTE_V) {
 		kernel_low = (__pte_t *)P2V(riscv64_pte_physical(root[0]));
 		memcpy_b(low, kernel_low, PAGE_SIZE);
+		low[RISCV64_FINISHER_PHYSICAL_BASE >> 21] = 0;
+		low[RISCV64_PLIC_PHYSICAL_BASE >> 21] = 0;
+		low[RISCV64_UART_PHYSICAL_BASE >> 21] = 0;
 	} else {
 		memset_b(low, 0, PAGE_SIZE);
 	}
@@ -843,12 +849,14 @@ void mem_init(void)
 	int n, pages, last_ramdisk;
 
 #ifdef CONFIG_ARCH_RISCV64
+	__pte_t *device_table;
 	__pte_t *low_table;
+	unsigned int root_leaves;
 
 	if(!kstat.physical_pages) {
-		kstat.physical_pages = GDT_BASE >> PAGE_SHIFT;
+		kstat.physical_pages = RISCV64_MEMORY_FALLBACK >> PAGE_SHIFT;
 	}
-	physical_memory = kstat.physical_pages << PAGE_SHIFT;
+	physical_memory = (unsigned int)kstat.physical_pages << PAGE_SHIFT;
 	if(_last_data_addr < PHYSICAL_MEMORY_BASE) {
 		_last_data_addr = (__addr_t)_end;
 	}
@@ -859,16 +867,31 @@ void mem_init(void)
 	low_table = (__pte_t *)_last_data_addr;
 	memset_b(low_table, 0, PAGE_SIZE);
 	_last_data_addr += PAGE_SIZE;
+	device_table = (__pte_t *)_last_data_addr;
+	memset_b(device_table, 0, PAGE_SIZE);
+	_last_data_addr += PAGE_SIZE;
 
-	kpage_dir[2] = ((PHYSICAL_MEMORY_BASE >> PAGE_SHIFT) << 10) |
-		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_X | RV_PTE_A | RV_PTE_D;
+	root_leaves = (physical_memory + 0x3fffffffUL) >> 30;
+	for(n = 0; n < (int)root_leaves; n++) {
+		kpage_dir[2 + n] =
+			(((PHYSICAL_MEMORY_BASE + ((unsigned long)n << 30)) >>
+			PAGE_SHIFT) << 10) |
+			RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_X |
+			RV_PTE_A | RV_PTE_D;
+	}
 	kpage_dir[0] = riscv64_table_pte(V2P((__addr_t)low_table));
+	kpage_dir[256] = riscv64_table_pte(V2P((__addr_t)device_table));
 	low_table[0] = RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
-	low_table[0x0c000000UL >> 21] =
-		((0x0c000000UL >> PAGE_SHIFT) << 10) |
+	low_table[RISCV64_PLIC_PHYSICAL_BASE >> 21] =
+		((RISCV64_PLIC_PHYSICAL_BASE >> PAGE_SHIFT) << 10) |
 		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
-	low_table[0x10000000UL >> 21] =
-		((0x10000000UL >> PAGE_SHIFT) << 10) |
+	low_table[RISCV64_UART_PHYSICAL_BASE >> 21] =
+		((RISCV64_UART_PHYSICAL_BASE >> PAGE_SHIFT) << 10) |
+		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
+	device_table[0] =
+		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
+	device_table[RISCV64_UART_PHYSICAL_BASE >> 21] =
+		((RISCV64_UART_PHYSICAL_BASE >> PAGE_SHIFT) << 10) |
 		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
 	riscv64_vm_install(V2P((__addr_t)kpage_dir) >> PAGE_SHIFT);
 #else
