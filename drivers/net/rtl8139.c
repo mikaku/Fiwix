@@ -201,7 +201,7 @@ static void rtl8139_tx_end(void)
 {
 	struct netdevice *nd;
 	unsigned int status;
-	int n, entry;
+	int entry;
 
 	nd = nic.nd;
 	while(nic.tx_sent < nic.tx_index || nic.tx_full) {

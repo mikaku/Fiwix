@@ -50,7 +50,6 @@ void netdevice_init(void);
 void rtl8139_init(struct pci_device *);
 
 /* loopback driver prototypes */
-int loopback_open(struct netdevice *);
 void loopback_init(void);
 
 #endif /* _FIWIX_NETDEVICE_H */
