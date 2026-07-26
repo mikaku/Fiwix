@@ -14,7 +14,12 @@ timeout "$TIMEOUT" "$QEMU" \
 grep 'Fiwix ARMv7 firmware-free boot' "$LOG"
 grep 'mode=0x00000013' "$LOG"
 grep 'arm boot smoke passed' "$LOG"
-if grep -Ei 'undefined|abort|panic|failed' "$LOG"; then
+grep 'arm vector and timer setup passed' "$LOG"
+grep 'Fiwix ARMv7 user SVC passed' "$LOG"
+grep 'Fiwix ARMv7 data abort passed' "$LOG"
+grep 'Fiwix ARMv7 timer IRQ passed' "$LOG"
+grep 'arm trap smoke passed' "$LOG"
+if grep -Ei 'undefined|unhandled|panic|fail' "$LOG"; then
     printf '%s\n' 'ARM smoke emitted a failure marker' >&2
     exit 1
 fi
@@ -26,4 +31,4 @@ if [ "$dtb_value" -lt $((0x40000000)) ] ||
     exit 1
 fi
 
-printf '%s\n' 'ARMv7 firmware-free boot smoke passed'
+printf '%s\n' 'ARMv7 boot, SVC, abort, and timer IRQ smoke passed'

@@ -59,11 +59,14 @@ make TARGET_ARCH=arm CCEXE=clang \
   CROSS_COMPILE=arm-linux-gnueabihf- LIBGCC= test-arm
 ```
 
-Only milestone 1 is implemented on this branch. No userspace, filesystem, or
-bootstrap completion claim follows from the boot marker. The current Clang
-oracle produces a 4,100-byte raw image with SHA-256
-`49b8cd0b18fda50a26889579dad07ceeb7e0c6d290f9d28ddb60e386964d1caf`;
-the hash is an implementation anchor, not yet a bootstrap acceptance hash.
+Milestones 1 and 2 are implemented on this branch. The second gate installs
+VBAR vectors and banked exception stacks, enters an ARM EABI fixture in USR
+mode, preserves a complete register frame across SVC, data abort, and IRQ, and
+receives the non-secure physical timer through GICv2. No process address space,
+filesystem, or bootstrap completion claim follows from these markers. The Clang oracle
+remains 4,100 bytes because text still fits before the page-aligned data word;
+its milestone-2 SHA-256 is
+`5521fad18a5a8489da194243dc8f086e20d03b49d46f9654f1c07944ad0a2bb3`.
 
 ## Design and bug log
 
@@ -94,3 +97,23 @@ the hash is an implementation anchor, not yet a bootstrap acceptance hash.
   virtualization enabled. An HVC `SYSTEM_OFF` returned to the kernel and left
   the smoke test spinning; the entry source declares the security extension
   and uses the advertised SMC conduit.
+- HYP entry must grant SVC mode access to the physical counter and timer in
+  `CNTHCTL`; programming `CNTP_TVAL` at PL1 is otherwise trapped back to HYP
+  before the kernel's vector table can report a useful failure.
+- The timer DTB identifies the non-secure physical PPI as GIC interrupt 30.
+  The gate enables that banked PPI explicitly and rejects every unexpected
+  interrupt ID.
+- A level-triggered timer must be disabled before GIC EOI. Reusing the timer
+  arm helper with a zero interval re-enabled an already-expired deadline and
+  produced an IRQ storm that prevented USR mode from observing the completion
+  flag.
+- Exception assembly saves r0-r12, exception PC/CPSR, and the banked USR
+  r13/r14. The USR fixture keeps independent sentinels live across SVC, a
+  recoverable alignment data abort, and IRQ so a frame-layout or restore
+  regression fails before the success marker. The abort gate validates both
+  `DFSR` and `DFAR` before skipping the faulting instruction.
+- The original negative smoke regex matched `failed` but not the new
+  `failure` diagnostics, then its generic `abort` term rejected the new
+  positive data-abort marker. The gate now rejects the common `fail` stem plus
+  explicit panic/unhandled diagnostics, so a trap shutdown cannot pass while a
+  recovered abort can.

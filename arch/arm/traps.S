@@ -1,0 +1,244 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
+    .syntax unified
+    .arch armv7-a
+    .arch_extension virt
+    .arm
+
+    .equ SVC_STACK_TOP, 0x47fff000
+    .equ IRQ_STACK_TOP, 0x47ffe000
+    .equ ABT_STACK_TOP, 0x47ffd000
+    .equ UND_STACK_TOP, 0x47ffc000
+    .equ FIQ_STACK_TOP, 0x47ffb000
+    .equ USR_STACK_TOP, 0x47ffa000
+
+    .equ FRAME_PC,      52
+    .equ FRAME_CPSR,    56
+    .equ FRAME_USR_SP,  60
+    .equ FRAME_USR_LR,  64
+    .equ FRAME_VECTOR,  68
+    .equ FRAME_SIZE,    72
+
+    .section .text.vectors, "ax"
+    .align 5
+    .globl arm_vector_table
+arm_vector_table:
+    b       arm_reset_vector
+    b       arm_undefined_vector
+    b       arm_svc_vector
+    b       arm_prefetch_abort_vector
+    b       arm_data_abort_vector
+    b       arm_reserved_vector
+    b       arm_irq_vector
+    b       arm_fiq_vector
+
+    .text
+    .globl arm_trap_init
+    .globl arm_enter_user
+    .globl arm_user_fixture
+    .extern arm_handle_svc
+    .extern arm_handle_irq
+    .extern arm_handle_data_abort
+    .extern arm_handle_fatal
+    .extern arm_timer_fired
+    .extern arm_data_abort_seen
+
+arm_trap_init:
+    cpsid   if
+    cps     #0x12                  /* IRQ */
+    ldr     sp, =IRQ_STACK_TOP
+    cps     #0x17                  /* abort */
+    ldr     sp, =ABT_STACK_TOP
+    cps     #0x1b                  /* undefined */
+    ldr     sp, =UND_STACK_TOP
+    cps     #0x11                  /* FIQ */
+    ldr     sp, =FIQ_STACK_TOP
+    cps     #0x13                  /* SVC */
+    ldr     sp, =SVC_STACK_TOP
+    ldr     r0, =arm_vector_table
+    mcr     p15, 0, r0, c12, c0, 0
+    mrc     p15, 0, r0, c1, c0, 0
+    orr     r0, r0, #2            /* SCTLR.A: trap unaligned data accesses */
+    mcr     p15, 0, r0, c1, c0, 0
+    dsb
+    isb
+    bx      lr
+
+arm_enter_user:
+    cpsid   if
+    cps     #0x1f                  /* system mode uses the USR register bank */
+    ldr     sp, =USR_STACK_TOP
+    mov     lr, #0
+    cps     #0x13
+    ldr     lr, =arm_user_fixture
+    mov     r0, #0x50              /* USR mode, FIQ masked, IRQ enabled */
+    msr     spsr_cxsf, r0
+    movs    pc, lr
+
+.macro save_exception_frame vector
+    sub     sp, sp, #FRAME_SIZE
+    stmia   sp, {r0-r12}
+    str     lr, [sp, #FRAME_PC]
+    mrs     r0, spsr
+    str     r0, [sp, #FRAME_CPSR]
+    add     r0, sp, #FRAME_USR_SP
+    stmia   r0, {r13-r14}^
+    nop
+    mov     r0, #\vector
+    str     r0, [sp, #FRAME_VECTOR]
+.endm
+
+.macro restore_exception_frame
+    add     r0, sp, #FRAME_USR_SP
+    ldmia   r0, {r13-r14}^
+    nop
+    ldr     r0, [sp, #FRAME_CPSR]
+    msr     spsr_cxsf, r0
+    ldr     lr, [sp, #FRAME_PC]
+    ldmia   sp, {r0-r12}
+    add     sp, sp, #FRAME_SIZE
+    movs    pc, lr
+.endm
+
+arm_svc_vector:
+    cpsid   i
+    save_exception_frame 2
+    mov     r0, sp
+    bl      arm_handle_svc
+    restore_exception_frame
+
+arm_irq_vector:
+    sub     lr, lr, #4
+    save_exception_frame 6
+    mov     r0, sp
+    bl      arm_handle_irq
+    restore_exception_frame
+
+arm_data_abort_vector:
+    cpsid   i
+    sub     lr, lr, #4            /* skip the faulting ARM instruction */
+    save_exception_frame 4
+    mov     r0, sp
+    bl      arm_handle_data_abort
+    restore_exception_frame
+
+arm_reset_vector:
+    mov     r0, #0
+    b       arm_fatal_vector
+
+arm_undefined_vector:
+    mov     r0, #1
+    b       arm_fatal_vector
+
+arm_prefetch_abort_vector:
+    sub     lr, lr, #4
+    mov     r0, #3
+    b       arm_fatal_vector
+
+arm_reserved_vector:
+    mov     r0, #5
+    b       arm_fatal_vector
+
+arm_fiq_vector:
+    sub     lr, lr, #4
+    mov     r0, #7
+
+arm_fatal_vector:
+    mrs     r1, spsr
+    mov     r2, lr
+    bl      arm_handle_fatal
+1:  wfi
+    b       1b
+
+/*
+ * ARM EABI user fixture. It checks callee-saved values after SVC and after
+ * the timer IRQ, then exits only after both exception paths have run.
+ */
+arm_user_fixture:
+    ldr     r8, =0x11223344
+    ldr     r9, =0x55667788
+    ldr     r10, =0x99aabbcc
+    ldr     r11, =0xddeeff00
+    ldr     r12, =0x13579bdf
+
+    mov     r0, #1
+    ldr     r1, =user_svc_message
+    mov     r2, #USER_SVC_MESSAGE_SIZE
+    mov     r7, #4                /* Linux ARM EABI write */
+    svc     #0
+
+    ldr     r0, =0x11223344
+    cmp     r8, r0
+    bne     user_frame_failure
+    ldr     r0, =0x55667788
+    cmp     r9, r0
+    bne     user_frame_failure
+    ldr     r0, =0x99aabbcc
+    cmp     r10, r0
+    bne     user_frame_failure
+    ldr     r0, =0xddeeff00
+    cmp     r11, r0
+    bne     user_frame_failure
+    ldr     r0, =0x13579bdf
+    cmp     r12, r0
+    bne     user_frame_failure
+
+    ldr     r4, =arm_alignment_probe
+    ldr     r6, [r4, #1]          /* SCTLR.A turns this into a data abort */
+    ldr     r4, =arm_data_abort_seen
+    ldr     r5, [r4]
+    cmp     r5, #1
+    bne     user_frame_failure
+
+    ldr     r4, =arm_timer_fired
+1:  ldr     r5, [r4]
+    cmp     r5, #0
+    beq     1b
+
+    ldr     r0, =0x11223344
+    cmp     r8, r0
+    bne     user_frame_failure
+    ldr     r0, =0x55667788
+    cmp     r9, r0
+    bne     user_frame_failure
+    ldr     r0, =0x99aabbcc
+    cmp     r10, r0
+    bne     user_frame_failure
+    ldr     r0, =0xddeeff00
+    cmp     r11, r0
+    bne     user_frame_failure
+    ldr     r0, =0x13579bdf
+    cmp     r12, r0
+    bne     user_frame_failure
+
+    mov     r0, #1
+    ldr     r1, =user_irq_message
+    mov     r2, #USER_IRQ_MESSAGE_SIZE
+    mov     r7, #4
+    svc     #0
+
+    mov     r0, #0
+    mov     r7, #1                /* Linux ARM EABI exit */
+    svc     #0
+
+user_frame_failure:
+    mov     r0, #2
+    mov     r7, #1
+    svc     #0
+2:  b       2b
+
+    .section .rodata
+    .align 2
+    .globl arm_alignment_probe
+arm_alignment_probe:
+    .word   0x10203040
+user_svc_message:
+    .ascii  "Fiwix ARMv7 user SVC passed\n"
+user_svc_message_end:
+user_irq_message:
+    .ascii  "Fiwix ARMv7 timer IRQ passed\n"
+user_irq_message_end:
+    .equ USER_SVC_MESSAGE_SIZE, user_svc_message_end - user_svc_message
+    .equ USER_IRQ_MESSAGE_SIZE, user_irq_message_end - user_irq_message
+
+    .section .note.GNU-stack,"",%progbits

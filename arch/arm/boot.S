@@ -17,6 +17,9 @@ _start:
     cmp     r1, #0x1a             /* HYP mode */
     bne     svc_entry
 
+    mrc     p15, 4, r1, c14, c1, 0
+    orr     r1, r1, #3           /* EL1 physical counter and timer access */
+    mcr     p15, 4, r1, c14, c1, 0
     adr     r1, svc_entry
     msr     ELR_hyp, r1
     bic     r0, r0, #0x1f
