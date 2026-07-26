@@ -806,7 +806,7 @@ reconnecting to the already-proven Fiwix-to-Linux root handoff. The checked-in
 live-bootstrap 0.9.27 pass is not an RV64 recipe: it hard-codes
 `TCC_TARGET_I386`, x86 Mes libc paths, and an x86-only checksum, while its
 official source archive contains no RISC-V backend. Manifest 5 therefore pins
-`ekaitz-zarraga/tcc` commit
+upstream `TinyCC/tinycc` commit
 `923fba83f1e541750c4dd48a4ec02af831ee5af8` (archive SHA-256
 `aec6a2a3e2b1b2c8c5a8507a0677a6556b9b20a55e4af17d8aa6a04e7cb75a45`).
 The package applies four narrow compatibility repairs with the native
@@ -823,6 +823,12 @@ ordering reaches identical compiler generations 4 and 5, identical libc and
 compiler-runtime generations 3 and 4, and the expected IEEE-754 bits
 `0x3fd34413509f6000` for `3.01029995663611771306e-01`. The installed compiler
 also links and executes a separate static RV64 smoke program.
+
+An earlier design note attributed `923fba83` to the historical
+`ekaitz-zarraga/tcc` fork. Restoring the pinned distfile exposed the mistake:
+that repository has no such object, while the `TinyCC/tinycc` archive for the
+commit matches the recorded SHA-256 exactly. The immutable hash and package
+recipe were already correct; only the source provenance text was wrong.
 
 The final compiler, CRT, libc, libgetopt, and compiler runtime are installed
 under `/usr/bin/tcc-mob` and `/usr/lib/tcc-mob` instead of replacing the
