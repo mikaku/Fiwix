@@ -10,10 +10,14 @@ GENERATED_LDSCRIPT = .fiwix.generated.ld
 LANG = -std=c89
 TARGET_ARCH ?= i386
 RISCV_MARCH ?= rv64ima_zicsr_zifencei
+ARM_MARCH ?= armv7-a
+ARM_CC_TARGET ?=
 QEMU ?= qemu-system-riscv64
+QEMU_ARM ?= qemu-system-arm
 TIMEOUT ?= 10
 HOSTCC ?= cc
 ARCH_DEFINES =
+CC_TARGET =
 
 # CCEXE can be overridden at the command line. For example: make CCEXE="tcc"
 # To use tcc see docs/tcc.txt
@@ -62,29 +66,46 @@ DIRS = arch/riscv64
 OBJS = arch/riscv64/*.o
 endif
 
-ifeq ($(filter $(TARGET_ARCH),i386 riscv64),)
-$(error unsupported TARGET_ARCH '$(TARGET_ARCH)'; expected i386 or riscv64)
+ifeq ($(TARGET_ARCH),arm)
+ARCH = -march=$(ARM_MARCH) -mfloat-abi=soft
+CPU = -marm
+CC_TARGET = $(ARM_CC_TARGET)
+ARCH_DEFINES = -DCONFIG_ARCH_ARM
+KERNEL_LDSCRIPT = arch/arm/fiwix.ld
+DIRS = arch/arm
+OBJS = arch/arm/*.o
+endif
+
+ifeq ($(filter $(TARGET_ARCH),i386 riscv64 arm),)
+$(error unsupported TARGET_ARCH '$(TARGET_ARCH)'; expected i386, riscv64, or arm)
 endif
 
 CC_DRIVER = $(CROSS_COMPILE)$(CCEXE)
 ifeq ($(CCEXE),tcc)
 CC_DRIVER = $(TCC)
 endif
-CC = $(CC_DRIVER) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(ARCH_DEFINES) $(CONFFLAGS) #-D__DEBUG__
+ifeq ($(CCEXE),clang)
+CC_DRIVER = clang
+endif
+CC = $(CC_DRIVER) $(CC_TARGET) $(ARCH) $(CPU) $(LANG) -D__KERNEL__ $(ARCH_DEFINES) $(CONFFLAGS) #-D__DEBUG__
 AS = $(CROSS_COMPILE)as
 ASFLAGS = $(ARCH)
 CFLAGS = -I$(INCLUDE) -O2 -fno-pie -fno-pic -fno-common -fno-stack-protector -ffreestanding -Wall -Wstrict-prototypes #-Wextra -Wno-unused-parameter
 
-ifeq ($(CCEXE),gcc)
+ifneq ($(filter $(CCEXE),gcc clang),)
 LD = $(CROSS_COMPILE)ld
 CPP = $(CROSS_COMPILE)cpp -P -I$(INCLUDE)
 NM = $(CROSS_COMPILE)nm
+OBJCOPY = $(CROSS_COMPILE)objcopy
 LIBGCC = -L$(shell dirname `$(CC) -print-libgcc-file-name`) -lgcc
 ifeq ($(TARGET_ARCH),i386)
 LDFLAGS = -N -m elf_i386
 endif
 ifeq ($(TARGET_ARCH),riscv64)
 LDFLAGS = -m elf64lriscv
+endif
+ifeq ($(TARGET_ARCH),arm)
+LDFLAGS = -m armelf_linux_eabi
 endif
 endif
 
@@ -112,11 +133,14 @@ ifeq ($(TARGET_ARCH),i386)
 	@echo "#define UTS_VERSION \"`date -u`\"" > include/fiwix/version.h
 endif
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE)) || exit ; done
-ifeq ($(CCEXE),gcc)
+ifneq ($(filter $(CCEXE),gcc clang),)
 	$(CPP) $(ARCH_DEFINES) $(CONFFLAGS) $(KERNEL_LDSCRIPT) > $(GENERATED_LDSCRIPT)
 	$(LD) -T $(GENERATED_LDSCRIPT) $(LDFLAGS) $(OBJS) $(LIBGCC) -o fiwix
 	rm -f $(GENERATED_LDSCRIPT)
 	$(NM) fiwix | sort | gzip -9c > System.map.gz
+ifeq ($(TARGET_ARCH),arm)
+	$(OBJCOPY) -O binary fiwix fiwix-arm.bin
+endif
 endif
 ifeq ($(CCEXE),tcc)
 ifeq ($(TARGET_ARCH),i386)
@@ -130,11 +154,15 @@ endif
 
 clean:
 	@for n in $(DIRS) ; do (cd $$n ; $(MAKE) clean) ; done
-	rm -f *.o fiwix fiwix-generic System.map.gz $(GENERATED_LDSCRIPT)
+	rm -f *.o fiwix fiwix-arm.bin fiwix-generic System.map.gz $(GENERATED_LDSCRIPT)
 
 test-riscv64: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64 requires TARGET_ARCH=riscv64" >&2; exit 1; }
 	QEMU="$(QEMU)" TIMEOUT="$(TIMEOUT)" tests/riscv64-smoke.sh ./fiwix
+
+test-arm: all
+	@test "$(TARGET_ARCH)" = arm || { echo "test-arm requires TARGET_ARCH=arm" >&2; exit 1; }
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" tests/arm-smoke.sh ./fiwix-arm.bin
 
 test-riscv64-large-image: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-large-image requires TARGET_ARCH=riscv64" >&2; exit 1; }
@@ -368,4 +396,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

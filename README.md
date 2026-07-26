@@ -55,6 +55,10 @@ firmware-free QEMU `virt` entry, the transition to supervisor mode, trap
 reporting, and timer forwarding; it does not yet run Fiwix userspace. Build and
 test instructions are in [docs/riscv64.md](docs/riscv64.md).
 
+An ARMv7 port is being developed for the existing AArch64-to-AArch32 native
+bootstrap route. Its architecture boundary, staged acceptance plan, and bug
+log are in [docs/arm.md](docs/arm.md).
+
 Before compiling you might want to tweak the kernel configuration by changing the default values in `include/fiwix/config.h` and `include/fiwix/limits.h`.
 
 Keep in mind that the kernel doesn't do anything on its own, you need to create a user-space environment to make use of it. Upon booting, the kernel mounts the root filesystem and tries to run `/sbin/init` on it, so you would need to provide this program yourself.  Fortunately, [FiwixOS](https://www.fiwix.org/downloads.html) provides a full user-space UNIX-like environment to test the Fiwix kernel.
