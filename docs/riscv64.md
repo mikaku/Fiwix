@@ -932,6 +932,26 @@ but about 68 minutes in Fiwix, a roughly 67-fold full-system slowdown. Applying
 that measured ratio to the C99 replay projects about 72 hours for the native
 C99 generator, which is why the failure ceiling is 96 hours rather than 48.
 
+Five long-running manifest3/4 guests then failed at the same Mes libc compile
+after more than four days. Mes reported
+`include/arch/syscall.h` as missing, but the file was present on each disk and
+read-only `e2fsck` found no filesystem errors. Replaying the exact extracted
+RV64 `mes-m2`, source tree, and command under qemu-user exposed the real error:
+Mes retains its Scheme modules and recursively included C headers as open file
+descriptors. Descriptor 255 was `include/linux/syscall.h`; its next open,
+descriptor 256, was the reported `include/arch/syscall.h`. Fiwix returned
+`EMFILE`, which Mes's input-port error path renders as the misleading
+`No such file or directory`.
+
+Fiwix already advertised `NR_OPENS = 1024` as `RLIMIT_NOFILE`'s hard limit,
+but allocated only 256 per-process slots and used 256 as the inherited soft
+limit. `OPEN_MAX` now matches that existing 1024-descriptor contract. This
+costs 144 KiB across all 64 process slots and requires no additional global
+file table. The descriptor policy gate fills every per-process slot, verifies
+the runtime soft-limit bound, and covers the adjacent `dup2(OPEN_MAX)` array
+boundary bug. A fresh dual-transport manifest run remains the end-to-end
+acceptance gate.
+
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
 (`SIGCHLD` only) make Linux ignore those arguments; the hand-written kaem seed
