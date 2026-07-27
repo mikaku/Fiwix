@@ -81,8 +81,13 @@ type, header sizes, program-header table, entry point, source ranges, user
 virtual ranges, alignment, non-overlap, mapped program-header metadata, absence
 of `PT_INTERP`, and `p_filesz <= p_memsz`. The freestanding loader consumes
 that plan, copies every `PT_LOAD` segment, and clears BSS before enabling
-translation. The same plan still needs to drive filesystem-backed generic
-exec.
+translation. The generic `execve` path now consumes the same plan, reads
+segments across filesystem blocks, eagerly allocates each mapped page, clears
+BSS, constructs an AArch32 `argc`/`argv`/`envp`/auxv stack, and replaces the
+native saved user frame. A host runtime gate exercises the real loader against
+a multi-block fake inode and verifies the copied image, zero fill, VMAs, heap,
+stack pointers, auxiliary vector, entry state, and instruction-cache
+invalidation.
 
 The ARM EABI-to-generic syscall policy is also host-gated. Legacy ARM numbers
 for the bootstrap file/process calls match Fiwix's i386-indexed table, but the
@@ -131,19 +136,21 @@ through the ARM continuation. The copied 168-byte position-independent
 trampoline opens `/dev/console`, duplicates stdin to stdout/stderr, builds
 32-bit `argv` and `envp` vectors on its aligned stack, and calls ARM EABI
 `execve("/sbin/init", ...)`. Its object has no relocations. This path is
-cross-compiled and shape-gated; runtime exec still needs the filesystem-backed
-ARM ELF32 loader.
+cross-compiled and shape-gated, and the filesystem-backed ARM ELF32 loader now
+provides the generic runtime transition from that trampoline to a static ARM
+executable.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
 files and private physical-page operations now cross-compile for ARM and have
-host runtime gates, but they are not yet linked into the ARM kernel.
-Filesystem access and bootstrap execution remain incomplete.
+host runtime gates, but they are not yet linked into the ARM kernel. Generic
+trap dispatch, signal frames, device-backed filesystem access, and bootstrap
+execution remain incomplete.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
-`9061091f60bab16b39baf8126133df4055f5e47a5b594a281e6d538b5a0c39d0`.
+`908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
 ## Design and bug log
 
@@ -236,7 +243,23 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   page at `0x00100000`, while the code entry moves to `0x00101000`. A shared
   pure planner replaces duplicate parser logic and rejects malformed class,
   machine, type, sizes, file/virtual ranges, alignment, overlap, interpreter,
-  entry, and program-header mappings before any process image is released.
+  entry, and program-header mappings before any process image is released. ARM
+  execution is currently A32-only, so the planner also rejects a Thumb or
+  otherwise non-word-aligned entry point.
+- Generic ARM exec deliberately supports only static `ET_EXEC` images at this
+  milestone. It eagerly populates anonymous fixed mappings through the normal
+  VM backend, then builds an 8-byte-aligned AArch32 initial stack with the
+  program-header, page-size, entry, and credential auxiliary-vector entries.
+  `PT_INTERP`, PIE, demand paging, and Thumb entry remain outside this first
+  bootstrap path. Reserving `(ARG_MAX + 1)` pages below the user ceiling keeps
+  every planned segment and the heap below the maximum argument/stack region.
+- Writing executable pages after the initial MMU transition left stale
+  instruction-cache and branch-predictor state as an undocumented correctness
+  risk. The generic loader now executes an ordered DSB, whole instruction-cache
+  invalidation, branch-predictor invalidation, DSB, and ISB after copying all
+  loadable segments. The host loader gate requires exactly one invalidation,
+  while the dual-version QEMU gate executes the same helper in the
+  freestanding process oracle.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping

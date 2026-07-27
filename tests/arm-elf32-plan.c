@@ -154,5 +154,12 @@ int main(void)
 		USER_LIMIT, &plan)) {
 		return 11;
 	}
+	make_valid();
+	header = (struct arm_elf32_header *)image;
+	header->entry++;
+	if(!arm_elf32_plan(image, sizeof(image), 0x3000,
+		USER_LIMIT, &plan)) {
+		return 12;
+	}
 	return 0;
 }

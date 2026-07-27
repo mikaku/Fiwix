@@ -18,6 +18,7 @@
     .globl arm_read_sp
     .globl arm_set_sp
     .globl arm_wait_for_interrupt
+    .globl arm_instruction_cache_invalidate
     .globl arm_user_syscall3
     .globl invalidate_tlb
 
@@ -56,6 +57,15 @@ arm_set_sp:
 
 arm_wait_for_interrupt:
     wfi
+    bx      lr
+
+arm_instruction_cache_invalidate:
+    mov     r0, #0
+    dsb
+    mcr     p15, 0, r0, c7, c5, 0
+    mcr     p15, 0, r0, c7, c5, 6
+    dsb
+    isb
     bx      lr
 
 arm_user_syscall3:

@@ -172,6 +172,8 @@ test-arm: all
 		OBJCOPY="$(OBJCOPY)" READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-init-process.sh
 	HOSTCC="$(HOSTCC)" tests/arm-elf32-plan.sh
+	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
+		tests/arm-elf32-load.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

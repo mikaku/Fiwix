@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/arm_vm.h>
+#include <fiwix/asm.h>
 
 static int arm_vm_root_aligned(const unsigned int *root)
 {
@@ -217,10 +218,7 @@ int arm_vm_activate(const unsigned int *root)
 		__asm__ volatile("mcr p15, 0, %0, c3, c0, 0" :
 			: "r"(domain));
 		__asm__ volatile("mcr p15, 0, %0, c8, c7, 0" : : "r"(zero));
-		__asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r"(zero));
-		__asm__ volatile("mcr p15, 0, %0, c7, c5, 6" : : "r"(zero));
-		__asm__ volatile("dsb");
-		__asm__ volatile("isb");
+		arm_instruction_cache_invalidate();
 		__asm__ volatile("mrc p15, 0, %0, c1, c0, 0" :
 			"=r"(control));
 		/* D-cache waits for the generic cache-maintenance contract. */

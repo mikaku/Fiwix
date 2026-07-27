@@ -156,7 +156,8 @@ int arm_elf32_plan(const void *header_data, unsigned int header_size,
 			break;
 		}
 	}
-	if(!plan->load_count || !entry_executable || !plan->phdr ||
+	if(!plan->load_count || !entry_executable ||
+		(header->entry & 3U) || !plan->phdr ||
 		!phdr_mapped) {
 		return -1;
 	}

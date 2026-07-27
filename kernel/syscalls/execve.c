@@ -16,6 +16,9 @@
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_elf.h>
 #include <fiwix/riscv64_trap.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_elf.h>
+#include <fiwix/arm_trap.h>
 #endif
 
 #ifdef __DEBUG__
@@ -313,6 +316,9 @@ loop:
 #ifdef CONFIG_ARCH_RISCV64
 	errno = riscv64_elf_load(i, &barg,
 		(struct riscv64_trap_frame *)sc, data, i->sb->s_blocksize);
+#elif defined(CONFIG_ARCH_ARM)
+	errno = arm_elf32_load(i, &barg,
+		(struct arm_trap_frame *)sc, data, i->sb->s_blocksize);
 #else
 	errno = elf_load(i, &barg, sc, data);
 #endif
@@ -358,6 +364,11 @@ int sys_execve(const char *filename, char *argv[], char *envp[], int arg4, int a
 	char *tmp_name;
 	int n, errno;
 
+	(void)arg4;
+	(void)arg5;
+#ifdef CONFIG_SYSCALL_6TH_ARG
+	(void)arg6;
+#endif
 #ifdef __DEBUG__
 	printk("(pid %d) sys_execve('%s', ...)\n", current->pid, filename);
 #endif /*__DEBUG__ */

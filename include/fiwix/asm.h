@@ -136,6 +136,7 @@ unsigned int arm_read_dfar(void);
 unsigned int arm_read_sp(void);
 void arm_set_sp(unsigned int);
 void arm_wait_for_interrupt(void);
+void arm_instruction_cache_invalidate(void);
 unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
 	unsigned int);
 
