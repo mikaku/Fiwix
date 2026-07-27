@@ -19,6 +19,8 @@
 #include <fiwix/string.h>
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_signal.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_signal.h>
 #endif
 
 /* can process 'current' send a signal to process 'p'? */
@@ -158,25 +160,29 @@ int issig(void)
 
 void psig(__addr_t stack)
 {
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	int len;
 #endif
 	__sigset_t signum;
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	__sigset_t oldmask;
 #endif
 	unsigned int mask;
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	struct sigcontext *sc;
-#else
+#elif defined(CONFIG_ARCH_RISCV64)
 	struct riscv64_trap_frame *frame;
+#else
+	struct arm_trap_frame *frame;
 #endif
 	struct proc *p;
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	sc = (struct sigcontext *)stack;
-#else
+#elif defined(CONFIG_ARCH_RISCV64)
 	frame = (struct riscv64_trap_frame *)stack;
+#else
+	frame = (struct arm_trap_frame *)stack;
 #endif
 	for(signum = 1, mask = 1; signum < NSIG; signum++, mask <<= 1) {
 		if(current->sigpending & mask) {
@@ -184,7 +190,7 @@ void psig(__addr_t stack)
 
 			if(current->sigaction[signum - 1].sa_handler != SIG_DFL) {
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 				/*
 				 * page_not_present() may have raised a SIGSEGV if it
 				 * detected that this process doesn't have an stack
@@ -200,7 +206,7 @@ void psig(__addr_t stack)
 				}
 #endif
 
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 				oldmask = current->sigblocked;
 #endif
 				current->sigexecuting = mask;
@@ -213,6 +219,14 @@ void psig(__addr_t stack)
 					current->sigaction[signum - 1].sa_mask & SIG_BLOCKABLE;
 				if(riscv64_signal_deliver(frame, signum, oldmask)) {
 					printk("WARNING: %s(): unable to build signal frame for process %d. Terminated.\n",
+						__FUNCTION__, current->pid);
+					do_exit(SIGSEGV);
+				}
+#elif defined(CONFIG_ARCH_ARM)
+				current->sigblocked |=
+					current->sigaction[signum - 1].sa_mask & SIG_BLOCKABLE;
+				if(arm_signal_deliver(frame, signum, oldmask)) {
+					printk("WARNING: %s(): unable to build ARM signal frame for process %d. Terminated.\n",
 						__FUNCTION__, current->pid);
 					do_exit(SIGSEGV);
 				}
@@ -265,7 +279,7 @@ void psig(__addr_t stack)
 	}
 
 	/* coming from an i386 system call that needs to be restarted */
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	if(sc->err > 0) {
 		if(sc->eax == -ERESTART) {
 			sc->eax = sc->err;	/* syscall was saved in 'err' */

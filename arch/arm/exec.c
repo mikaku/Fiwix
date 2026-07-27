@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/arm_elf.h>
+#include <fiwix/arm_signal.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/asm.h>
@@ -33,7 +34,7 @@
 #define ARM_ALIGN8_MASK	0xFFFFFFF8U
 #define ARM_USER_CPSR	0x00000050U
 #define ARM_EXEC_IMAGE_LIMIT \
-	(ARM_VM_USER_LIMIT - ((ARG_MAX + 1U) * PAGE_SIZE))
+	(ARM_USER_STACK_TOP - ((ARG_MAX + 1U) * PAGE_SIZE))
 
 static int arm_read_inode(struct inode *inode, unsigned int offset,
 	void *destination, unsigned int count)
@@ -135,12 +136,12 @@ static unsigned int arm_barg_start(struct binargs *barg)
 
 	for(n = 0; n < ARG_MAX; n++) {
 		if(barg->page[n]) {
-			return ARM_VM_USER_LIMIT -
+			return ARM_USER_STACK_TOP -
 				((ARG_MAX - n) * PAGE_SIZE) +
 				barg->offset;
 		}
 	}
-	return ARM_VM_USER_LIMIT - 4;
+	return ARM_USER_STACK_TOP - 4;
 }
 
 static unsigned char arm_barg_byte(struct binargs *barg,
@@ -149,12 +150,12 @@ static unsigned char arm_barg_byte(struct binargs *barg,
 	unsigned int page_base;
 	int n;
 
-	n = ARG_MAX - (int)((ARM_VM_USER_LIMIT - address + PAGE_SIZE - 1) /
+	n = ARG_MAX - (int)((ARM_USER_STACK_TOP - address + PAGE_SIZE - 1) /
 		PAGE_SIZE);
 	if(n < 0 || n >= ARG_MAX || !barg->page[n]) {
 		return 0;
 	}
-	page_base = ARM_VM_USER_LIMIT - ((ARG_MAX - n) * PAGE_SIZE);
+	page_base = ARM_USER_STACK_TOP - ((ARG_MAX - n) * PAGE_SIZE);
 	return *((unsigned char *)(unsigned long)barg->page[n] +
 		address - page_base);
 }
@@ -197,7 +198,7 @@ static int arm_create_stack(struct binargs *barg,
 		return -E2BIG;
 	}
 	error = arm_map_range(stack & PAGE_MASK,
-		ARM_VM_USER_LIMIT, PROT_READ | PROT_WRITE, P_STACK);
+		ARM_USER_STACK_TOP, PROT_READ | PROT_WRITE, P_STACK);
 	if(error) {
 		return error;
 	}
@@ -205,7 +206,7 @@ static int arm_create_stack(struct binargs *barg,
 		if(!barg->page[n]) {
 			continue;
 		}
-		address = ARM_VM_USER_LIMIT -
+		address = ARM_USER_STACK_TOP -
 			((ARG_MAX - n) * PAGE_SIZE);
 		page = map_page(current, address, 0,
 			PROT_READ | PROT_WRITE);
@@ -278,6 +279,10 @@ int arm_elf32_load(struct inode *inode, struct binargs *barg,
 		if((error = arm_load_segment(inode, &plan.load[n]))) {
 			goto failed;
 		}
+	}
+	stage = "map signal trampoline";
+	if((error = arm_signal_map())) {
+		goto failed;
 	}
 	arm_instruction_cache_invalidate();
 	heap = PAGE_ALIGN(plan.image_end);

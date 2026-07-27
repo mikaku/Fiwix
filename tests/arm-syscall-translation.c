@@ -3,6 +3,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/arm_signal.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/errno.h>
 #include <fiwix/sigcontext.h>
@@ -13,6 +14,37 @@ static unsigned int called_num;
 static __sysarg_t called_args[6];
 static struct sigcontext *called_frame;
 static int syscall_result;
+static int signal_call;
+static unsigned int signal_args[4];
+
+int arm_rt_sigaction(unsigned int arg1, const void *arg2, void *arg3,
+	unsigned int arg4)
+{
+	signal_call = 1;
+	signal_args[0] = arg1;
+	signal_args[1] = (unsigned int)(unsigned long)arg2;
+	signal_args[2] = (unsigned int)(unsigned long)arg3;
+	signal_args[3] = arg4;
+	return syscall_result;
+}
+
+int arm_rt_sigprocmask(unsigned int arg1, const void *arg2, void *arg3,
+	unsigned int arg4)
+{
+	signal_call = 2;
+	signal_args[0] = arg1;
+	signal_args[1] = (unsigned int)(unsigned long)arg2;
+	signal_args[2] = (unsigned int)(unsigned long)arg3;
+	signal_args[3] = arg4;
+	return syscall_result;
+}
+
+int arm_signal_return(struct arm_trap_frame *frame)
+{
+	signal_call = 3;
+	frame->r[0] = 0x12345678U;
+	return syscall_result;
+}
 
 int do_syscall_frame(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
 	__sysarg_t arg3, __sysarg_t arg4, __sysarg_t arg5, __sysarg_t arg6,
@@ -41,6 +73,7 @@ static void clear_frame(struct arm_trap_frame *frame)
 	called_num = ~0U;
 	called_frame = 0;
 	syscall_result = 0;
+	signal_call = 0;
 }
 
 int main(void)
@@ -96,6 +129,37 @@ int main(void)
 			called_frame != (struct sigcontext *)&frame) {
 			return 10 + n;
 		}
+	}
+
+	clear_frame(&frame);
+	frame.r[7] = 174;
+	frame.r[0] = 10;
+	frame.r[1] = 0x1000;
+	frame.r[2] = 0x2000;
+	frame.r[3] = 8;
+	if(arm_eabi_user_syscall(&frame) || signal_call != 1 ||
+		signal_args[0] != 10 || signal_args[1] != 0x1000 ||
+		signal_args[2] != 0x2000 || signal_args[3] != 8) {
+		return 1;
+	}
+
+	clear_frame(&frame);
+	frame.r[7] = 175;
+	frame.r[0] = 2;
+	frame.r[1] = 0x3000;
+	frame.r[2] = 0x4000;
+	frame.r[3] = 8;
+	if(arm_eabi_user_syscall(&frame) || signal_call != 2 ||
+		signal_args[0] != 2 || signal_args[1] != 0x3000 ||
+		signal_args[2] != 0x4000 || signal_args[3] != 8) {
+		return 9;
+	}
+
+	clear_frame(&frame);
+	frame.r[7] = 173;
+	if(arm_eabi_user_syscall(&frame) || signal_call != 3 ||
+		frame.r[0] != 0x12345678U) {
+		return 40;
 	}
 
 	clear_frame(&frame);

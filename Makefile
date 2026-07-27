@@ -174,6 +174,10 @@ test-arm: all
 	HOSTCC="$(HOSTCC)" tests/arm-elf32-plan.sh
 	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-elf32-load.sh
+	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
+		tests/arm-signal-frame.sh
+	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
+		tests/arm-signal-uapi.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

@@ -4,6 +4,7 @@
  */
 
 #include <fiwix/arm_elf.h>
+#include <fiwix/arm_signal.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/buffer.h>
@@ -52,6 +53,7 @@ static unsigned int next_page;
 static int mapping_count;
 static int vma_count;
 static int signal_count;
+static int signal_map_count;
 static int instruction_cache_invalidations;
 
 struct proc *current = &process;
@@ -86,6 +88,12 @@ void printk(const char *format, ...)
 void arm_instruction_cache_invalidate(void)
 {
 	instruction_cache_invalidations++;
+}
+
+int arm_signal_map(void)
+{
+	signal_map_count++;
+	return 0;
 }
 
 int send_sig(struct proc *p, __sigset_t signal)
@@ -360,7 +368,8 @@ int main(void)
 			frame.user_sp + 4 ||
 		(unsigned int)(unsigned long)current->envp !=
 			frame.user_sp + 12 ||
-		signal_count || instruction_cache_invalidations != 1) {
+		signal_count || signal_map_count != 1 ||
+		instruction_cache_invalidations != 1) {
 		return 3;
 	}
 	for(n = 0; n < 0x1200U; n++) {
@@ -384,7 +393,7 @@ int main(void)
 		vmas[1].start != 0x00102000U ||
 		vmas[1].prot != (PROT_READ | PROT_WRITE) ||
 		vmas[1].type != P_HEAP ||
-		vmas[2].end != ARM_VM_USER_LIMIT ||
+		vmas[2].end != ARM_USER_STACK_TOP ||
 		vmas[2].prot != (PROT_READ | PROT_WRITE) ||
 		vmas[2].type != P_STACK) {
 		return 6;

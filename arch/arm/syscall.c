@@ -5,6 +5,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/arm_signal.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/errno.h>
 #include <fiwix/signal.h>
@@ -36,6 +37,9 @@
 #define ARM_SYS_REBOOT			88
 #define ARM_SYS_WAIT4			114
 #define ARM_SYS_CLONE			120
+#define ARM_SYS_RT_SIGRETURN		173
+#define ARM_SYS_RT_SIGACTION		174
+#define ARM_SYS_RT_SIGPROCMASK		175
 #define ARM_SYS_GETCWD			183
 #define ARM_SYS_EXIT_GROUP		248
 #define ARM_SYS_OPENAT			322
@@ -155,6 +159,22 @@ int arm_eabi_user_syscall(struct arm_trap_frame *frame)
 				break;
 			}
 			result = arm_call_fiwix(SYS_fork, frame, 0, 0, 0, 0, 0, 0);
+			break;
+		case ARM_SYS_RT_SIGRETURN:
+			result = arm_signal_return(frame);
+			if(!result) {
+				return 0;
+			}
+			break;
+		case ARM_SYS_RT_SIGACTION:
+			result = arm_rt_sigaction(frame->r[0],
+				(const void *)(unsigned long)frame->r[1],
+				(void *)(unsigned long)frame->r[2], frame->r[3]);
+			break;
+		case ARM_SYS_RT_SIGPROCMASK:
+			result = arm_rt_sigprocmask(frame->r[0],
+				(const void *)(unsigned long)frame->r[1],
+				(void *)(unsigned long)frame->r[2], frame->r[3]);
 			break;
 		case ARM_SYS_GETCWD:
 			result = arm_call_fiwix(SYS_getcwd, frame, frame->r[0],

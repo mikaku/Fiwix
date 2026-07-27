@@ -84,10 +84,11 @@ that plan, copies every `PT_LOAD` segment, and clears BSS before enabling
 translation. The generic `execve` path now consumes the same plan, reads
 segments across filesystem blocks, eagerly allocates each mapped page, clears
 BSS, constructs an AArch32 `argc`/`argv`/`envp`/auxv stack, and replaces the
-native saved user frame. A host runtime gate exercises the real loader against
-a multi-block fake inode and verifies the copied image, zero fill, VMAs, heap,
-stack pointers, auxiliary vector, entry state, and instruction-cache
-invalidation.
+native saved user frame. It also maps a read/execute `rt_sigreturn` trampoline
+at `0x3ffff000`, leaving the argument stack below it. A host runtime gate
+exercises the real loader against a multi-block fake inode and verifies the
+copied image, zero fill, VMAs, heap, stack pointers, auxiliary vector, entry
+state, signal mapping, and instruction-cache invalidation.
 
 The ARM EABI-to-generic syscall policy is also host-gated. Legacy ARM numbers
 for the bootstrap file/process calls match Fiwix's i386-indexed table, but the
@@ -146,8 +147,19 @@ identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
 files and private physical-page operations now cross-compile for ARM and have
 host runtime gates, but they are not yet linked into the ARM kernel. Generic
-trap dispatch, signal frames, device-backed filesystem access, and bootstrap
-execution remain incomplete.
+trap dispatch, device-backed filesystem access, and bootstrap execution remain
+incomplete.
+
+The first ARM signal boundary is now host-gated as well. It uses the Linux
+AArch32 84-byte `sigcontext`, 744-byte `ucontext`, and 888-byte real-time
+signal frame, with their sizes and offsets independently cross-checked against
+the target Linux userspace headers. Delivery grows the writable stack,
+validates an A32 executable handler, saves all integer/user registers and the
+blocked mask, and returns through syscall 173 on the fixed executable
+trampoline. ARM EABI syscalls 174 and 175 translate Linux `rt_sigaction` and
+`rt_sigprocmask`; return validates the restored PC, SP, CPSR mode, and mask.
+This code cross-compiles with the common signal unit but awaits the generic
+ARM trap entry before it can run in QEMU.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -251,8 +263,9 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   VM backend, then builds an 8-byte-aligned AArch32 initial stack with the
   program-header, page-size, entry, and credential auxiliary-vector entries.
   `PT_INTERP`, PIE, demand paging, and Thumb entry remain outside this first
-  bootstrap path. Reserving `(ARG_MAX + 1)` pages below the user ceiling keeps
-  every planned segment and the heap below the maximum argument/stack region.
+  bootstrap path. Reserving `(ARG_MAX + 1)` pages below the signal trampoline
+  keeps every planned segment and the heap below the maximum argument/stack
+  region.
 - Writing executable pages after the initial MMU transition left stale
   instruction-cache and branch-predictor state as an undocumented correctness
   risk. The generic loader now executes an ordered DSB, whole instruction-cache
@@ -260,6 +273,14 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   loadable segments. The host loader gate requires exactly one invalidation,
   while the dual-version QEMU gate executes the same helper in the
   freestanding process oracle.
+- The common signal unit previously treated every non-RISC-V architecture as
+  i386, so an ARM pending signal would cast the 72-byte native trap frame to an
+  unrelated x86 `sigcontext` and overwrite it. ARM now has an explicit branch
+  and fixed-width Linux frame implementation. This first bootstrap policy
+  always builds the real-time frame and returns through the kernel-provided
+  A32 trampoline, including for one-argument handlers; alternate signal
+  stacks, floating-point state, Thumb handlers, and caller-provided restorers
+  remain unsupported.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
