@@ -51,6 +51,8 @@ void riscv64_generic_trap_fatal(unsigned long, unsigned long, unsigned long);
 
 #elif defined(CONFIG_ARCH_ARM)
 
+struct proc;
+
 struct arch_context {
 	unsigned int r4;
 	unsigned int r5;
@@ -65,6 +67,12 @@ struct arch_context {
 	unsigned int ttbr0;
 	unsigned int kernel_sp;
 };
+
+void arm_process_roots_init(void);
+unsigned int *arm_process_root(const struct proc *);
+int arm_process_address_space_create(struct proc *, const struct proc *);
+int arm_process_address_space_release(struct proc *);
+int arm_process_context_activate(const struct proc *);
 
 #else
 

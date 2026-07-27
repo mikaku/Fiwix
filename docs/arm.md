@@ -91,10 +91,16 @@ the generic ARM image is introduced.
 
 The ARM `arch_context` now records callee-saved registers, the scheduler
 continuation, TTBR0, and the privileged stack instead of falling through to
-the i386 TSS layout. Root cloning gives each process an independently mutable
-descriptor table, but it deliberately still shares the mapped physical
-sections; physical page allocation and copy-on-write belong to the generic
-fork integration.
+the i386 TSS layout. A generic ownership layer reserves one aligned root for
+each of Fiwix's 64 process slots, associates every allocated root with its
+`struct proc`, rejects forged release/activation requests, clones a parent root
+for the future fork path, and deterministically reuses released slots. It is
+host-gated but is not linked into the freestanding oracle; the generic ARM
+image will initialize the pool and connect these hooks to process creation,
+release, and scheduling. Root cloning gives each process an independently
+mutable descriptor table, but it deliberately still shares the mapped
+physical sections; physical page allocation and copy-on-write belong to the
+generic fork integration.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
@@ -176,6 +182,16 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   context. The QEMU gate then changes TTBR0 between two roots whose probe
   mappings differ, invalidates the complete unified TLB, verifies both mappings,
   and restores the primary root before user entry.
+- `kmalloc()` cannot return the 16 KiB contiguous, 16 KiB-aligned block required
+  by an ARM short-descriptor root; requests larger than one 4 KiB page are
+  rejected. The generic ARM ownership layer therefore uses a fixed aligned
+  pool sized to `NR_PROCS` instead of pretending four unrelated page
+  allocations are contiguous. The 64 roots consume 1 MiB of aligned `NOBITS`
+  storage plus owner metadata, trading bounded RAM for deterministic bootstrap
+  behavior without increasing the disk image. Owner pointers and TTBR0 values
+  are both checked on lookup/release, and the host gate covers exhaustion,
+  deterministic reuse, parent cloning, clone isolation, forged owners, and
+  activation.
 - ARM SVC writes the following instruction address to `lr_svc`; the saved
   process PC therefore needs no explicit four-byte advance. The EABI translator
   leaves it unchanged, unlike the RISC-V ecall translator, and the host gate
