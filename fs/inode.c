@@ -35,7 +35,7 @@
 #include <fiwix/string.h>
 
 #define INODE_HASH(dev, inode)	(((__dev_t)(dev) ^ (__ino_t)(inode)) % (NR_INO_HASH))
-#define NR_INO_HASH	(inode_hash_table_size / sizeof(unsigned int))
+#define NR_INO_HASH	(inode_hash_table_size / sizeof(struct inode *))
 
 struct inode *inode_table;		/* inode pool */
 struct inode *inode_head;		/* head of free list */
