@@ -54,7 +54,7 @@
 #define CONFIG_PSAUX
 #define CONFIG_UNIX98_PTYS
 
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 /* These options currently select i386 hardware or an external IPv4 backend. */
 #undef CONFIG_PCI
 #undef CONFIG_PCI_NAMES

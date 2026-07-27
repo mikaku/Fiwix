@@ -134,6 +134,8 @@ __pid_t remove_zombie(struct proc *p)
 	pid = p->pid;
 #ifdef CONFIG_ARCH_RISCV64
 	riscv64_process_release(p);
+#elif defined(CONFIG_ARCH_ARM)
+	arm_process_release(p);
 #else
 	kfree(p->arch.esp0);
 	p->rss--;
@@ -294,6 +296,13 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 	}
 	p->entry_address = 0;
 	p->end_code = (__addr_t)_end;
+#elif defined(CONFIG_ARCH_ARM)
+	if(arm_process_setup(p, fn) < 0) {
+		release_proc(p);
+		return NULL;
+	}
+	p->entry_address = 0;
+	p->end_code = (__addr_t)_end;
 #else
 	if(!(p->arch.esp0 = kmalloc(PAGE_SIZE))) {
 		release_proc(p);
@@ -331,7 +340,7 @@ void proc_slot_init(struct proc *p)
 	p->prev_run = p->next_run = NULL;
 	unlock_resource(&slot_resource);
 
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	memset_b(&p->arch, 0, sizeof(struct arch_context));
 #else
 	memset_b(&p->arch, 0, sizeof(struct arch_context) - IO_BITMAP_SIZE);
@@ -350,6 +359,9 @@ void proc_init(void)
 	int n;
 	struct proc *p;
 
+#ifdef CONFIG_ARCH_ARM
+	arm_process_roots_init();
+#endif
 	memset_b(proc_table, 0, proc_table_size);
 
 	/* free list initialization */

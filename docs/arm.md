@@ -103,18 +103,20 @@ ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
 associates every allocated root with its `struct proc`, rejects forged
 release/activation requests, clones a parent root for the future fork path, and
 deterministically reuses released slots. It is host-gated but is not linked
-into the freestanding oracle; the generic ARM image will initialize the pool
-and connect these hooks to process creation, release, and scheduling. Root
-cloning gives each process an independently mutable descriptor table, but it
-deliberately still shares the mapped physical sections; physical page
-allocation and copy-on-write belong to the generic fork integration.
+into the freestanding oracle. Generic process initialization now initializes
+the pool; kernel-task creation, zombie release, scheduling, and fork setup use
+explicit ARM hooks instead of the i386 fallback. Root cloning gives each
+process an independently mutable descriptor table, but it deliberately still
+shares the mapped physical sections. Runtime fork remains blocked until ARM
+page cloning replaces the generic i386 memory path.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
-signal completion by modifying the saved user frame. Generic `struct proc`
-allocation/context switching, private physical pages, filesystem access, and
-bootstrap execution remain incomplete.
+signal completion by modifying the saved user frame. Generic process lifecycle
+files now cross-compile for ARM, but they are not yet linked into the ARM
+kernel. Private physical pages, filesystem access, and bootstrap execution
+remain incomplete.
 
 The Clang ELF32 process oracle is 16,388 bytes with SHA-256
 `3e5cede44140ffd620e3d825164d66b02e5adc0915259d520d286ae46507868d`.
@@ -215,6 +217,12 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   72-byte trap frame to the child stack, forces child r0 to zero, and resumes
   through the same exception-frame layout used by the live vector code. These
   hooks are cross-compiled now; generic fork still awaits ARM page cloning.
+- Generic process files previously used a binary RISC-V-versus-i386 split, so
+  selecting `CONFIG_ARCH_ARM` reached `cr3`, TSS, and x86 stack-frame fields.
+  Process initialization/release, task creation, scheduling, and fork now have
+  explicit ARM branches, and a cross-compile gate covers all three generic
+  translation units. Fork can construct a child context, but remains a runtime
+  milestone until ARM `clone_pages()` semantics replace the i386 memory path.
 - The first task-hook header edit accidentally placed the `arm_trap_frame`
   forward declaration inside the RISC-V preprocessor branch. The strict ARM
   host compile rejected the resulting prototype-scope tag before it could

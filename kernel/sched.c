@@ -16,9 +16,9 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 extern struct seg_desc gdt[NR_GDT_ENTRIES];
-#else
+#elif defined(CONFIG_ARCH_RISCV64)
 extern void riscv64_context_switch(struct arch_context *,
 	struct arch_context *);
 #endif
@@ -35,6 +35,12 @@ static void context_switch(struct proc *next)
 	riscv64_context_activate(&next->arch);
 	current = next;
 	riscv64_context_switch(&prev->arch, &next->arch);
+#elif defined(CONFIG_ARCH_ARM)
+	if(arm_process_context_activate(next) < 0) {
+		PANIC("unable to activate ARM process root.\n");
+	}
+	current = next;
+	arm_context_switch(&prev->arch, &next->arch);
 #else
 	set_tss(next);
 	current = next;
@@ -45,7 +51,7 @@ static void context_switch(struct proc *next)
 
 void set_tss(struct proc *p)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	(void)p;
 #else
 	struct seg_desc *g;
