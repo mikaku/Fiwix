@@ -85,10 +85,14 @@ int arm_fork_process_setup(struct proc *p,
 
 void arm_process_release(struct proc *p)
 {
+	int tables;
+
 	if(p->arch.kernel_sp) {
 		kfree(p->arch.kernel_sp);
 		p->arch.kernel_sp = 0;
 		p->rss--;
 	}
+	tables = free_page_tables(p);
+	p->rss -= tables;
 	arm_process_address_space_release(p);
 }

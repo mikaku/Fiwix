@@ -166,6 +166,8 @@ test-arm: all
 	HOSTCC="$(HOSTCC)" tests/arm-vm-policy.sh
 	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-process-roots.sh
+	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
+		tests/arm-generic-memory.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

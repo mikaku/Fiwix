@@ -105,20 +105,29 @@ have ARM setup hooks and fixed assembly entry points. A generic
 ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
 associates every allocated root with its `struct proc`, rejects forged
 release/activation requests, creates a clean user half for the future fork
-path, and deterministically reuses released slots. It is host-gated but is not linked
-into the freestanding oracle. Generic process initialization now initializes
-the pool; kernel-task creation, zombie release, scheduling, and fork setup use
-explicit ARM hooks instead of the i386 fallback. Root cloning gives each
-process an independently mutable descriptor table. Runtime fork remains
-blocked until ARM page cloning replaces the generic i386 memory path.
+path, and deterministically reuses released slots. It is host-gated but is not
+linked into the freestanding oracle. Generic process initialization now
+initializes the pool; kernel-task creation, zombie release, scheduling, and
+fork setup use explicit ARM hooks instead of the i386 fallback. Each process
+owns an independently mutable root and subordinate coarse tables.
+
+The generic ARM memory backend now allocates coarse tables, maps and unmaps
+4 KiB user pages, reports generic mapping permissions, clones private pages
+read-only for fork, performs refcounted copy-on-write, and reclaims empty
+tables. A host runtime gate executes the real walker against a fixed
+low-address RAM window and verifies parent/child data isolation and page
+counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
+root, and process teardown releases subordinate tables before returning its
+fixed root. These objects cross-compile but are not linked into a generic ARM
+kernel yet.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
-files now cross-compile for ARM, but they are not yet linked into the ARM
-kernel. Private physical pages, filesystem access, and bootstrap execution
-remain incomplete.
+files and private physical-page operations now cross-compile for ARM and have
+host runtime gates, but they are not yet linked into the ARM kernel.
+Filesystem access and bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `b3583a3a891760312986440606e95d05a58b185700f82cbbb58815dceff1f83a`.
@@ -194,8 +203,19 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   device-window aliases, out-of-RAM physical addresses, invalid permission
   values, and duplicate entries. The QEMU gate performs a user-mode
   read/write through a writable execute-never 4 KiB leaf. This layer accepts
-  caller-owned table storage deliberately; generic allocation, reclamation,
-  copy-on-write, and the `PAGE_NOALLOC` policy belong to the memory backend.
+  caller-owned table storage deliberately; allocation, reclamation, and
+  copy-on-write belong to the generic memory backend.
+- A coarse table needs only 1 KiB, but `kmalloc()` allocates and frees complete
+  4 KiB pages. The ARM walker uses one allocator page per populated 1 MiB user
+  region, installs its first 1 KiB as the coarse table, accounts that page in
+  process RSS, and reclaims it only after all 256 leaves are absent. This
+  wastes up to 3 KiB per populated region but preserves allocator ownership
+  and alignment without adding a sub-page allocator.
+- The generic x86 `PAGE_NOALLOC` value is bit `0x200`, which is ARM small-page
+  AP2 rather than a software bit. Encoding it in a leaf would silently change
+  user permissions. The ARM backend rejects `PAGE_NOALLOC` mappings; the only
+  current caller is the framebuffer path, and ARM disables that i386-specific
+  device. A future framebuffer port needs separate mapping metadata.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
@@ -226,7 +246,8 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   USR register bank. Fork setup creates a kernel-only root, copies the exact
   72-byte trap frame to the child stack, forces child r0 to zero, and resumes
   through the same exception-frame layout used by the live vector code. These
-  hooks are cross-compiled now; generic fork still awaits ARM page cloning.
+  hooks and the ARM page-cloning backend are cross-compiled and host-gated now;
+  runtime fork awaits the linked generic ARM image.
 - The first process-fork hook shallow-copied the parent's complete first-level
   root before generic `clone_pages()` ran. That worked for the isolated section
   gate, but would make parent and child refer to the same mutable second-level
@@ -237,14 +258,22 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   selecting `CONFIG_ARCH_ARM` reached `cr3`, TSS, and x86 stack-frame fields.
   Process initialization/release, task creation, scheduling, and fork now have
   explicit ARM branches, and a cross-compile gate covers all three generic
-  translation units. Fork can construct a child context, but remains a runtime
-  milestone until ARM `clone_pages()` semantics replace the i386 memory path.
+  translation units. Fork can construct a child context and clone private
+  pages with copy-on-write, but remains a runtime milestone until those units
+  are linked into the generic ARM image.
 - ARM also inherited the i386 `PAGE_OFFSET` conversion: adding `0xc0000000` to
   QEMU RAM at `0x40000000` wraps a 32-bit pointer to zero. ARM now defines an
   identity-mapped physical/kernel range beginning at `0x40000000`, uses that
   address as the user ceiling, and starts generic `mmap()` search at
   `0x20000000`. The VM host gate checks physical-page indexing and both address
   conversions before exercising descriptors.
+- The common memory unit also treated every non-RISC-V target as i386. Its
+  first ARM compile selected `cr3` walkers and omitted the ARM kernel-size
+  macros. The architecture page operations now live in `arch/arm/memory.c`,
+  while shared memory initialization has an explicit ARM branch that caps the
+  current model at 128 MiB, reserves a 16 KiB root after BSS, installs the
+  supervisor template, and activates it. Initrd pointers stay identity-mapped
+  rather than receiving the i386 `PAGE_OFFSET` addition.
 - The first task-hook header edit accidentally placed the `arm_trap_frame`
   forward declaration inside the RISC-V preprocessor branch. The strict ARM
   host compile rejected the resulting prototype-scope tag before it could

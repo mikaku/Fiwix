@@ -23,9 +23,11 @@
 #include <fiwix/string.h>
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_devices.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_vm.h>
 #endif
 
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 #define KERNEL_TEXT_SIZE	((__addr_t)_etext - KERNEL_ADDR)
 #define KERNEL_DATA_SIZE	((__addr_t)_edata - (__addr_t)_etext)
 #define KERNEL_BSS_SIZE		((__addr_t)_end - (__addr_t)_edata)
@@ -464,7 +466,7 @@ void free_vma_pages(struct vma *vma, __addr_t start, __size_t length)
 	current->rss -= free_page_tables(current);
 }
 
-#else
+#elif !defined(CONFIG_ARCH_ARM)
 
 unsigned int map_kaddr(unsigned int *page_dir, unsigned int from, unsigned int to, unsigned int addr, int flags)
 {
@@ -825,11 +827,11 @@ void free_vma_pages(struct vma *vma, __addr_t start, __size_t length)
 	}
 }
 
-#endif /* CONFIG_ARCH_RISCV64 */
+#endif /* architecture page-table backend */
 
 static int memory_range_available(__addr_t end, unsigned int physical_memory)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	return end <= PHYSICAL_MEMORY_BASE + physical_memory;
 #else
 	(void)physical_memory;
@@ -894,6 +896,33 @@ void mem_init(void)
 		((RISCV64_UART_PHYSICAL_BASE >> PAGE_SHIFT) << 10) |
 		RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_A | RV_PTE_D;
 	riscv64_vm_install(V2P((__addr_t)kpage_dir) >> PAGE_SHIFT);
+#elif defined(CONFIG_ARCH_ARM)
+	if(!kstat.physical_pages) {
+		kstat.physical_pages = ARM_MEMORY_FALLBACK >> PAGE_SHIFT;
+	}
+	if(kstat.physical_pages >
+		(int)(ARM_MEMORY_LIMIT >> PAGE_SHIFT)) {
+		kstat.physical_pages = ARM_MEMORY_LIMIT >> PAGE_SHIFT;
+	}
+	physical_memory = (unsigned int)kstat.physical_pages << PAGE_SHIFT;
+	if(_last_data_addr < PHYSICAL_MEMORY_BASE) {
+		_last_data_addr = (__addr_t)_end;
+	}
+	_last_data_addr = (_last_data_addr +
+		ARM_VM_ROOT_ALIGNMENT - 1) &
+		~(ARM_VM_ROOT_ALIGNMENT - 1);
+	if(_last_data_addr > PHYSICAL_MEMORY_BASE + physical_memory -
+		ARM_VM_ROOT_ALIGNMENT) {
+		PANIC("Not enough memory for ARM kernel page-table root.\n");
+	}
+	kpage_dir = (__pte_t *)_last_data_addr;
+	if(arm_vm_root_init((unsigned int *)kpage_dir)) {
+		PANIC("Unable to initialize ARM kernel page-table root.\n");
+	}
+	_last_data_addr += ARM_VM_ROOT_ALIGNMENT;
+	if(arm_vm_activate((unsigned int *)kpage_dir)) {
+		PANIC("Unable to activate ARM kernel page-table root.\n");
+	}
 #else
 	unsigned int physical_page_tables;
 	unsigned int *pgtbl;
@@ -994,7 +1023,7 @@ void mem_init(void)
 		 * RAMdisk drive was already assigned to the initrd image.
 		 */
 		if(ramdisk_table[0].addr) {
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 			ramdisk_table[0].addr += PAGE_OFFSET;
 #endif
 			last_ramdisk = 1;
