@@ -136,3 +136,25 @@ int arm_vm_activate(const unsigned int *root)
 #endif
 	return 0;
 }
+
+int arm_vm_context_activate(const unsigned int *root)
+{
+	unsigned int table_address;
+
+	table_address = arm_vm_ttbr0(root);
+	if(!table_address) {
+		return -1;
+	}
+#ifdef __arm__
+	__asm__ volatile("dsb");
+	__asm__ volatile("mcr p15, 0, %0, c2, c0, 0" :
+		: "r"(table_address));
+	__asm__ volatile("isb");
+	table_address = 0;
+	__asm__ volatile("mcr p15, 0, %0, c8, c7, 0" :
+		: "r"(table_address));
+	__asm__ volatile("dsb");
+	__asm__ volatile("isb");
+#endif
+	return 0;
+}

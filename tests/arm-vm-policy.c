@@ -69,12 +69,14 @@ int main(void)
 		arm_vm_root_init(parent_root + 1) != -1 ||
 		arm_vm_root_clone(child_root + 1, parent_root) != -1 ||
 		arm_vm_ttbr0(parent_root + 1) ||
-		arm_vm_activate(parent_root + 1) != -1) {
+		arm_vm_activate(parent_root + 1) != -1 ||
+		arm_vm_context_activate(parent_root + 1) != -1) {
 		return 8;
 	}
 	if(arm_vm_ttbr0(parent_root) !=
 		(unsigned int)(unsigned long)parent_root ||
-		arm_vm_activate(parent_root)) {
+		arm_vm_activate(parent_root) ||
+		arm_vm_context_activate(parent_root)) {
 		return 9;
 	}
 

@@ -26,5 +26,6 @@ int arm_vm_map_user_section(unsigned int *, unsigned int, unsigned int, int);
 int arm_vm_unmap_user_section(unsigned int *, unsigned int);
 unsigned int arm_vm_ttbr0(const unsigned int *);
 int arm_vm_activate(const unsigned int *);
+int arm_vm_context_activate(const unsigned int *);
 
 #endif /* _FIWIX_ARM_VM_H */

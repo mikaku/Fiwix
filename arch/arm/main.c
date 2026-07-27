@@ -30,6 +30,10 @@ typedef unsigned char u8;
 #define ARM_USER_STACK_PHYS 0x47100000U
 #define ARM_USER_STACK_VIRT 0x00200000U
 #define ARM_USER_STACK_TOP 0x00300000U
+#define ARM_CONTEXT_VIRT 0x00300000U
+#define ARM_CONTEXT_PRIMARY_PHYS 0x47200000U
+#define ARM_CONTEXT_ALTERNATE_PHYS 0x47300000U
+#define ARM_L1_ALTERNATE 0x47E04000U
 #define ARM_KERNEL_PROBE 0x40010000U
 
 struct arm_elf32_header {
@@ -184,8 +188,31 @@ invalid:
 	return 0;
 }
 
+static int arm_process_root_switch_gate(u32 *primary, u32 *alternate)
+{
+	volatile u32 *primary_value;
+	volatile u32 *alternate_value;
+	volatile u32 *visible;
+
+	primary_value = (volatile u32 *)ARM_CONTEXT_PRIMARY_PHYS;
+	alternate_value = (volatile u32 *)ARM_CONTEXT_ALTERNATE_PHYS;
+	visible = (volatile u32 *)ARM_CONTEXT_VIRT;
+	*primary_value = 0x13579BDFU;
+	*alternate_value = 0x2468ACE0U;
+
+	if(*visible != *primary_value ||
+		arm_vm_context_activate(alternate) ||
+		*visible != *alternate_value ||
+		arm_vm_context_activate(primary) ||
+		*visible != *primary_value) {
+		return -1;
+	}
+	return 0;
+}
+
 static u32 arm_process_mmu_init(void)
 {
+	u32 *alternate;
 	u32 *table;
 	u8 *destination;
 	u32 entry;
@@ -197,12 +224,18 @@ static u32 arm_process_mmu_init(void)
 	}
 	entry = arm_load_elf32();
 
+	alternate = (u32 *)ARM_L1_ALTERNATE;
 	table = (u32 *)ARM_L1_TABLE;
 	if(arm_vm_root_init(table) ||
 		arm_vm_map_user_section(table, ARM_USER_VIRT,
 			ARM_USER_PHYS, 1) ||
 		arm_vm_map_user_section(table, ARM_USER_STACK_VIRT,
-			ARM_USER_STACK_PHYS, 0)) {
+			ARM_USER_STACK_PHYS, 0) ||
+		arm_vm_map_user_section(table, ARM_CONTEXT_VIRT,
+			ARM_CONTEXT_PRIMARY_PHYS, 0) ||
+		arm_vm_root_clone(alternate, table) ||
+		arm_vm_map_user_section(alternate, ARM_CONTEXT_VIRT,
+			ARM_CONTEXT_ALTERNATE_PHYS, 0)) {
 		uart_puts("arm process failure: invalid page-table policy\n");
 		arm_poweroff();
 	}
@@ -213,6 +246,11 @@ static u32 arm_process_mmu_init(void)
 		uart_puts("arm process failure: invalid TTBR0 root\n");
 		arm_poweroff();
 	}
+	if(arm_process_root_switch_gate(table, alternate)) {
+		uart_puts("arm process failure: root switch\n");
+		arm_poweroff();
+	}
+	uart_puts("arm process root switch passed\n");
 	return entry;
 }
 

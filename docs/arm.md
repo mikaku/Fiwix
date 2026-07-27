@@ -62,11 +62,14 @@ make TARGET_ARCH=arm CCEXE=clang \
 Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
 first process-address-space gate. The ARM VM layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
-user section mappings, derives TTBR0, and clones roots independently for the
-future fork path. The boot oracle uses a root at `0x47e00000`, copies a
-position-independent ARM EABI fixture to `0x47000000`, and maps it at user
-virtual `0x00100000`. A separate execute-never user stack maps `0x47100000`
-at `0x00200000..0x002fffff`.
+user section mappings, derives TTBR0, activates a process root with a complete
+TLB flush, and clones roots independently for the future fork path. The boot
+oracle switches between roots at `0x47e00000` and `0x47e04000`; each maps
+virtual `0x00300000` to a different physical section, and the QEMU gate checks
+both values before restoring the primary root. It copies a position-independent
+ARM EABI fixture to `0x47000000` and maps it at user virtual `0x00100000`. A
+separate execute-never user stack maps `0x47100000` at
+`0x00200000..0x002fffff`.
 
 The process fixture is a standalone static ELF32/ARM `ET_EXEC` embedded in the
 bring-up image. The bounded loader validates its ELF identity, machine, type,
@@ -101,7 +104,7 @@ allocation/context switching, private physical pages, filesystem access, and
 bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 16,388 bytes with SHA-256
-`f7ce6148e6ed0dfe70cf47b687ac1788dc9eadf91e4d1f13bc89d78b5056e6df`.
+`dda3d5d2ea51810867fb38dea499fd112ba686248172b893f83d0d822c01dcce`.
 
 ## Design and bug log
 
@@ -168,9 +171,11 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
   bounds, reserves the low supervisor device slots, centralizes the kernel
   mapping template and TTBR0 transition, and provides an independently mutable
-  clone operation. A host gate verifies kernel inheritance, user
-  execute-never policy, rejection paths, clone isolation, and the ARM-specific
-  process context before QEMU runs the same implementation.
+  clone operation. A host gate verifies kernel inheritance, user execute-never
+  policy, rejection paths, clone isolation, and the ARM-specific process
+  context. The QEMU gate then changes TTBR0 between two roots whose probe
+  mappings differ, invalidates the complete unified TLB, verifies both mappings,
+  and restores the primary root before user entry.
 - ARM SVC writes the following instruction address to `lr_svc`; the saved
   process PC therefore needs no explicit four-byte advance. The EABI translator
   leaves it unchanged, unlike the RISC-V ecall translator, and the host gate
