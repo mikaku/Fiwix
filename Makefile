@@ -168,6 +168,9 @@ test-arm: all
 		tests/arm-process-roots.sh
 	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-memory.sh
+	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" AS="$(AS)" NM="$(NM)" \
+		OBJCOPY="$(OBJCOPY)" READELF="$(CROSS_COMPILE)readelf" \
+		tests/arm-init-process.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

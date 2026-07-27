@@ -21,6 +21,8 @@
 #include <fiwix/string.h>
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_signal.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_trap.h>
 #endif
 
 #define INIT_TRAMPOLINE_SIZE	256	/* max. size of init_trampoline() */
@@ -28,13 +30,16 @@
 #ifdef CONFIG_ARCH_RISCV64
 extern char riscv64_init_trampoline_start[];
 extern char riscv64_init_trampoline_end[];
+#elif defined(CONFIG_ARCH_ARM)
+extern char arm_init_trampoline_start[];
+extern char arm_init_trampoline_end[];
 #endif
 
 char *init_args;
 char *init_argv[] = { INIT_PROGRAM, NULL, NULL };
 char *init_envp[] = { "HOME=/", "TERM=linux", NULL };
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 static void init_trampoline(void)
 {
 	USER_SYSCALL(SYS_open, "/dev/console", O_RDWR, 0);	/* stdin */
@@ -52,7 +57,7 @@ void init_init(void)
 	int n;
 	__addr_t page;
 	struct inode *i;
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	unsigned int *pgdir;
 #endif
 	struct proc *init;
@@ -71,6 +76,10 @@ void init_init(void)
 	/* INIT process starts with the current (kernel) Page Directory */
 #ifdef CONFIG_ARCH_RISCV64
 	if(riscv64_address_space_create(init) < 0) {
+		goto init_init__die;
+	}
+#elif defined(CONFIG_ARCH_ARM)
+	if(arm_process_address_space_create(init, 0) < 0) {
 		goto init_init__die;
 	}
 #else
@@ -135,6 +144,26 @@ void init_init(void)
 	memset_b((void *)page, 0, PAGE_SIZE);
 	if(riscv64_user_process_setup(init, RISCV64_SIGNAL_TRAMPOLINE,
 		RISCV64_SIGNAL_TRAMPOLINE - 16) < 0) {
+		goto init_init__die;
+	}
+#elif defined(CONFIG_ARCH_ARM)
+	page = map_page(init, ARM_INIT_TRAMPOLINE, 0,
+		PROT_READ | PROT_EXEC);
+	if(!page || arm_init_trampoline_end -
+		arm_init_trampoline_start > PAGE_SIZE) {
+		goto init_init__die;
+	}
+	memset_b((void *)page, 0, PAGE_SIZE);
+	memcpy_b((void *)page, arm_init_trampoline_start,
+		arm_init_trampoline_end - arm_init_trampoline_start);
+	page = map_page(init, ARM_INIT_STACK, 0,
+		PROT_READ | PROT_WRITE);
+	if(!page) {
+		goto init_init__die;
+	}
+	memset_b((void *)page, 0, PAGE_SIZE);
+	if(arm_user_process_setup(init, ARM_INIT_TRAMPOLINE,
+		ARM_INIT_TRAMPOLINE) < 0) {
 		goto init_init__die;
 	}
 #else

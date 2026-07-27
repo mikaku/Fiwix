@@ -121,6 +121,16 @@ root, and process teardown releases subordinate tables before returning its
 fixed root. These objects cross-compile but are not linked into a generic ARM
 kernel yet.
 
+Generic PID 1 construction now has an ARM path as well. It creates a clean
+process root, maps a private read/execute trampoline at `0x3ffff000` and a
+read/write stack below it, allocates a privileged stack, and enters user mode
+through the ARM continuation. The copied 168-byte position-independent
+trampoline opens `/dev/console`, duplicates stdin to stdout/stderr, builds
+32-bit `argv` and `envp` vectors on its aligned stack, and calls ARM EABI
+`execve("/sbin/init", ...)`. Its object has no relocations. This path is
+cross-compiled and shape-gated; runtime exec still needs the filesystem-backed
+ARM ELF32 loader.
+
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
@@ -248,6 +258,13 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   through the same exception-frame layout used by the live vector code. These
   hooks and the ARM page-cloning backend are cross-compiled and host-gated now;
   runtime fork awaits the linked generic ARM image.
+- The historical init trampoline is a C function copied to a user page. On ARM
+  that copy would retain PC-relative calls to kernel helpers and absolute
+  references to kernel `argv`/`envp`, so it is not position-independent. ARM
+  uses a standalone assembly blob whose local strings and vectors are resolved
+  relative to its copied PC and user stack. The gate rejects relocations,
+  requires start/end symbols, limits the blob to one page, and cross-compiles
+  the complete generic PID 1 construction path.
 - The first process-fork hook shallow-copied the parent's complete first-level
   root before generic `clone_pages()` ran. That worked for the isolated section
   gate, but would make parent and child refer to the same mutable second-level

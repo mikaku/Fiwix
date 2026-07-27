@@ -8,6 +8,9 @@
 #ifndef _FIWIX_ARM_TRAP_H
 #define _FIWIX_ARM_TRAP_H
 
+#define ARM_INIT_TRAMPOLINE	0x3FFFF000U
+#define ARM_INIT_STACK		0x3FFFE000U
+
 struct arm_trap_frame {
 	unsigned int r[13];
 	unsigned int pc;
