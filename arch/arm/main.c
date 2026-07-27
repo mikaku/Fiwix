@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include <fiwix/arm_trap.h>
+
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
@@ -33,15 +35,6 @@ typedef unsigned char u8;
 #define ARM_SECTION_USER 0x00011C0EU
 #define ARM_SECTION_USER_XN 0x00011C1EU
 #define ARM_SECTION_DEVICE_XN 0x00010412U
-
-struct arm_trap_frame {
-	u32 r[13];
-	u32 pc;
-	u32 cpsr;
-	u32 user_sp;
-	u32 user_lr;
-	u32 vector;
-};
 
 struct arm_elf32_header {
 	u8 ident[16];

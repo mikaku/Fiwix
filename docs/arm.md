@@ -73,6 +73,17 @@ ranges, and `p_filesz <= p_memsz`; it copies every `PT_LOAD` segment and clears
 BSS before enabling translation. The same loader still needs to be connected
 to filesystem-backed generic exec.
 
+The ARM EABI-to-generic syscall policy is also host-gated. Legacy ARM numbers
+for the bootstrap file/process calls match Fiwix's i386-indexed table, but the
+translator still dispatches them explicitly so unsupported entries do not
+become accidental ABI. It covers `exit`/`exit_group`, fork-compatible `clone`,
+read/write/open/openat/close, exec, wait4, cwd and basic pathname operations,
+descriptor duplication, brk, process IDs, kill, sync, and reboot. The `*at`
+subset currently accepts only `AT_FDCWD`; `unlinkat` rejects flags, and
+`clone` accepts only `SIGCHLD` with a null child stack. The freestanding oracle
+does not link the generic syscall table, so this unit remains host-tested until
+the generic ARM image is introduced.
+
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
@@ -137,6 +148,10 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   small-page allocation for ELF segment permissions and demand paging. Domain
   0 stays in client mode, so AP permission checks apply rather than being
   bypassed by manager-domain access.
+- ARM SVC writes the following instruction address to `lr_svc`; the saved
+  process PC therefore needs no explicit four-byte advance. The EABI translator
+  leaves it unchanged, unlike the RISC-V ecall translator, and the host gate
+  asserts that contract while checking arguments and signed errno returns.
 - D-cache remains disabled after the MMU transition until the generic ARM port
   has an explicit cache-clean and aliasing contract. The instruction cache is
   invalidated before enabling it, after the user fixture has been copied.
