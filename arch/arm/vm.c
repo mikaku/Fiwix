@@ -1,4 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ * fiwix/arch/arm/vm.c
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
 
 #include <fiwix/arm_vm.h>
 

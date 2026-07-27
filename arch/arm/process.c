@@ -1,4 +1,9 @@
-/* Generic Fiwix process address-space hooks for ARMv7. */
+/*
+ * fiwix/arch/arm/process.c
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
 
 #include <fiwix/arm_vm.h>
 #include <fiwix/config.h>

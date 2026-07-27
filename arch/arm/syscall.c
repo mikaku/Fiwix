@@ -1,4 +1,9 @@
-/* Linux ARM EABI syscall-number translation for the generic Fiwix kernel. */
+/*
+ * fiwix/arch/arm/syscall.c
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
 
 #include <fiwix/arm_trap.h>
 #include <fiwix/errno.h>

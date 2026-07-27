@@ -1,7 +1,8 @@
 /*
  * fiwix/include/fiwix/arm_vm.h
  *
- * ARMv7 short-descriptor process address-space policy.
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_ARM_VM_H

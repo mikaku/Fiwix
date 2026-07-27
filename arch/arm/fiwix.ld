@@ -1,3 +1,10 @@
+/*
+ * fiwix/arch/arm/fiwix.ld
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
 OUTPUT_ARCH(arm)
 ENTRY(_start)
 

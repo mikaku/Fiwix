@@ -1,5 +1,8 @@
 /*
- * Saved ARMv7 USR state. Keep this layout synchronized with arch/arm/traps.S.
+ * fiwix/include/fiwix/arm_trap.h
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
  */
 
 #ifndef _FIWIX_ARM_TRAP_H

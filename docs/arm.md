@@ -117,6 +117,10 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
 
 ## Design and bug log
 
+- The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
+  an unrelated convention even though Fiwix uses its own project license.
+  Every ARM source, public header, and linker-script addition now carries the
+  same Fiwix License notice used by the repository's architecture code.
 - ARM has two relevant execution states in this bootstrap. Fiwix deliberately
   targets ARMv7 after the existing AArch64-to-AArch32 compiler pivot rather
   than introducing an unproven ARMv7 seed or a new AArch64 Mes backend.

@@ -1,4 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ * fiwix/arch/arm/traps.S
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
 
     .syntax unified
     .arch armv7-a
