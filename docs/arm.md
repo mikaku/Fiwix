@@ -159,7 +159,11 @@ blocked mask, and returns through syscall 173 on the fixed executable
 trampoline. ARM EABI syscalls 174 and 175 translate Linux `rt_sigaction` and
 `rt_sigprocmask`; return validates the restored PC, SP, CPSR mode, and mask.
 This code cross-compiles with the common signal unit but awaits the generic
-ARM trap entry before it can run in QEMU.
+ARM trap policy before it can run in the generic kernel. The corresponding
+generic vector entry is now live-gated separately: a user SVC transfers a
+complete 72-byte frame onto the process's banked SVC stack, calls the
+architecture dispatch boundary, restores every register and user-bank SP/LR,
+and resumes at the following A32 instruction under QEMU 7.2 and 8.2.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -281,6 +285,16 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   A32 trampoline, including for one-argument handlers; alternate signal
   stacks, floating-point state, Thumb handlers, and caller-provided restorers
   remain unsupported.
+- The fixture vectors used fixed IRQ/abort stacks and deliberately advanced
+  data-abort return PCs to skip probe instructions. Neither behavior is valid
+  for a schedulable process: a context switch would strand its frame on a
+  global exception stack, and a resolved page fault must retry the faulting
+  access. Generic non-SVC entries use ARMv7 `SRS` to place adjusted PC/CPSR
+  state directly on the current process's banked SVC stack before building the
+  common frame. Data abort subtracts eight from `lr_abt`; prefetch, undefined,
+  and IRQ entries subtract four; SVC already contains the following PC. The
+  standalone runtime gate locks the frame size and proves the SVC save/restore
+  path without changing the fixture-only vector behavior.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
