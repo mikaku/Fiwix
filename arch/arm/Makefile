@@ -7,7 +7,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = boot.o traps.o main.o vm.o
+OBJS = boot.o context.o traps.o main.o vm.o
 
 all: $(OBJS)
 

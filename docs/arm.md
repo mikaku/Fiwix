@@ -91,16 +91,19 @@ the generic ARM image is introduced.
 
 The ARM `arch_context` now records callee-saved registers, the scheduler
 continuation, TTBR0, and the privileged stack instead of falling through to
-the i386 TSS layout. A generic ownership layer reserves one aligned root for
-each of Fiwix's 64 process slots, associates every allocated root with its
-`struct proc`, rejects forged release/activation requests, clones a parent root
-for the future fork path, and deterministically reuses released slots. It is
-host-gated but is not linked into the freestanding oracle; the generic ARM
-image will initialize the pool and connect these hooks to process creation,
-release, and scheduling. Root cloning gives each process an independently
-mutable descriptor table, but it deliberately still shares the mapped
-physical sections; physical page allocation and copy-on-write belong to the
-generic fork integration.
+the i386 TSS layout. The AArch32 switch primitive saves and restores r4-r11,
+SP, and LR; TTBR0 activation remains a separate ordered operation for the
+scheduler. Its QEMU gate runs an alternate continuation twice on an independent
+stack and verifies every callee-saved sentinel after resumption. A generic
+ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
+associates every allocated root with its `struct proc`, rejects forged
+release/activation requests, clones a parent root for the future fork path, and
+deterministically reuses released slots. It is host-gated but is not linked
+into the freestanding oracle; the generic ARM image will initialize the pool
+and connect these hooks to process creation, release, and scheduling. Root
+cloning gives each process an independently mutable descriptor table, but it
+deliberately still shares the mapped physical sections; physical page
+allocation and copy-on-write belong to the generic fork integration.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
@@ -110,7 +113,7 @@ allocation/context switching, private physical pages, filesystem access, and
 bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 16,388 bytes with SHA-256
-`dda3d5d2ea51810867fb38dea499fd112ba686248172b893f83d0d822c01dcce`.
+`a96d70cd3420d092da32a14f09e502075bd66db377b56180ff8c710b9df00ee5`.
 
 ## Design and bug log
 
@@ -192,6 +195,12 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   are both checked on lookup/release, and the host gate covers exhaustion,
   deterministic reuse, parent cloning, clone isolation, forged owners, and
   activation.
+- Context switching intentionally does not write TTBR0 in the register
+  save/restore routine. The generic scheduler must activate the incoming
+  process root, update `current`, and only then move to the incoming stack. A
+  host layout gate locks the assembly offsets to the 48-byte C structure, while
+  the QEMU gate switches away and back twice so both first entry and saved-LR
+  resumption are exercised.
 - ARM SVC writes the following instruction address to `lr_svc`; the saved
   process PC therefore needs no explicit four-byte advance. The EABI translator
   leaves it unchanged, unlike the RISC-V ecall translator, and the host gate

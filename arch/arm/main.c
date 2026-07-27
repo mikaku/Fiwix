@@ -2,6 +2,7 @@
 
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
+#include <fiwix/arch_process.h>
 
 typedef unsigned int u32;
 typedef unsigned short u16;
@@ -78,6 +79,14 @@ volatile u32 arm_timer_fired;
 volatile u32 arm_data_abort_seen;
 volatile u32 arm_permission_abort_seen;
 volatile u32 arm_expected_abort_address;
+volatile u32 arm_context_gate_phase;
+
+struct arch_context arm_context_gate_primary_context;
+struct arch_context arm_context_gate_alternate_context;
+
+static u32 arm_context_gate_stack[1024] __attribute__((aligned(8)));
+
+extern void arm_context_gate_alternate(void);
 
 static void uart_putc(int c)
 {
@@ -208,6 +217,31 @@ static int arm_process_root_switch_gate(u32 *primary, u32 *alternate)
 		return -1;
 	}
 	return 0;
+}
+
+static int arm_scheduler_context_gate(void)
+{
+	struct arch_context *alternate;
+
+	alternate = &arm_context_gate_alternate_context;
+	alternate->r4 = 0x44;
+	alternate->r5 = 0x55;
+	alternate->r6 = 0x66;
+	alternate->r7 = 0x77;
+	alternate->r8 = 0x88;
+	alternate->r9 = 0x99;
+	alternate->r10 = 0xAA;
+	alternate->r11 = 0xBB;
+	alternate->sp = ((u32)&arm_context_gate_stack[1024]) & ~7U;
+	alternate->lr = (u32)arm_context_gate_alternate;
+	arm_context_gate_phase = 0;
+
+	arm_context_switch(&arm_context_gate_primary_context, alternate);
+	if(arm_context_gate_phase != 1) {
+		return -1;
+	}
+	arm_context_switch(&arm_context_gate_primary_context, alternate);
+	return arm_context_gate_phase == 2 ? 0 : -1;
 }
 
 static u32 arm_process_mmu_init(void)
@@ -423,6 +457,11 @@ void arm_boot_main(void)
 	user_entry = arm_process_mmu_init();
 	uart_puts("arm ELF32 load passed\n");
 	uart_puts("arm process page tables passed\n");
+	if(arm_scheduler_context_gate()) {
+		uart_puts("arm process failure: scheduler context\n");
+		arm_poweroff();
+	}
+	uart_puts("arm scheduler context passed\n");
 	gic_init();
 	timer_ticks = arm_timer_frequency() >> 10;
 	if(!timer_ticks) {

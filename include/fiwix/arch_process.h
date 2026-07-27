@@ -73,6 +73,7 @@ unsigned int *arm_process_root(const struct proc *);
 int arm_process_address_space_create(struct proc *, const struct proc *);
 int arm_process_address_space_release(struct proc *);
 int arm_process_context_activate(const struct proc *);
+void arm_context_switch(struct arch_context *, struct arch_context *);
 
 #else
 
