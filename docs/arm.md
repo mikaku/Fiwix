@@ -63,7 +63,7 @@ Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
 first process-address-space gate. The ARM VM layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
-TLB flush, and clones roots independently for the future fork path. The boot
+TLB flush, and clones roots independently for controlled VM gates. The boot
 oracle switches between roots at `0x47e00000` and `0x47e04000`; each maps
 virtual `0x00300000` to a different physical section, and the QEMU gate checks
 both values before restoring the primary root. It copies a position-independent
@@ -101,14 +101,13 @@ inline assembly. Kernel, first-user-entry, and copied-fork-frame continuations
 have ARM setup hooks and fixed assembly entry points. A generic
 ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
 associates every allocated root with its `struct proc`, rejects forged
-release/activation requests, clones a parent root for the future fork path, and
-deterministically reuses released slots. It is host-gated but is not linked
+release/activation requests, creates a clean user half for the future fork
+path, and deterministically reuses released slots. It is host-gated but is not linked
 into the freestanding oracle. Generic process initialization now initializes
 the pool; kernel-task creation, zombie release, scheduling, and fork setup use
 explicit ARM hooks instead of the i386 fallback. Root cloning gives each
-process an independently mutable descriptor table, but it deliberately still
-shares the mapped physical sections. Runtime fork remains blocked until ARM
-page cloning replaces the generic i386 memory path.
+process an independently mutable descriptor table. Runtime fork remains
+blocked until ARM page cloning replaces the generic i386 memory path.
 
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
@@ -203,8 +202,7 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   storage plus owner metadata, trading bounded RAM for deterministic bootstrap
   behavior without increasing the disk image. Owner pointers and TTBR0 values
   are both checked on lookup/release, and the host gate covers exhaustion,
-  deterministic reuse, parent cloning, clone isolation, forged owners, and
-  activation.
+  deterministic reuse, clean child user roots, forged owners, and activation.
 - Context switching intentionally does not write TTBR0 in the register
   save/restore routine. The generic scheduler must activate the incoming
   process root, update `current`, and only then move to the incoming stack. A
@@ -213,10 +211,16 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   resumption are exercised.
 - Generic kernel task setup allocates an aligned privileged stack and a process
   root, while first user entry preserves that SVC stack before programming the
-  USR register bank. Fork setup clones the parent's root, copies the exact
+  USR register bank. Fork setup creates a kernel-only root, copies the exact
   72-byte trap frame to the child stack, forces child r0 to zero, and resumes
   through the same exception-frame layout used by the live vector code. These
   hooks are cross-compiled now; generic fork still awaits ARM page cloning.
+- The first process-fork hook shallow-copied the parent's complete first-level
+  root before generic `clone_pages()` ran. That worked for the isolated section
+  gate, but would make parent and child refer to the same mutable second-level
+  tables. Process roots now start with only the supervisor template; the
+  architecture `clone_pages()` backend will be solely responsible for child
+  user leaves and copy-on-write sharing.
 - Generic process files previously used a binary RISC-V-versus-i386 split, so
   selecting `CONFIG_ARCH_ARM` reached `cr3`, TSS, and x86 stack-frame fields.
   Process initialization/release, task creation, scheduling, and fork now have

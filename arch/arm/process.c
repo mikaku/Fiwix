@@ -42,18 +42,13 @@ unsigned int *arm_process_root(const struct proc *p)
 int arm_process_address_space_create(struct proc *p,
 	const struct proc *parent)
 {
-	unsigned int *parent_root;
 	unsigned int n;
 
 	if(!p || p->arch.ttbr0) {
 		return -1;
 	}
-	parent_root = 0;
-	if(parent) {
-		parent_root = arm_process_root(parent);
-		if(!parent_root) {
-			return -1;
-		}
+	if(parent && !arm_process_root(parent)) {
+		return -1;
 	}
 	for(n = 0; n < NR_PROCS; n++) {
 		if(!arm_process_root_owners[n]) {
@@ -63,11 +58,7 @@ int arm_process_address_space_create(struct proc *p,
 	if(n == NR_PROCS) {
 		return -1;
 	}
-	if(parent_root) {
-		if(arm_vm_root_clone(arm_process_roots[n], parent_root)) {
-			return -1;
-		}
-	} else if(arm_vm_root_init(arm_process_roots[n])) {
+	if(arm_vm_root_init(arm_process_roots[n])) {
 		return -1;
 	}
 	p->arch.ttbr0 = arm_vm_ttbr0(arm_process_roots[n]);

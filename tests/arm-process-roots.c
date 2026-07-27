@@ -27,9 +27,12 @@ int main(void)
 	}
 	child_root = arm_process_root(&processes[1]);
 	if(!child_root || child_root == parent_root ||
-		child_root[1] != parent_root[1] ||
-		arm_vm_unmap_user_section(child_root, 0x00100000U) ||
-		child_root[1] || !parent_root[1]) {
+		child_root[1] ||
+		child_root[ARM_VM_RAM_BASE >> 20] !=
+			parent_root[ARM_VM_RAM_BASE >> 20] ||
+		arm_vm_map_user_section(child_root, 0x00100000U,
+			0x47100000U, 1) ||
+		child_root[1] == parent_root[1]) {
 		return 4;
 	}
 	for(n = 2; n < NR_PROCS; n++) {
@@ -49,6 +52,7 @@ int main(void)
 	}
 	if(arm_process_address_space_create(&processes[1], &processes[0]) ||
 		processes[1].arch.ttbr0 != child_ttbr0 ||
+		arm_process_root(&processes[1])[1] ||
 		arm_process_context_activate(&processes[1])) {
 		return 8;
 	}
