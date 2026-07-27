@@ -239,6 +239,12 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   explicit ARM branches, and a cross-compile gate covers all three generic
   translation units. Fork can construct a child context, but remains a runtime
   milestone until ARM `clone_pages()` semantics replace the i386 memory path.
+- ARM also inherited the i386 `PAGE_OFFSET` conversion: adding `0xc0000000` to
+  QEMU RAM at `0x40000000` wraps a 32-bit pointer to zero. ARM now defines an
+  identity-mapped physical/kernel range beginning at `0x40000000`, uses that
+  address as the user ceiling, and starts generic `mmap()` search at
+  `0x20000000`. The VM host gate checks physical-page indexing and both address
+  conversions before exercising descriptors.
 - The first task-hook header edit accidentally placed the `arm_trap_frame`
   forward declaration inside the RISC-V preprocessor branch. The strict ARM
   host compile rejected the resulting prototype-scope tag before it could

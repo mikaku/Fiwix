@@ -16,6 +16,10 @@
 #define PHYSICAL_MEMORY_BASE	0x80000000UL
 #define P2V(addr)		(addr)
 #define V2P(addr)		(addr)
+#elif defined(CONFIG_ARCH_ARM)
+#define PHYSICAL_MEMORY_BASE	0x40000000U
+#define P2V(addr)		(addr)
+#define V2P(addr)		(addr)
 #else
 #define PHYSICAL_MEMORY_BASE	0
 /* convert from physical to virtual the addresses below PAGE_OFFSET only */

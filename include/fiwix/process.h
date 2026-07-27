@@ -43,7 +43,11 @@ struct vma {
 #define PF_USEREAL	0x00000004	/* use real UID in permission checks */
 #define PF_NOTINTERRUPT	0x00000008	/* non-interruptible sleeping */
 
+#ifdef CONFIG_ARCH_ARM
+#define MMAP_START	0x20000000U	/* mmap()s start at 512 MiB */
+#else
 #define MMAP_START	0x40000000	/* mmap()s start at 1GB */
+#endif
 #define IS_SUPERUSER	(current->euid == 0)
 
 #define IO_BITMAP_SIZE	8192		/* 8192*8bit = all I/O address space */
