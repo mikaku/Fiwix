@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <fiwix/arm_trap.h>
+#include <fiwix/arm_vm.h>
 
 typedef unsigned int u32;
 typedef unsigned short u16;
@@ -30,11 +31,6 @@ typedef unsigned char u8;
 #define ARM_USER_STACK_VIRT 0x00200000U
 #define ARM_USER_STACK_TOP 0x00300000U
 #define ARM_KERNEL_PROBE 0x40010000U
-#define ARM_SECTION_SIZE 0x00100000U
-#define ARM_SECTION_SUPERVISOR 0x0001140EU
-#define ARM_SECTION_USER 0x00011C0EU
-#define ARM_SECTION_USER_XN 0x00011C1EU
-#define ARM_SECTION_DEVICE_XN 0x00010412U
 
 struct arm_elf32_header {
 	u8 ident[16];
@@ -119,30 +115,6 @@ static u32 read_midr(void)
 	return value;
 }
 
-static void arm_enable_mmu(u32 table_address)
-{
-	u32 zero;
-	u32 domain;
-	u32 control;
-
-	zero = 0;
-	domain = 1;
-	__asm__ volatile("dsb");
-	__asm__ volatile("mcr p15, 0, %0, c2, c0, 2" : : "r"(zero));
-	__asm__ volatile("mcr p15, 0, %0, c2, c0, 0" : : "r"(table_address));
-	__asm__ volatile("mcr p15, 0, %0, c3, c0, 0" : : "r"(domain));
-	__asm__ volatile("mcr p15, 0, %0, c8, c7, 0" : : "r"(zero));
-	__asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r"(zero));
-	__asm__ volatile("mcr p15, 0, %0, c7, c5, 6" : : "r"(zero));
-	__asm__ volatile("dsb");
-	__asm__ volatile("isb");
-	__asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r"(control));
-	/* D-cache waits for the generic cache-maintenance contract. */
-	control |= 0x00801001U;	/* XP, I-cache, MMU; alignment is already set */
-	__asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
-	__asm__ volatile("isb");
-}
-
 static u32 arm_load_elf32(void)
 {
 	struct arm_elf32_header *header;
@@ -172,7 +144,7 @@ static u32 arm_load_elf32(void)
 		header->phnum >
 			(source_bytes - header->phoff) / header->phentsize ||
 		header->entry < ARM_USER_VIRT ||
-		header->entry >= ARM_USER_VIRT + ARM_SECTION_SIZE) {
+		header->entry >= ARM_USER_VIRT + ARM_VM_SECTION_SIZE) {
 		goto invalid;
 	}
 	program = (struct arm_elf32_program_header *)
@@ -186,8 +158,8 @@ static u32 arm_load_elf32(void)
 			program->filesz > source_bytes - program->offset ||
 			program->memsz < program->filesz ||
 			program->vaddr < ARM_USER_VIRT ||
-			program->vaddr - ARM_USER_VIRT >= ARM_SECTION_SIZE ||
-			program->memsz > ARM_SECTION_SIZE -
+			program->vaddr - ARM_USER_VIRT >= ARM_VM_SECTION_SIZE ||
+			program->memsz > ARM_VM_SECTION_SIZE -
 				(program->vaddr - ARM_USER_VIRT)) {
 			goto invalid;
 		}
@@ -214,37 +186,33 @@ invalid:
 
 static u32 arm_process_mmu_init(void)
 {
-	volatile u32 *table;
+	u32 *table;
 	u8 *destination;
-	u32 address;
 	u32 entry;
 	u32 n;
 
 	destination = (u8 *)ARM_USER_PHYS;
-	for(n = 0; n < ARM_SECTION_SIZE; n++) {
+	for(n = 0; n < ARM_VM_SECTION_SIZE; n++) {
 		destination[n] = 0;
 	}
 	entry = arm_load_elf32();
 
-	table = (volatile u32 *)ARM_L1_TABLE;
-	for(n = 0; n < 4096; n++) {
-		table[n] = 0;
+	table = (u32 *)ARM_L1_TABLE;
+	if(arm_vm_root_init(table) ||
+		arm_vm_map_user_section(table, ARM_USER_VIRT,
+			ARM_USER_PHYS, 1) ||
+		arm_vm_map_user_section(table, ARM_USER_STACK_VIRT,
+			ARM_USER_STACK_PHYS, 0)) {
+		uart_puts("arm process failure: invalid page-table policy\n");
+		arm_poweroff();
 	}
-	for(address = 0x40000000U; address < 0x48000000U;
-		address += ARM_SECTION_SIZE) {
-		table[address >> 20] = address | ARM_SECTION_SUPERVISOR;
-	}
-	table[0x080] = 0x08000000U | ARM_SECTION_DEVICE_XN;
-	table[0x081] = 0x08100000U | ARM_SECTION_DEVICE_XN;
-	table[0x090] = 0x09000000U | ARM_SECTION_DEVICE_XN;
-	table[0x0A0] = 0x0A000000U | ARM_SECTION_DEVICE_XN;
-	table[ARM_USER_VIRT >> 20] = ARM_USER_PHYS | ARM_SECTION_USER;
-	table[ARM_USER_STACK_VIRT >> 20] =
-		ARM_USER_STACK_PHYS | ARM_SECTION_USER_XN;
 
 	arm_expected_abort_address = ARM_USER_VIRT +
 		((u32)arm_alignment_probe - (u32)arm_user_fixture) + 1;
-	arm_enable_mmu(ARM_L1_TABLE);
+	if(arm_vm_activate(table)) {
+		uart_puts("arm process failure: invalid TTBR0 root\n");
+		arm_poweroff();
+	}
 	return entry;
 }
 

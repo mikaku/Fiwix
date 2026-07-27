@@ -25,7 +25,7 @@ _start:
     bic     r0, r0, #0x1f
     orr     r0, r0, #0x13         /* SVC mode */
     orr     r0, r0, #0xc0         /* IRQ and FIQ masked */
-    msr     SPSR_hyp, r0
+    msr     spsr_cxsf, r0
     eret
 
 svc_entry:

@@ -162,6 +162,7 @@ test-riscv64: all
 
 test-arm: all
 	@test "$(TARGET_ARCH)" = arm || { echo "test-arm requires TARGET_ARCH=arm" >&2; exit 1; }
+	HOSTCC="$(HOSTCC)" tests/arm-vm-policy.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh
 	OBJCOPY="$(OBJCOPY)" READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-elf32.sh ./fiwix

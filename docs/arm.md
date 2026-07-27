@@ -60,11 +60,13 @@ make TARGET_ARCH=arm CCEXE=clang \
 ```
 
 Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
-first process-address-space gate. The kernel builds a 16 KiB ARMv7
-short-descriptor table at `0x47e00000`, identity-maps RAM and required devices
-for SVC mode only, copies a position-independent ARM EABI fixture to
-`0x47000000`, and maps it at user virtual `0x00100000`. A separate
-execute-never user stack maps `0x47100000` at `0x00200000..0x002fffff`.
+first process-address-space gate. The ARM VM layer owns 16 KiB ARMv7
+short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
+user section mappings, derives TTBR0, and clones roots independently for the
+future fork path. The boot oracle uses a root at `0x47e00000`, copies a
+position-independent ARM EABI fixture to `0x47000000`, and maps it at user
+virtual `0x00100000`. A separate execute-never user stack maps `0x47100000`
+at `0x00200000..0x002fffff`.
 
 The process fixture is a standalone static ELF32/ARM `ET_EXEC` embedded in the
 bring-up image. The bounded loader validates its ELF identity, machine, type,
@@ -84,15 +86,22 @@ subset currently accepts only `AT_FDCWD`; `unlinkat` rejects flags, and
 does not link the generic syscall table, so this unit remains host-tested until
 the generic ARM image is introduced.
 
+The ARM `arch_context` now records callee-saved registers, the scheduler
+continuation, TTBR0, and the privileged stack instead of falling through to
+the i386 TSS layout. Root cloning gives each process an independently mutable
+descriptor table, but it deliberately still shares the mapped physical
+sections; physical page allocation and copy-on-write belong to the generic
+fork integration.
+
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
-signal completion by modifying the saved user frame. Per-process table
-ownership, generic process integration, filesystem access, and bootstrap
-execution remain incomplete.
+signal completion by modifying the saved user frame. Generic `struct proc`
+allocation/context switching, private physical pages, filesystem access, and
+bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 16,388 bytes with SHA-256
-`d1c9b3d65ec15dc4f09294736998d3692b1499702f652770bcfec651fd3b8874`.
+`f7ce6148e6ed0dfe70cf47b687ac1788dc9eadf91e4d1f13bc89d78b5056e6df`.
 
 ## Design and bug log
 
@@ -102,6 +111,12 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
 - QEMU may enter a 32-bit kernel in HYP mode when virtualization is enabled.
   The entry code preserves `r2`, programs `ELR_hyp`/`SPSR_hyp`, and enters
   masked SVC mode before touching C state.
+- The first HYP return wrote `SPSR_hyp` with the banked-register form while
+  already executing in HYP. Both QEMU 7.2 and 8.2 treated the following `eret`
+  as an illegal exception return and vectored to address `0x4`, before the
+  console was initialized. ARM's ordinary `spsr_cxsf` write selects the
+  current HYP SPSR and makes the same image complete the virtualization-on
+  smoke gate.
 - The kernel is linked at `0x40010000` and objcopied to a raw image for QEMU's
   ARM boot protocol. Supplying the ELF directly jumps to its entry but leaves
   `r2` zero; the raw `-kernel` path loads the same bytes at `0x40010000` and
@@ -148,6 +163,14 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   small-page allocation for ELF segment permissions and demand paging. Domain
   0 stays in client mode, so AP permission checks apply rather than being
   bypassed by manager-domain access.
+- The original process root was assembled and activated as unrelated loops in
+  `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
+  `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
+  bounds, reserves the low supervisor device slots, centralizes the kernel
+  mapping template and TTBR0 transition, and provides an independently mutable
+  clone operation. A host gate verifies kernel inheritance, user
+  execute-never policy, rejection paths, clone isolation, and the ARM-specific
+  process context before QEMU runs the same implementation.
 - ARM SVC writes the following instruction address to `lr_svc`; the saved
   process PC therefore needs no explicit four-byte advance. The EABI translator
   leaves it unchanged, unlike the RISC-V ecall translator, and the host gate

@@ -49,6 +49,23 @@ int riscv64_generic_user_trap(struct riscv64_trap_frame *, unsigned long);
 int riscv64_generic_kernel_trap(unsigned long, unsigned long, unsigned long);
 void riscv64_generic_trap_fatal(unsigned long, unsigned long, unsigned long);
 
+#elif defined(CONFIG_ARCH_ARM)
+
+struct arch_context {
+	unsigned int r4;
+	unsigned int r5;
+	unsigned int r6;
+	unsigned int r7;
+	unsigned int r8;
+	unsigned int r9;
+	unsigned int r10;
+	unsigned int r11;
+	unsigned int sp;
+	unsigned int lr;
+	unsigned int ttbr0;
+	unsigned int kernel_sp;
+};
+
 #else
 
 /* Intel 386 Task Switch State. */
