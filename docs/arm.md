@@ -59,14 +59,22 @@ make TARGET_ARCH=arm CCEXE=clang \
   CROSS_COMPILE=arm-linux-gnueabihf- LIBGCC= test-arm
 ```
 
-Milestones 1 and 2 are implemented on this branch. The second gate installs
-VBAR vectors and banked exception stacks, enters an ARM EABI fixture in USR
-mode, preserves a complete register frame across SVC, data abort, and IRQ, and
-receives the non-secure physical timer through GICv2. No process address space,
-filesystem, or bootstrap completion claim follows from these markers. The Clang oracle
-remains 4,100 bytes because text still fits before the page-aligned data word;
-its milestone-2 SHA-256 is
-`5521fad18a5a8489da194243dc8f086e20d03b49d46f9654f1c07944ad0a2bb3`.
+Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
+first process-address-space gate. The kernel builds a 16 KiB ARMv7
+short-descriptor table at `0x47e00000`, identity-maps RAM and required devices
+for SVC mode only, copies a position-independent ARM EABI fixture to
+`0x47000000`, and maps it at user virtual `0x00100000`. A separate
+execute-never user stack maps `0x47100000` at `0x00200000..0x002fffff`.
+
+The fixture preserves a complete register frame across SVC, alignment abort,
+section-permission abort, and IRQ. It proves that USR mode cannot read the
+identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
+signal completion by modifying the saved user frame. Static ELF32 loading,
+per-process table ownership, generic process integration, filesystem access,
+and bootstrap execution remain incomplete.
+
+The Clang process-address-space oracle is 8,196 bytes with SHA-256
+`cfbf4ce57a6ce34a11f19426adef5c9f88181a1dcfa23c8d398f081ad089c33d`.
 
 ## Design and bug log
 
@@ -117,3 +125,16 @@ its milestone-2 SHA-256 is
   positive data-abort marker. The gate now rejects the common `fail` stem plus
   explicit panic/unhandled diagnostics, so a trap shutdown cannot pass while a
   recovered abort can.
+- The process gate uses one MiB sections deliberately. It establishes the
+  privilege and address-space contract before introducing second-level
+  small-page allocation for ELF segment permissions and demand paging. Domain
+  0 stays in client mode, so AP permission checks apply rather than being
+  bypassed by manager-domain access.
+- D-cache remains disabled after the MMU transition until the generic ARM port
+  has an explicit cache-clean and aliasing contract. The instruction cache is
+  invalidated before enabling it, after the user fixture has been copied.
+- The relocated timer wait changed from testing a memory flag for zero to
+  testing a saved register for one, but initially retained `beq`. It therefore
+  printed the positive timer marker before any IRQ. The terminal assertion
+  still observed `arm_timer_fired == 0` and rejected the run; the loop now uses
+  `bne` and the smoke test requires the permission-abort marker as well.

@@ -21,6 +21,10 @@ SECTIONS
         *(.rodata*)
     } :text
 
+    .arm_user : ALIGN(4) {
+        KEEP(*(.arm_user))
+    } :text
+
     . = ALIGN(0x1000);
     .data : {
         *(.data*)

@@ -64,13 +64,16 @@ arm_trap_init:
     isb
     bx      lr
 
+/* r0=user entry, r1=user stack top */
 arm_enter_user:
     cpsid   if
+    mov     r2, r0
+    mov     r3, r1
     cps     #0x1f                  /* system mode uses the USR register bank */
-    ldr     sp, =USR_STACK_TOP
+    mov     sp, r3
     mov     lr, #0
     cps     #0x13
-    ldr     lr, =arm_user_fixture
+    mov     lr, r2
     mov     r0, #0x50              /* USR mode, FIQ masked, IRQ enabled */
     msr     spsr_cxsf, r0
     movs    pc, lr
@@ -150,69 +153,91 @@ arm_fatal_vector:
 1:  wfi
     b       1b
 
-/*
- * ARM EABI user fixture. It checks callee-saved values after SVC and after
- * the timer IRQ, then exits only after both exception paths have run.
- */
+    .section .arm_user, "ax"
+    .align 2
+    .globl arm_user_fixture
+    .globl arm_user_fixture_end
+    .globl arm_alignment_probe
+
+/* Position-independent ARM EABI process-address-space fixture. */
 arm_user_fixture:
-    ldr     r8, =0x11223344
-    ldr     r9, =0x55667788
-    ldr     r10, =0x99aabbcc
-    ldr     r11, =0xddeeff00
-    ldr     r12, =0x13579bdf
+    mov     r5, #0
+    mov     r6, #0
+    movw    r8, #0x3344
+    movt    r8, #0x1122
+    movw    r9, #0x7788
+    movt    r9, #0x5566
+    movw    r10, #0xbbcc
+    movt    r10, #0x99aa
+    movw    r11, #0xff00
+    movt    r11, #0xddee
+    movw    r12, #0x9bdf
+    movt    r12, #0x1357
 
     mov     r0, #1
-    ldr     r1, =user_svc_message
+    adr     r1, user_svc_message
     mov     r2, #USER_SVC_MESSAGE_SIZE
     mov     r7, #4                /* Linux ARM EABI write */
     svc     #0
 
-    ldr     r0, =0x11223344
+    movw    r0, #0x3344
+    movt    r0, #0x1122
     cmp     r8, r0
     bne     user_frame_failure
-    ldr     r0, =0x55667788
+    movw    r0, #0x7788
+    movt    r0, #0x5566
     cmp     r9, r0
     bne     user_frame_failure
-    ldr     r0, =0x99aabbcc
+    movw    r0, #0xbbcc
+    movt    r0, #0x99aa
     cmp     r10, r0
     bne     user_frame_failure
-    ldr     r0, =0xddeeff00
+    movw    r0, #0xff00
+    movt    r0, #0xddee
     cmp     r11, r0
     bne     user_frame_failure
-    ldr     r0, =0x13579bdf
+    movw    r0, #0x9bdf
+    movt    r0, #0x1357
     cmp     r12, r0
     bne     user_frame_failure
 
-    ldr     r4, =arm_alignment_probe
+    adr     r4, arm_alignment_probe
     ldr     r6, [r4, #1]          /* SCTLR.A turns this into a data abort */
-    ldr     r4, =arm_data_abort_seen
-    ldr     r5, [r4]
-    cmp     r5, #1
+    cmp     r5, #1                /* abort handler updates the saved frame */
     bne     user_frame_failure
 
-    ldr     r4, =arm_timer_fired
-1:  ldr     r5, [r4]
-    cmp     r5, #0
-    beq     1b
+    movw    r4, #0x0000
+    movt    r4, #0x4001
+    ldr     r4, [r4]              /* supervisor-only kernel section */
+    cmp     r4, #1                /* abort handler updates the saved frame */
+    bne     user_frame_failure
 
-    ldr     r0, =0x11223344
+1:  cmp     r6, #1                /* IRQ handler updates the saved frame */
+    bne     1b
+
+    movw    r0, #0x3344
+    movt    r0, #0x1122
     cmp     r8, r0
     bne     user_frame_failure
-    ldr     r0, =0x55667788
+    movw    r0, #0x7788
+    movt    r0, #0x5566
     cmp     r9, r0
     bne     user_frame_failure
-    ldr     r0, =0x99aabbcc
+    movw    r0, #0xbbcc
+    movt    r0, #0x99aa
     cmp     r10, r0
     bne     user_frame_failure
-    ldr     r0, =0xddeeff00
+    movw    r0, #0xff00
+    movt    r0, #0xddee
     cmp     r11, r0
     bne     user_frame_failure
-    ldr     r0, =0x13579bdf
+    movw    r0, #0x9bdf
+    movt    r0, #0x1357
     cmp     r12, r0
     bne     user_frame_failure
 
     mov     r0, #1
-    ldr     r1, =user_irq_message
+    adr     r1, user_irq_message
     mov     r2, #USER_IRQ_MESSAGE_SIZE
     mov     r7, #4
     svc     #0
@@ -227,9 +252,7 @@ user_frame_failure:
     svc     #0
 2:  b       2b
 
-    .section .rodata
     .align 2
-    .globl arm_alignment_probe
 arm_alignment_probe:
     .word   0x10203040
 user_svc_message:
@@ -240,5 +263,6 @@ user_irq_message:
 user_irq_message_end:
     .equ USER_SVC_MESSAGE_SIZE, user_svc_message_end - user_svc_message
     .equ USER_IRQ_MESSAGE_SIZE, user_irq_message_end - user_irq_message
+arm_user_fixture_end:
 
     .section .note.GNU-stack,"",%progbits
