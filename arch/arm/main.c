@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/arm_trap.h>
+#include <fiwix/arm_elf.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/arch_process.h>
 
@@ -46,34 +47,6 @@ typedef unsigned char u8;
 #define ARM_KERNEL_PROBE 0x40010000U
 #define ARM_USER_PAGE_INITIAL 0xA5A5C33CU
 #define ARM_USER_PAGE_UPDATED 0x5A5A3CC3U
-
-struct arm_elf32_header {
-	u8 ident[16];
-	u16 type;
-	u16 machine;
-	u32 version;
-	u32 entry;
-	u32 phoff;
-	u32 shoff;
-	u32 flags;
-	u16 ehsize;
-	u16 phentsize;
-	u16 phnum;
-	u16 shentsize;
-	u16 shnum;
-	u16 shstrndx;
-};
-
-struct arm_elf32_program_header {
-	u32 type;
-	u32 offset;
-	u32 vaddr;
-	u32 paddr;
-	u32 filesz;
-	u32 memsz;
-	u32 flags;
-	u32 align;
-};
 
 extern u32 arm_boot_dtb;
 extern void arm_poweroff(void);
@@ -140,66 +113,32 @@ static u32 read_midr(void)
 
 static u32 arm_load_elf32(void)
 {
-	struct arm_elf32_header *header;
-	struct arm_elf32_program_header *program;
+	struct arm_elf_plan plan;
+	struct arm_elf_segment *segment;
 	u8 *source;
 	u8 *destination;
 	u32 source_bytes;
-	u32 loaded;
 	u32 n;
 	u32 p;
 
 	source = arm_user_elf_start;
 	source_bytes = (u32)arm_user_elf_end - (u32)arm_user_elf_start;
-	if(source_bytes < sizeof(struct arm_elf32_header)) {
+	if(arm_elf32_plan(source, source_bytes, source_bytes,
+		ARM_USER_VIRT + ARM_VM_SECTION_SIZE, &plan)) {
 		goto invalid;
 	}
-	header = (struct arm_elf32_header *)source;
-	if(header->ident[0] != 0x7FU || header->ident[1] != 'E' ||
-		header->ident[2] != 'L' || header->ident[3] != 'F' ||
-		header->ident[4] != 1 || header->ident[5] != 1 ||
-		header->ident[6] != 1 || header->type != 2 ||
-		header->machine != 40 || header->version != 1 ||
-		header->ehsize != sizeof(struct arm_elf32_header) ||
-		header->phentsize != sizeof(struct arm_elf32_program_header) ||
-		!header->phnum || header->phnum > 16 ||
-		header->phoff > source_bytes ||
-		header->phnum >
-			(source_bytes - header->phoff) / header->phentsize ||
-		header->entry < ARM_USER_VIRT ||
-		header->entry >= ARM_USER_VIRT + ARM_VM_SECTION_SIZE) {
-		goto invalid;
-	}
-	program = (struct arm_elf32_program_header *)
-		(source + header->phoff);
-	loaded = 0;
-	for(p = 0; p < header->phnum; p++, program++) {
-		if(program->type != 1) {
-			continue;
-		}
-		if(program->offset > source_bytes ||
-			program->filesz > source_bytes - program->offset ||
-			program->memsz < program->filesz ||
-			program->vaddr < ARM_USER_VIRT ||
-			program->vaddr - ARM_USER_VIRT >= ARM_VM_SECTION_SIZE ||
-			program->memsz > ARM_VM_SECTION_SIZE -
-				(program->vaddr - ARM_USER_VIRT)) {
-			goto invalid;
-		}
+	for(p = 0; p < plan.load_count; p++) {
+		segment = &plan.load[p];
 		destination = (u8 *)(ARM_USER_PHYS +
-			(program->vaddr - ARM_USER_VIRT));
-		for(n = 0; n < program->filesz; n++) {
-			destination[n] = source[program->offset + n];
+			(segment->vaddr - ARM_USER_VIRT));
+		for(n = 0; n < segment->filesz; n++) {
+			destination[n] = source[segment->offset + n];
 		}
-		for(; n < program->memsz; n++) {
+		for(; n < segment->memsz; n++) {
 			destination[n] = 0;
 		}
-		loaded++;
 	}
-	if(!loaded) {
-		goto invalid;
-	}
-	return header->entry;
+	return plan.entry;
 
 invalid:
 	uart_puts("arm process failure: invalid ELF32 image\n");
@@ -294,7 +233,7 @@ static u32 arm_process_mmu_init(void)
 		arm_poweroff();
 	}
 
-	arm_expected_abort_address = ARM_USER_VIRT +
+	arm_expected_abort_address = entry +
 		((u32)arm_alignment_probe - (u32)arm_user_fixture) + 1;
 	if(arm_vm_activate(table)) {
 		uart_puts("arm process failure: invalid TTBR0 root\n");

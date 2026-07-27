@@ -174,7 +174,7 @@ arm_user_elf_start:
     .short  2                       /* ET_EXEC */
     .short  40                      /* EM_ARM */
     .word   1
-    .word   0x00100000              /* e_entry */
+    .word   0x00101000              /* e_entry */
     .word   52                      /* e_phoff */
     .word   0
     .word   0
@@ -186,11 +186,11 @@ arm_user_elf_start:
     .short  0
 
     .word   1                       /* PT_LOAD */
-    .word   arm_user_fixture - arm_user_elf_start
+    .word   0                       /* p_offset */
     .word   0x00100000              /* p_vaddr */
     .word   0
-    .word   arm_user_fixture_end - arm_user_fixture
-    .word   arm_user_memory_end - arm_user_fixture
+    .word   arm_user_fixture_end - arm_user_elf_start
+    .word   arm_user_memory_end - arm_user_elf_start
     .word   7                       /* PF_R | PF_W | PF_X */
     .word   4096
 

@@ -11,9 +11,9 @@ trap 'rm -f "$fixture"' EXIT HUP INT TERM
 "$READELF" -h "$fixture" | grep -q 'Class:.*ELF32'
 "$READELF" -h "$fixture" | grep -q 'Type:.*EXEC'
 "$READELF" -h "$fixture" | grep -q 'Machine:.*ARM'
-"$READELF" -h "$fixture" | grep -q 'Entry point address:.*0x100000'
+"$READELF" -h "$fixture" | grep -q 'Entry point address:.*0x101000'
 test "$("$READELF" -lW "$fixture" | grep -c ' LOAD ')" -eq 1
 "$READELF" -lW "$fixture" |
-	grep -q 'LOAD.*0x00100000.*RWE.*0x1000'
+	grep -q 'LOAD.*0x000000.*0x00100000.*RWE.*0x1000'
 
 printf '%s\n' 'ARM ELF32 fixture shape passed'

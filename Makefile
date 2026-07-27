@@ -171,6 +171,7 @@ test-arm: all
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" AS="$(AS)" NM="$(NM)" \
 		OBJCOPY="$(OBJCOPY)" READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-init-process.sh
+	HOSTCC="$(HOSTCC)" tests/arm-elf32-plan.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

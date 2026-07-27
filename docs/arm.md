@@ -68,18 +68,21 @@ roots independently for controlled VM gates. The boot oracle switches between
 roots at `0x47e00000` and `0x47e04000`; each maps
 virtual `0x00300000` to a different physical section, and the QEMU gate checks
 both values before restoring the primary root. It copies a position-independent
-ARM EABI fixture to `0x47000000` and maps it at user virtual `0x00100000`. A
-separate execute-never user stack maps `0x47100000` at
+ARM EABI fixture to `0x47000000`, maps the ELF header and program-header table
+at user virtual `0x00100000`, and enters code at `0x00101000`. A separate
+execute-never user stack maps `0x47100000` at
 `0x00200000..0x002fffff`. A coarse table at `0x47e08000` maps one writable,
 execute-never user page at `0x00400000`; user mode verifies its initial value,
 writes a new sentinel, and the exit path verifies the physical page changed.
 
 The process fixture is a standalone static ELF32/ARM `ET_EXEC` embedded in the
-bring-up image. The bounded loader validates its ELF identity, machine, type,
-header sizes, program-header table, entry point, source ranges, user virtual
-ranges, and `p_filesz <= p_memsz`; it copies every `PT_LOAD` segment and clears
-BSS before enabling translation. The same loader still needs to be connected
-to filesystem-backed generic exec.
+bring-up image. A pure bounded planner validates its ELF identity, machine,
+type, header sizes, program-header table, entry point, source ranges, user
+virtual ranges, alignment, non-overlap, mapped program-header metadata, absence
+of `PT_INTERP`, and `p_filesz <= p_memsz`. The freestanding loader consumes
+that plan, copies every `PT_LOAD` segment, and clears BSS before enabling
+translation. The same plan still needs to drive filesystem-backed generic
+exec.
 
 The ARM EABI-to-generic syscall policy is also host-gated. Legacy ARM numbers
 for the bootstrap file/process calls match Fiwix's i386-indexed table, but the
@@ -140,7 +143,7 @@ host runtime gates, but they are not yet linked into the ARM kernel.
 Filesystem access and bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
-`b3583a3a891760312986440606e95d05a58b185700f82cbbb58815dceff1f83a`.
+`9061091f60bab16b39baf8126133df4055f5e47a5b594a281e6d538b5a0c39d0`.
 
 ## Design and bug log
 
@@ -226,6 +229,14 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   user permissions. The ARM backend rejects `PAGE_NOALLOC` mappings; the only
   current caller is the framebuffer path, and ARM disables that i386-specific
   device. A future framebuffer port needs separate mapping metadata.
+- The first embedded ELF mapped only bytes beginning at file offset 4096, so
+  its program-header table was not present in any user mapping. That was enough
+  for the bespoke copy loop but cannot supply a valid `AT_PHDR` to generic
+  exec. Its single `PT_LOAD` now starts at file offset zero and maps the header
+  page at `0x00100000`, while the code entry moves to `0x00101000`. A shared
+  pure planner replaces duplicate parser logic and rejects malformed class,
+  machine, type, sizes, file/virtual ranges, alignment, overlap, interpreter,
+  entry, and program-header mappings before any process image is released.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping
