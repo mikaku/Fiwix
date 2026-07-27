@@ -39,8 +39,13 @@ typedef unsigned char u8;
 #define ARM_CONTEXT_VIRT 0x00300000U
 #define ARM_CONTEXT_PRIMARY_PHYS 0x47200000U
 #define ARM_CONTEXT_ALTERNATE_PHYS 0x47300000U
+#define ARM_USER_PAGE_PHYS 0x47400000U
+#define ARM_USER_PAGE_VIRT 0x00400000U
 #define ARM_L1_ALTERNATE 0x47E04000U
+#define ARM_L2_TABLE 0x47E08000U
 #define ARM_KERNEL_PROBE 0x40010000U
+#define ARM_USER_PAGE_INITIAL 0xA5A5C33CU
+#define ARM_USER_PAGE_UPDATED 0x5A5A3CC3U
 
 struct arm_elf32_header {
 	u8 ident[16];
@@ -252,6 +257,8 @@ static int arm_scheduler_context_gate(void)
 static u32 arm_process_mmu_init(void)
 {
 	u32 *alternate;
+	u32 *l2;
+	volatile u32 *small_page;
 	u32 *table;
 	u8 *destination;
 	u32 entry;
@@ -264,6 +271,9 @@ static u32 arm_process_mmu_init(void)
 	entry = arm_load_elf32();
 
 	alternate = (u32 *)ARM_L1_ALTERNATE;
+	l2 = (u32 *)ARM_L2_TABLE;
+	small_page = (volatile u32 *)ARM_USER_PAGE_PHYS;
+	*small_page = ARM_USER_PAGE_INITIAL;
 	table = (u32 *)ARM_L1_TABLE;
 	if(arm_vm_root_init(table) ||
 		arm_vm_map_user_section(table, ARM_USER_VIRT,
@@ -272,6 +282,11 @@ static u32 arm_process_mmu_init(void)
 			ARM_USER_STACK_PHYS, 0) ||
 		arm_vm_map_user_section(table, ARM_CONTEXT_VIRT,
 			ARM_CONTEXT_PRIMARY_PHYS, 0) ||
+		arm_vm_l2_init(l2) ||
+		arm_vm_attach_user_table(table, ARM_USER_PAGE_VIRT,
+			ARM_L2_TABLE) ||
+		arm_vm_map_user_page(l2, ARM_USER_PAGE_VIRT,
+			ARM_USER_PAGE_PHYS, 1, 0) ||
 		arm_vm_root_clone(alternate, table) ||
 		arm_vm_map_user_section(alternate, ARM_CONTEXT_VIRT,
 			ARM_CONTEXT_ALTERNATE_PHYS, 0)) {
@@ -290,6 +305,11 @@ static u32 arm_process_mmu_init(void)
 		arm_poweroff();
 	}
 	uart_puts("arm process root switch passed\n");
+	if(*(volatile u32 *)ARM_USER_PAGE_VIRT != ARM_USER_PAGE_INITIAL) {
+		uart_puts("arm process failure: small-page translation\n");
+		arm_poweroff();
+	}
+	uart_puts("arm process small page passed\n");
 	return entry;
 }
 
@@ -360,7 +380,9 @@ void arm_handle_svc(struct arm_trap_frame *frame)
 		case 1:
 			if(frame->r[0] || !arm_timer_fired ||
 				!arm_data_abort_seen ||
-				!arm_permission_abort_seen) {
+				!arm_permission_abort_seen ||
+				*(volatile u32 *)ARM_USER_PAGE_PHYS !=
+					ARM_USER_PAGE_UPDATED) {
 				uart_puts("arm trap failure: user exit r0=0x");
 				uart_puthex32(frame->r[0]);
 				uart_puts(" timer=0x");
@@ -372,6 +394,7 @@ void arm_handle_svc(struct arm_trap_frame *frame)
 				uart_putc('\n');
 				arm_poweroff();
 			}
+			uart_puts("Fiwix ARMv7 user small page passed\n");
 			uart_puts("arm trap smoke passed\n");
 			arm_poweroff();
 			return;

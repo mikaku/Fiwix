@@ -214,6 +214,19 @@ arm_user_fixture:
     cmp     r4, #0
     bne     user_frame_failure
 
+    movw    r3, #0x0000
+    movt    r3, #0x0040
+    ldr     r0, [r3]
+    movw    r1, #0xc33c
+    movt    r1, #0xa5a5
+    cmp     r0, r1
+    bne     user_frame_failure
+    mvn     r1, r1
+    str     r1, [r3]
+    ldr     r0, [r3]
+    cmp     r0, r1
+    bne     user_frame_failure
+
     mov     r0, #1
     adr     r1, user_svc_message
     mov     r2, #USER_SVC_MESSAGE_SIZE

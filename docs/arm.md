@@ -63,13 +63,16 @@ Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
 first process-address-space gate. The ARM VM layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
-TLB flush, and clones roots independently for controlled VM gates. The boot
-oracle switches between roots at `0x47e00000` and `0x47e04000`; each maps
+TLB flush, installs 1 KiB coarse tables with 4 KiB user leaves, and clones
+roots independently for controlled VM gates. The boot oracle switches between
+roots at `0x47e00000` and `0x47e04000`; each maps
 virtual `0x00300000` to a different physical section, and the QEMU gate checks
 both values before restoring the primary root. It copies a position-independent
 ARM EABI fixture to `0x47000000` and maps it at user virtual `0x00100000`. A
 separate execute-never user stack maps `0x47100000` at
-`0x00200000..0x002fffff`.
+`0x00200000..0x002fffff`. A coarse table at `0x47e08000` maps one writable,
+execute-never user page at `0x00400000`; user mode verifies its initial value,
+writes a new sentinel, and the exit path verifies the physical page changed.
 
 The process fixture is a standalone static ELF32/ARM `ET_EXEC` embedded in the
 bring-up image. The bounded loader validates its ELF identity, machine, type,
@@ -117,8 +120,8 @@ files now cross-compile for ARM, but they are not yet linked into the ARM
 kernel. Private physical pages, filesystem access, and bootstrap execution
 remain incomplete.
 
-The Clang ELF32 process oracle is 16,388 bytes with SHA-256
-`3e5cede44140ffd620e3d825164d66b02e5adc0915259d520d286ae46507868d`.
+The Clang ELF32 process oracle is 20,484 bytes with SHA-256
+`b3583a3a891760312986440606e95d05a58b185700f82cbbb58815dceff1f83a`.
 
 ## Design and bug log
 
@@ -184,6 +187,15 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   small-page allocation for ELF segment permissions and demand paging. Domain
   0 stays in client mode, so AP permission checks apply rather than being
   bypassed by manager-domain access.
+- The shared VM policy now also encodes ARMv7 coarse-table and small-page
+  descriptors. User leaves are non-global normal memory with explicit
+  read-only/read-write and execute/execute-never combinations. The host gate
+  locks their exact descriptor bits and rejects misaligned tables/pages,
+  device-window aliases, out-of-RAM physical addresses, invalid permission
+  values, and duplicate entries. The QEMU gate performs a user-mode
+  read/write through a writable execute-never 4 KiB leaf. This layer accepts
+  caller-owned table storage deliberately; generic allocation, reclamation,
+  copy-on-write, and the `PAGE_NOALLOC` policy belong to the memory backend.
 - The original process root was assembled and activated as unrelated loops in
   `main.c`, and `CONFIG_ARCH_ARM` silently selected the i386 TSS layout in
   `arch_process.h`. The shared ARM VM API now checks root alignment and mapping

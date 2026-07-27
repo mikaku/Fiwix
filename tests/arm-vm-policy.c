@@ -5,6 +5,8 @@ static unsigned int parent_root[ARM_VM_ROOT_ENTRIES]
 	__attribute__((aligned(ARM_VM_ROOT_ALIGNMENT)));
 static unsigned int child_root[ARM_VM_ROOT_ENTRIES]
 	__attribute__((aligned(ARM_VM_ROOT_ALIGNMENT)));
+static unsigned int user_l2[ARM_VM_L2_ENTRIES]
+	__attribute__((aligned(ARM_VM_L2_ALIGNMENT)));
 
 int main(void)
 {
@@ -14,6 +16,9 @@ int main(void)
 	for(n = 0; n < ARM_VM_ROOT_ENTRIES; n++) {
 		parent_root[n] = ~0U;
 		child_root[n] = ~0U;
+	}
+	for(n = 0; n < ARM_VM_L2_ENTRIES; n++) {
+		user_l2[n] = ~0U;
 	}
 	if(arm_vm_root_init(parent_root)) {
 		return 1;
@@ -54,16 +59,63 @@ int main(void)
 			ARM_VM_IDENTITY_LIMIT, 1)) {
 		return 5;
 	}
+	if(arm_vm_l2_init(user_l2) ||
+		arm_vm_attach_user_table(parent_root, 0x00400000U,
+			0x47E08000U) ||
+		arm_vm_map_user_page(user_l2, 0x00400000U,
+			0x47400000U, 1, 0) ||
+		arm_vm_map_user_page(user_l2, 0x00401000U,
+			0x47500000U, 0, 1)) {
+		return 6;
+	}
+	if(parent_root[4] != (0x47E08000U | ARM_VM_COARSE_TABLE) ||
+		user_l2[0] != (0x47400000U | ARM_VM_PAGE_USER_RW_XN) ||
+		user_l2[1] != (0x47500000U | ARM_VM_PAGE_USER_RO)) {
+		return 7;
+	}
+	if(arm_vm_l2_init(0) != -1 ||
+		arm_vm_l2_init(user_l2 + 1) != -1 ||
+		!arm_vm_attach_user_table(parent_root, 0x00400000U,
+			0x47E08000U) ||
+		!arm_vm_attach_user_table(parent_root, 0x00401000U,
+			0x47E0C000U) ||
+		!arm_vm_attach_user_table(parent_root, 0x08000000U,
+			0x47E0C000U) ||
+		!arm_vm_attach_user_table(parent_root, 0x00500000U,
+			0x47E0C001U) ||
+		!arm_vm_map_user_page(user_l2, 0x00400000U,
+			0x47600000U, 1, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x00400001U,
+			0x47600000U, 1, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x08000000U,
+			0x47600000U, 1, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x00402000U,
+			0x47600001U, 1, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x00402000U,
+			ARM_VM_IDENTITY_LIMIT, 1, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x00402000U,
+			0x47600000U, 2, 0) ||
+		!arm_vm_map_user_page(user_l2, 0x00402000U,
+			0x47600000U, 1, 2)) {
+		return 8;
+	}
+	if(arm_vm_unmap_user_page(user_l2, 0x00400000U) ||
+		user_l2[0] ||
+		!arm_vm_unmap_user_page(user_l2 + 1, 0x00401000U) ||
+		!arm_vm_unmap_user_page(user_l2, 0)) {
+		return 9;
+	}
 	if(arm_vm_root_clone(child_root, parent_root) ||
 		child_root[1] != parent_root[1] ||
-		child_root[2] != parent_root[2]) {
-		return 6;
+		child_root[2] != parent_root[2] ||
+		child_root[4] != parent_root[4]) {
+		return 10;
 	}
 	if(arm_vm_unmap_user_section(child_root, 0x00100000U) ||
 		child_root[1] || !parent_root[1] ||
 		!arm_vm_unmap_user_section(child_root, 0x09000000U) ||
 		!arm_vm_unmap_user_section(child_root, ARM_VM_RAM_BASE)) {
-		return 7;
+		return 11;
 	}
 	if(arm_vm_root_init(0) != -1 ||
 		arm_vm_root_init(parent_root + 1) != -1 ||
@@ -71,20 +123,20 @@ int main(void)
 		arm_vm_ttbr0(parent_root + 1) ||
 		arm_vm_activate(parent_root + 1) != -1 ||
 		arm_vm_context_activate(parent_root + 1) != -1) {
-		return 8;
+		return 12;
 	}
 	if(arm_vm_ttbr0(parent_root) !=
 		(unsigned int)(unsigned long)parent_root ||
 		arm_vm_activate(parent_root) ||
 		arm_vm_context_activate(parent_root)) {
-		return 9;
+		return 13;
 	}
 
 	context.ttbr0 = arm_vm_ttbr0(parent_root);
 	context.kernel_sp = 0x47E10000U;
 	if(context.ttbr0 != (unsigned int)(unsigned long)parent_root ||
 		context.kernel_sp != 0x47E10000U) {
-		return 10;
+		return 14;
 	}
 	return 0;
 }
