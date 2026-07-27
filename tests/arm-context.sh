@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright 2026, Fiwix ARM contributors.
+# Distributed under the terms of the Fiwix License.
+
 set -eu
 
 AS=${AS:-arm-linux-gnueabihf-as}

@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
 #include <fiwix/arch_process.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/mm.h>

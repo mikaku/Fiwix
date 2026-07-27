@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
 #include <fiwix/arch_process.h>
 
 #define OFFSET(type, member) __builtin_offsetof(type, member)

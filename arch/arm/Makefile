@@ -1,4 +1,6 @@
 # fiwix/arch/arm/Makefile
+# Copyright 2026, Fiwix ARM contributors.
+# Distributed under the terms of the Fiwix License.
 
 .DEFAULT_GOAL := all
 

@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
 #include <fiwix/arm_trap.h>
 #include <fiwix/errno.h>
 #include <fiwix/sigcontext.h>
