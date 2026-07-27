@@ -17,7 +17,7 @@ int main(void)
 		return 1;
 	}
 	parent_root = arm_process_root(&processes[0]);
-	if(!parent_root ||
+	if(!parent_root || processes[0].rss != ARM_VM_ROOT_PAGES ||
 		arm_vm_map_user_section(parent_root, 0x00100000U,
 			0x47000000U, 1)) {
 		return 2;
@@ -43,6 +43,7 @@ int main(void)
 	child_ttbr0 = processes[1].arch.ttbr0;
 	if(arm_process_address_space_release(&processes[1]) ||
 		processes[1].arch.ttbr0 ||
+		processes[1].rss ||
 		arm_process_root(&processes[1])) {
 		return 7;
 	}

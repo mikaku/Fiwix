@@ -94,7 +94,11 @@ continuation, TTBR0, and the privileged stack instead of falling through to
 the i386 TSS layout. The AArch32 switch primitive saves and restores r4-r11,
 SP, and LR; TTBR0 activation remains a separate ordered operation for the
 scheduler. Its QEMU gate runs an alternate continuation twice on an independent
-stack and verifies every callee-saved sentinel after resumption. A generic
+stack and verifies every callee-saved sentinel after resumption. Architecture
+helpers now provide IRQ masking/state restoration, WFI, DFAR/SP access, unified
+TLB invalidation, and an EABI three-argument user SVC without selecting x86
+inline assembly. Kernel, first-user-entry, and copied-fork-frame continuations
+have ARM setup hooks and fixed assembly entry points. A generic
 ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
 associates every allocated root with its `struct proc`, rejects forged
 release/activation requests, clones a parent root for the future fork path, and
@@ -113,7 +117,7 @@ allocation/context switching, private physical pages, filesystem access, and
 bootstrap execution remain incomplete.
 
 The Clang ELF32 process oracle is 16,388 bytes with SHA-256
-`a96d70cd3420d092da32a14f09e502075bd66db377b56180ff8c710b9df00ee5`.
+`3e5cede44140ffd620e3d825164d66b02e5adc0915259d520d286ae46507868d`.
 
 ## Design and bug log
 
@@ -205,6 +209,16 @@ The Clang ELF32 process oracle is 16,388 bytes with SHA-256
   host layout gate locks the assembly offsets to the 48-byte C structure, while
   the QEMU gate switches away and back twice so both first entry and saved-LR
   resumption are exercised.
+- Generic kernel task setup allocates an aligned privileged stack and a process
+  root, while first user entry preserves that SVC stack before programming the
+  USR register bank. Fork setup clones the parent's root, copies the exact
+  72-byte trap frame to the child stack, forces child r0 to zero, and resumes
+  through the same exception-frame layout used by the live vector code. These
+  hooks are cross-compiled now; generic fork still awaits ARM page cloning.
+- The first task-hook header edit accidentally placed the `arm_trap_frame`
+  forward declaration inside the RISC-V preprocessor branch. The strict ARM
+  host compile rejected the resulting prototype-scope tag before it could
+  become an ABI mismatch; the declaration now lives beside the ARM context.
 - ARM SVC writes the following instruction address to `lr_svc`; the saved
   process PC therefore needs no explicit four-byte advance. The EABI translator
   leaves it unchanged, unlike the RISC-V ecall translator, and the host gate

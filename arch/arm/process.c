@@ -75,6 +75,7 @@ int arm_process_address_space_create(struct proc *p,
 		return -1;
 	}
 	arm_process_root_owners[n] = p;
+	p->rss += ARM_VM_ROOT_PAGES;
 	return 0;
 }
 
@@ -102,6 +103,7 @@ int arm_process_address_space_release(struct proc *p)
 	}
 	arm_process_root_owners[n] = 0;
 	p->arch.ttbr0 = 0;
+	p->rss -= ARM_VM_ROOT_PAGES;
 	return 0;
 }
 

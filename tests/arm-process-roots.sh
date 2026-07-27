@@ -25,6 +25,12 @@ if [ -n "${ARMCC:-}" ]; then
 		-ffreestanding -Wall -Wextra -Werror -Wstrict-prototypes \
 		-c "$root/arch/arm/process.c" \
 		-o "$temporary/arm-process.o"
+	"$@" -march=armv7-a -mfloat-abi=soft -marm -std=c89 \
+		-D__KERNEL__ -DCONFIG_ARCH_ARM -I"$root/include" \
+		-O2 -fno-pie -fno-pic -fno-common -fno-stack-protector \
+		-ffreestanding -Wall -Wextra -Werror -Wstrict-prototypes \
+		-c "$root/arch/arm/task.c" \
+		-o "$temporary/arm-task.o"
 fi
 
 printf '%s\n' 'Fiwix ARM struct proc root ownership gate passed'

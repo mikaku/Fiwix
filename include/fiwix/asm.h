@@ -126,6 +126,36 @@ unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
 	riscv64_user_syscall3((unsigned long)(num), (unsigned long)(arg1), \
 		(unsigned long)(arg2), (unsigned long)(arg3))
 
+#elif defined(CONFIG_ARCH_ARM)
+
+void arm_interrupt_disable(void);
+void arm_interrupt_enable(void);
+unsigned int arm_interrupt_state(void);
+void arm_interrupt_restore(unsigned int);
+unsigned int arm_read_dfar(void);
+unsigned int arm_read_sp(void);
+void arm_set_sp(unsigned int);
+void arm_wait_for_interrupt(void);
+unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
+	unsigned int);
+
+#define CLI() arm_interrupt_disable()
+#define STI() arm_interrupt_enable()
+#define NOP() __asm__ __volatile__ ("nop":::"memory")
+#define HLT() arm_wait_for_interrupt()
+
+#define GET_CR2(cr2) ((cr2) = arm_read_dfar())
+#define GET_ESP(esp) ((esp) = arm_read_sp())
+#define SET_ESP(esp) arm_set_sp((unsigned int)(esp))
+#define GET_GS(gs) ((gs) = 0)
+
+#define SAVE_FLAGS(flags) ((flags) = arm_interrupt_state())
+#define RESTORE_FLAGS(flags) arm_interrupt_restore(flags)
+
+#define USER_SYSCALL(num, arg1, arg2, arg3) \
+	arm_user_syscall3((unsigned int)(num), (unsigned int)(arg1), \
+		(unsigned int)(arg2), (unsigned int)(arg3))
+
 #else
 
 #define CLI() __asm__ __volatile__ ("cli":::"memory")
@@ -179,7 +209,7 @@ unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
 	);
 #endif
 
-#endif /* CONFIG_ARCH_RISCV64 */
+#endif /* architecture */
 
 /*
 static inline unsigned long long int get_rdtsc(void)
