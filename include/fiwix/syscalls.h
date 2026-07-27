@@ -25,7 +25,7 @@
 #include <fiwix/mman.h>
 #include <fiwix/ipc.h>
 
-#define NR_SYSCALLS	(sizeof(syscall_table) / sizeof(unsigned int))
+#define NR_SYSCALLS	(sizeof(syscall_table) / sizeof(void *))
 
 #ifdef CONFIG_SYSCALL_6TH_ARG
 int do_syscall(unsigned int, int, int, int, int, int, int, struct sigcontext);
