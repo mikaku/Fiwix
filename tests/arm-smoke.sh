@@ -14,6 +14,7 @@ timeout "$TIMEOUT" "$QEMU" \
 grep 'Fiwix ARMv7 firmware-free boot' "$LOG"
 grep 'mode=0x00000013' "$LOG"
 grep 'arm boot smoke passed' "$LOG"
+grep 'arm ELF32 load passed' "$LOG"
 grep 'arm process page tables passed' "$LOG"
 grep 'arm vector and timer setup passed' "$LOG"
 grep 'Fiwix ARMv7 user SVC passed' "$LOG"

@@ -66,15 +66,22 @@ for SVC mode only, copies a position-independent ARM EABI fixture to
 `0x47000000`, and maps it at user virtual `0x00100000`. A separate
 execute-never user stack maps `0x47100000` at `0x00200000..0x002fffff`.
 
+The process fixture is a standalone static ELF32/ARM `ET_EXEC` embedded in the
+bring-up image. The bounded loader validates its ELF identity, machine, type,
+header sizes, program-header table, entry point, source ranges, user virtual
+ranges, and `p_filesz <= p_memsz`; it copies every `PT_LOAD` segment and clears
+BSS before enabling translation. The same loader still needs to be connected
+to filesystem-backed generic exec.
+
 The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
-signal completion by modifying the saved user frame. Static ELF32 loading,
-per-process table ownership, generic process integration, filesystem access,
-and bootstrap execution remain incomplete.
+signal completion by modifying the saved user frame. Per-process table
+ownership, generic process integration, filesystem access, and bootstrap
+execution remain incomplete.
 
-The Clang process-address-space oracle is 8,196 bytes with SHA-256
-`cfbf4ce57a6ce34a11f19426adef5c9f88181a1dcfa23c8d398f081ad089c33d`.
+The Clang ELF32 process oracle is 16,388 bytes with SHA-256
+`d1c9b3d65ec15dc4f09294736998d3692b1499702f652770bcfec651fd3b8874`.
 
 ## Design and bug log
 
@@ -138,3 +145,12 @@ The Clang process-address-space oracle is 8,196 bytes with SHA-256
   printed the positive timer marker before any IRQ. The terminal assertion
   still observed `arm_timer_fired == 0` and rejected the run; the loop now uses
   `bne` and the smoke test requires the permission-abort marker as well.
+- Wrapping the fixture in a page-aligned ELF moved its position-independent
+  BSS reference beyond the immediate shape accepted by the `adr` pseudo-op.
+  GNU `as` rejected the image rather than synthesizing a second instruction;
+  the fixture now uses `adrl` for that arbitrary in-section displacement.
+- The first ELF BSS began immediately after a 401-byte payload. With
+  `SCTLR.A` enabled, the fixture's word-sized BSS check correctly faulted on
+  the odd address before testing loader clearing. Padding `p_filesz` to a
+  4-byte boundary gives BSS the alignment required by that check while
+  retaining a larger `p_memsz`.

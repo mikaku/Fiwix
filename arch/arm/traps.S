@@ -153,13 +153,43 @@ arm_fatal_vector:
 1:  wfi
     b       1b
 
-    .section .arm_user, "ax"
+    .section .arm_elf_fixture, "a"
     .align 2
+    .globl arm_user_elf_start
+    .globl arm_user_elf_end
     .globl arm_user_fixture
     .globl arm_user_fixture_end
     .globl arm_alignment_probe
 
-/* Position-independent ARM EABI process-address-space fixture. */
+/* Static ELF32/ARM ET_EXEC containing the process-address-space fixture. */
+arm_user_elf_start:
+    .byte   0x7f, 'E', 'L', 'F'
+    .byte   1, 1, 1, 0
+    .space  8
+    .short  2                       /* ET_EXEC */
+    .short  40                      /* EM_ARM */
+    .word   1
+    .word   0x00100000              /* e_entry */
+    .word   52                      /* e_phoff */
+    .word   0
+    .word   0
+    .short  52
+    .short  32
+    .short  1
+    .short  0
+    .short  0
+    .short  0
+
+    .word   1                       /* PT_LOAD */
+    .word   arm_user_fixture - arm_user_elf_start
+    .word   0x00100000              /* p_vaddr */
+    .word   0
+    .word   arm_user_fixture_end - arm_user_fixture
+    .word   arm_user_memory_end - arm_user_fixture
+    .word   7                       /* PF_R | PF_W | PF_X */
+    .word   4096
+
+    .balign 4096
 arm_user_fixture:
     mov     r5, #0
     mov     r6, #0
@@ -173,6 +203,11 @@ arm_user_fixture:
     movt    r11, #0xddee
     movw    r12, #0x9bdf
     movt    r12, #0x1357
+
+    adrl    r4, user_bss_probe
+    ldr     r4, [r4]
+    cmp     r4, #0
+    bne     user_frame_failure
 
     mov     r0, #1
     adr     r1, user_svc_message
@@ -263,6 +298,10 @@ user_irq_message:
 user_irq_message_end:
     .equ USER_SVC_MESSAGE_SIZE, user_svc_message_end - user_svc_message
     .equ USER_IRQ_MESSAGE_SIZE, user_irq_message_end - user_irq_message
+    .balign 4
 arm_user_fixture_end:
+    .set user_bss_probe, arm_user_fixture_end
+    .set arm_user_memory_end, arm_user_fixture_end + 64
+arm_user_elf_end:
 
     .section .note.GNU-stack,"",%progbits

@@ -21,8 +21,8 @@ SECTIONS
         *(.rodata*)
     } :text
 
-    .arm_user : ALIGN(4) {
-        KEEP(*(.arm_user))
+    .arm_elf_fixture : ALIGN(4) {
+        KEEP(*(.arm_elf_fixture))
     } :text
 
     . = ALIGN(0x1000);
