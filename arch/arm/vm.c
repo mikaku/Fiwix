@@ -42,6 +42,14 @@ static int arm_vm_user_section_address(unsigned int address)
 		!(address & (ARM_VM_SECTION_SIZE - 1U));
 }
 
+static int arm_vm_user_table_address(unsigned int address)
+{
+	return !(address & (ARM_VM_SECTION_SIZE - 1U)) &&
+		address < ARM_VM_USER_LIMIT &&
+		address + ARM_VM_SECTION_SIZE > ARM_VM_USER_BASE &&
+		!arm_vm_kernel_device_address(address);
+}
+
 static int arm_vm_user_page_address(unsigned int address)
 {
 	return arm_vm_user_range_address(address) &&
@@ -132,7 +140,7 @@ int arm_vm_attach_user_table(unsigned int *root,
 	unsigned int *entry;
 
 	if(!arm_vm_root_aligned(root) ||
-		!arm_vm_user_section_address(virtual_address) ||
+		!arm_vm_user_table_address(virtual_address) ||
 		physical_address < ARM_VM_RAM_BASE ||
 		physical_address >= ARM_VM_IDENTITY_LIMIT ||
 		physical_address & (ARM_VM_L2_ALIGNMENT - 1U)) {

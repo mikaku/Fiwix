@@ -22,7 +22,7 @@
 #define PROT_WRITE	2
 #define PROT_EXEC	4
 #define ARM_PAGE_MASK	0xFFFFF000U
-#define ARM_USER_BASE	0x00100000U
+#define ARM_USER_BASE	0x00010000U
 
 typedef char arm_elf_header_size_must_be_52[
 	(sizeof(struct arm_elf32_header) == 52) ? 1 : -1];

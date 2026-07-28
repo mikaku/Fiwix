@@ -74,11 +74,23 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-generic-tcc
 ```
 
-Milestones 1 through 4 are implemented on this branch. Milestone 3 links the
-complete generic kernel and boots through physical-memory, process-table, and
-idle-address-space initialization under QEMU. Both virtio transport versions
-mount and persist writes through the generic ext2 stack, and filesystem-backed
-PID 1 completes its signal, fork, copy-on-write, and wait path. The ARM VM
+The first post-pivot M2 gate uses the same TinyCC-built kernel:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  STAGE0_DIR=/path/to/completed/arm-pivot \
+  QEMU_ARM=qemu-system-arm test-arm-m2-pivot
+```
+
+Milestones 1 through 4 and the first boundary of milestone 5 are implemented
+on this branch. Milestone 3 links the complete generic kernel and boots through
+physical-memory, process-table, and idle-address-space initialization under
+QEMU. Both virtio transport versions mount and persist writes through the
+generic ext2 stack, and filesystem-backed PID 1 completes its signal, fork,
+copy-on-write, and wait path. The ARM VM
 layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
@@ -252,6 +264,17 @@ markers prove signal delivery, child execution, parent reaping, and final PID
 gate exercises the same generic loader, scheduler, abort, signal, and process
 teardown code intended for bootstrap userspace.
 
+The first bootstrap workload runs from a deterministic ext2 root under both
+legacy and modern virtio. PID 1 forks, the child executes the canonical
+ARMv7 M2-Planet at virtual address `0x00010000`, and the parent waits for a
+zero status before syncing and rebooting. M2-Planet input SHA-256 is
+`a5b4d5e77906b18079203061f06fabb21ec06e5d6a5bfe8d363dc1b395ddf797`.
+It compiles the same fixed C source and M2libc inputs used by the independent
+builder-hex0 route. The resulting 376,490-byte M1 has SHA-256
+`9c3a8e2878c673b074a51157704fd84c8f92f96b0506c93a390e469b9f8cc543`.
+The host extracts that file from each modified ext2 image, checks its size and
+hash, and runs the filesystem integrity gate.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -271,11 +294,22 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
-   compare builder-hex0 artifacts, then add the same-root Linux continuation.
+1. Extend the filesystem-backed M2 boundary through the post-pivot Mes and
+   TinyCC manifests, comparing each independently produced artifact.
+2. Add the same-root Linux continuation and revalidate selected generated
+   tools as PID 1.
 
 ## Design and bug log
 
+- Canonical ARMv7 M2-Planet links its single load segment at `0x00010000`.
+  The first ELF policy inherited the bring-up fixture's `0x00100000` floor and
+  rejected the real bootstrap binary. Lowering the leaf floor exposed a second
+  bug: the page walker aligns `0x00010000` down to L1 slot 0, but coarse-table
+  attachment incorrectly applied the leaf floor to that table's `0x00000000`
+  container address and returned `ENOMEM`. The VM policy now distinguishes an
+  L1 table that spans valid user pages from the leaf pages it contains: slot 0
+  may hold a coarse table, leaves below `0x00010000` remain forbidden, and a
+  host gate checks both sides of the boundary.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the

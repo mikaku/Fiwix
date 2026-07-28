@@ -13,6 +13,8 @@ static unsigned int child_root[ARM_VM_ROOT_ENTRIES]
 	__attribute__((aligned(ARM_VM_ROOT_ALIGNMENT)));
 static unsigned int user_l2[ARM_VM_L2_ENTRIES]
 	__attribute__((aligned(ARM_VM_L2_ALIGNMENT)));
+static unsigned int low_user_l2[ARM_VM_L2_ENTRIES]
+	__attribute__((aligned(ARM_VM_L2_ALIGNMENT)));
 
 int main(void)
 {
@@ -36,6 +38,7 @@ int main(void)
 	}
 	for(n = 0; n < ARM_VM_L2_ENTRIES; n++) {
 		user_l2[n] = ~0U;
+		low_user_l2[n] = ~0U;
 	}
 	if(arm_vm_root_init(parent_root)) {
 		return 2;
@@ -50,6 +53,19 @@ int main(void)
 		parent_root[0x090] !=
 			(0x09000000U | ARM_VM_SECTION_DEVICE_XN)) {
 		return 3;
+	}
+	if(arm_vm_l2_init(low_user_l2) ||
+		arm_vm_attach_user_table(parent_root, 0, 0x47E04000U) ||
+		arm_vm_map_user_page(low_user_l2, ARM_VM_USER_BASE,
+			0x47300000U, 1, 1) ||
+		!arm_vm_map_user_page(low_user_l2, 0,
+			0x47400000U, 1, 1)) {
+		return 16;
+	}
+	if(parent_root[0] != (0x47E04000U | ARM_VM_COARSE_TABLE) ||
+		low_user_l2[ARM_VM_USER_BASE >> 12] !=
+			(0x47300000U | ARM_VM_PAGE_USER_RW)) {
+		return 17;
 	}
 	if(arm_vm_map_user_section(parent_root, 0x00100000U,
 			0x47000000U, 1) ||

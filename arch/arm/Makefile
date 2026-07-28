@@ -25,6 +25,13 @@ fixture/generic-init.o: generic-init.S
 fixture/generic-init.elf: fixture/generic-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/m2-pivot-init.o: m2-pivot-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/m2-pivot-init.elf: fixture/m2-pivot-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE
 	fixture/make-arm-disk $@ fixture/generic-init.elf
 

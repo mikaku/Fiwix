@@ -161,5 +161,23 @@ int main(void)
 		USER_LIMIT, &plan)) {
 		return 12;
 	}
+	make_valid();
+	header = (struct arm_elf32_header *)image;
+	program = (struct arm_elf32_program_header *)(image + header->phoff);
+	header->entry = 0x00011000U;
+	program[0].vaddr = 0x00010000U;
+	program[1].vaddr = 0x00013000U;
+	if(arm_elf32_plan(image, sizeof(image), 0x3000,
+			USER_LIMIT, &plan) ||
+		plan.entry != 0x00011000U ||
+		plan.phdr != 0x00010034U) {
+		return 13;
+	}
+	program[0].vaddr = 0x0000F000U;
+	header->entry = 0x00010000U;
+	if(!arm_elf32_plan(image, sizeof(image), 0x3000,
+		USER_LIMIT, &plan)) {
+		return 14;
+	}
 	return 0;
 }
