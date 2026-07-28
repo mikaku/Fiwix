@@ -22,9 +22,22 @@
 
     .equ REBOOT_MAGIC1, 0xfee1dead
     .equ REBOOT_MAGIC2, 0x28121969
+.ifdef ARM_LINUX_TCC
+    .equ REBOOT_KEXEC, 0x45584543
+    .equ REBOOT_COMMAND, 0x4321fedc
+.else
     .equ REBOOT_COMMAND, 0x01234567
+.endif
 
 _start:
+.ifdef ARM_LINUX_TCC
+    ldr     r0, =REBOOT_MAGIC1
+    ldr     r1, =REBOOT_MAGIC2
+    ldr     r2, =REBOOT_KEXEC
+    mov     r7, #SYS_REBOOT
+    svc     #0
+.endif
+
     mov     r0, #1
     ldr     r1, =start_message
     ldr     r2, =start_message_end
@@ -170,19 +183,39 @@ process_envp:
     .word   0
 
 start_message:
+.ifdef ARM_LINUX_TCC
+    .ascii  "Fiwix ARM Linux TinyCC process tree entered\n"
+.else
     .ascii  "Fiwix ARM TinyCC process tree entered\n"
+.endif
 start_message_end:
 complete_message:
+.ifdef ARM_LINUX_TCC
+    .ascii  "Fiwix ARM Linux TinyCC process tree completed\n"
+.else
     .ascii  "Fiwix ARM TinyCC process tree completed\n"
+.endif
 complete_message_end:
 linked_start_message:
+.ifdef ARM_LINUX_TCC
+    .ascii  "Fiwix ARM Linux TinyCC linked ELF entered\n"
+.else
     .ascii  "Fiwix ARM TinyCC linked ELF entered\n"
+.endif
 linked_start_message_end:
 exec_failure_message:
+.ifdef ARM_LINUX_TCC
+    .ascii  "Fiwix ARM Linux TinyCC exec returned\n"
+.else
     .ascii  "Fiwix ARM TinyCC exec returned\n"
+.endif
 exec_failure_message_end:
 failure_message:
+.ifdef ARM_LINUX_TCC
+    .ascii  "Fiwix ARM Linux TinyCC process tree failed\n"
+.else
     .ascii  "Fiwix ARM TinyCC process tree failed\n"
+.endif
 failure_message_end:
 tcc_path:
     .asciz  "/bin/tcc-mes"

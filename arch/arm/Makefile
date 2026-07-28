@@ -72,6 +72,13 @@ fixture/linux-root-init.o: linux-root-init.S
 fixture/linux-root-init.elf: fixture/linux-root-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/linux-tcc-init.o: linux-tcc-init.S tcc-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-tcc-init.elf: fixture/linux-tcc-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE
 	fixture/make-arm-disk $@ fixture/generic-init.elf
 

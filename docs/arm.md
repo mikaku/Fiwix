@@ -150,14 +150,29 @@ make TARGET_ARCH=arm CCEXE=clang \
   QEMU_ARM=qemu-system-arm test-arm-linux-root
 ```
 
+The Linux-side compiler revalidation uses the TinyCC-built Fiwix image and the
+same pinned `tcc-mes` closure as the Fiwix-only gate:
+
+```sh
+make TARGET_ARCH=arm \
+  CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  ARM_TCC=/path/to/arm-pivot/tcc-prefix/bin/tcc-mes \
+  LINUX_IMAGE=/tmp/linux-arm/arch/arm/boot/zImage \
+  QEMU_ARM=qemu-system-arm test-arm-linux-tcc
+```
+
 The handoff target requires a 256 MiB guest. Ordinary Fiwix generic boot
 continues to cover both 128 MiB and 256 MiB guests.
 
 Milestones 1 through 6 are implemented on this branch, including the MesCC
 compile/link/run boundary, the first TinyCC compile/link/run boundary, and the
 TinyCC compiler fixed point. The continuation portion of milestone 6 is
-complete; running selected generated bootstrap tools again under Linux remains
-a follow-on gate. Milestone 3 links the complete generic kernel and
+complete, and the first selected generated tool is revalidated by compiling,
+linking, and executing the pinned TinyCC fixture again under Linux. Milestone
+3 links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
 writes through the generic ext2 stack, and filesystem-backed PID 1 completes
@@ -428,8 +443,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Revalidate selected generated bootstrap tools as Linux PID 1. The
-   Fiwix-to-Linux same-root transition itself is complete.
+1. Extend Linux-side revalidation beyond the completed TinyCC
+   compile/link/run boundary if a cumulative stage0 process tree is required.
 2. Raise the managed-memory contract if rebuilding the 770 MiB MesCC TinyCC
    seed inside Fiwix is required in addition to the pinned-seed fixed point.
 3. Add the Linux-compatible VFP record in `ucontext.regspace` before claiming
@@ -552,6 +567,14 @@ assemble and link the soft-float objects.
   loaded zImage, while Linux returns because no replacement kernel was loaded.
   Only the Linux execution then prints the completion marker and requests
   poweroff. This keeps the root and init path identical across the handoff.
+- The Linux TinyCC gate reuses the Fiwix-only process tree with one
+  assembly-time switch. Its initial KEXEC request is consumed by Fiwix and
+  returns under Linux; the remaining fork/exec/wait logic then compiles and
+  runs the same fixture. The ordinary Fiwix PID 1 remains byte-identical.
+  Because this gate needs the complete compiler closure and a writable output
+  file, it uses a 32 MiB generated ext2 root rather than weakening the small
+  deterministic handoff image. All compiler inputs and the extracted output
+  remain hash-pinned, and both mutated roots must pass `e2fsck`.
 - The ARM handoff masks IRQ and FIQ, disables the architectural timer, clears
   the MMU and D-cache bits, invalidates TLB and instruction state, and enters
   the zImage in SVC mode with `r0=0`, `r1=~0`, and `r2` pointing at the copied
