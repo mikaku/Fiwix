@@ -8,6 +8,7 @@
 #include <fiwix/arch_process.h>
 #include <fiwix/arm_devices.h>
 #include <fiwix/arm_fdt.h>
+#include <fiwix/arm_linux.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/asm.h>
@@ -45,6 +46,7 @@
 
 extern void arm_poweroff(void);
 extern unsigned int arm_boot_dtb;
+extern void arm_linux_handoff(unsigned int, unsigned int);
 
 static void arm_early_putc(char ch)
 {
@@ -68,6 +70,23 @@ static void arm_early_puts(const char *text)
 void arm_boot_trace(const char *text)
 {
 	arm_early_puts(text);
+}
+
+int arm_linux_kexec(void)
+{
+	unsigned int flags;
+
+	SAVE_FLAGS(flags);
+	CLI();
+	if(arm_linux_prepare() < 0) {
+		arm_early_puts("Fiwix ARM Linux zImage load failed\n");
+		RESTORE_FLAGS(flags);
+		return -1;
+	}
+	arm_early_puts("Fiwix ARM Linux zImage header gate passed\n");
+	arm_early_puts("Fiwix ARM Linux ext2 root handoff\n");
+	arm_linux_handoff(arm_linux_image_entry(), arm_linux_dtb_entry());
+	return -1;
 }
 
 unsigned int arm_boot_memory_pages(void)

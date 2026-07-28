@@ -45,4 +45,7 @@ SECTIONS
     } :data
     __bss_end = .;
     _kernel_end = .;
+
+    ASSERT(. <= 0x42000000,
+        "Fiwix ARM image overlaps the Linux zImage window")
 }

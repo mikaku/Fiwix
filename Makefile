@@ -171,6 +171,7 @@ test-arm: all
 	HOSTCC="$(HOSTCC)" AS="$(AS)" NM="$(NM)" tests/arm-context.sh
 	HOSTCC="$(HOSTCC)" tests/arm-vm-policy.sh
 	HOSTCC="$(HOSTCC)" QEMU="$(QEMU_ARM)" tests/arm-fdt.sh
+	HOSTCC="$(HOSTCC)" tests/arm-linux-image.sh
 	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-process-roots.sh
 	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
@@ -224,6 +225,21 @@ arm-generic-disk:
 	$(MAKE) -C arch/arm HOSTCC="$(HOSTCC)" fixture/disk.img
 	READELF="$(CROSS_COMPILE)readelf" NM="$(NM)" \
 		tests/arm-generic-init.sh arch/arm/fixture/generic-init.elf
+
+arm-linux-root-init:
+	$(MAKE) -C arch/arm fixture/linux-root-init.elf
+
+arm-linux-root-disk: arm-linux-root-init
+	@test -n "$(LINUX_IMAGE)" || { echo "arm-linux-root-disk requires LINUX_IMAGE=/path/to/zImage" >&2; exit 1; }
+	$(MAKE) -C arch/arm HOSTCC="$(HOSTCC)" \
+		LINUX_IMAGE="$(LINUX_IMAGE)" fixture/linux-root-disk.img
+
+test-arm-linux-root: TIMEOUT=60
+test-arm-linux-root: arm-generic-image arm-linux-root-disk
+	@test "$(TARGET_ARCH)" = arm || { echo "test-arm-linux-root requires TARGET_ARCH=arm" >&2; exit 1; }
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" \
+		tests/arm-linux-root-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/linux-root-disk.img
 
 arm-m2-pivot-init:
 	$(MAKE) -C arch/arm fixture/m2-pivot-init.elf
@@ -534,4 +550,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc arm-tcc-init test-arm-tcc arm-tcc-selfhost-init test-arm-tcc-selfhost test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-linux-root-init arm-linux-root-disk test-arm-linux-root arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc arm-tcc-init test-arm-tcc arm-tcc-selfhost-init test-arm-tcc-selfhost test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

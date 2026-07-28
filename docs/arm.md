@@ -134,10 +134,30 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-tcc-selfhost
 ```
 
-Milestones 1 through 5 are implemented on this branch, including the MesCC
+The same-root Linux continuation builds a small `virt`-only zImage from a
+pinned Linux source tree, embeds it beside one static PID 1 in deterministic
+ext2, and runs the complete Fiwix-to-Linux transition under both virtio
+transport versions:
+
+```sh
+tests/build-arm-linux.sh /path/to/linux /tmp/linux-arm \
+  tests/arm-linux-root.config
+make TARGET_ARCH=arm CCEXE=clang \
+  ARM_CC_TARGET=--target=arm-linux-gnueabihf \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  GENERIC_RUNTIME=/path/to/soft-float/libgcc.a \
+  LINUX_IMAGE=/tmp/linux-arm/arch/arm/boot/zImage \
+  QEMU_ARM=qemu-system-arm test-arm-linux-root
+```
+
+The handoff target requires a 256 MiB guest. Ordinary Fiwix generic boot
+continues to cover both 128 MiB and 256 MiB guests.
+
+Milestones 1 through 6 are implemented on this branch, including the MesCC
 compile/link/run boundary, the first TinyCC compile/link/run boundary, and the
-TinyCC compiler fixed point. Milestone 3
-links the complete generic kernel and
+TinyCC compiler fixed point. The continuation portion of milestone 6 is
+complete; running selected generated bootstrap tools again under Linux remains
+a follow-on gate. Milestone 3 links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
 writes through the generic ext2 stack, and filesystem-backed PID 1 completes
@@ -210,7 +230,7 @@ low-address RAM window and verifies parent/child data isolation and page
 counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
 root, and process teardown releases subordinate tables before returning its
 fixed root. The generic boot gate now executes that initializer and activates
-the owned idle root in the linked 271-unit kernel.
+the owned idle root in the linked 272-unit kernel.
 
 Generic PID 1 construction now has an ARM path as well. It creates a clean
 process root, maps a private read/execute trampoline at `0x3ffff000` and a
@@ -408,8 +428,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Add the same-root Linux continuation and revalidate selected generated
-   tools as PID 1.
+1. Revalidate selected generated bootstrap tools as Linux PID 1. The
+   Fiwix-to-Linux same-root transition itself is complete.
 2. Raise the managed-memory contract if rebuilding the 770 MiB MesCC TinyCC
    seed inside Fiwix is required in addition to the pinned-seed fixed point.
 3. Add the Linux-compatible VFP record in `ucontext.regspace` before claiming
@@ -503,6 +523,40 @@ assemble and link the soft-float objects.
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
   same Fiwix License notice used by the repository's architecture code.
+- ARM Linux zImage placement and device-tree placement have different
+  overwrite constraints. The zImage must remain in the first 128 MiB of RAM
+  and is best loaded above 32 MiB, while the device tree is safest above the
+  128 MiB boundary. Fiwix now reserves an 8 MiB image window at `0x42000000`
+  and a 2 MiB DTB window at `0x48000000`, copies the firmware DTB before
+  loading `/linux`, and refuses the handoff unless the FDT reports enough RAM.
+  Keeping these windows outside `_end` avoids inflating the kernel load
+  segment; `page_init()` reserves them explicitly instead.
+- The first Linux oracle used `multi_v7_defconfig` and produced a 17.6 MiB
+  zImage containing unrelated platform drivers. The checked fragments now
+  start from `tinyconfig`, select only ARMv7 `virt`, PL011, PSCI, virtio block,
+  ext2, ELF, and VFP support, and fit the resulting image in the deterministic
+  8 MiB ext2 fixture.
+- Reserving the first proposed 32 MiB zImage window permanently removed that
+  memory from every Fiwix workload. MesCC remained CPU-active but exceeded its
+  30-minute transport timeout under the reduced free-memory budget. The final
+  8 MiB window matches the RISC-V loader's nominal capacity and restores
+  24 MiB; the deterministic carrier independently rejects files that exceed
+  its slightly smaller metadata-adjusted ceiling.
+- An early minimal Linux image had `CONFIG_PRINTK` disabled. PID 1 still wrote
+  its marker through the inherited console, so a marker-only smoke test would
+  have hidden the missing kernel diagnostics. The Linux config now requires
+  `PRINTK`, and the handoff smoke gate independently requires the Linux version
+  line, read-only ext2 mount line, and PID 1 marker.
+- Fiwix and Linux need different outcomes from the same `/sbin/init`.
+  The fixture first issues `reboot(KEXEC)`: Fiwix consumes it and enters the
+  loaded zImage, while Linux returns because no replacement kernel was loaded.
+  Only the Linux execution then prints the completion marker and requests
+  poweroff. This keeps the root and init path identical across the handoff.
+- The ARM handoff masks IRQ and FIQ, disables the architectural timer, clears
+  the MMU and D-cache bits, invalidates TLB and instruction state, and enters
+  the zImage in SVC mode with `r0=0`, `r1=~0`, and `r2` pointing at the copied
+  DTB. Generic Fiwix deliberately keeps D-cache disabled, so the handoff does
+  not need a cache-clean protocol before clearing `SCTLR.C`.
 - Generic abort handling uses the architectural DFSR/IFSR status rather than
   treating every abort as a page fault. Translation, access-flag, and
   permission statuses enter `resolve_page_fault()`; alignment maps to
@@ -797,7 +851,7 @@ assemble and link the soft-float objects.
   section as the scheduler entry points, retaining their failure loop in the
   generic image. The fixture gate now has its own section, allowing
   `--gc-sections` to discard it while keeping the shared context primitives.
-- The complete generic image compiles all 271 ARM/common C units with
+- The complete generic image compiles all 272 ARM/common C units with
   per-function/data sections, links the ARM boot/vector/context assembly, and
   rejects undefined symbols, writable-executable load segments, external
   network hooks, and legacy port-I/O hooks. Its QEMU gate proves entry, trap

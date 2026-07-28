@@ -39,6 +39,7 @@
 #include <fiwix/riscv64_fdt.h>
 #elif defined(CONFIG_ARCH_ARM)
 #include <fiwix/arm_fdt.h>
+#include <fiwix/arm_linux.h>
 #endif
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % (NR_PAGE_HASH))
@@ -533,6 +534,11 @@ void page_init(int pages)
 			continue;
 		}
 		if(arm_boot_page_reserved(addr)) {
+			pg->flags = PAGE_RESERVED;
+			kstat.physical_reserved++;
+			continue;
+		}
+		if(arm_linux_page_reserved(addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.physical_reserved++;
 			continue;

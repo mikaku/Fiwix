@@ -44,7 +44,8 @@ SECTIONS
 	_end = .;
 	__kernel_end = .;
 
-	ASSERT(. <= 0x42000000, "Fiwix generic ARM image exceeds 32 MiB")
+	ASSERT(. <= 0x42000000,
+		"Fiwix generic ARM image overlaps the Linux zImage window")
 
 	/DISCARD/ : {
 		*(.comment)

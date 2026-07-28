@@ -4,6 +4,7 @@
 
 .DEFAULT_GOAL := all
 HOSTCC ?= cc
+LINUX_IMAGE ?= fixture/linux.zImage
 
 .S.o:
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -15,6 +16,10 @@ OBJS = boot.o context.o elf32.o ops.o traps.o main.o vm.o
 all: $(OBJS)
 
 fixture/make-arm-disk: ../../tests/make-arm-disk.c
+	mkdir -p fixture
+	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
+
+fixture/make-arm-linux-disk: ../../tests/make-arm-linux-disk.c
 	mkdir -p fixture
 	$(HOSTCC) -std=c89 -O2 -Wall -Wextra -o $@ $<
 
@@ -60,14 +65,26 @@ fixture/tcc-selfhost-init.o: tcc-selfhost-init.S
 fixture/tcc-selfhost-init.elf: fixture/tcc-selfhost-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/linux-root-init.o: linux-root-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-root-init.elf: fixture/linux-root-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE
 	fixture/make-arm-disk $@ fixture/generic-init.elf
+
+fixture/linux-root-disk.img: fixture/make-arm-linux-disk \
+		$(LINUX_IMAGE) fixture/linux-root-init.elf FORCE
+	fixture/make-arm-linux-disk $@ $(LINUX_IMAGE) \
+		fixture/linux-root-init.elf
 
 FORCE:
 
 clean:
 	rm -f *.o fixture/*.o fixture/*.elf fixture/*.img \
-		fixture/make-arm-disk
+		fixture/make-arm-disk fixture/make-arm-linux-disk
 	rmdir fixture 2>/dev/null || true
 
 .PHONY: all clean FORCE

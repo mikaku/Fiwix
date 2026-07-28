@@ -148,6 +148,7 @@ void arm_generic_timer_program(unsigned int);
 void arm_vm_install(unsigned int);
 void arm_vm_switch(unsigned int);
 void arm_system_reset(void);
+int arm_linux_kexec(void);
 unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
 	unsigned int);
 

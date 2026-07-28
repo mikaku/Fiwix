@@ -47,11 +47,17 @@ int sys_reboot(int magic1, int magic2, int flag)
 			reboot();
 #endif
 			break;
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 		case BMAGIC_KEXEC:
+#ifdef CONFIG_ARCH_RISCV64
 			if(riscv64_linux_kexec() < 0) {
 				return -EINVAL;
 			}
+#else
+			if(arm_linux_kexec() < 0) {
+				return -EINVAL;
+			}
+#endif
 			break;
 #endif
 		case BMAGIC_HALT:

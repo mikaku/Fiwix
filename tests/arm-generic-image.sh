@@ -42,7 +42,7 @@ objects=
 while IFS= read -r object; do
 	objects="$objects $object"
 done < "$temporary/generic-objects.list"
-for source in boot context generic-trap init_trampoline ops; do
+for source in boot context generic-trap handoff init_trampoline ops; do
 	"$AS" -march=armv7-a -mfloat-abi=soft \
 		-o "$temporary/$source.o" "$root/arch/arm/$source.S"
 	objects="$objects $temporary/$source.o"
@@ -107,6 +107,8 @@ grep -q ' T start_kernel$' "$temporary/symbols"
 grep -q ' T arm_generic_vector_table$' "$temporary/symbols"
 grep -q ' T arm_generic_runtime_ready$' "$temporary/symbols"
 grep -q ' T arm_fdt_boot_discover$' "$temporary/symbols"
+grep -q ' T arm_linux_kexec$' "$temporary/symbols"
+grep -q ' T arm_linux_handoff$' "$temporary/symbols"
 grep -q ' T arm_pl011_init$' "$temporary/symbols"
 grep -q ' T arm_generic_interrupt_init$' "$temporary/symbols"
 grep -q ' T arm_ext2_writable_gate$' "$temporary/symbols"
