@@ -81,6 +81,8 @@ grep -q ' T arm_generic_runtime_ready$' "$temporary/symbols"
 grep -q ' T arm_fdt_parse$' "$temporary/symbols"
 grep -q ' T arm_pl011_init$' "$temporary/symbols"
 grep -q ' T arm_generic_interrupt_init$' "$temporary/symbols"
+grep -q ' T arm_ext2_writable_gate$' "$temporary/symbols"
+grep -q ' T arm_virtio_block_init$' "$temporary/symbols"
 "$READELF" -h "$GENERIC_IMAGE" | grep -q 'Class:.*ELF32'
 "$READELF" -h "$GENERIC_IMAGE" | grep -q 'Machine:.*ARM'
 if "$READELF" -lW "$GENERIC_IMAGE" | grep -q 'LOAD.*RWE'; then

@@ -209,9 +209,13 @@ arm-generic-image:
 		READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-generic-image.sh
 
-test-arm-generic-boot: arm-generic-image
+arm-generic-disk:
+	$(MAKE) -C arch/arm HOSTCC="$(HOSTCC)" fixture/disk.img
+
+test-arm-generic-boot: arm-generic-image arm-generic-disk
 	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" \
-		tests/arm-generic-boot-smoke.sh ./fiwix-arm-generic.bin
+		tests/arm-generic-boot-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/disk.img
 
 test-riscv64-large-image: all
 	@test "$(TARGET_ARCH)" = riscv64 || { echo "test-riscv64-large-image requires TARGET_ARCH=riscv64" >&2; exit 1; }
@@ -445,4 +449,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-disk test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

@@ -11,9 +11,12 @@ arch/arm/pl011.c
 arch/arm/process.c
 arch/arm/runtime.c
 arch/arm/signal.c
+arch/arm/storage-gate.c
 arch/arm/syscall.c
 arch/arm/task.c
 arch/arm/trap.c
+arch/arm/virtio-block.c
+arch/arm/virtio.c
 arch/arm/vm.c
 drivers/block/ata.c
 drivers/block/ata_hd.c

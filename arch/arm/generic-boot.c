@@ -10,10 +10,13 @@
 #include <fiwix/arm_fdt.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
+#include <fiwix/buffer.h>
 #include <fiwix/devices.h>
 #include <fiwix/kernel.h>
+#include <fiwix/kparms.h>
 #include <fiwix/mm.h>
 #include <fiwix/process.h>
+#include <fiwix/string.h>
 #include <fiwix/timer.h>
 #include <fiwix/tty.h>
 
@@ -120,22 +123,39 @@ void arm_generic_interrupt_init(void)
 
 void arm_generic_runtime_ready(void)
 {
+	static const char disk_marker[] =
+		"Fiwix ARM virtio sector gate\n";
 	const struct arm_fdt_info *fdt;
+	struct buffer *buffer;
+	__dev_t block;
 	__dev_t console;
 	__dev_t serial;
 	unsigned int dtb_page;
+	unsigned int transport_version;
 	int dtb_selected;
+	int disk_valid;
 
+	block = MKDEV(ARM_VIRTIO_BLK_MAJOR, ARM_VIRTIO_BLK_MINOR);
 	console = MKDEV(SYSCON_MAJOR, 1);
 	serial = MKDEV(ARM_PL011_MAJOR, ARM_PL011_MINOR);
 	fdt = arm_boot_fdt_info();
 	dtb_page = arm_boot_dtb & PAGE_MASK;
 	dtb_selected = arm_boot_fdt_selected();
+	transport_version = arm_virtio_transport_version();
+	buffer = bread(block, 0, BLKSIZE_1K);
+	disk_valid = buffer && !memcmp(buffer->data, disk_marker,
+		sizeof(disk_marker) - 1);
+	if(buffer) {
+		brelse(buffer);
+	}
 	if(!kpage_dir || !page_table || !current ||
 		current->pid != IDLE || !arm_process_root(current) ||
 		!current->arch.ttbr0 || !kstat.free_pages ||
 		!get_device(CHR_DEV, console) ||
 		!get_device(CHR_DEV, serial) || !get_tty(serial) ||
+		!get_device(BLK_DEV, block) || kparms.rootdev != block ||
+		!current->root || !current->pwd || !disk_valid ||
+		(transport_version != 1 && transport_version != 2) ||
 		(fdt && !fdt->virtio_count) ||
 		(dtb_selected && (!arm_boot_page_reserved(dtb_page) ||
 		!(page_table[PHYS_TO_PAGE(dtb_page)].flags & PAGE_RESERVED))) ||
@@ -145,6 +165,11 @@ void arm_generic_runtime_ready(void)
 	}
 	if(fdt) {
 		arm_early_puts("Fiwix ARM firmware DTB discovery passed\n");
+	}
+	if(transport_version == 1) {
+		arm_early_puts("Fiwix ARM virtio-mmio v1 block passed\n");
+	} else {
+		arm_early_puts("Fiwix ARM virtio-mmio v2 block passed\n");
 	}
 	arm_early_puts("Fiwix ARM generic console, timer, memory, and "
 		"process init passed\n");

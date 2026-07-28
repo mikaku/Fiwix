@@ -155,7 +155,10 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	arm_boot_trace("Fiwix ARM memory init passed\n");
 	proc_init();
 	sleep_init();
+	buffer_init();
 	sched_init();
+	inode_init();
+	fd_init();
 	arm_boot_trace("Fiwix ARM process table init passed\n");
 
 	current = get_proc_free();
@@ -171,6 +174,20 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 		PANIC("Unable to initialize ARM PL011 console.\n");
 	}
 	printk("Fiwix ARM PL011 system console passed\n");
+	strcpy(kparms.rootfstype, "ext2");
+	kparms.rootdev = MKDEV(ARM_VIRTIO_BLK_MAJOR,
+		ARM_VIRTIO_BLK_MINOR);
+	strcpy(kparms.rootdevname, "/dev/vda");
+	kparms.ro = 0;
+	if(arm_virtio_block_init()) {
+		PANIC("Unable to initialize ARM virtio block device.\n");
+	}
+	fs_init();
+	mount_root();
+	if(arm_ext2_writable_gate()) {
+		PANIC("ARM writable ext2 root gate failed.\n");
+	}
+	printk("Fiwix ARM writable ext2 root passed\n");
 	timer_init();
 	arm_generic_interrupt_init();
 	start_ticks = CURRENT_TICKS;

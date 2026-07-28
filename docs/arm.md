@@ -61,7 +61,10 @@ make TARGET_ARCH=arm CCEXE=clang \
 
 Milestones 1 and 2 are implemented on this branch. Milestone 3 now links the
 complete generic kernel and boots through physical-memory, process-table, and
-idle-address-space initialization under QEMU. The ARM VM layer owns 16 KiB ARMv7
+idle-address-space initialization under QEMU. The storage half of milestone 4
+is complete: both virtio transport versions mount and persist writes through
+the generic ext2 stack; scheduling filesystem-backed PID 1 remains next. The
+ARM VM layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
 TLB flush, installs 1 KiB coarse tables with 4 KiB user leaves, and clones
@@ -128,7 +131,7 @@ low-address RAM window and verifies parent/child data isolation and page
 counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
 root, and process teardown releases subordinate tables before returning its
 fixed root. The generic boot gate now executes that initializer and activates
-the owned idle root in the linked 268-unit kernel.
+the owned idle root in the linked 271-unit kernel.
 
 Generic PID 1 construction now has an ARM path as well. It creates a clean
 process root, maps a private read/execute trampoline at `0x3ffff000` and a
@@ -199,6 +202,30 @@ but its already-parsed platform data remains available. Host gates cover QEMU
 256 MiB require live DTB discovery, at least one virtio transport, and
 reservation whenever the blob overlaps managed RAM.
 
+The ARM block path probes only those retained DTB regions and selects the
+first virtio block device. It supports both version-1 legacy virtio-mmio,
+using the guest page size and queue PFN registers, and version-2 modern
+virtio-mmio, negotiating `VIRTIO_F_VERSION_1` and programming explicit
+descriptor, available, and used-ring addresses. One eight-entry queue occupies
+two 4 KiB-aligned pages so the legacy used-ring alignment and modern split-ring
+layout share the same storage. Requests use a three-descriptor header, data,
+and status chain. The driver polls completion and acknowledges any resulting
+transport interrupt; GIC routing is deliberately unnecessary at this
+bootstrap milestone. ARM `dmb sy` barriers order descriptor publication,
+notification, and completion even though the current MMU contract leaves the
+data cache disabled.
+
+The transport is exposed through Fiwix's block API as writable major 8,
+minor 0 `/dev/vda`. Startup initializes the generic buffer, inode, and file
+descriptor tables, mounts an ext2 root read-write, reads `/bootstrap` through
+VFS, replaces its fixed-size initialization marker, and flushes superblock,
+inode, and buffer state. The acceptance check then reads the file's physical
+sector directly through virtio and compares the replacement marker, bypassing
+the buffer and page caches. A host-built deterministic revision-0 ext2 fixture
+keeps this gate independent of host `mkfs` defaults. The smoke test runs
+legacy and modern transports at both 128 and 256 MiB and requires `e2fsck -fn`
+to accept every modified image.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -218,11 +245,9 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Consume the DTB-discovered transports in an ARM virtio block driver and
-   mount a writable ext2 root under both modern and legacy virtio.
-2. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
+1. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
    static `/sbin/init` through fork, exec, wait, page-fault, and signal gates.
-3. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
+2. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
    compare builder-hex0 artifacts, then add the same-root Linux continuation.
 
 ## Design and bug log
@@ -260,7 +285,24 @@ assemble and link the soft-float objects.
 - ARM `virt` exposes 32 virtio-mmio windows spaced 0x200 bytes apart. The
   RISC-V port's fixed 0x1000-stride probe is therefore not portable. ARM keeps
   a bounded list of root-level `virtio,mmio` `reg` tuples from the firmware
-  DTB; the block driver must probe only that discovered list.
+  DTB; the block driver probes only that discovered list and rejects windows
+  too small to contain the block-capacity configuration.
+- Fiwix block numbers are signed 32-bit values while virtio capacity and sector
+  numbers are 64-bit. The adapter rejects negative blocks and performs the
+  multiplication and end-of-device check in an explicit 64-bit type, avoiding
+  both signed wraparound and a truncated modern configuration value.
+- A first adapter compile relied on another architecture's incidental
+  `NULL` definition. The ARM block unit now includes the Fiwix string header
+  explicitly, keeping each source's freestanding dependencies self-contained.
+- The original generic smoke script redirected QEMU to a temporary log and
+  used bare positive `grep` commands under `set -e`. A missing emulator or
+  marker exited before printing that log, then the cleanup trap deleted the
+  evidence. The gate now validates the emulator first and prints the complete
+  captured boot on every QEMU or marker failure.
+- A read-back through `bread()` after the ext2 write would only prove that the
+  dirty buffer cache contained new bytes. The writable gate flushes all
+  filesystem state and uses a direct 512-byte transport request against the
+  mapped ext2 data block, so a stale or non-writing block adapter cannot pass.
 - Assigning the 264-byte parsed-DTB result into persistent boot state caused
   Clang to emit an undefined freestanding `memcpy`. The copy now names each
   scalar field explicitly, preserving the generic image's no-undefined-symbol
@@ -499,11 +541,11 @@ assemble and link the soft-float objects.
   section as the scheduler entry points, retaining their failure loop in the
   generic image. The fixture gate now has its own section, allowing
   `--gc-sections` to discard it while keeping the shared context primitives.
-- The complete generic image compiles all 268 ARM/common C units with
+- The complete generic image compiles all 271 ARM/common C units with
   per-function/data sections, links the ARM boot/vector/context assembly, and
   rejects undefined symbols, writable-executable load segments, external
   network hooks, and legacy port-I/O hooks. Its QEMU gate proves entry, trap
   installation, CPU/IRQ core setup, physical-page initialization, process
   table setup, independent idle-root activation, PL011 system-console output,
-  firmware-DTB reservation and virtio discovery, three GICv2-delivered
-  physical timer ticks, and PSCI shutdown.
+  firmware-DTB reservation, writable ext2 over legacy and modern virtio,
+  three GICv2-delivered physical timer ticks, and PSCI shutdown.
