@@ -13,6 +13,7 @@
     .section .text.boot
     .globl _start
     .globl arm_poweroff
+    .globl arm_system_reset
     .globl arm_boot_dtb
 
 _start:
@@ -34,6 +35,11 @@ _start:
     eret
 
 svc_entry:
+    mrc     p15, 0, r0, c1, c0, 0
+    bic     r0, r0, #2           /* permit ARMv7 unaligned data accesses */
+    orr     r0, r0, #0x400000
+    mcr     p15, 0, r0, c1, c0, 0
+    isb
     ldr     sp, =0x47fff000
     ldr     r3, =arm_boot_dtb
     str     r2, [r3]
@@ -54,6 +60,12 @@ arm_poweroff:
     smc     #0
 3:  wfi
     b       3b
+
+arm_system_reset:
+    ldr     r0, =0x84000009       /* PSCI SYSTEM_RESET */
+    smc     #0
+4:  wfi
+    b       4b
 
     .section .data
     .align  2

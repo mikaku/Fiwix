@@ -59,8 +59,9 @@ make TARGET_ARCH=arm CCEXE=clang \
   CROSS_COMPILE=arm-linux-gnueabihf- LIBGCC= test-arm
 ```
 
-Milestones 1 and 2 are implemented on this branch, and milestone 3 now has its
-first process-address-space gate. The ARM VM layer owns 16 KiB ARMv7
+Milestones 1 and 2 are implemented on this branch. Milestone 3 now links the
+complete generic kernel and boots through physical-memory, process-table, and
+idle-address-space initialization under QEMU. The ARM VM layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
 TLB flush, installs 1 KiB coarse tables with 4 KiB user leaves, and clones
@@ -90,16 +91,15 @@ exercises the real loader against a multi-block fake inode and verifies the
 copied image, zero fill, VMAs, heap, stack pointers, auxiliary vector, entry
 state, signal mapping, and instruction-cache invalidation.
 
-The ARM EABI-to-generic syscall policy is also host-gated. Legacy ARM numbers
-for the bootstrap file/process calls match Fiwix's i386-indexed table, but the
-translator still dispatches them explicitly so unsupported entries do not
-become accidental ABI. It covers `exit`/`exit_group`, fork-compatible `clone`,
+The ARM EABI-to-generic syscall policy is host-gated and included in the
+generic image. Legacy ARM numbers for the bootstrap file/process calls match
+Fiwix's i386-indexed table, but the translator still dispatches them explicitly
+so unsupported entries do not become accidental ABI. It covers
+`exit`/`exit_group`, fork-compatible `clone`,
 read/write/open/openat/close, exec, wait4, cwd and basic pathname operations,
 descriptor duplication, brk, process IDs, kill, sync, and reboot. The `*at`
 subset currently accepts only `AT_FDCWD`; `unlinkat` rejects flags, and
-`clone` accepts only `SIGCHLD` with a null child stack. The freestanding oracle
-does not link the generic syscall table, so this unit remains host-tested until
-the generic ARM image is introduced.
+`clone` accepts only `SIGCHLD` with a null child stack.
 
 The ARM `arch_context` now records callee-saved registers, the scheduler
 continuation, TTBR0, and the privileged stack instead of falling through to
@@ -127,8 +127,8 @@ tables. A host runtime gate executes the real walker against a fixed
 low-address RAM window and verifies parent/child data isolation and page
 counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
 root, and process teardown releases subordinate tables before returning its
-fixed root. These objects cross-compile but are not linked into a generic ARM
-kernel yet.
+fixed root. The generic boot gate now executes that initializer and activates
+the owned idle root in the linked 266-unit kernel.
 
 Generic PID 1 construction now has an ARM path as well. It creates a clean
 process root, maps a private read/execute trampoline at `0x3ffff000` and a
@@ -145,9 +145,9 @@ The fixture preserves a complete register frame across SVC, alignment abort,
 section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
-files and private physical-page operations now cross-compile for ARM and have
-host runtime gates, but they are not yet linked into the ARM kernel.
-Device-backed filesystem access and bootstrap execution remain incomplete.
+files and private physical-page operations now cross-compile for ARM, have
+host runtime gates, and are linked into the ARM kernel. Device-backed
+filesystem access and bootstrap execution remain incomplete.
 
 The first ARM signal boundary is now host-gated as well. It uses the Linux
 AArch32 84-byte `sigcontext`, 744-byte `ucontext`, and 888-byte real-time
@@ -157,9 +157,9 @@ validates an A32 executable handler, saves all integer/user registers and the
 blocked mask, and returns through syscall 173 on the fixed executable
 trampoline. ARM EABI syscalls 174 and 175 translate Linux `rt_sigaction` and
 `rt_sigprocmask`; return validates the restored PC, SP, CPSR mode, and mask.
-This code cross-compiles with the common signal unit and is now reached by the
-generic ARM trap policy, but still awaits the linked generic kernel. The
-corresponding generic vector entry is live-gated separately: a user SVC
+This code cross-compiles with the common signal unit and is included in the
+linked generic kernel. The corresponding generic vector entry is live-gated
+separately: a user SVC
 transfers a complete 72-byte frame onto the process's banked SVC stack, calls
 the architecture dispatch boundary, restores every register and user-bank
 SP/LR, and resumes at the following A32 instruction under QEMU 7.2 and 8.2.
@@ -175,11 +175,37 @@ token, rearms the level-triggered physical timer before EOI, and invokes the
 common timer and bottom-half paths with the correct privilege marker. The host
 gate covers user and kernel paths, signal delivery, scheduling order,
 unknown/spurious IDs, and IRQ acknowledge ordering; target compilation covers
-the CP15 fault-register readers. Concrete GIC/timer hooks and the linked
-generic image are the next milestone.
+the CP15 fault-register readers. The linked image provides the concrete
+GIC/timer access hooks; enabling the GIC and timer during generic startup is
+the next runtime milestone.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
+
+The complete generic compile, link, and boot gate is:
+
+```sh
+make TARGET_ARCH=arm CCEXE=clang \
+  ARM_CC_TARGET=--target=arm-linux-gnueabihf \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  GENERIC_RUNTIME=/path/to/soft-float/libgcc.a \
+  test-arm-generic-boot
+```
+
+`GENERIC_RUNTIME` must use the same soft-float EABI as the kernel. The host
+`arm-linux-gnueabihf` runtime is not compatible even though its binutils can
+assemble and link the soft-float objects.
+
+## Remaining implementation sequence
+
+1. Register PL011 as the system TTY, initialize GICv2 and the physical timer,
+   and require live timer ticks in the generic boot gate.
+2. Parse the QEMU FDT for memory and virtio-mmio transports, add ARM virtio
+   block, and mount a writable ext2 root under both modern and legacy virtio.
+3. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
+   static `/sbin/init` through fork, exec, wait, page-fault, and signal gates.
+4. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
+   compare builder-hex0 artifacts, then add the same-root Linux continuation.
 
 ## Design and bug log
 
@@ -367,8 +393,8 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   Process initialization/release, task creation, scheduling, and fork now have
   explicit ARM branches, and a cross-compile gate covers all three generic
   translation units. Fork can construct a child context and clone private
-  pages with copy-on-write, but remains a runtime milestone until those units
-  are linked into the generic ARM image.
+  pages with copy-on-write, but executing it from PID 1 remains a runtime
+  milestone for the linked generic ARM image.
 - ARM also inherited the i386 `PAGE_OFFSET` conversion: adding `0xc0000000` to
   QEMU RAM at `0x40000000` wraps a 32-bit pointer to zero. ARM now defines an
   identity-mapped physical/kernel range beginning at `0x40000000`, uses that
@@ -407,3 +433,31 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   the odd address before testing loader clearing. Padding `p_filesz` to a
   4-byte boundary gives BSS the alignment required by that check while
   retaining a larger `p_memsz`.
+- The shared startup path treated every architecture other than RISC-V as
+  i386. ARM therefore reached TSS/CR3 setup, BIOS memory-map page reservation,
+  x86 I/O-permission state, and the PC reboot path. ARM now has an explicit
+  generic startup, physical-page reservation policy, `ENOSYS` I/O-port policy,
+  and PSCI reset path.
+- Shared non-RISC-V guards also retained `/dev/port`, PS/2, PIT/CMOS, PC
+  serial/parallel, floppy, and ATA code for ARM. These are i386 facilities, not
+  generic fallbacks. The guards now classify both RISC-V and ARM as non-PC,
+  and the link gate rejects any surviving legacy port-I/O boundary.
+- The first complete link used the host hard-float libgcc with soft-float
+  kernel objects. GNU ld correctly rejected the VFP argument ABI mismatch.
+  The gate accepts an explicit matching runtime, and ARM supplies the EABI
+  integer divide-by-zero hooks so libgcc does not import userspace `raise()`.
+- Clang emitted an unaligned word store while formatting the first `printk`.
+  QEMU's reset alignment controls turned it into a recursive data-abort before
+  the generic console existed. Startup normalizes SCTLR alignment controls,
+  and all ARM C builds use `-mno-unaligned-access` so correctness does not
+  depend on firmware or hypervisor reset state.
+- Fixture-only context-switch assertions originally occupied the same text
+  section as the scheduler entry points, retaining their failure loop in the
+  generic image. The fixture gate now has its own section, allowing
+  `--gc-sections` to discard it while keeping the shared context primitives.
+- The complete generic image compiles all 266 ARM/common C units with
+  per-function/data sections, links the ARM boot/vector/context assembly, and
+  rejects undefined symbols, writable-executable load segments, external
+  network hooks, and legacy port-I/O hooks. Its QEMU gate proves entry, trap
+  installation, CPU/IRQ core setup, physical-page initialization, process
+  table setup, independent idle-root activation, and PSCI shutdown.

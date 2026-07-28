@@ -371,7 +371,7 @@ int data_proc_pci(char *buffer, __pid_t pid)
 
 int data_proc_rtc(char *buffer, __pid_t pid)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	(void)buffer;
 	(void)pid;
 	return 0;

@@ -87,7 +87,8 @@ arm_return_to_user:
     add     sp, sp, #ARM_FRAME_SIZE
     movs    pc, lr
 
-/* Two resumptions on an independent stack exercise save and restore. */
+/* Fixture-only gate; generic image linking discards this independent section. */
+    .section .text.arm_context_gate, "ax"
 arm_context_gate_alternate:
     cmp     r4, #0x44
     bne     9f

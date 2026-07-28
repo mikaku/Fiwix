@@ -72,7 +72,7 @@ void do_debug(unsigned int trap, struct sigcontext *sc)
 
 void do_nmi_interrupt(unsigned int trap, struct sigcontext *sc)
 {
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	unsigned char error;
 
 	error = inport_b(PS2_SYSCTRL_B);
@@ -87,7 +87,7 @@ void do_nmi_interrupt(unsigned int trap, struct sigcontext *sc)
 			break;
 	}
 #else
-	printk("unexpected RISC-V NMI compatibility trap\n");
+	printk("unexpected non-i386 NMI compatibility trap\n");
 #endif
 
 	if(dump_registers(trap, sc)) {

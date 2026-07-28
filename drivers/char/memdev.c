@@ -146,7 +146,7 @@ static struct fs_operations null_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 static struct fs_operations port_driver_fsop = {
 	0,
 	0,
@@ -486,7 +486,7 @@ __loff_t null_llseek(struct inode *i, __loff_t offset)
 	return offset;
 }
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 int port_open(struct inode *i, struct fd *f)
 {
 	return 0;
@@ -633,7 +633,7 @@ int memdev_open(struct inode *i, struct fd *f)
 		case MEMDEV_NULL:
 			i->fsop = &null_driver_fsop;
 			break;
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 		case MEMDEV_PORT:
 			i->fsop = &port_driver_fsop;
 			break;
@@ -688,7 +688,7 @@ void memdev_init(void)
 	SET_MINOR(memdev_device.minors, MEMDEV_MEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_KMEM);
 	SET_MINOR(memdev_device.minors, MEMDEV_NULL);
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	SET_MINOR(memdev_device.minors, MEMDEV_PORT);
 #endif
 	SET_MINOR(memdev_device.minors, MEMDEV_ZERO);

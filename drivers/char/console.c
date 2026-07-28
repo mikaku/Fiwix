@@ -928,7 +928,7 @@ void vconsole_stop(struct tty *tty)
 
 void vconsole_beep(void)
 {
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	struct callout_req creq;
 
 	pit_beep_on();

@@ -37,7 +37,7 @@ int kswapd(void)
 
 	/* char devices */
 	memdev_init();
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	serial_init();
 	lp_init();
 #endif
@@ -52,7 +52,7 @@ int kswapd(void)
 
 	/* block devices */
 	ramdisk_init();
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	floppy_init();
 	ata_init();
 #endif

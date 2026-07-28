@@ -37,6 +37,18 @@ int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, int arg6, struct
 int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, struct sigcontext *sc)
 #endif /* CONFIG_SYSCALL_6TH_ARG */
 {
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
+	(void)level;
+	(void)arg2;
+	(void)arg3;
+	(void)arg4;
+	(void)arg5;
+#ifdef CONFIG_SYSCALL_6TH_ARG
+	(void)arg6;
+#endif
+	(void)sc;
+	return -ENOSYS;
+#else
 #ifdef __DEBUG__
 	printk("(pid %d) sys_iopl(%d) -> ", current->pid, level);
 #endif /*__DEBUG__ */
@@ -58,4 +70,5 @@ int sys_iopl(int level, int arg2, int arg3, int arg4, int arg5, struct sigcontex
 	printk("0\n");
 #endif /*__DEBUG__ */
 	return 0;
+#endif
 }

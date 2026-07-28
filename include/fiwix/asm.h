@@ -140,6 +140,7 @@ unsigned int arm_read_sp(void);
 void arm_set_sp(unsigned int);
 void arm_wait_for_interrupt(void);
 void arm_instruction_cache_invalidate(void);
+void arm_system_reset(void);
 unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
 	unsigned int);
 
@@ -149,7 +150,7 @@ unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
 #define HLT() arm_wait_for_interrupt()
 
 #define GET_CR2(cr2) ((cr2) = arm_read_dfar())
-#define GET_ESP(esp) ((esp) = arm_read_sp())
+#define GET_ESP(esp) ((esp) = (void *)arm_read_sp())
 #define SET_ESP(esp) arm_set_sp((unsigned int)(esp))
 #define GET_GS(gs) ((gs) = 0)
 

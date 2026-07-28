@@ -45,7 +45,7 @@ unsigned int avenrun[3] = { 0, 0, 0 };
 
 static struct bh timer_bh = { 0, &irq_timer_bh, NULL };
 static struct bh callouts_bh = { 0, &do_callouts_bh, NULL };
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 static struct interrupt irq_config_timer = { 0, "timer", &irq_timer, NULL };
 #endif
 
@@ -364,6 +364,8 @@ void get_system_time(void)
 {
 #ifdef CONFIG_ARCH_RISCV64
 	kstat.boot_time = CURRENT_TIME = riscv64_get_system_time();
+#elif defined(CONFIG_ARCH_ARM)
+	kstat.boot_time = CURRENT_TIME = 0;
 #else
 	short int cmos_century;
 	struct tm tm;
@@ -384,7 +386,7 @@ void get_system_time(void)
 
 void set_system_time(__time_t t)
 {
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	int sec, spm, min, hour, d, m, y;
 
 	sec = t;
@@ -438,7 +440,7 @@ void set_system_time(__time_t t)
 
 int gettimeoffset(void)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	return 0;
 #else
 	int count;
@@ -459,7 +461,7 @@ void timer_init(void)
 	add_bh(&timer_bh);
 	add_bh(&callouts_bh);
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	pit_init(HZ);
 #endif
 
@@ -476,12 +478,14 @@ void timer_init(void)
 
 	printk("clock     -                 %d\ttype=%s Hz=%d\n", TIMER_IRQ,
 #ifdef CONFIG_ARCH_RISCV64
-		"RISC-V timer",
+			"RISC-V timer",
+#elif defined(CONFIG_ARCH_ARM)
+			"ARM generic timer",
 #else
-		"PIT",
+			"PIT",
 #endif
-		HZ);
-#ifndef CONFIG_ARCH_RISCV64
+			HZ);
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	if(!register_irq(TIMER_IRQ, &irq_config_timer)) {
 		enable_irq(TIMER_IRQ);
 	}

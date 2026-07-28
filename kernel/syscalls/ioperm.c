@@ -19,7 +19,7 @@
  */
 int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	(void)from;
 	(void)num;
 	(void)turn_on;

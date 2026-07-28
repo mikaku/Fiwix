@@ -34,8 +34,10 @@
 #include <fiwix/mm.h>
 #include <fiwix/kexec.h>
 #include <fiwix/sysconsole.h>
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 #include <fiwix/arch_process.h>
+#endif
+#ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_devices.h>
 #include <fiwix/riscv64_fdt.h>
 #endif
@@ -53,7 +55,7 @@ struct new_utsname sys_utsname = {
 	UTS_DOMAINNAME,
 };
 
-#ifndef CONFIG_ARCH_RISCV64
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 static void set_default_values(void)
 {
 	/* filesystem is ext2 */
@@ -127,6 +129,38 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	need_resched = 1;
 	STI();
 	cpu_idle();
+#elif defined(CONFIG_ARCH_ARM)
+	(void)magic;
+	(void)info;
+	(void)last_boot_addr;
+	CLI();
+	memset_b(&kstat, 0, sizeof(kstat));
+	kstat.physical_pages = arm_boot_memory_pages();
+	_last_data_addr = (__addr_t)_end;
+	sysconsole_init();
+	arm_boot_trace("Fiwix ARM sysconsole init passed\n");
+	arm_generic_traps_install();
+	arm_boot_trace("Fiwix ARM trap install passed\n");
+	cpu_init();
+	arm_boot_trace("Fiwix ARM CPU init passed\n");
+	irq_init();
+	arm_boot_trace("Fiwix ARM IRQ core init passed\n");
+	mem_init();
+	arm_boot_trace("Fiwix ARM memory init passed\n");
+	proc_init();
+	arm_boot_trace("Fiwix ARM process table init passed\n");
+
+	current = get_proc_free();
+	proc_slot_init(current);
+	if(arm_process_address_space_create(current, 0) < 0 ||
+		arm_process_context_activate(current) < 0) {
+		PANIC("Unable to create ARM idle process address space.\n");
+	}
+	arm_boot_trace("Fiwix ARM idle address space init passed\n");
+	current->flags |= PF_KPROC;
+	sprintk(current->argv0, "%s", "idle");
+	arm_generic_runtime_ready();
+	stop_kernel();
 #else
 	struct proc *init;
 
@@ -207,7 +241,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 
 void stop_kernel(void)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	CLI();
 	for(;;) {
 		HLT();

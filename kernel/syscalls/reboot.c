@@ -11,7 +11,7 @@
 #include <fiwix/signal.h>
 #include <fiwix/process.h>
 #include <fiwix/errno.h>
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 #include <fiwix/asm.h>
 #endif
 
@@ -41,6 +41,8 @@ int sys_reboot(int magic1, int magic2, int flag)
 		case BMAGIC_REBOOT:
 #ifdef CONFIG_ARCH_RISCV64
 			riscv64_system_reset();
+#elif defined(CONFIG_ARCH_ARM)
+			arm_system_reset();
 #else
 			reboot();
 #endif

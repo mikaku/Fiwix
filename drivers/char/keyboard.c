@@ -261,7 +261,7 @@ static void puts(struct tty *tty, char *seq)
 
 void set_leds(unsigned char led_status)
 {
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 	(void)led_status;
 #else
 	ps2_write(PS2_DATA, PS2_KB_SETLED);

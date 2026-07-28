@@ -524,6 +524,14 @@ void page_init(int pages)
 		}
 		pg->data = (char *)P2V(addr);
 		insert_on_free_list(pg);
+#elif defined(CONFIG_ARCH_ARM)
+		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
+			pg->flags = PAGE_RESERVED;
+			kstat.kernel_reserved++;
+			continue;
+		}
+		pg->data = (char *)P2V(addr);
+		insert_on_free_list(pg);
 #else
 		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
 			pg->flags = PAGE_RESERVED;
