@@ -85,6 +85,17 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-m2-pivot
 ```
 
+The next boundary executes the independently built ARMv7 Mes:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  ARM_MES=/path/to/arm-pivot/mes-0.27.1/bin/mes-m2 \
+  QEMU_ARM=qemu-system-arm test-arm-mes
+```
+
 Milestones 1 through 4 and the first boundary of milestone 5 are implemented
 on this branch. Milestone 3 links the complete generic kernel and boots through
 physical-memory, process-table, and idle-address-space initialization under
@@ -275,6 +286,16 @@ builder-hex0 route. The resulting 376,490-byte M1 has SHA-256
 The host extracts that file from each modified ext2 image, checks its size and
 hash, and runs the filesystem integrity gate.
 
+The next filesystem-backed process tree pins the 357,531-byte ARMv7 `mes-m2`
+at SHA-256
+`8aa74fb3cecbcf4bb7bea9f9e7764f4f6549227cf68501da14d6a83302eb068c`.
+The deterministic root includes Mes's `mes/module` and `module` trees, and PID
+1 supplies an absolute `GUILE_LOAD_PATH` rather than depending on a host build
+path. The child loads its Scheme boot files from ext2, evaluates a fixed
+expression, emits the acceptance marker from Mes itself, and exits zero. The
+parent wait/sync/reboot path and both virtio versions use the same gate as the
+M2 boundary.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -294,8 +315,9 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Extend the filesystem-backed M2 boundary through the post-pivot Mes and
-   TinyCC manifests, comparing each independently produced artifact.
+1. Drive MesCC from the filesystem-backed Mes process, then continue through
+   the post-pivot TinyCC manifests while comparing each independently produced
+   artifact.
 2. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
 
@@ -310,6 +332,12 @@ assemble and link the soft-float objects.
   L1 table that spans valid user pages from the leaf pages it contains: slot 0
   may hold a coarse table, leaves below `0x00010000` remain forbidden, and a
   host gate checks both sides of the boundary.
+- The first Mes root contained only `mes-m2`, so the interpreter started but
+  failed with `no such file: boot-5.scm`. Mes's executable is not a standalone
+  Scheme runtime: its pinned `mes/module` and `module` trees are runtime inputs.
+  The root builder now installs both trees and PID 1 supplies
+  `GUILE_LOAD_PATH=/mes/module:/module`; the acceptance marker must come from
+  the evaluated Scheme expression.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
