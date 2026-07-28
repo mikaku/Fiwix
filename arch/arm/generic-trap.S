@@ -64,9 +64,18 @@ arm_generic_traps_install:
     str     r0, [sp, #FRAME_PC]
     ldr     r0, [sp, #68]
     str     r0, [sp, #FRAME_CPSR]
+    and     r1, r0, #0x1f
+    cmp     r1, #0x10
+    bne     1f
     add     r0, sp, #FRAME_USR_SP
     stmia   r0, {r13-r14}^
     nop
+    b       2f
+1:
+    add     r0, sp, #FRAME_SIZE
+    str     r0, [sp, #FRAME_USR_SP]
+    str     lr, [sp, #FRAME_USR_LR]
+2:
     mov     r0, #\vector
     str     r0, [sp, #FRAME_VECTOR]
     b       arm_generic_dispatch
@@ -115,6 +124,11 @@ arm_generic_dispatch:
     cmp     r0, #0
     bne     arm_generic_fatal
 
+    ldr     r1, [sp, #FRAME_CPSR]
+    and     r1, r1, #0x1f
+    cmp     r1, #0x10
+    bne     arm_generic_kernel_return
+
     add     r0, sp, #FRAME_USR_SP
     ldmia   r0, {r13-r14}^
     nop
@@ -124,6 +138,23 @@ arm_generic_dispatch:
     ldmia   sp, {r0-r12}
     add     sp, sp, #FRAME_SIZE
     movs    pc, lr
+
+arm_generic_kernel_return:
+    /*
+     * Preserve the interrupted SVC link register and rebuild the exception
+     * return pair in the final two words of this frame. RFE then restores the
+     * CPSR while advancing SVC sp back to its pre-exception value.
+     */
+    ldr     r0, [sp, #FRAME_USR_LR]
+    str     r0, [sp, #FRAME_USR_SP]
+    ldr     r0, [sp, #FRAME_PC]
+    str     r0, [sp, #FRAME_USR_LR]
+    ldr     r0, [sp, #FRAME_CPSR]
+    str     r0, [sp, #FRAME_VECTOR]
+    ldmia   sp, {r0-r12}
+    ldr     lr, [sp, #FRAME_USR_SP]
+    add     sp, sp, #FRAME_USR_LR
+    rfeia   sp!
 
 arm_generic_fatal:
     mov     r0, sp

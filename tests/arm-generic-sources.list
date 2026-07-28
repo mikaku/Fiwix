@@ -6,6 +6,7 @@ arch/arm/elf32.c
 arch/arm/exec.c
 arch/arm/generic-boot.c
 arch/arm/memory.c
+arch/arm/pl011.c
 arch/arm/process.c
 arch/arm/runtime.c
 arch/arm/signal.c

@@ -40,6 +40,8 @@
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_devices.h>
 #include <fiwix/riscv64_fdt.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_devices.h>
 #endif
 
 struct kernel_params kparms;
@@ -130,6 +132,8 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	STI();
 	cpu_idle();
 #elif defined(CONFIG_ARCH_ARM)
+	unsigned int start_ticks;
+
 	(void)magic;
 	(void)info;
 	(void)last_boot_addr;
@@ -143,11 +147,15 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	arm_boot_trace("Fiwix ARM trap install passed\n");
 	cpu_init();
 	arm_boot_trace("Fiwix ARM CPU init passed\n");
+	dev_init();
 	irq_init();
+	tty_init();
 	arm_boot_trace("Fiwix ARM IRQ core init passed\n");
 	mem_init();
 	arm_boot_trace("Fiwix ARM memory init passed\n");
 	proc_init();
+	sleep_init();
+	sched_init();
 	arm_boot_trace("Fiwix ARM process table init passed\n");
 
 	current = get_proc_free();
@@ -159,6 +167,18 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	arm_boot_trace("Fiwix ARM idle address space init passed\n");
 	current->flags |= PF_KPROC;
 	sprintk(current->argv0, "%s", "idle");
+	if(arm_pl011_init()) {
+		PANIC("Unable to initialize ARM PL011 console.\n");
+	}
+	printk("Fiwix ARM PL011 system console passed\n");
+	timer_init();
+	arm_generic_interrupt_init();
+	start_ticks = CURRENT_TICKS;
+	STI();
+	while(CURRENT_TICKS - start_ticks < 3) {
+		HLT();
+	}
+	CLI();
 	arm_generic_runtime_ready();
 	stop_kernel();
 #else

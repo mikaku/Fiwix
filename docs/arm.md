@@ -128,7 +128,7 @@ low-address RAM window and verifies parent/child data isolation and page
 counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
 root, and process teardown releases subordinate tables before returning its
 fixed root. The generic boot gate now executes that initializer and activates
-the owned idle root in the linked 266-unit kernel.
+the owned idle root in the linked 267-unit kernel.
 
 Generic PID 1 construction now has an ARM path as well. It creates a clean
 process root, maps a private read/execute trampoline at `0x3ffff000` and a
@@ -176,8 +176,16 @@ common timer and bottom-half paths with the correct privilege marker. The host
 gate covers user and kernel paths, signal delivery, scheduling order,
 unknown/spurious IDs, and IRQ acknowledge ordering; target compilation covers
 the CP15 fault-register readers. The linked image provides the concrete
-GIC/timer access hooks; enabling the GIC and timer during generic startup is
-the next runtime milestone.
+GIC/timer access hooks. Generic startup now enables the GICv2 distributor and
+CPU interface, unmasks physical timer PPI 30, and waits for three interrupts
+from the architectural timer before accepting the runtime.
+
+PL011 is registered as `ttyS0` at major 4, minor 64 and as the system-console
+device at major 5. Output remains polled so the first complete kernel does not
+depend on a UART receive or transmit interrupt path. The boot gate requires
+the registered character device and TTY, a `printk` marker emitted through the
+TTY queue, three live timer ticks, and the final direct-console marker before
+PSCI shutdown.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -198,13 +206,11 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Register PL011 as the system TTY, initialize GICv2 and the physical timer,
-   and require live timer ticks in the generic boot gate.
-2. Parse the QEMU FDT for memory and virtio-mmio transports, add ARM virtio
+1. Parse the QEMU FDT for memory and virtio-mmio transports, add ARM virtio
    block, and mount a writable ext2 root under both modern and legacy virtio.
-3. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
+2. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
    static `/sbin/init` through fork, exec, wait, page-fault, and signal gates.
-4. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
+3. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
    compare builder-hex0 artifacts, then add the same-root Linux continuation.
 
 ## Design and bug log
@@ -222,6 +228,18 @@ assemble and link the soft-float objects.
   The policy keeps both values, treats IDs 1020 through 1023 as spurious,
   completes unknown claimed interrupts before rejecting them, and requires
   the physical timer to be rearmed before EOI so its level is deasserted.
+- A kernel IRQ originally restored its exception PC through SVC `lr` without
+  preserving the link register of the interrupted SVC code. An IRQ taken in
+  `arm_wait_for_interrupt()` therefore returned to that helper's final
+  `bx lr` forever even though the timer continued to increment
+  `kstat.ticks`. Privileged frames now preserve the interrupted SVC SP/LR and
+  use `RFE` to restore PC/CPSR without losing the caller's link register; user
+  frames retain the existing banked USR SP/LR path.
+- `printk` used a plain `char` for its `-1` log-level sentinel. ARM EABI makes
+  plain `char` unsigned, so the sentinel became 255, default-level selection
+  never ran, and every system-console character was filtered out even though
+  the PL011 callback ran. Both persistent log-level states now use `int`; the
+  generic smoke gate requires a complete `printk` line through the PL011 TTY.
 - ARM has two relevant execution states in this bootstrap. Fiwix deliberately
   targets ARMv7 after the existing AArch64-to-AArch32 compiler pivot rather
   than introducing an unproven ARMv7 seed or a new AArch64 Mes backend.
@@ -238,8 +256,9 @@ assemble and link the soft-float objects.
   ARM boot protocol. Supplying the ELF directly jumps to its entry but leaves
   `r2` zero; the raw `-kernel` path loads the same bytes at `0x40010000` and
   passes the generated FDT in `r2`.
-- Console output uses PL011 polling. Interrupt-driven console and GIC setup
-  belong to the trap milestone, not the boot oracle.
+- System-console output uses PL011 polling. Interrupt-driven UART I/O remains
+  outside the bootstrap boundary; GICv2 is used for the architectural timer,
+  whose PPI and acknowledge ordering are independently gated.
 - The initial Clang build passed `--target=arm-linux-gnueabihf` through the
   shared `ARCH` variable into GNU `as`, which interpreted it as malformed
   `--target-help`. Compiler target selection is now separate from ISA flags,
@@ -455,9 +474,10 @@ assemble and link the soft-float objects.
   section as the scheduler entry points, retaining their failure loop in the
   generic image. The fixture gate now has its own section, allowing
   `--gc-sections` to discard it while keeping the shared context primitives.
-- The complete generic image compiles all 266 ARM/common C units with
+- The complete generic image compiles all 267 ARM/common C units with
   per-function/data sections, links the ARM boot/vector/context assembly, and
   rejects undefined symbols, writable-executable load segments, external
   network hooks, and legacy port-I/O hooks. Its QEMU gate proves entry, trap
   installation, CPU/IRQ core setup, physical-page initialization, process
-  table setup, independent idle-root activation, and PSCI shutdown.
+  table setup, independent idle-root activation, PL011 system-console output,
+  three GICv2-delivered physical timer ticks, and PSCI shutdown.

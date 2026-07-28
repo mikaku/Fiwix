@@ -16,7 +16,9 @@ timeout "$TIMEOUT" "$QEMU" \
 	>"$temporary/arm-generic.log" 2>&1
 
 grep -q '^Fiwix ARM generic kernel entry' "$temporary/arm-generic.log"
-grep -q '^Fiwix ARM generic memory and process init passed' \
+grep -q '^Fiwix ARM PL011 system console passed' \
+	"$temporary/arm-generic.log"
+grep -q '^Fiwix ARM generic console, timer, memory, and process init passed' \
 	"$temporary/arm-generic.log"
 if grep -Eiq 'undefined|unhandled|panic|fail|returned' \
 	"$temporary/arm-generic.log"; then
