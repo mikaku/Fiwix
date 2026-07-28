@@ -42,7 +42,7 @@ arm_generic_traps_install:
     ldr     r0, =arm_generic_vector_table
     mcr     p15, 0, r0, c12, c0, 0
     mrc     p15, 0, r0, c1, c0, 0
-    orr     r0, r0, #2
+    bic     r0, r0, #2            /* Linux ARM binaries use unaligned words */
     mcr     p15, 0, r0, c1, c0, 0
     dsb
     isb

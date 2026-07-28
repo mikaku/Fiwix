@@ -105,11 +105,13 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   TCC_LIBTCC1=/path/to/libtcc1.a \
   ARM_MES=/path/to/arm-pivot/mes-0.27.1/bin/mes-m2 \
   ARM_NYACC=/path/to/arm-pivot/nyacc-1.00.2 \
+  ARM_M1=/path/to/arm-pivot/armv7-tools/M1 \
+  ARM_HEX2=/path/to/arm-pivot/armv7-tools/hex2 \
   QEMU_ARM=qemu-system-arm test-arm-mescc
 ```
 
-Milestones 1 through 4 and the MesCC assembly boundary of milestone 5 are
-implemented on this branch. Milestone 3 links the complete generic kernel and
+Milestones 1 through 4 and the MesCC compile/link/run boundary of milestone 5
+are implemented on this branch. Milestone 3 links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
 writes through the generic ext2 stack, and filesystem-backed PID 1 completes
@@ -223,15 +225,18 @@ passes translation, access-flag, and permission faults through the common
 page-fault resolver. It distinguishes write faults for copy-on-write, reports
 alignment aborts as `SIGBUS`, delivers other user exceptions as `SIGILL` or
 `SIGSEGV`, and recovers the saved user SP when a kernel access faults on
-behalf of a process. Timer IRQ dispatch preserves the raw GIC acknowledge
-token, rearms the level-triggered physical timer before EOI, and invokes the
-common timer and bottom-half paths with the correct privilege marker. The host
-gate covers user and kernel paths, signal delivery, scheduling order,
-unknown/spurious IDs, and IRQ acknowledge ordering; target compilation covers
-the CP15 fault-register readers. The linked image provides the concrete
-GIC/timer access hooks. Generic startup now enables the GICv2 distributor and
-CPU interface, unmasks physical timer PPI 30, and waits for three interrupts
-from the architectural timer before accepting the runtime.
+behalf of a process. The generic process runtime leaves `SCTLR.A` clear,
+matching the Linux ARM execution environment for binaries that use unaligned
+word accesses; the standalone low-level trap fixture still enables strict
+alignment to exercise the classification path. Timer IRQ dispatch preserves
+the raw GIC acknowledge token, rearms the level-triggered physical timer before
+EOI, and invokes the common timer and bottom-half paths with the correct
+privilege marker. The host gate covers user and kernel paths, signal delivery,
+scheduling order, unknown/spurious IDs, and IRQ acknowledge ordering; target
+compilation covers the CP15 fault-register readers. The linked image provides
+the concrete GIC/timer access hooks. Generic startup now enables the GICv2
+distributor and CPU interface, unmasks physical timer PPI 30, and waits for
+three interrupts from the architectural timer before accepting the runtime.
 
 PL011 is registered as `ttyS0` at major 4, minor 64 and as the system-console
 device at major 5. Output remains polled so the first complete kernel does not
@@ -312,13 +317,25 @@ The MesCC gate pins the canonical Mes compiler input tree at SHA-256
 `e59166c175a898d9d1d19d00fbfe6e85a53db2a91038a3119b57d3c7b2e67344`
 and NYACC's `module` tree at
 `b2e0d321a7349ee3b7e708c962fd4b26821b8bc784eb307cfb000218034634d5`.
+Its external assembler and linker are native ARMv7 executables derived from
+the portable stage0-posix sources by the independently proven ARMv7 M2-Planet.
+The 111,965-byte `M1` has SHA-256
+`b0f0e941e1c1a268ee6dd208b5519d79511b1c8f19ba4a096795de2492716309`;
+the 114,461-byte `hex2` has SHA-256
+`c0c0580cf21ceb49cce565b694cc81d1be1df861b0f0e9e5d2763189afdfa1d8`.
 The child compiles a 186-byte C fixture with SHA-256
 `55b241b486f18e4723544a510b07e5054b73e4e7a14e135ca5cc6436df7de835`.
 Both virtio roots produce the same 290-byte `hello.s`, with SHA-256
 `4186c398787fecd6d436a0fafdfee8a53e0aa9136fdab515395a5e107799c90e`,
-as the independent ARM user-mode route. This gate deliberately stops at
-MesCC's `-S` output: it proves the Scheme compiler under Fiwix, but does not
-claim an ARM-native M1/hex2 assembly and link boundary.
+and the same 288-byte `hello.o`, with SHA-256
+`b8c204022a32b9f2a464380db63680d15587b1ee18115938ee680f8f3c582d8a`,
+as the independent ARM user-mode route. Native `hex2` then emits the same
+27,472-byte static ARM ELF, SHA-256
+`545812bcd7637790cef2757d3898edcc42e70b41b252470c140afaf13e1e404e`.
+PID 1 marks that output executable, runs it, requires its console marker and
+exit status 42, and only then syncs and reboots. This proves that MesCC can
+spawn the native assembler and linker through Fiwix, not merely write their
+input format.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -339,9 +356,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Add an ARM-native assembler/linker boundary for MesCC output, then continue
-   through the post-pivot TinyCC manifests while comparing each independently
-   produced artifact.
+1. Continue through the post-pivot TinyCC manifests while comparing each
+   independently produced artifact.
 2. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
 
@@ -382,6 +398,12 @@ assemble and link the soft-float objects.
 - The observed MesCC workload probes ARM `ioctl` and `clock_gettime`, which the
   current translator returns as `ENOSYS`; both probes are optional and the
   real compiler completes. No speculative syscall emulation was added.
+- Generic trap installation unconditionally set `SCTLR.A`, undoing startup's
+  Linux-compatible alignment setting. The MesCC-linked ELF then took
+  `SIGBUS` on its first unaligned libc global store even though the same
+  binary runs under Linux. Generic installation now keeps `SCTLR.A` clear and
+  its QEMU runtime gate checks the control bit. The standalone low-level trap
+  fixture still enables strict alignment to test abort-frame restoration.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the

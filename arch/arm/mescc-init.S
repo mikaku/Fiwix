@@ -15,6 +15,7 @@
     .equ SYS_FORK,    2
     .equ SYS_WRITE,   4
     .equ SYS_EXECVE, 11
+    .equ SYS_CHMOD,  15
     .equ SYS_SYNC,   36
     .equ SYS_REBOOT, 88
     .equ SYS_WAIT4, 114
@@ -52,6 +53,37 @@ _start:
     cmp     r0, #0
     bne     failed
 
+run_linked_tree:
+    ldr     r0, =linked_path
+    movw    r1, #493
+    mov     r7, #SYS_CHMOD
+    svc     #0
+    cmp     r0, #0
+    blt     failed
+
+    mov     r7, #SYS_FORK
+    svc     #0
+    cmp     r0, #0
+    beq     run_linked
+    blt     failed
+    mov     r4, r0
+
+    sub     sp, sp, #8
+    mov     r0, r4
+    mov     r1, sp
+    mov     r2, #0
+    mov     r3, #0
+    mov     r7, #SYS_WAIT4
+    svc     #0
+    cmp     r0, r4
+    bne     failed
+    ldr     r0, [sp]
+    add     sp, sp, #8
+    mov     r1, #42
+    lsl     r1, r1, #8
+    cmp     r0, r1
+    bne     linked_status_failed
+
     mov     r0, #1
     ldr     r1, =complete_message
     ldr     r2, =complete_message_end
@@ -73,6 +105,54 @@ run_mescc:
     ldr     r1, =mes_argv
     ldr     r2, =mes_envp
     mov     r7, #SYS_EXECVE
+    svc     #0
+
+run_linked:
+    mov     r0, #1
+    ldr     r1, =linked_start_message
+    ldr     r2, =linked_start_message_end
+    sub     r2, r2, r1
+    mov     r7, #SYS_WRITE
+    svc     #0
+
+    ldr     r0, =linked_path
+    ldr     r1, =linked_argv
+    ldr     r2, =empty_envp
+    mov     r7, #SYS_EXECVE
+    svc     #0
+
+    mov     r0, #2
+    ldr     r1, =exec_failure_message
+    ldr     r2, =exec_failure_message_end
+    sub     r2, r2, r1
+    mov     r7, #SYS_WRITE
+    svc     #0
+    b       failed
+
+linked_status_failed:
+    cmp     r0, #4
+    ldreq   r1, =sigill_message
+    ldreq   r2, =sigill_message_end
+    beq     report_linked_failure
+    cmp     r0, #7
+    ldreq   r1, =sigbus_message
+    ldreq   r2, =sigbus_message_end
+    beq     report_linked_failure
+    cmp     r0, #9
+    ldreq   r1, =sigkill_message
+    ldreq   r2, =sigkill_message_end
+    beq     report_linked_failure
+    cmp     r0, #11
+    ldreq   r1, =sigsegv_message
+    ldreq   r2, =sigsegv_message_end
+    beq     report_linked_failure
+    ldr     r1, =status_failure_message
+    ldr     r2, =status_failure_message_end
+
+report_linked_failure:
+    sub     r2, r2, r1
+    mov     r0, #2
+    mov     r7, #SYS_WRITE
     svc     #0
 
 failed:
@@ -101,10 +181,13 @@ mes_argv:
     .word   include_path
     .word   include_option
     .word   arm_include_path
-    .word   assembly_option
-    .word   input_path
+    .word   library_option
+    .word   library_path
     .word   output_option
     .word   output_path
+    .word   input_path
+    .word   link_option
+    .word   libc_name
     .word   0
 mes_envp:
     .word   home_environment
@@ -114,6 +197,13 @@ mes_envp:
     .word   arena_environment
     .word   max_arena_environment
     .word   stack_environment
+    .word   m1_environment
+    .word   hex2_environment
+    .word   0
+linked_argv:
+    .word   linked_path
+    .word   0
+empty_envp:
     .word   0
 
 start_message:
@@ -122,6 +212,27 @@ start_message_end:
 complete_message:
     .ascii  "Fiwix ARM MesCC process tree completed\n"
 complete_message_end:
+linked_start_message:
+    .ascii  "Fiwix ARM MesCC linked ELF entered\n"
+linked_start_message_end:
+exec_failure_message:
+    .ascii  "Fiwix ARM MesCC linked ELF exec returned\n"
+exec_failure_message_end:
+sigill_message:
+    .ascii  "Fiwix ARM MesCC linked ELF exited on SIGILL\n"
+sigill_message_end:
+sigbus_message:
+    .ascii  "Fiwix ARM MesCC linked ELF exited on SIGBUS\n"
+sigbus_message_end:
+sigkill_message:
+    .ascii  "Fiwix ARM MesCC linked ELF exited on SIGKILL\n"
+sigkill_message_end:
+sigsegv_message:
+    .ascii  "Fiwix ARM MesCC linked ELF exited on SIGSEGV\n"
+sigsegv_message_end:
+status_failure_message:
+    .ascii  "Fiwix ARM MesCC linked ELF returned unexpected status\n"
+status_failure_message_end:
 failure_message:
     .ascii  "Fiwix ARM MesCC process tree failed\n"
 failure_message_end:
@@ -145,14 +256,22 @@ include_path:
     .asciz  "/mes/include"
 arm_include_path:
     .asciz  "/mes/include/linux/arm"
-assembly_option:
-    .asciz  "-S"
+library_option:
+    .asciz  "-L"
+library_path:
+    .asciz  "/mes/lib"
 input_path:
     .asciz  "hello.c"
 output_option:
     .asciz  "-o"
 output_path:
-    .asciz  "hello.s"
+    .asciz  "hello"
+link_option:
+    .asciz  "-l"
+libc_name:
+    .asciz  "c"
+linked_path:
+    .asciz  "/hello"
 home_environment:
     .asciz  "HOME=/"
 path_environment:
@@ -167,6 +286,10 @@ max_arena_environment:
     .asciz  "MES_MAX_ARENA=20000000"
 stack_environment:
     .asciz  "MES_STACK=6000000"
+m1_environment:
+    .asciz  "M1=/bin/M1"
+hex2_environment:
+    .asciz  "HEX2=/bin/hex2"
 
     .ltorg
     .section .note.GNU-stack,"",%progbits

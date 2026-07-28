@@ -252,8 +252,11 @@ test-arm-mescc: TIMEOUT=1800
 test-arm-mescc: arm-generic-image-tcc arm-mescc-init
 	@test -n "$(ARM_MES)" || { echo "test-arm-mescc requires ARM_MES=/path/to/mes-m2" >&2; exit 1; }
 	@test -n "$(ARM_NYACC)" || { echo "test-arm-mescc requires ARM_NYACC=/path/to/nyacc" >&2; exit 1; }
+	@test -n "$(ARM_M1)" || { echo "test-arm-mescc requires ARM_M1=/path/to/ARM/M1" >&2; exit 1; }
+	@test -n "$(ARM_HEX2)" || { echo "test-arm-mescc requires ARM_HEX2=/path/to/ARM/hex2" >&2; exit 1; }
 	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" ARM_MES="$(ARM_MES)" \
-		ARM_NYACC="$(ARM_NYACC)" tests/arm-mescc-boot-smoke.sh \
+		ARM_NYACC="$(ARM_NYACC)" ARM_M1="$(ARM_M1)" \
+		ARM_HEX2="$(ARM_HEX2)" tests/arm-mescc-boot-smoke.sh \
 		./fiwix-arm-generic.bin arch/arm/fixture/mescc-init.elf
 
 arm-generic-image-tcc:

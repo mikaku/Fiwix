@@ -26,6 +26,9 @@
 
 arm_boot_main:
     bl      arm_generic_traps_install
+    mrc     p15, 0, r0, c1, c0, 0
+    tst     r0, #2
+    bne     trap_fail
     ldr     r2, =user_start
     ldr     r3, =user_stack_top
     cps     #0x1f
