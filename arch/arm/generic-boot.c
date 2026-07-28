@@ -7,6 +7,7 @@
 
 #include <fiwix/arch_process.h>
 #include <fiwix/arm_devices.h>
+#include <fiwix/arm_fdt.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
 #include <fiwix/devices.h>
@@ -32,6 +33,7 @@
 #define GICC_EOIR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x010U))
 
 extern void arm_poweroff(void);
+extern unsigned int arm_boot_dtb;
 
 static void arm_early_putc(char ch)
 {
@@ -59,7 +61,11 @@ void arm_boot_trace(const char *text)
 
 unsigned int arm_boot_memory_pages(void)
 {
-	return ARM_MEMORY_FALLBACK >> PAGE_SHIFT;
+	unsigned int pages;
+
+	pages = arm_fdt_boot_discover((const void *)arm_boot_dtb,
+		PHYSICAL_MEMORY_BASE, ARM_MEMORY_LIMIT);
+	return pages ? pages : ARM_MEMORY_FALLBACK >> PAGE_SHIFT;
 }
 
 unsigned int arm_generic_irq_claim(void)
@@ -114,19 +120,31 @@ void arm_generic_interrupt_init(void)
 
 void arm_generic_runtime_ready(void)
 {
+	const struct arm_fdt_info *fdt;
 	__dev_t console;
 	__dev_t serial;
+	unsigned int dtb_page;
+	int dtb_selected;
 
 	console = MKDEV(SYSCON_MAJOR, 1);
 	serial = MKDEV(ARM_PL011_MAJOR, ARM_PL011_MINOR);
+	fdt = arm_boot_fdt_info();
+	dtb_page = arm_boot_dtb & PAGE_MASK;
+	dtb_selected = arm_boot_fdt_selected();
 	if(!kpage_dir || !page_table || !current ||
 		current->pid != IDLE || !arm_process_root(current) ||
 		!current->arch.ttbr0 || !kstat.free_pages ||
 		!get_device(CHR_DEV, console) ||
 		!get_device(CHR_DEV, serial) || !get_tty(serial) ||
+		(fdt && !fdt->virtio_count) ||
+		(dtb_selected && (!arm_boot_page_reserved(dtb_page) ||
+		!(page_table[PHYS_TO_PAGE(dtb_page)].flags & PAGE_RESERVED))) ||
 		CURRENT_TICKS < 3) {
 		arm_early_puts("Fiwix ARM generic runtime init failed\n");
 		arm_poweroff();
+	}
+	if(fdt) {
+		arm_early_puts("Fiwix ARM firmware DTB discovery passed\n");
 	}
 	arm_early_puts("Fiwix ARM generic console, timer, memory, and "
 		"process init passed\n");

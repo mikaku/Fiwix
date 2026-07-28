@@ -54,7 +54,7 @@ while IFS= read -r source; do
 	compiled=$((compiled + 1))
 done < "$GENERIC_SOURCE_LIST"
 
-test "$compiled" -eq 267
+test "$compiled" -eq 268
 if [ -n "$GENERIC_OUTPUT" ]; then
 	# shellcheck disable=SC2086
 	"$GENERIC_LD" -m armelf_linux_eabi -r $objects -o "$GENERIC_OUTPUT"

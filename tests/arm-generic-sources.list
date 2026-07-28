@@ -4,6 +4,7 @@
 arch/arm/cpu.c
 arch/arm/elf32.c
 arch/arm/exec.c
+arch/arm/fdt.c
 arch/arm/generic-boot.c
 arch/arm/memory.c
 arch/arm/pl011.c

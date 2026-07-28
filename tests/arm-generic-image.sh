@@ -78,6 +78,7 @@ grep -q ' T _start$' "$temporary/symbols"
 grep -q ' T start_kernel$' "$temporary/symbols"
 grep -q ' T arm_generic_vector_table$' "$temporary/symbols"
 grep -q ' T arm_generic_runtime_ready$' "$temporary/symbols"
+grep -q ' T arm_fdt_parse$' "$temporary/symbols"
 grep -q ' T arm_pl011_init$' "$temporary/symbols"
 grep -q ' T arm_generic_interrupt_init$' "$temporary/symbols"
 "$READELF" -h "$GENERIC_IMAGE" | grep -q 'Class:.*ELF32'

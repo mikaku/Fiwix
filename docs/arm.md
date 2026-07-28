@@ -128,7 +128,7 @@ low-address RAM window and verifies parent/child data isolation and page
 counts. The shared initializer reserves and activates a 16 KiB-aligned kernel
 root, and process teardown releases subordinate tables before returning its
 fixed root. The generic boot gate now executes that initializer and activates
-the owned idle root in the linked 267-unit kernel.
+the owned idle root in the linked 268-unit kernel.
 
 Generic PID 1 construction now has an ARM path as well. It creates a clean
 process root, maps a private read/execute trampoline at `0x3ffff000` and a
@@ -184,8 +184,20 @@ PL011 is registered as `ttyS0` at major 4, minor 64 and as the system-console
 device at major 5. Output remains polled so the first complete kernel does not
 depend on a UART receive or transmit interrupt path. The boot gate requires
 the registered character device and TTY, a `printk` marker emitted through the
-TTY queue, three live timer ticks, and the final direct-console marker before
-PSCI shutdown.
+TTY queue, the live firmware-DTB marker, three timer ticks, and the final
+direct-console marker before PSCI shutdown.
+
+The DTB parser validates the bounded structure and strings blocks, discovers
+RAM from root-level memory nodes, caps it at the current 128 MiB short-
+descriptor contract, and records at most 32 root-level `virtio,mmio` regions.
+Generic startup retains the parsed platform data before enabling its new
+translation root. When the complete DTB lies inside managed RAM, every page
+overlapping that blob is reserved before it can enter the allocator. A DTB
+above the current 128 MiB managed-memory cap needs no allocator reservation,
+but its already-parsed platform data remains available. Host gates cover QEMU
+`virt` DTBs for 64, 128, and 256 MiB. Complete-kernel boots at both 128 and
+256 MiB require live DTB discovery, at least one virtio transport, and
+reservation whenever the blob overlaps managed RAM.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -206,8 +218,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Parse the QEMU FDT for memory and virtio-mmio transports, add ARM virtio
-   block, and mount a writable ext2 root under both modern and legacy virtio.
+1. Consume the DTB-discovered transports in an ARM virtio block driver and
+   mount a writable ext2 root under both modern and legacy virtio.
 2. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
    static `/sbin/init` through fork, exec, wait, page-fault, and signal gates.
 3. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
@@ -240,6 +252,19 @@ assemble and link the soft-float objects.
   never ran, and every system-console character was filtered out even though
   the PL011 callback ran. Both persistent log-level states now use `int`; the
   generic smoke gate requires a complete `printk` line through the PL011 TTY.
+- QEMU ARM `virt` describes addresses and sizes with two 32-bit FDT cells even
+  though Fiwix is AArch32. Combining those cells in `unsigned long` would
+  discard the high half and shift by the type width. The parser uses an
+  explicit 64-bit accumulator, then accepts only regions representable in the
+  32-bit kernel address space.
+- ARM `virt` exposes 32 virtio-mmio windows spaced 0x200 bytes apart. The
+  RISC-V port's fixed 0x1000-stride probe is therefore not portable. ARM keeps
+  a bounded list of root-level `virtio,mmio` `reg` tuples from the firmware
+  DTB; the block driver must probe only that discovered list.
+- Assigning the 264-byte parsed-DTB result into persistent boot state caused
+  Clang to emit an undefined freestanding `memcpy`. The copy now names each
+  scalar field explicitly, preserving the generic image's no-undefined-symbol
+  link contract.
 - ARM has two relevant execution states in this bootstrap. Fiwix deliberately
   targets ARMv7 after the existing AArch64-to-AArch32 compiler pivot rather
   than introducing an unproven ARMv7 seed or a new AArch64 Mes backend.
@@ -474,10 +499,11 @@ assemble and link the soft-float objects.
   section as the scheduler entry points, retaining their failure loop in the
   generic image. The fixture gate now has its own section, allowing
   `--gc-sections` to discard it while keeping the shared context primitives.
-- The complete generic image compiles all 267 ARM/common C units with
+- The complete generic image compiles all 268 ARM/common C units with
   per-function/data sections, links the ARM boot/vector/context assembly, and
   rejects undefined symbols, writable-executable load segments, external
   network hooks, and legacy port-I/O hooks. Its QEMU gate proves entry, trap
   installation, CPU/IRQ core setup, physical-page initialization, process
   table setup, independent idle-root activation, PL011 system-console output,
-  three GICv2-delivered physical timer ticks, and PSCI shutdown.
+  firmware-DTB reservation and virtio discovery, three GICv2-delivered
+  physical timer ticks, and PSCI shutdown.

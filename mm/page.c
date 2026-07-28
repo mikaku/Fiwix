@@ -37,6 +37,8 @@
 #include <fiwix/blk_queue.h>
 #ifdef CONFIG_ARCH_RISCV64
 #include <fiwix/riscv64_fdt.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_fdt.h>
 #endif
 
 #define PAGE_HASH(inode, offset)	(((__ino_t)(inode) ^ (__off_t)(offset)) % (NR_PAGE_HASH))
@@ -528,6 +530,11 @@ void page_init(int pages)
 		if(addr >= KERNEL_ADDR && addr < V2P(_last_data_addr)) {
 			pg->flags = PAGE_RESERVED;
 			kstat.kernel_reserved++;
+			continue;
+		}
+		if(arm_boot_page_reserved(addr)) {
+			pg->flags = PAGE_RESERVED;
+			kstat.physical_reserved++;
 			continue;
 		}
 		pg->data = (char *)P2V(addr);
