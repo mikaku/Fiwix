@@ -16,6 +16,9 @@ QEMU ?= qemu-system-riscv64
 QEMU_ARM ?= qemu-system-arm
 TIMEOUT ?= 10
 HOSTCC ?= cc
+GENERIC_FLOAT_ABI ?= soft
+GENERIC_CC_INCLUDE ?=
+GENERIC_RETAINED_STUBS ?=
 ARCH_DEFINES =
 CC_TARGET =
 
@@ -196,15 +199,21 @@ test-arm-generic-compile:
 	@test "$(TARGET_ARCH)" = arm || { echo "test-arm-generic-compile requires TARGET_ARCH=arm" >&2; exit 1; }
 	GENERIC_CC="$(if $(GENERIC_CC),$(GENERIC_CC),$(CC_DRIVER))" \
 		GENERIC_CC_TARGET="$(CC_TARGET)" \
+		GENERIC_FLOAT_ABI="$(GENERIC_FLOAT_ABI)" \
+		GENERIC_CC_INCLUDE="$(GENERIC_CC_INCLUDE)" \
 		GENERIC_LD="$(CROSS_COMPILE)ld" \
+		GENERIC_RETAINED_STUBS="$(GENERIC_RETAINED_STUBS)" \
 		tests/arm-generic-compile.sh
 
 arm-generic-image:
 	@test "$(TARGET_ARCH)" = arm || { echo "arm-generic-image requires TARGET_ARCH=arm" >&2; exit 1; }
 	GENERIC_CC="$(if $(GENERIC_CC),$(GENERIC_CC),$(CC_DRIVER))" \
 		GENERIC_CC_TARGET="$(CC_TARGET)" \
+		GENERIC_FLOAT_ABI="$(GENERIC_FLOAT_ABI)" \
+		GENERIC_CC_INCLUDE="$(GENERIC_CC_INCLUDE)" \
 		GENERIC_LD="$(CROSS_COMPILE)ld" \
 		GENERIC_RUNTIME="$(GENERIC_RUNTIME)" \
+		GENERIC_RETAINED_STUBS="$(GENERIC_RETAINED_STUBS)" \
 		AS="$(AS)" NM="$(NM)" OBJCOPY="$(OBJCOPY)" \
 		READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-generic-image.sh
@@ -213,6 +222,21 @@ arm-generic-disk:
 	$(MAKE) -C arch/arm HOSTCC="$(HOSTCC)" fixture/disk.img
 	READELF="$(CROSS_COMPILE)readelf" NM="$(NM)" \
 		tests/arm-generic-init.sh arch/arm/fixture/generic-init.elf
+
+arm-generic-image-tcc:
+	@test "$(TARGET_ARCH)" = arm || { echo "arm-generic-image-tcc requires TARGET_ARCH=arm" >&2; exit 1; }
+	@test -f "$(TCC_LIBTCC1)" || { echo "arm-generic-image-tcc requires TCC_LIBTCC1=/path/to/libtcc1.a" >&2; exit 1; }
+	@test -f "$(TCC_INCLUDE)/stdarg.h" || { echo "arm-generic-image-tcc requires TCC_INCLUDE=/path/to/tcc/include" >&2; exit 1; }
+	$(MAKE) TARGET_ARCH=arm CROSS_COMPILE="$(CROSS_COMPILE)" \
+		GENERIC_CC="$(TCC)" GENERIC_FLOAT_ABI= \
+		GENERIC_CC_INCLUDE="$(TCC_INCLUDE)" \
+		GENERIC_RETAINED_STUBS="tests/arm-generic-tcc-stubs.expected" \
+		GENERIC_RUNTIME="$(TCC_LIBTCC1)" arm-generic-image
+
+test-arm-generic-tcc: arm-generic-image-tcc arm-generic-disk
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" \
+		tests/arm-generic-boot-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/disk.img
 
 test-arm-generic-boot: arm-generic-image arm-generic-disk
 	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" \
@@ -451,4 +475,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-disk test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

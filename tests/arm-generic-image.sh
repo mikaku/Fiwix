@@ -10,6 +10,7 @@ if [ "${GENERIC_CC_TARGET+x}" != x ]; then
 fi
 GENERIC_LD=${GENERIC_LD:-arm-linux-gnueabihf-ld}
 GENERIC_RUNTIME=${GENERIC_RUNTIME:-}
+GENERIC_RETAINED_STUBS=${GENERIC_RETAINED_STUBS:-}
 GENERIC_IMAGE=${GENERIC_IMAGE:-fiwix-arm-generic}
 GENERIC_BINARY=${GENERIC_BINARY:-fiwix-arm-generic.bin}
 AS=${AS:-arm-linux-gnueabihf-as}
@@ -68,13 +69,27 @@ if "$NM" -u "$GENERIC_IMAGE" | grep -q .; then
 fi
 "$NM" --defined-only "$temporary/dead-stubs.o" |
 	awk '$2 == "W" { print $3 }' > "$temporary/dead-symbols"
+: > "$temporary/retained-dead-symbols"
 while IFS= read -r symbol; do
 	if grep -q " [TW] $symbol\$" "$temporary/symbols"; then
-		printf 'Fiwix ARM generic image retained dead boundary: %s\n' \
-			"$symbol" >&2
-		exit 1
+		echo "$symbol" >> "$temporary/retained-dead-symbols"
 	fi
 done < "$temporary/dead-symbols"
+if [ -n "$GENERIC_RETAINED_STUBS" ]; then
+	sed '/^#/d; /^[[:space:]]*$/d' "$GENERIC_RETAINED_STUBS" \
+		> "$temporary/expected-retained-dead-symbols"
+	if ! cmp -s "$temporary/expected-retained-dead-symbols" \
+		"$temporary/retained-dead-symbols"; then
+		diff -u "$temporary/expected-retained-dead-symbols" \
+			"$temporary/retained-dead-symbols" || true
+		echo "Fiwix ARM generic image retained-stub contract changed" >&2
+		exit 1
+	fi
+elif [ -s "$temporary/retained-dead-symbols" ]; then
+	sed 's/^/Fiwix ARM generic image retained dead boundary: /' \
+		"$temporary/retained-dead-symbols" >&2
+	exit 1
+fi
 
 grep -q ' T _start$' "$temporary/symbols"
 grep -q ' T start_kernel$' "$temporary/symbols"

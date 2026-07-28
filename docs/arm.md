@@ -62,6 +62,17 @@ make TARGET_ARCH=arm CCEXE=clang \
 The generic image scripts default an unset `GENERIC_CC_TARGET` to Clang's
 `--target=arm-linux-gnueabihf`. An explicitly empty value selects a native ARM
 compiler driver, including a compiler produced by the bootstrap chain.
+`GENERIC_FLOAT_ABI` similarly defaults to `soft`; the ARM TinyCC target leaves
+it empty because bootstrap TinyCC selects its own softfp code-generation mode
+and rejects the GCC option spelling:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  QEMU_ARM=qemu-system-arm test-arm-generic-tcc
+```
 
 Milestones 1 through 4 are implemented on this branch. Milestone 3 links the
 complete generic kernel and boots through physical-memory, process-table, and
@@ -589,3 +600,26 @@ assemble and link the soft-float objects.
   Clang-shaped symbol assertion failed. The gate now requires the public
   `arm_fdt_boot_discover` kernel boundary and leaves private optimization names
   to the compiler.
+- Bootstrap ARM TinyCC selects softfp code generation itself and rejects
+  GCC's `-mfloat-abi=soft` spelling. `GENERIC_FLOAT_ABI` makes that one
+  compiler-driver distinction explicit while keeping the source flags, source
+  list, linker policy, and runtime boot gate shared with GCC and Clang.
+- The bootstrap TinyCC compiler is a chain intermediate rather than a complete
+  installed SDK, so its compiler-private `stdarg.h` is not found implicitly.
+  `TCC_INCLUDE` makes that exact source-tree header an explicit input; Fiwix
+  does not copy TinyCC's variadic ABI definitions or fall back to host headers.
+- ARM TinyCC's EABI runtime memory helpers call the standard freestanding
+  `memcpy`/`memset` entry points. Those aliases already wrapped Fiwix's
+  `memcpy_b`/`memset_b` for the RISC-V TinyCC image; ARM now shares the same
+  lowering boundary instead of importing a userspace libc.
+- Bootstrap TinyCC ignores `-ffunction-sections`, so a common source object
+  retains unreachable references to the PC `inport_b`/`outport_b` boundary.
+  As on RISC-V, weak sentinels make the image link and a checked expected file
+  fixes the exact retained set; any new port-I/O or external-network reference
+  remains a hard link-gate failure.
+- TinyCC's bounded ARM integrated assembler does not implement privileged
+  `mcr`/`mrc` instructions or even the inline `nop` used by dormant PC drivers.
+  The remaining generic timer, MMU, barrier, and no-operation primitives now
+  live in `ops.S`, which is assembled by bootstrap GNU `as`, while the C
+  compiler sees ordinary function calls. This keeps machine instructions in
+  one architecture-owned assembly boundary.

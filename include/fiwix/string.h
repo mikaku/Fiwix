@@ -33,13 +33,13 @@ char *remove_trailing_slash(char *);
 int is_dir(const char *);
 int atoi(const char *);
 void memcpy_b(void *, const void *, unsigned int);
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 void *memcpy(void *, const void *, __size_t);
 #endif
 void memcpy_w(void *, const void *, unsigned int);
 void memcpy_l(void *, const void *, unsigned int);
 void memset_b(void *, unsigned char, unsigned int);
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 void *memset(void *, int, __size_t);
 #endif
 void memset_w(void *, unsigned short int, unsigned int);

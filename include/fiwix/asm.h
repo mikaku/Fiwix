@@ -132,6 +132,7 @@ void arm_interrupt_disable(void);
 void arm_interrupt_enable(void);
 unsigned int arm_interrupt_state(void);
 void arm_interrupt_restore(unsigned int);
+void arm_no_operation(void);
 unsigned int arm_read_dfar(void);
 unsigned int arm_read_dfsr(void);
 unsigned int arm_read_ifar(void);
@@ -140,13 +141,19 @@ unsigned int arm_read_sp(void);
 void arm_set_sp(unsigned int);
 void arm_wait_for_interrupt(void);
 void arm_instruction_cache_invalidate(void);
+void arm_data_memory_barrier(void);
+void arm_data_sync_barrier(void);
+unsigned int arm_generic_timer_frequency_read(void);
+void arm_generic_timer_program(unsigned int);
+void arm_vm_install(unsigned int);
+void arm_vm_switch(unsigned int);
 void arm_system_reset(void);
 unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
 	unsigned int);
 
 #define CLI() arm_interrupt_disable()
 #define STI() arm_interrupt_enable()
-#define NOP() __asm__ __volatile__ ("nop":::"memory")
+#define NOP() arm_no_operation()
 #define HLT() arm_wait_for_interrupt()
 
 #define GET_CR2(cr2) ((cr2) = arm_read_dfar())

@@ -7,6 +7,7 @@
 
 #include <fiwix/arm_devices.h>
 #include <fiwix/arm_fdt.h>
+#include <fiwix/asm.h>
 
 #define VIRTIO_MAGIC			0x74726976U
 #define VIRTIO_DEVICE_BLOCK		2U
@@ -102,7 +103,7 @@ static u32 queue_size;
 
 static void arm_virtio_barrier(void)
 {
-	__asm__ volatile("dmb sy" : : : "memory");
+	arm_data_memory_barrier();
 }
 
 static u32 mmio_read(u32 offset)

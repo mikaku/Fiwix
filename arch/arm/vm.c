@@ -204,29 +204,8 @@ int arm_vm_activate(const unsigned int *root)
 		return -1;
 	}
 #ifdef __arm__
-	{
-		unsigned int zero;
-		unsigned int domain;
-		unsigned int control;
-
-		zero = 0;
-		domain = 1;
-		__asm__ volatile("dsb");
-		__asm__ volatile("mcr p15, 0, %0, c2, c0, 2" : : "r"(zero));
-		__asm__ volatile("mcr p15, 0, %0, c2, c0, 0" :
-			: "r"(table_address));
-		__asm__ volatile("mcr p15, 0, %0, c3, c0, 0" :
-			: "r"(domain));
-		__asm__ volatile("mcr p15, 0, %0, c8, c7, 0" : : "r"(zero));
-		arm_instruction_cache_invalidate();
-		__asm__ volatile("mrc p15, 0, %0, c1, c0, 0" :
-			"=r"(control));
-		/* D-cache waits for the generic cache-maintenance contract. */
-		control |= 0x00801001U;
-		__asm__ volatile("mcr p15, 0, %0, c1, c0, 0" :
-			: "r"(control));
-		__asm__ volatile("isb");
-	}
+	/* D-cache remains disabled inside the assembly install primitive. */
+	arm_vm_install(table_address);
 #endif
 	return 0;
 }
@@ -240,15 +219,7 @@ int arm_vm_context_activate(const unsigned int *root)
 		return -1;
 	}
 #ifdef __arm__
-	__asm__ volatile("dsb");
-	__asm__ volatile("mcr p15, 0, %0, c2, c0, 0" :
-		: "r"(table_address));
-	__asm__ volatile("isb");
-	table_address = 0;
-	__asm__ volatile("mcr p15, 0, %0, c8, c7, 0" :
-		: "r"(table_address));
-	__asm__ volatile("dsb");
-	__asm__ volatile("isb");
+	arm_vm_switch(table_address);
 #endif
 	return 0;
 }

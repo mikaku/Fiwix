@@ -359,7 +359,7 @@ int memcmp(const void *str1, const void *str2, unsigned int count)
 	return 0;
 }
 
-#ifdef CONFIG_ARCH_RISCV64
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
 /* Freestanding compiler-lowering entry points for bootstrap TinyCC. */
 void *memcpy(void *dest, const void *src, __size_t count)
 {

@@ -10,6 +10,7 @@
 #include <fiwix/arm_fdt.h>
 #include <fiwix/arm_trap.h>
 #include <fiwix/arm_vm.h>
+#include <fiwix/asm.h>
 #include <fiwix/buffer.h>
 #include <fiwix/devices.h>
 #include <fiwix/kernel.h>
@@ -84,26 +85,15 @@ void arm_generic_irq_complete(unsigned int token)
 
 void arm_generic_timer_rearm(void)
 {
-	unsigned int control;
 	unsigned int frequency;
 	unsigned int ticks;
 
-	__asm__ volatile("mrc p15, 0, %0, c14, c0, 0" :
-		"=r"(frequency));
+	frequency = arm_generic_timer_frequency_read();
 	ticks = frequency / HZ;
 	if(!ticks) {
 		ticks = 1;
 	}
-	control = 0;
-	__asm__ volatile("mcr p15, 0, %0, c14, c2, 1" :
-		: "r"(control));
-	__asm__ volatile("mcr p15, 0, %0, c14, c2, 0" :
-		: "r"(ticks));
-	control = 1;
-	__asm__ volatile("mcr p15, 0, %0, c14, c2, 1" :
-		: "r"(control));
-	__asm__ volatile("dsb");
-	__asm__ volatile("isb");
+	arm_generic_timer_program(ticks);
 }
 
 void arm_generic_interrupt_init(void)
@@ -118,7 +108,7 @@ void arm_generic_interrupt_init(void)
 	GICC_PMR = 0xFFU;
 	GICC_CTLR = 1;
 	GICD_CTLR = 1;
-	__asm__ volatile("dsb");
+	arm_data_sync_barrier();
 	arm_generic_timer_rearm();
 }
 

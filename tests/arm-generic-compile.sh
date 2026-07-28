@@ -8,7 +8,11 @@ GENERIC_CC=${GENERIC_CC:-clang}
 if [ "${GENERIC_CC_TARGET+x}" != x ]; then
 	GENERIC_CC_TARGET=--target=arm-linux-gnueabihf
 fi
+if [ "${GENERIC_FLOAT_ABI+x}" != x ]; then
+	GENERIC_FLOAT_ABI=soft
+fi
 GENERIC_LD=${GENERIC_LD:-arm-linux-gnueabihf-ld}
+GENERIC_CC_INCLUDE=${GENERIC_CC_INCLUDE:-}
 GENERIC_OUTPUT=${GENERIC_OUTPUT:-}
 GENERIC_OBJECT_DIR=${GENERIC_OBJECT_DIR:-}
 GENERIC_OBJECT_LIST=${GENERIC_OBJECT_LIST:-}
@@ -27,6 +31,13 @@ set -- "$GENERIC_CC"
 if [ -n "$GENERIC_CC_TARGET" ]; then
 	set -- "$@" "$GENERIC_CC_TARGET"
 fi
+set -- "$@" -march=armv7-a -marm -mno-unaligned-access
+if [ -n "$GENERIC_FLOAT_ABI" ]; then
+	set -- "$@" "-mfloat-abi=$GENERIC_FLOAT_ABI"
+fi
+if [ -n "$GENERIC_CC_INCLUDE" ]; then
+	set -- "$@" -I"$GENERIC_CC_INCLUDE"
+fi
 compiled=0
 objects=
 cd "$root"
@@ -43,8 +54,7 @@ while IFS= read -r source; do
 	esac
 	test -f "$source"
 	output=$temporary/generic-$compiled.o
-	"$@" -march=armv7-a -mfloat-abi=soft -marm \
-		-mno-unaligned-access -std=c89 \
+	"$@" -std=c89 \
 		-D__KERNEL__ -DCONFIG_ARCH_ARM -I"$root/include" -O2 \
 		-fno-pie -fno-pic -fno-common -fno-stack-protector \
 		-ffreestanding -ffunction-sections -fdata-sections \
