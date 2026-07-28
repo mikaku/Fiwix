@@ -79,6 +79,7 @@ int arm_fork_process_setup(struct proc *p,
 	p->arch.kernel_sp = stack;
 	p->arch.sp = (unsigned int)child_frame;
 	p->arch.lr = (unsigned int)arm_return_to_user;
+	arm_vfp_context_save(&p->arch);
 	p->rss++;
 	return 0;
 }

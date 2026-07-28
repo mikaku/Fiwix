@@ -17,6 +17,10 @@ TCC_SHA256=0caa6ca807e45ac14f432487f6f31e9282a0b7b2bf72e93f980600361d769ced
 TCC_TREE_SHA256=a99e237bd52a171202c536740a1a5492a1caa0201019158ca391509db593f7e1
 BOOT0_SHA256=d9aaa2f6cb4626db9476ebc01995ad610315c1d04765952dae5c640b3a877ce4
 BOOT0_BYTES=313964
+BOOT1_SHA256=54b0a02a3cdf7db240cc59238a165abc723170925dadb4b23d4e0645f7343fa3
+BOOT1_BYTES=314436
+BOOT2_SHA256=4467868495ef05fd925d92a75c8959d2cfc7980ab62edaedcd07fecf5de5248c
+BOOT2_BYTES=313820
 root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 tcc_prefix=$(CDPATH='' cd -- "$(dirname "$ARM_TCC")/.." && pwd)
 manifest=$root/tests/fixtures/arm-tcc-0.9.26-sources.SHA256SUM
@@ -70,6 +74,7 @@ MKE2FS=$(find_tool mke2fs "$MKE2FS")
 DEBUGFS=$(find_tool debugfs "$DEBUGFS")
 command -v "$QEMU" >/dev/null
 command -v "$SHA256SUM" >/dev/null
+command -v cmp >/dev/null
 test -f "$KERNEL"
 test -f "$INIT"
 test -f "$ARM_TCC"
@@ -111,7 +116,6 @@ run_selfhost()
 	shift
 	run_disk=$temporary/arm-tcc-selfhost-$transport.img
 	log=$temporary/arm-tcc-selfhost-$transport.log
-	output=$temporary/tcc-boot0-$transport
 	cp "$disk" "$run_disk"
 	if ! timeout "$TIMEOUT" "$QEMU" \
 		-M virt,virtualization=on,secure=off -cpu cortex-a15 \
@@ -122,19 +126,33 @@ run_selfhost()
 		exit 1
 	fi
 	if ! grep -q '^Fiwix ARM TinyCC self-host process tree entered' "$log" ||
-		! grep -q '^tcc version 0.9.26 (ARM Linux)' "$log" ||
+		test "$(grep -c '^tcc version 0.9.26 (ARM Linux)' "$log")" -ne 4 ||
 		! grep -q '^Fiwix ARM TinyCC self-host process tree completed' "$log" ||
 		grep -Eiq 'undefined|unhandled|panic|failed|returned' "$log"; then
 		cat "$log" >&2
 		exit 1
 	fi
-	"$DEBUGFS" -R 'cat /tcc/tcc-boot0' "$run_disk" >"$output" 2>/dev/null
-	test "$(wc -c < "$output")" -eq "$BOOT0_BYTES"
-	check_hash "$output" "$BOOT0_SHA256"
+	for generation in boot0 boot1 boot2 boot3; do
+		case "$generation" in
+			boot0) expected_bytes=$BOOT0_BYTES; expected_hash=$BOOT0_SHA256 ;;
+			boot1) expected_bytes=$BOOT1_BYTES; expected_hash=$BOOT1_SHA256 ;;
+			boot2|boot3)
+				expected_bytes=$BOOT2_BYTES
+				expected_hash=$BOOT2_SHA256
+				;;
+		esac
+		output=$temporary/tcc-$generation-$transport
+		"$DEBUGFS" -R "cat /tcc/tcc-$generation" "$run_disk" \
+			>"$output" 2>/dev/null
+		test "$(wc -c < "$output")" -eq "$expected_bytes"
+		check_hash "$output" "$expected_hash"
+	done
+	cmp "$temporary/tcc-boot2-$transport" \
+		"$temporary/tcc-boot3-$transport"
 	"$root/tests/arm-ext2-check.sh" "$run_disk"
 }
 
 run_selfhost legacy
 run_selfhost modern -global virtio-mmio.force-legacy=false
 
-printf '%s\n' 'Fiwix ARM TinyCC self-host boot passed'
+printf '%s\n' 'Fiwix ARM TinyCC self-host fixed-point boot passed'

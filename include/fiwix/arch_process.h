@@ -67,6 +67,9 @@ struct arch_context {
 	unsigned int lr;
 	unsigned int ttbr0;
 	unsigned int kernel_sp;
+	unsigned int fpscr;
+	unsigned int vfp_pad;
+	unsigned long long vfp_d[32];
 };
 
 void arm_process_roots_init(void);
@@ -75,6 +78,7 @@ int arm_process_address_space_create(struct proc *, const struct proc *);
 int arm_process_address_space_release(struct proc *);
 int arm_process_context_activate(const struct proc *);
 void arm_context_switch(struct arch_context *, struct arch_context *);
+void arm_vfp_context_save(struct arch_context *);
 int arm_process_setup(struct proc *, int (*)(void));
 int arm_user_process_setup(struct proc *, unsigned int, unsigned int);
 int arm_fork_process_setup(struct proc *, struct arm_trap_frame *);

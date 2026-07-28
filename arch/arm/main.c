@@ -76,6 +76,8 @@ struct arch_context arm_context_gate_alternate_context;
 static u32 arm_context_gate_stack[1024] __attribute__((aligned(8)));
 
 extern void arm_context_gate_alternate(void);
+extern void arm_context_gate_seed_vfp(void);
+extern int arm_context_gate_check_primary_vfp(void);
 
 static void uart_putc(int c)
 {
@@ -190,13 +192,16 @@ static int arm_scheduler_context_gate(void)
 	alternate->sp = ((u32)&arm_context_gate_stack[1024]) & ~7U;
 	alternate->lr = (u32)arm_context_gate_alternate;
 	arm_context_gate_phase = 0;
+	arm_context_gate_seed_vfp();
 
 	arm_context_switch(&arm_context_gate_primary_context, alternate);
-	if(arm_context_gate_phase != 1) {
+	if(arm_context_gate_phase != 1 ||
+		arm_context_gate_check_primary_vfp()) {
 		return -1;
 	}
 	arm_context_switch(&arm_context_gate_primary_context, alternate);
-	return arm_context_gate_phase == 2 ? 0 : -1;
+	return arm_context_gate_phase == 2 &&
+		!arm_context_gate_check_primary_vfp() ? 0 : -1;
 }
 
 static u32 arm_process_mmu_init(void)

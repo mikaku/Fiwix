@@ -33,28 +33,43 @@ _start:
     mov     r7, #SYS_WRITE
     svc     #0
 
-    mov     r7, #SYS_FORK
-    svc     #0
-    cmp     r0, #0
-    beq     build_boot0
-    blt     failed
-    mov     r4, r0
-    bl      wait_for_zero
+    bl      enter_source_directory
+
+    ldr     r0, =tcc_path
+    ldr     r1, =boot0_name
+    bl      spawn_build
+    ldr     r0, =boot0_path
+    bl      make_executable
+    ldr     r0, =boot0_path
+    ldr     r1, =boot0_version_argv
+    bl      spawn_and_wait
 
     ldr     r0, =boot0_path
-    movw    r1, #493
-    mov     r7, #SYS_CHMOD
-    svc     #0
-    cmp     r0, #0
-    blt     failed
+    ldr     r1, =boot1_name
+    bl      spawn_build
+    ldr     r0, =boot1_path
+    bl      make_executable
+    ldr     r0, =boot1_path
+    ldr     r1, =boot1_version_argv
+    bl      spawn_and_wait
 
-    mov     r7, #SYS_FORK
-    svc     #0
-    cmp     r0, #0
-    beq     run_boot0
-    blt     failed
-    mov     r4, r0
-    bl      wait_for_zero
+    ldr     r0, =boot1_path
+    ldr     r1, =boot2_name
+    bl      spawn_build
+    ldr     r0, =boot2_path
+    bl      make_executable
+    ldr     r0, =boot2_path
+    ldr     r1, =boot2_version_argv
+    bl      spawn_and_wait
+
+    ldr     r0, =boot2_path
+    ldr     r1, =boot3_name
+    bl      spawn_build
+    ldr     r0, =boot3_path
+    bl      make_executable
+    ldr     r0, =boot3_path
+    ldr     r1, =boot3_version_argv
+    bl      spawn_and_wait
 
     mov     r0, #1
     ldr     r1, =complete_message
@@ -72,6 +87,49 @@ _start:
     svc     #0
     b       failed
 
+spawn_build:
+    push    {r4-r10, lr}
+    sub     sp, sp, #256
+    mov     r4, r0
+    mov     r5, r1
+    ldr     r6, =build_argv_template
+    ldr     r7, =build_argv_template_end
+    mov     r8, sp
+1:
+    cmp     r6, r7
+    beq     2f
+    ldr     r9, [r6], #4
+    str     r9, [r8], #4
+    b       1b
+2:
+    str     r4, [sp]
+    str     r5, [sp, #20]
+    mov     r0, r4
+    mov     r1, sp
+    bl      spawn_and_wait
+    add     sp, sp, #256
+    pop     {r4-r10, pc}
+
+spawn_and_wait:
+    push    {r4-r6, lr}
+    mov     r4, r0
+    mov     r5, r1
+    mov     r7, #SYS_FORK
+    svc     #0
+    cmp     r0, #0
+    beq     1f
+    blt     failed
+    mov     r4, r0
+    bl      wait_for_zero
+    pop     {r4-r6, pc}
+1:
+    mov     r0, r4
+    mov     r1, r5
+    ldr     r2, =process_envp
+    mov     r7, #SYS_EXECVE
+    svc     #0
+    b       exec_failed
+
 wait_for_zero:
     sub     sp, sp, #8
     mov     r0, r4
@@ -85,29 +143,26 @@ wait_for_zero:
     ldr     r0, [sp]
     add     sp, sp, #8
     cmp     r0, #0
-    bne     failed
+    beq     1f
+    b       child_failed_status
+1:
     bx      lr
 
-build_boot0:
+make_executable:
+    movw    r1, #493
+    mov     r7, #SYS_CHMOD
+    svc     #0
+    cmp     r0, #0
+    blt     failed
+    bx      lr
+
+enter_source_directory:
     ldr     r0, =source_directory
     mov     r7, #SYS_CHDIR
     svc     #0
     cmp     r0, #0
     blt     failed
-
-    ldr     r0, =tcc_path
-    ldr     r1, =build_argv
-    ldr     r2, =process_envp
-    mov     r7, #SYS_EXECVE
-    svc     #0
-    b       exec_failed
-
-run_boot0:
-    ldr     r0, =boot0_path
-    ldr     r1, =version_argv
-    ldr     r2, =process_envp
-    mov     r7, #SYS_EXECVE
-    svc     #0
+    bx      lr
 
 exec_failed:
     mov     r0, #2
@@ -116,6 +171,40 @@ exec_failed:
     sub     r2, r2, r1
     mov     r7, #SYS_WRITE
     svc     #0
+    b       failed
+
+child_failed_status:
+    push    {r4-r6, lr}
+    sub     sp, sp, #16
+    mov     r4, r0
+    mov     r5, #8
+    mov     r6, sp
+1:
+    lsr     r0, r4, #28
+    cmp     r0, #10
+    addlt   r0, r0, #'0'
+    addge   r0, r0, #('a' - 10)
+    strb    r0, [r6], #1
+    lsl     r4, r4, #4
+    subs    r5, r5, #1
+    bne     1b
+    mov     r0, #'\n'
+    strb    r0, [r6]
+
+    mov     r0, #2
+    ldr     r1, =wait_status_message
+    ldr     r2, =wait_status_message_end
+    sub     r2, r2, r1
+    mov     r7, #SYS_WRITE
+    svc     #0
+    mov     r0, #2
+    mov     r1, sp
+    mov     r2, #9
+    mov     r7, #SYS_WRITE
+    svc     #0
+    add     sp, sp, #16
+    pop     {r4-r6, lr}
+    b       failed
 
 failed:
     mov     r0, #2
@@ -131,13 +220,13 @@ failed:
     b       1b
 
     .balign 4
-build_argv:
-    .word   tcc_path
+build_argv_template:
+    .word   0
     .word   no_stdlib_option
     .word   static_option
     .word   text_address_option
     .word   output_option
-    .word   boot0_name
+    .word   0
     .word   define_option
     .word   bootstrap_define
     .word   define_option
@@ -190,8 +279,24 @@ build_argv:
     .word   libgetopt_path
     .word   crtn_path
     .word   0
-version_argv:
+build_argv_template_end:
+    .if (build_argv_template_end - build_argv_template) > 256
+    .error "TinyCC build argv exceeds its stack allocation"
+    .endif
+boot0_version_argv:
     .word   boot0_path
+    .word   version_option
+    .word   0
+boot1_version_argv:
+    .word   boot1_path
+    .word   version_option
+    .word   0
+boot2_version_argv:
+    .word   boot2_path
+    .word   version_option
+    .word   0
+boot3_version_argv:
+    .word   boot3_path
     .word   version_option
     .word   0
 process_envp:
@@ -208,6 +313,9 @@ complete_message_end:
 exec_failure_message:
     .ascii  "Fiwix ARM TinyCC self-host exec returned\n"
 exec_failure_message_end:
+wait_status_message:
+    .ascii  "Fiwix ARM TinyCC self-host child wait status 0x"
+wait_status_message_end:
 failure_message:
     .ascii  "Fiwix ARM TinyCC self-host process tree failed\n"
 failure_message_end:
@@ -215,6 +323,12 @@ tcc_path:
     .asciz  "/bin/tcc-mes"
 boot0_path:
     .asciz  "/tcc/tcc-boot0"
+boot1_path:
+    .asciz  "/tcc/tcc-boot1"
+boot2_path:
+    .asciz  "/tcc/tcc-boot2"
+boot3_path:
+    .asciz  "/tcc/tcc-boot3"
 source_directory:
     .asciz  "/tcc"
 no_stdlib_option:
@@ -227,6 +341,12 @@ output_option:
     .asciz  "-o"
 boot0_name:
     .asciz  "tcc-boot0"
+boot1_name:
+    .asciz  "tcc-boot1"
+boot2_name:
+    .asciz  "tcc-boot2"
+boot3_name:
+    .asciz  "tcc-boot3"
 define_option:
     .asciz  "-D"
 bootstrap_define:

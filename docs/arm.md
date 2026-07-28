@@ -121,8 +121,8 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-tcc
 ```
 
-The first TinyCC self-host boundary rebuilds the compiler from its pinned
-source closure and executes that result:
+The TinyCC self-host boundary rebuilds the compiler through its fixed point
+from the pinned source closure and executes every result:
 
 ```sh
 make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
@@ -134,9 +134,9 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-tcc-selfhost
 ```
 
-Milestones 1 through 4, the MesCC compile/link/run boundary, the first TinyCC
-compile/link/run boundary, and the first TinyCC self-host boundary are
-implemented on this branch. Milestone 3
+Milestones 1 through 5 are implemented on this branch, including the MesCC
+compile/link/run boundary, the first TinyCC compile/link/run boundary, and the
+TinyCC compiler fixed point. Milestone 3
 links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
@@ -183,15 +183,16 @@ subset currently accepts only `AT_FDCWD`; `unlinkat` rejects flags, and
 `clone` accepts only `SIGCHLD` with a null child stack.
 
 The ARM `arch_context` now records callee-saved registers, the scheduler
-continuation, TTBR0, and the privileged stack instead of falling through to
-the i386 TSS layout. The AArch32 switch primitive saves and restores r4-r11,
-SP, and LR; TTBR0 activation remains a separate ordered operation for the
-scheduler. Its QEMU gate runs an alternate continuation twice on an independent
-stack and verifies every callee-saved sentinel after resumption. Architecture
-helpers now provide IRQ masking/state restoration, WFI, DFAR/SP access, unified
-TLB invalidation, and an EABI three-argument user SVC without selecting x86
-inline assembly. Kernel, first-user-entry, and copied-fork-frame continuations
-have ARM setup hooks and fixed assembly entry points. A generic
+continuation, TTBR0, the privileged stack, FPSCR, and D0-D31 instead of falling
+through to the i386 TSS layout. The AArch32 switch primitive eagerly saves and
+restores r4-r11, SP, LR, FPSCR, and all 32 VFP data registers; TTBR0 activation
+remains a separate ordered operation for the scheduler. Its QEMU gate runs an
+alternate continuation twice on an independent stack and verifies every
+integer, D0, and D16 sentinel after resumption. Architecture helpers now
+provide IRQ masking/state restoration, WFI, DFAR/SP access, unified TLB
+invalidation, and an EABI three-argument user SVC without selecting x86 inline
+assembly. Kernel, first-user-entry, and copied-fork-frame continuations have
+ARM setup hooks and fixed assembly entry points. A generic
 ownership layer reserves one aligned root for each of Fiwix's 64 process slots,
 associates every allocated root with its `struct proc`, rejects forged
 release/activation requests, creates a clean user half for the future fork
@@ -228,7 +229,8 @@ identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
 files and private physical-page operations now cross-compile for ARM, have
 host runtime gates, and are linked into the ARM kernel. Device-backed
-filesystem access and bootstrap execution remain incomplete.
+filesystem access and bootstrap execution are exercised by the milestone 5
+gates described below.
 
 The first ARM signal boundary is now host-gated as well. It uses the Linux
 AArch32 84-byte `sigcontext`, 744-byte `ucontext`, and 888-byte real-time
@@ -376,11 +378,16 @@ console marker and exit status 42 before syncing the root.
 
 The self-host gate pins the 19-file source closure listed in
 `tests/fixtures/arm-tcc-0.9.26-sources.SHA256SUM`. On each virtio root,
-`tcc-mes` rebuilds a no-debug `tcc-boot0`, PID 1 executes its `-version` path,
-and the host extracts the resulting compiler from ext2. Both runs produce the
-same 313,964-byte artifact, SHA-256
-`d9aaa2f6cb4626db9476ebc01995ad610315c1d04765952dae5c640b3a877ce4`,
-as two independent user-mode directory layouts.
+`tcc-mes` rebuilds a no-debug `tcc-boot0`; that compiler builds `tcc-boot1`,
+which builds `tcc-boot2`, which builds `tcc-boot3`. PID 1 executes every
+compiler's `-version` path and the host extracts all four from ext2. The
+313,964-byte boot0 has SHA-256
+`d9aaa2f6cb4626db9476ebc01995ad610315c1d04765952dae5c640b3a877ce4`;
+the 314,436-byte boot1 has SHA-256
+`54b0a02a3cdf7db240cc59238a165abc723170925dadb4b23d4e0645f7343fa3`.
+Boot2 and boot3 are byte-identical 313,820-byte files with SHA-256
+`4467868495ef05fd925d92a75c8959d2cfc7980ab62edaedcd07fecf5de5248c`.
+These artifacts match the independent user-mode route.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -401,10 +408,14 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Build the later TinyCC boot generations under Fiwix and require the
-   independently established compiler fixed point.
-2. Add the same-root Linux continuation and revalidate selected generated
+1. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
+2. Raise the managed-memory contract if rebuilding the 770 MiB MesCC TinyCC
+   seed inside Fiwix is required in addition to the pinned-seed fixed point.
+3. Add the Linux-compatible VFP record in `ucontext.regspace` before claiming
+   that signal handlers transparently preserve user floating-point state.
+   Scheduler switches and fork preserve VFP state, and the bootstrap process
+   tree does not install signal handlers.
 
 ## Design and bug log
 
@@ -469,10 +480,25 @@ assemble and link the soft-float objects.
   inputs before either guest starts.
 - Rebuilding the initial TinyCC seed through MesCC peaks near 770 MiB, above
   the ARM port's current 256 MiB managed-memory limit. The first self-host gate
-  therefore starts from the independently built and hash-pinned `tcc-mes` and
-  proves its next compiler generation inside Fiwix. Later generations and the
-  fixed-point comparison remain separate acceptance gates rather than
-  weakening this gate's memory contract.
+  therefore starts from the independently built and hash-pinned `tcc-mes`.
+  Successive in-guest generations now reach the independently calibrated
+  boot2/boot3 fixed point without weakening this gate's memory contract.
+- The first in-guest boot0 compiler died with raw wait status `0x00000004`
+  (`SIGILL`) even though the same binary and inputs completed under QEMU user
+  mode. Fiwix had never enabled CP10/CP11 or FPEXC, and its scheduler had no
+  VFP state. HYP entry now clears the CP10/CP11 trap bits in HCPTR, SVC startup
+  grants user access in CPACR and sets `FPEXC.EN`, and every context switch
+  eagerly preserves FPSCR and D0-D31. Fork snapshots the active hardware state
+  because the running parent's `arch_context` is not necessarily current until
+  it is switched out. Eager state avoids introducing a lazy-VFP trap protocol
+  into the bootstrap kernel, and the scheduler fixture checks both a low and a
+  high VFP register across two switches. The assembly uses `.fpu vfpv3`, which
+  denotes the 32-register Cortex-A15 target and is accepted by the bootstrap
+  binutils 2.30; that assembler rejects the newer `vfpv3-d32` spelling.
+- Adding the raw child-status diagnostic initially let the separate exec
+  failure path fall through into the formatter, where the successful diagnostic
+  `write` count would have been mislabeled as a wait status. The exec path now
+  branches directly to the common failure exit after printing its own message.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the

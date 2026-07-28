@@ -9,6 +9,7 @@
     .arch armv7-a
     .arch_extension virt
     .arch_extension sec
+    .fpu vfpv3
     .arm
     .section .text.boot
     .globl _start
@@ -26,6 +27,9 @@ _start:
     mrc     p15, 4, r1, c14, c1, 0
     orr     r1, r1, #3           /* EL1 physical counter and timer access */
     mcr     p15, 4, r1, c14, c1, 0
+    mrc     p15, 4, r1, c1, c1, 2
+    bic     r1, r1, #(3 << 10)   /* do not trap CP10/CP11 at HYP */
+    mcr     p15, 4, r1, c1, c1, 2
     adr     r1, svc_entry
     msr     ELR_hyp, r1
     bic     r0, r0, #0x1f
@@ -35,6 +39,15 @@ _start:
     eret
 
 svc_entry:
+    mrc     p15, 0, r0, c1, c0, 2
+    orr     r0, r0, #(15 << 20)  /* full CP10/CP11 access from USR */
+    mcr     p15, 0, r0, c1, c0, 2
+    isb
+    vmrs    r0, fpexc
+    orr     r0, r0, #(1 << 30)
+    vmsr    fpexc, r0
+    isb
+
     mrc     p15, 0, r0, c1, c0, 0
     bic     r0, r0, #2           /* permit ARMv7 unaligned data accesses */
     orr     r0, r0, #0x400000
