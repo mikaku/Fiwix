@@ -617,6 +617,11 @@ assemble and link the soft-float objects.
   As on RISC-V, weak sentinels make the image link and a checked expected file
   fixes the exact retained set; any new port-I/O or external-network reference
   remains a hard link-gate failure.
+- Random `mktemp` object paths entered the linked ELF's `STT_FILE` strings, so
+  its loaded bytes were reproducible while its complete file hash was not.
+  The TinyCC target now uses the owned, stable
+  `.generic-package-work` directory through `GENERIC_WORKDIR`, matching the
+  RISC-V package boundary and making the complete ELF reproducible.
 - TinyCC's bounded ARM integrated assembler does not implement privileged
   `mcr`/`mrc` instructions or even the inline `nop` used by dormant PC drivers.
   The remaining generic timer, MMU, barrier, and no-operation primitives now

@@ -19,6 +19,7 @@ HOSTCC ?= cc
 GENERIC_FLOAT_ABI ?= soft
 GENERIC_CC_INCLUDE ?=
 GENERIC_RETAINED_STUBS ?=
+GENERIC_WORKDIR ?=
 ARCH_DEFINES =
 CC_TARGET =
 
@@ -214,6 +215,7 @@ arm-generic-image:
 		GENERIC_LD="$(CROSS_COMPILE)ld" \
 		GENERIC_RUNTIME="$(GENERIC_RUNTIME)" \
 		GENERIC_RETAINED_STUBS="$(GENERIC_RETAINED_STUBS)" \
+		GENERIC_WORKDIR="$(GENERIC_WORKDIR)" \
 		AS="$(AS)" NM="$(NM)" OBJCOPY="$(OBJCOPY)" \
 		READELF="$(CROSS_COMPILE)readelf" \
 		tests/arm-generic-image.sh
@@ -231,6 +233,7 @@ arm-generic-image-tcc:
 		GENERIC_CC="$(TCC)" GENERIC_FLOAT_ABI= \
 		GENERIC_CC_INCLUDE="$(TCC_INCLUDE)" \
 		GENERIC_RETAINED_STUBS="tests/arm-generic-tcc-stubs.expected" \
+		GENERIC_WORKDIR=.generic-package-work \
 		GENERIC_RUNTIME="$(TCC_LIBTCC1)" arm-generic-image
 
 test-arm-generic-tcc: arm-generic-image-tcc arm-generic-disk

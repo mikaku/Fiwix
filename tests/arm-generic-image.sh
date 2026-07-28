@@ -11,6 +11,7 @@ fi
 GENERIC_LD=${GENERIC_LD:-arm-linux-gnueabihf-ld}
 GENERIC_RUNTIME=${GENERIC_RUNTIME:-}
 GENERIC_RETAINED_STUBS=${GENERIC_RETAINED_STUBS:-}
+GENERIC_WORKDIR=${GENERIC_WORKDIR:-}
 GENERIC_IMAGE=${GENERIC_IMAGE:-fiwix-arm-generic}
 GENERIC_BINARY=${GENERIC_BINARY:-fiwix-arm-generic.bin}
 AS=${AS:-arm-linux-gnueabihf-as}
@@ -18,7 +19,17 @@ NM=${NM:-arm-linux-gnueabihf-nm}
 OBJCOPY=${OBJCOPY:-arm-linux-gnueabihf-objcopy}
 READELF=${READELF:-arm-linux-gnueabihf-readelf}
 root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
-temporary=$(mktemp -d)
+if [ -n "$GENERIC_WORKDIR" ]; then
+	test "$GENERIC_WORKDIR" != / || {
+		echo "refusing unsafe GENERIC_WORKDIR=/" >&2
+		exit 1
+	}
+	temporary=$GENERIC_WORKDIR
+	rm -rf "$temporary"
+	mkdir -p "$temporary"
+else
+	temporary=$(mktemp -d)
+fi
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 
 GENERIC_CC="$GENERIC_CC" GENERIC_CC_TARGET="$GENERIC_CC_TARGET" \
