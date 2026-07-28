@@ -15,6 +15,9 @@
     .globl arm_interrupt_state
     .globl arm_interrupt_restore
     .globl arm_read_dfar
+    .globl arm_read_dfsr
+    .globl arm_read_ifar
+    .globl arm_read_ifsr
     .globl arm_read_sp
     .globl arm_set_sp
     .globl arm_wait_for_interrupt
@@ -45,6 +48,18 @@ arm_interrupt_restore:
 
 arm_read_dfar:
     mrc     p15, 0, r0, c6, c0, 0
+    bx      lr
+
+arm_read_dfsr:
+    mrc     p15, 0, r0, c5, c0, 0
+    bx      lr
+
+arm_read_ifar:
+    mrc     p15, 0, r0, c6, c0, 2
+    bx      lr
+
+arm_read_ifsr:
+    mrc     p15, 0, r0, c5, c0, 1
     bx      lr
 
 arm_read_sp:

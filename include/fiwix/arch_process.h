@@ -82,6 +82,10 @@ void arm_process_release(struct proc *);
 void arm_kernel_process_entry(void);
 void arm_user_process_entry(void);
 void arm_return_to_user(void);
+void arm_generic_traps_install(void);
+int arm_generic_user_trap(struct arm_trap_frame *);
+int arm_generic_kernel_trap(struct arm_trap_frame *);
+void arm_generic_trap_fatal(struct arm_trap_frame *);
 
 #else
 

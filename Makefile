@@ -180,6 +180,8 @@ test-arm: all
 		tests/arm-signal-uapi.sh
 	AS="$(AS)" LD="$(LD)" NM="$(NM)" OBJCOPY="$(OBJCOPY)" QEMU="$(QEMU_ARM)" \
 		TIMEOUT="$(TIMEOUT)" tests/arm-generic-trap-runtime.sh
+	HOSTCC="$(HOSTCC)" ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
+		tests/arm-generic-trap-policy.sh
 	ARMCC="$(CC_DRIVER)" ARMCC_TARGET="$(CC_TARGET)" \
 		tests/arm-generic-process-compile.sh
 	HOSTCC="$(HOSTCC)" tests/arm-syscall-translation.sh

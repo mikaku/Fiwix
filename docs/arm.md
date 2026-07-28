@@ -146,9 +146,8 @@ section-permission abort, and IRQ. It proves that USR mode cannot read the
 identity-mapped kernel at `0x40010000`; both abort handlers and the timer IRQ
 signal completion by modifying the saved user frame. Generic process lifecycle
 files and private physical-page operations now cross-compile for ARM and have
-host runtime gates, but they are not yet linked into the ARM kernel. Generic
-trap dispatch, device-backed filesystem access, and bootstrap execution remain
-incomplete.
+host runtime gates, but they are not yet linked into the ARM kernel.
+Device-backed filesystem access and bootstrap execution remain incomplete.
 
 The first ARM signal boundary is now host-gated as well. It uses the Linux
 AArch32 84-byte `sigcontext`, 744-byte `ucontext`, and 888-byte real-time
@@ -158,12 +157,26 @@ validates an A32 executable handler, saves all integer/user registers and the
 blocked mask, and returns through syscall 173 on the fixed executable
 trampoline. ARM EABI syscalls 174 and 175 translate Linux `rt_sigaction` and
 `rt_sigprocmask`; return validates the restored PC, SP, CPSR mode, and mask.
-This code cross-compiles with the common signal unit but awaits the generic
-ARM trap policy before it can run in the generic kernel. The corresponding
-generic vector entry is now live-gated separately: a user SVC transfers a
-complete 72-byte frame onto the process's banked SVC stack, calls the
-architecture dispatch boundary, restores every register and user-bank SP/LR,
-and resumes at the following A32 instruction under QEMU 7.2 and 8.2.
+This code cross-compiles with the common signal unit and is now reached by the
+generic ARM trap policy, but still awaits the linked generic kernel. The
+corresponding generic vector entry is live-gated separately: a user SVC
+transfers a complete 72-byte frame onto the process's banked SVC stack, calls
+the architecture dispatch boundary, restores every register and user-bank
+SP/LR, and resumes at the following A32 instruction under QEMU 7.2 and 8.2.
+
+The generic C trap policy now routes user SVC through the explicit EABI
+translator, classifies ARMv7 short-descriptor prefetch and data aborts, and
+passes translation, access-flag, and permission faults through the common
+page-fault resolver. It distinguishes write faults for copy-on-write, reports
+alignment aborts as `SIGBUS`, delivers other user exceptions as `SIGILL` or
+`SIGSEGV`, and recovers the saved user SP when a kernel access faults on
+behalf of a process. Timer IRQ dispatch preserves the raw GIC acknowledge
+token, rearms the level-triggered physical timer before EOI, and invokes the
+common timer and bottom-half paths with the correct privilege marker. The host
+gate covers user and kernel paths, signal delivery, scheduling order,
+unknown/spurious IDs, and IRQ acknowledge ordering; target compilation covers
+the CP15 fault-register readers. Concrete GIC/timer hooks and the linked
+generic image are the next milestone.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -174,6 +187,15 @@ The Clang ELF32 process oracle is 20,484 bytes with SHA-256
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
   same Fiwix License notice used by the repository's architecture code.
+- Generic abort handling uses the architectural DFSR/IFSR status rather than
+  treating every abort as a page fault. Translation, access-flag, and
+  permission statuses enter `resolve_page_fault()`; alignment maps to
+  `SIGBUS`, and unsupported kernel aborts stay fatal. The saved PC is left on
+  the faulting instruction so a resolved fault retries it.
+- GIC EOI requires the complete IAR token, not just its 10-bit interrupt ID.
+  The policy keeps both values, treats IDs 1020 through 1023 as spurious,
+  completes unknown claimed interrupts before rejecting them, and requires
+  the physical timer to be rearmed before EOI so its level is deasserted.
 - ARM has two relevant execution states in this bootstrap. Fiwix deliberately
   targets ARMv7 after the existing AArch64-to-AArch32 compiler pivot rather
   than introducing an unproven ARMv7 seed or a new AArch64 Mes backend.
