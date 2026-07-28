@@ -5,7 +5,9 @@
 set -eu
 
 GENERIC_CC=${GENERIC_CC:-clang}
-GENERIC_CC_TARGET=${GENERIC_CC_TARGET:---target=arm-linux-gnueabihf}
+if [ "${GENERIC_CC_TARGET+x}" != x ]; then
+	GENERIC_CC_TARGET=--target=arm-linux-gnueabihf
+fi
 GENERIC_LD=${GENERIC_LD:-arm-linux-gnueabihf-ld}
 GENERIC_RUNTIME=${GENERIC_RUNTIME:-}
 GENERIC_IMAGE=${GENERIC_IMAGE:-fiwix-arm-generic}
@@ -78,7 +80,7 @@ grep -q ' T _start$' "$temporary/symbols"
 grep -q ' T start_kernel$' "$temporary/symbols"
 grep -q ' T arm_generic_vector_table$' "$temporary/symbols"
 grep -q ' T arm_generic_runtime_ready$' "$temporary/symbols"
-grep -q ' T arm_fdt_parse$' "$temporary/symbols"
+grep -q ' T arm_fdt_boot_discover$' "$temporary/symbols"
 grep -q ' T arm_pl011_init$' "$temporary/symbols"
 grep -q ' T arm_generic_interrupt_init$' "$temporary/symbols"
 grep -q ' T arm_ext2_writable_gate$' "$temporary/symbols"

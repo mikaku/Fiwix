@@ -59,6 +59,10 @@ make TARGET_ARCH=arm CCEXE=clang \
   CROSS_COMPILE=arm-linux-gnueabihf- LIBGCC= test-arm
 ```
 
+The generic image scripts default an unset `GENERIC_CC_TARGET` to Clang's
+`--target=arm-linux-gnueabihf`. An explicitly empty value selects a native ARM
+compiler driver, including a compiler produced by the bootstrap chain.
+
 Milestones 1 through 4 are implemented on this branch. Milestone 3 links the
 complete generic kernel and boots through physical-memory, process-table, and
 idle-address-space initialization under QEMU. Both virtio transport versions
@@ -568,3 +572,20 @@ assemble and link the soft-float objects.
   firmware-DTB reservation, writable ext2 over legacy and modern virtio,
   three GICv2-delivered physical timer ticks, static ELF32 exec, signal return,
   fork, copy-on-write, wait4, and PSCI reset from PID 1.
+- The generic Make target exported an empty `GENERIC_CC_TARGET` for GCC, but
+  `${GENERIC_CC_TARGET:---target=arm-linux-gnueabihf}` treated empty as absent
+  and passed Clang's `--target` option to the bootstrap-built GCC. The scripts
+  now distinguish an unset variable from an explicitly empty one, preserving
+  the Clang default without making the generic image Clang-only.
+- Bootstrap binutils 2.30 rejected the GCC-built final image because libgcc's
+  ordered `.ARM.exidx` input and ordinary unordered constants were assigned to
+  the same `.rodata` output section. Fiwix has no exception or stack-unwind
+  consumer, so the generic linker script now discards `.ARM.exidx` and
+  `.ARM.extab` alongside the already-discarded `.eh_frame` instead of retaining
+  dead unwind metadata or requiring a newer linker.
+- The image gate required the internal `arm_fdt_parse` symbol by its source
+  name. GCC correctly specialized its only live call as a local
+  `arm_fdt_parse.part.0`, so the linked implementation was present but the
+  Clang-shaped symbol assertion failed. The gate now requires the public
+  `arm_fdt_boot_discover` kernel boundary and leaves private optimization names
+  to the compiler.

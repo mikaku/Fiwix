@@ -5,7 +5,9 @@
 set -eu
 
 GENERIC_CC=${GENERIC_CC:-clang}
-GENERIC_CC_TARGET=${GENERIC_CC_TARGET:---target=arm-linux-gnueabihf}
+if [ "${GENERIC_CC_TARGET+x}" != x ]; then
+	GENERIC_CC_TARGET=--target=arm-linux-gnueabihf
+fi
 GENERIC_LD=${GENERIC_LD:-arm-linux-gnueabihf-ld}
 GENERIC_OUTPUT=${GENERIC_OUTPUT:-}
 GENERIC_OBJECT_DIR=${GENERIC_OBJECT_DIR:-}

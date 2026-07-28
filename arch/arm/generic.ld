@@ -27,8 +27,6 @@ SECTIONS
 
 	.rodata : ALIGN(4096) {
 		*(.rodata*)
-		*(.ARM.exidx*)
-		*(.ARM.extab*)
 	} :text
 
 	.data : ALIGN(4096) {
@@ -52,6 +50,8 @@ SECTIONS
 		*(.comment)
 		*(.eh_frame*)
 		*(.note*)
+		*(.ARM.exidx*)
+		*(.ARM.extab*)
 		*(.ARM.attributes)
 	}
 }
