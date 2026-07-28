@@ -53,6 +53,13 @@ fixture/tcc-init.o: tcc-init.S
 fixture/tcc-init.elf: fixture/tcc-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/tcc-selfhost-init.o: tcc-selfhost-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/tcc-selfhost-init.elf: fixture/tcc-selfhost-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE
 	fixture/make-arm-disk $@ fixture/generic-init.elf
 

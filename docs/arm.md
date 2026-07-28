@@ -121,8 +121,22 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-tcc
 ```
 
-Milestones 1 through 4, the MesCC compile/link/run boundary, and the first
-TinyCC compile/link/run boundary are implemented on this branch. Milestone 3
+The first TinyCC self-host boundary rebuilds the compiler from its pinned
+source closure and executes that result:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  ARM_TCC=/path/to/arm-pivot/tcc-prefix/bin/tcc-mes \
+  ARM_TCC_SOURCE=/path/to/arm-pivot/tcc-build/tcc \
+  QEMU_ARM=qemu-system-arm test-arm-tcc-selfhost
+```
+
+Milestones 1 through 4, the MesCC compile/link/run boundary, the first TinyCC
+compile/link/run boundary, and the first TinyCC self-host boundary are
+implemented on this branch. Milestone 3
 links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
@@ -360,6 +374,14 @@ The resulting 48,348-byte static ARM ELF has SHA-256
 matching the independent user-mode route. PID 1 executes it and requires its
 console marker and exit status 42 before syncing the root.
 
+The self-host gate pins the 19-file source closure listed in
+`tests/fixtures/arm-tcc-0.9.26-sources.SHA256SUM`. On each virtio root,
+`tcc-mes` rebuilds a no-debug `tcc-boot0`, PID 1 executes its `-version` path,
+and the host extracts the resulting compiler from ext2. Both runs produce the
+same 313,964-byte artifact, SHA-256
+`d9aaa2f6cb4626db9476ebc01995ad610315c1d04765952dae5c640b3a877ce4`,
+as two independent user-mode directory layouts.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -379,8 +401,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Self-host TinyCC through successive generations under Fiwix and require the
-   independently established fixed point.
+1. Build the later TinyCC boot generations under Fiwix and require the
+   independently established compiler fixed point.
 2. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
 
@@ -439,6 +461,18 @@ assemble and link the soft-float objects.
   gate uses `-Ttext=0x00010074`: its 0x74-byte ELF/program-header prefix maps at
   `0x00010000`, entry begins at `0x00010074`, and the null-page guard remains
   intact.
+- TinyCC's debug records include source and include paths, so otherwise
+  equivalent builds in two source directories produced different compiler
+  bytes. The first self-host oracle omits `-g`; two independent user-mode
+  layouts then converge on the same full-file hash. The source manifest was
+  derived from the files actually opened by that build and pins each of its 19
+  inputs before either guest starts.
+- Rebuilding the initial TinyCC seed through MesCC peaks near 770 MiB, above
+  the ARM port's current 256 MiB managed-memory limit. The first self-host gate
+  therefore starts from the independently built and hash-pinned `tcc-mes` and
+  proves its next compiler generation inside Fiwix. Later generations and the
+  fixed-point comparison remain separate acceptance gates rather than
+  weakening this gate's memory contract.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
