@@ -259,6 +259,16 @@ test-arm-mescc: arm-generic-image-tcc arm-mescc-init
 		ARM_HEX2="$(ARM_HEX2)" tests/arm-mescc-boot-smoke.sh \
 		./fiwix-arm-generic.bin arch/arm/fixture/mescc-init.elf
 
+arm-tcc-init:
+	$(MAKE) -C arch/arm fixture/tcc-init.elf
+
+test-arm-tcc: TIMEOUT=120
+test-arm-tcc: arm-generic-image-tcc arm-tcc-init
+	@test -n "$(ARM_TCC)" || { echo "test-arm-tcc requires ARM_TCC=/path/to/tcc-mes" >&2; exit 1; }
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" ARM_TCC="$(ARM_TCC)" \
+		tests/arm-tcc-boot-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/tcc-init.elf
+
 arm-generic-image-tcc:
 	@test "$(TARGET_ARCH)" = arm || { echo "arm-generic-image-tcc requires TARGET_ARCH=arm" >&2; exit 1; }
 	@test -f "$(TCC_LIBTCC1)" || { echo "arm-generic-image-tcc requires TCC_LIBTCC1=/path/to/libtcc1.a" >&2; exit 1; }
@@ -512,4 +522,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc arm-tcc-init test-arm-tcc test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux

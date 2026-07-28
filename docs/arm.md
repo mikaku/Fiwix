@@ -110,8 +110,20 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-mescc
 ```
 
-Milestones 1 through 4 and the MesCC compile/link/run boundary of milestone 5
-are implemented on this branch. Milestone 3 links the complete generic kernel and
+The next process tree executes the independently built MesCC-seeded TinyCC:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  ARM_TCC=/path/to/arm-pivot/tcc-prefix/bin/tcc-mes \
+  QEMU_ARM=qemu-system-arm test-arm-tcc
+```
+
+Milestones 1 through 4, the MesCC compile/link/run boundary, and the first
+TinyCC compile/link/run boundary are implemented on this branch. Milestone 3
+links the complete generic kernel and
 boots through physical-memory, process-table, and idle-address-space
 initialization under QEMU. Both virtio transport versions mount and persist
 writes through the generic ext2 stack, and filesystem-backed PID 1 completes
@@ -337,6 +349,17 @@ exit status 42, and only then syncs and reboots. This proves that MesCC can
 spawn the native assembler and linker through Fiwix, not merely write their
 input format.
 
+The TinyCC gate pins the 715,284-byte MesCC-built `tcc-mes`, SHA-256
+`0caa6ca807e45ac14f432487f6f31e9282a0b7b2bf72e93f980600361d769ced`,
+and its canonical Mes include/runtime tree, SHA-256
+`a99e237bd52a171202c536740a1a5492a1caa0201019158ca391509db593f7e1`.
+Both virtio roots compile a 187-byte fixture with SHA-256
+`b96609b7b81e8cf360e0a2c50d433b0c53a964d199069d974cdd4828782b852d`.
+The resulting 48,348-byte static ARM ELF has SHA-256
+`11524da4977a66afe344c7697078bb0d64c08a9267770efc9eb7bfc7a315d451`,
+matching the independent user-mode route. PID 1 executes it and requires its
+console marker and exit status 42 before syncing the root.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -356,8 +379,8 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Continue through the post-pivot TinyCC manifests while comparing each
-   independently produced artifact.
+1. Self-host TinyCC through successive generations under Fiwix and require the
+   independently established fixed point.
 2. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
 
@@ -404,6 +427,18 @@ assemble and link the soft-float objects.
   binary runs under Linux. Generic installation now keeps `SCTLR.A` clear and
   its QEMU runtime gate checks the control bit. The standalone low-level trap
   fixture still enables strict alignment to test abort-frame restoration.
+- The MesCC-built TinyCC records host build paths for its CRT and compiler
+  runtime. Supplying only guest `-L` paths still made it request the baked
+  `libtcc1.a`. The Fiwix gate uses `-nostdlib` and names every CRT, libc, and
+  runtime archive explicitly, making the actual closure independent of those
+  recorded paths.
+- TinyCC's default ARM ELF starts at `0x00008000`, below Fiwix's deliberate
+  `0x00010000` user-executable floor. Setting `-Ttext=0x00010000` also leaves
+  the ELF and program headers outside every load segment, which the loader
+  correctly rejects because `AT_PHDR` would be invalid. The static two-segment
+  gate uses `-Ttext=0x00010074`: its 0x74-byte ELF/program-header prefix maps at
+  `0x00010000`, entry begins at `0x00010074`, and the null-page guard remains
+  intact.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
