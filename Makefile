@@ -211,6 +211,8 @@ arm-generic-image:
 
 arm-generic-disk:
 	$(MAKE) -C arch/arm HOSTCC="$(HOSTCC)" fixture/disk.img
+	READELF="$(CROSS_COMPILE)readelf" NM="$(NM)" \
+		tests/arm-generic-init.sh arch/arm/fixture/generic-init.elf
 
 test-arm-generic-boot: arm-generic-image arm-generic-disk
 	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" \

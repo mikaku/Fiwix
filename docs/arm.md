@@ -59,12 +59,12 @@ make TARGET_ARCH=arm CCEXE=clang \
   CROSS_COMPILE=arm-linux-gnueabihf- LIBGCC= test-arm
 ```
 
-Milestones 1 and 2 are implemented on this branch. Milestone 3 now links the
+Milestones 1 through 4 are implemented on this branch. Milestone 3 links the
 complete generic kernel and boots through physical-memory, process-table, and
-idle-address-space initialization under QEMU. The storage half of milestone 4
-is complete: both virtio transport versions mount and persist writes through
-the generic ext2 stack; scheduling filesystem-backed PID 1 remains next. The
-ARM VM layer owns 16 KiB ARMv7
+idle-address-space initialization under QEMU. Both virtio transport versions
+mount and persist writes through the generic ext2 stack, and filesystem-backed
+PID 1 completes its signal, fork, copy-on-write, and wait path. The ARM VM
+layer owns 16 KiB ARMv7
 short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
 user section mappings, derives TTBR0, activates a process root with a complete
 TLB flush, installs 1 KiB coarse tables with 4 KiB user leaves, and clones
@@ -226,6 +226,17 @@ keeps this gate independent of host `mkfs` defaults. The smoke test runs
 legacy and modern transports at both 128 and 256 MiB and requires `e2fsck -fn`
 to accept every modified image.
 
+The same deterministic root contains a static `/sbin/init` and
+character-device `/dev/console`. The init ELF has one read/execute load
+segment, no interpreter or relocations, and uses only ARM EABI syscalls. It
+checks its eight-byte-aligned `argc`/`argv` stack, installs and returns from a
+`SIGUSR1` handler, forks, writes the child's copy-on-write stack, exits the
+child with status 42, and verifies that value through `wait4`. Distinct console
+markers prove signal delivery, child execution, parent reaping, and final PID
+1 completion before the root process invokes the ARM reboot path. This live
+gate exercises the same generic loader, scheduler, abort, signal, and process
+teardown code intended for bootstrap userspace.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -245,9 +256,7 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Construct PID 1 in the full image, enter the ARM init trampoline, and run a
-   static `/sbin/init` through fork, exec, wait, page-fault, and signal gates.
-2. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
+1. Run the post-AArch64-pivot Mes/TinyCC bootstrap manifests under Fiwix,
    compare builder-hex0 artifacts, then add the same-root Linux continuation.
 
 ## Design and bug log
@@ -299,6 +308,15 @@ assemble and link the soft-float objects.
   marker exited before printing that log, then the cleanup trap deleted the
   evidence. The gate now validates the emulator first and prints the complete
   captured boot on every QEMU or marker failure.
+- Expanding the ext2 fixture from one directory to root plus `/sbin` and
+  `/dev` initially left the block-group `used_dirs_count` at one. `e2fsck`
+  counted three and rejected the image; the deterministic generator now
+  updates that metadata together with free blocks and inodes.
+- ARM's `adr` pseudo-instruction can encode only offsets representable by one
+  data-processing immediate. Two init marker addresses crossed that range and
+  failed assembly. The fixed-address `ET_EXEC` now uses linker-resolved literal
+  loads for fixture symbols; the separately copied init trampoline remains
+  relocation-free and position-independent.
 - A read-back through `bread()` after the ext2 write would only prove that the
   dirty buffer cache contained new bytes. The writable gate flushes all
   filesystem state and uses a direct 512-byte transport request against the
@@ -548,4 +566,5 @@ assemble and link the soft-float objects.
   installation, CPU/IRQ core setup, physical-page initialization, process
   table setup, independent idle-root activation, PL011 system-console output,
   firmware-DTB reservation, writable ext2 over legacy and modern virtio,
-  three GICv2-delivered physical timer ticks, and PSCI shutdown.
+  three GICv2-delivered physical timer ticks, static ELF32 exec, signal return,
+  fork, copy-on-write, wait4, and PSCI reset from PID 1.

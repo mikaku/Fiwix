@@ -132,6 +132,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	STI();
 	cpu_idle();
 #elif defined(CONFIG_ARCH_ARM)
+	struct proc *init;
 	unsigned int start_ticks;
 
 	(void)magic;
@@ -170,6 +171,9 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	arm_boot_trace("Fiwix ARM idle address space init passed\n");
 	current->flags |= PF_KPROC;
 	sprintk(current->argv0, "%s", "idle");
+	init = get_proc_free();
+	proc_slot_init(init);
+	init->pid = get_unused_pid();
 	if(arm_pl011_init()) {
 		PANIC("Unable to initialize ARM PL011 console.\n");
 	}
@@ -188,6 +192,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 		PANIC("ARM writable ext2 root gate failed.\n");
 	}
 	printk("Fiwix ARM writable ext2 root passed\n");
+	init_init();
 	timer_init();
 	arm_generic_interrupt_init();
 	start_ticks = CURRENT_TICKS;
@@ -197,7 +202,9 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	}
 	CLI();
 	arm_generic_runtime_ready();
-	stop_kernel();
+	need_resched = 1;
+	STI();
+	cpu_idle();
 #else
 	struct proc *init;
 

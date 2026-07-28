@@ -56,6 +56,13 @@ for memory in $QEMU_MEMORIES; do
 			fail_log
 		grep -q '^Fiwix ARM writable ext2 root passed' "$log" ||
 			fail_log
+		grep -q '^Fiwix ARM generic PID 1 construction passed' "$log" ||
+			fail_log
+		grep -q '^Fiwix ARM PID 1 signal passed' "$log" || fail_log
+		grep -q '^Fiwix ARM PID 1 child COW passed' "$log" || fail_log
+		grep -q '^Fiwix ARM PID 1 fork and wait4 passed' "$log" ||
+			fail_log
+		grep -q '^Fiwix ARM PID 1 userspace passed' "$log" || fail_log
 		grep -q \
 			'^Fiwix ARM generic console, timer, memory, and process init passed' \
 			"$log" || fail_log

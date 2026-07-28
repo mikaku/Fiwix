@@ -16,6 +16,7 @@
 #include <fiwix/kparms.h>
 #include <fiwix/mm.h>
 #include <fiwix/process.h>
+#include <fiwix/sched.h>
 #include <fiwix/string.h>
 #include <fiwix/timer.h>
 #include <fiwix/tty.h>
@@ -151,6 +152,10 @@ void arm_generic_runtime_ready(void)
 	if(!kpage_dir || !page_table || !current ||
 		current->pid != IDLE || !arm_process_root(current) ||
 		!current->arch.ttbr0 || !kstat.free_pages ||
+		proc_table[INIT].pid != INIT ||
+		proc_table[INIT].state != PROC_RUNNING ||
+		!proc_table[INIT].arch.ttbr0 ||
+		!proc_table[INIT].arch.kernel_sp ||
 		!get_device(CHR_DEV, console) ||
 		!get_device(CHR_DEV, serial) || !get_tty(serial) ||
 		!get_device(BLK_DEV, block) || kparms.rootdev != block ||
@@ -173,7 +178,7 @@ void arm_generic_runtime_ready(void)
 	}
 	arm_early_puts("Fiwix ARM generic console, timer, memory, and "
 		"process init passed\n");
-	arm_poweroff();
+	arm_early_puts("Fiwix ARM generic PID 1 construction passed\n");
 }
 
 void arm_boot_main(void)
