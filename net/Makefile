@@ -7,7 +7,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = domains.o socket.o packet.o core.o unix.o ipv4.o
+OBJS = domains.o socket.o packet.o core.o unix.o ipv4.o route.o
 DIRS = lwip
 
 all:	$(OBJS)

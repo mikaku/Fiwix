@@ -11,6 +11,7 @@
 #include <fiwix/fs.h>
 #include <fiwix/if.h>
 #include <fiwix/in.h>
+#include <fiwix/route.h>
 #include <fiwix/netdevice.h>
 #include <fiwix/socket.h>
 #include <fiwix/string.h>
@@ -93,7 +94,7 @@ static int dev_ifsioc(int cmd, void *arg)
 		case SIOCGIFADDR:
 			ifr->ifr_addr.sa_family = netdev->family;
 			addr = (struct sockaddr_in *)&ifr->ifr_addr;
-			memcpy(&addr->sin_addr.s_addr, &netif->ip_addr.addr, 4);
+			memcpy_b(&addr->sin_addr.s_addr, &netif->ip_addr.addr, 4);
 			return 0;
 		case SIOCSIFADDR:
 			addr = (struct sockaddr_in *)&ifr->ifr_addr;
@@ -178,7 +179,7 @@ static int dev_ifconf(void *arg)
 				strcpy(ifr->ifr_name, netdev->name);
 				addr = (struct sockaddr_in *)&ifr->ifr_addr;
 				addr->sin_family = netdev->family;
-				memcpy(&addr->sin_addr.s_addr, &netif->ip_addr.addr, 4);
+				memcpy_b(&addr->sin_addr.s_addr, &netif->ip_addr.addr, 4);
 			}
 			size += sizeof(struct ifreq);
 		} else {
@@ -188,6 +189,46 @@ static int dev_ifconf(void *arg)
 	}
 	ifc->ifc_len = size;
 	return 0;
+}
+
+static int ip_rt_ioctl(unsigned int cmd, void *arg)
+{
+	struct rtentry rt;
+	struct netdevice *netdev;
+	struct netif *netif;
+	struct ifreq ifr;
+	struct in_addr gw;
+	struct sockaddr_in *gwp;
+	int retval;
+
+	if((retval = check_user_area(VERIFY_READ, arg, sizeof(struct rtentry)))) {
+		return retval;
+	}
+	memcpy_b(&rt, arg, sizeof(struct rtentry));
+
+	strncpy(ifr.ifr_name, rt.rt_dev, IFNAMSIZ);
+	if(!(netdev = netdev_find(BY_NAME, &ifr))) {
+		return -ENODEV;
+	}
+	/*netif = netif_get_by_index(netdev->num + 1);	/* lwIP index starts at 1 */
+	netif = (struct netif *)netdev->lwip_netif;
+
+	retval = 0;
+	switch(cmd) {
+		case SIOCADDRT:
+			gwp = (struct sockaddr_in *)&rt.rt_gateway;
+			if(!(retval = route_add(&rt, netdev))) {
+				netif_set_gw(netif, (const ip4_addr_t *)&gwp->sin_addr.s_addr);
+			}
+			break;
+		case SIOCDELRT:
+			gw.s_addr = 0;
+			if(!(retval = route_del(&rt))) {
+				netif_set_gw(netif, (const ip4_addr_t *)&gw.s_addr);
+			}
+			break;
+	}
+	return retval;
 }
 
 int dev_ioctl(int cmd, void *arg)
@@ -219,6 +260,12 @@ int dev_ioctl(int cmd, void *arg)
 				return -EPERM;
 			}
 			return dev_ifsioc(cmd, arg);
+		case SIOCADDRT:
+		case SIOCDELRT:
+			if(!IS_SUPERUSER) {
+				return -EPERM;
+			}
+			return ip_rt_ioctl(cmd, arg);
 
 		default:
 			return -EINVAL;

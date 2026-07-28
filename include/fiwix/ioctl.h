@@ -92,6 +92,9 @@
 #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 
 #ifdef CONFIG_NET
+#define SIOCADDRT		0x890B
+#define SIOCDELRT		0x890C
+
 #define SIOCGIFNAME		0x8910
 #define SIOCSIFLINK		0x8911
 #define SIOCGIFCONF		0x8912

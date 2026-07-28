@@ -9,6 +9,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/net.h>
 #include <fiwix/socket.h>
+#include <fiwix/route.h>
 #include <fiwix/string.h>
 
 #ifdef CONFIG_NET
@@ -94,6 +95,7 @@ void net_init(void)
 		ops->init();
 		d++;
 	}
+	route_init();
 
 	/* initialize the external TCP/IP API (lwIP) */
 	tcpip_init(NULL, NULL);
