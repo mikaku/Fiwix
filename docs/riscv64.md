@@ -958,6 +958,16 @@ the runtime soft-limit bound, and covers the adjacent `dup2(OPEN_MAX)` array
 boundary bug. A fresh dual-transport manifest run remains the end-to-end
 acceptance gate.
 
+That fresh dual-transport run passed the descriptor boundary and completed
+Nyacc, MesCC's runtime libraries, and `libc+tcc`. After about 29 hours, both
+guests had produced byte-identical serial logs and failed identically while
+Mes installed headers. The manifest wrapper created `/usr/include` but not
+`/usr/include/mes`; Mes's unmodified pass invokes `mkdir` on children such as
+`/usr/include/mes/mes` without `-p`, so their missing parent produced the
+terminal hard abort. Every manifest wrapper now creates the shared parent in
+its installation prelude, and the long-run harness checks that invariant
+before constructing or booting a guest.
+
 The first process-tree run exposed two ABI mistakes. The clone translator
 required parent-TID, TLS, and child-TID registers to be zero even when flags 17
 (`SIGCHLD` only) make Linux ignore those arguments; the hand-written kaem seed

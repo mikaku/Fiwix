@@ -53,6 +53,15 @@ case $KAEM_STAGE in
 	seed|phase2|phase3|phase4|mini|manifest1|manifest2|manifest3|manifest4|manifest5|linux|stage0-linux) ;;
 	*) echo "unsupported KAEM_STAGE: $KAEM_STAGE" >&2; exit 1 ;;
 esac
+case $KAEM_STAGE in
+	manifest1|manifest2|manifest3|manifest4|manifest5)
+		manifest_wrapper=$root/tests/fixtures/riscv64-live-bootstrap-$KAEM_STAGE.kaem
+		grep -q '^mkdir -p .* /usr/include/mes ' "$manifest_wrapper" || {
+			echo "manifest wrapper does not create /usr/include/mes: $manifest_wrapper" >&2
+			exit 1
+		}
+		;;
+esac
 linux_boot=false
 if test "$KAEM_STAGE" = linux || test "$KAEM_STAGE" = stage0-linux; then
 	linux_boot=true

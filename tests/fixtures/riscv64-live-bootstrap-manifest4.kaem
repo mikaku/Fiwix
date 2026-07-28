@@ -20,7 +20,7 @@ cd ..
 
 PATH=/riscv64/bin
 
-mkdir -p /usr /usr/bin /usr/lib /usr/include /tmp
+mkdir -p /usr /usr/bin /usr/lib /usr/include /usr/include/mes /tmp
 
 cp /riscv64/bin/blood-elf /usr/bin/blood-elf
 cp /riscv64/bin/catm /usr/bin/catm
