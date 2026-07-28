@@ -96,17 +96,29 @@ make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
   QEMU_ARM=qemu-system-arm test-arm-mes
 ```
 
-Milestones 1 through 4 and the first boundary of milestone 5 are implemented
-on this branch. Milestone 3 links the complete generic kernel and boots through
-physical-memory, process-table, and idle-address-space initialization under
-QEMU. Both virtio transport versions mount and persist writes through the
-generic ext2 stack, and filesystem-backed PID 1 completes its signal, fork,
-copy-on-write, and wait path. The ARM VM
-layer owns 16 KiB ARMv7
-short-descriptor roots, seeds supervisor-only RAM/device mappings, validates
-user section mappings, derives TTBR0, activates a process root with a complete
-TLB flush, installs 1 KiB coarse tables with 4 KiB user leaves, and clones
-roots independently for controlled VM gates. The boot oracle switches between
+MesCC itself is exercised with its pinned NYACC input tree:
+
+```sh
+make TARGET_ARCH=arm CROSS_COMPILE=/path/to/bootstrap-binutils/bin/ \
+  TCC=/path/to/arm-tcc-musl \
+  TCC_INCLUDE=/path/to/tinycc/include \
+  TCC_LIBTCC1=/path/to/libtcc1.a \
+  ARM_MES=/path/to/arm-pivot/mes-0.27.1/bin/mes-m2 \
+  ARM_NYACC=/path/to/arm-pivot/nyacc-1.00.2 \
+  QEMU_ARM=qemu-system-arm test-arm-mescc
+```
+
+Milestones 1 through 4 and the MesCC assembly boundary of milestone 5 are
+implemented on this branch. Milestone 3 links the complete generic kernel and
+boots through physical-memory, process-table, and idle-address-space
+initialization under QEMU. Both virtio transport versions mount and persist
+writes through the generic ext2 stack, and filesystem-backed PID 1 completes
+its signal, fork, copy-on-write, and wait path. The ARM VM layer owns 16 KiB
+ARMv7 short-descriptor roots, identity-maps RAM, places physical devices at
+supervisor-only high aliases, validates user section mappings, derives TTBR0,
+activates a process root with a complete TLB flush, installs 1 KiB coarse
+tables with 4 KiB user leaves, and clones roots independently for controlled
+VM gates. The boot oracle switches between
 roots at `0x47e00000` and `0x47e04000`; each maps
 virtual `0x00300000` to a different physical section, and the QEMU gate checks
 both values before restoring the primary root. It copies a position-independent
@@ -229,16 +241,16 @@ TTY queue, the live firmware-DTB marker, three timer ticks, and the final
 direct-console marker before PSCI shutdown.
 
 The DTB parser validates the bounded structure and strings blocks, discovers
-RAM from root-level memory nodes, caps it at the current 128 MiB short-
-descriptor contract, and records at most 32 root-level `virtio,mmio` regions.
+RAM from root-level memory nodes, caps it at the current 256 MiB identity-map
+contract, and records at most 32 root-level `virtio,mmio` regions.
 Generic startup retains the parsed platform data before enabling its new
 translation root. When the complete DTB lies inside managed RAM, every page
 overlapping that blob is reserved before it can enter the allocator. A DTB
-above the current 128 MiB managed-memory cap needs no allocator reservation,
+above the current 256 MiB managed-memory cap needs no allocator reservation,
 but its already-parsed platform data remains available. Host gates cover QEMU
-`virt` DTBs for 64, 128, and 256 MiB. Complete-kernel boots at both 128 and
-256 MiB require live DTB discovery, at least one virtio transport, and
-reservation whenever the blob overlaps managed RAM.
+`virt` DTBs for 64, 128, 256, and 512 MiB, including the upper cap. Complete-
+kernel boots at both 128 and 256 MiB require live DTB discovery, at least one
+virtio transport, and reservation whenever the blob overlaps managed RAM.
 
 The ARM block path probes only those retained DTB regions and selects the
 first virtio block device. It supports both version-1 legacy virtio-mmio,
@@ -296,6 +308,18 @@ expression, emits the acceptance marker from Mes itself, and exits zero. The
 parent wait/sync/reboot path and both virtio versions use the same gate as the
 M2 boundary.
 
+The MesCC gate pins the canonical Mes compiler input tree at SHA-256
+`e59166c175a898d9d1d19d00fbfe6e85a53db2a91038a3119b57d3c7b2e67344`
+and NYACC's `module` tree at
+`b2e0d321a7349ee3b7e708c962fd4b26821b8bc784eb307cfb000218034634d5`.
+The child compiles a 186-byte C fixture with SHA-256
+`55b241b486f18e4723544a510b07e5054b73e4e7a14e135ca5cc6436df7de835`.
+Both virtio roots produce the same 290-byte `hello.s`, with SHA-256
+`4186c398787fecd6d436a0fafdfee8a53e0aa9136fdab515395a5e107799c90e`,
+as the independent ARM user-mode route. This gate deliberately stops at
+MesCC's `-S` output: it proves the Scheme compiler under Fiwix, but does not
+claim an ARM-native M1/hex2 assembly and link boundary.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -315,9 +339,9 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Drive MesCC from the filesystem-backed Mes process, then continue through
-   the post-pivot TinyCC manifests while comparing each independently produced
-   artifact.
+1. Add an ARM-native assembler/linker boundary for MesCC output, then continue
+   through the post-pivot TinyCC manifests while comparing each independently
+   produced artifact.
 2. Add the same-root Linux continuation and revalidate selected generated
    tools as PID 1.
 
@@ -338,6 +362,26 @@ assemble and link the soft-float objects.
   The root builder now installs both trees and PID 1 supplies
   `GUILE_LOAD_PATH=/mes/module:/module`; the acceptance marker must come from
   the evaluated Scheme expression.
+- The first MesCC run exhausted the ARM port's 128 MiB managed-memory contract
+  even though QEMU supplied 256 MiB. The FDT path had intentionally clipped
+  all larger guests to that early limit. ARM now keeps 128 MiB as its fallback
+  but identity-maps and manages up to 256 MiB; DTB tests cover 64, 128, 256,
+  and 512 MiB guests and require the last one to be capped.
+- With 256 MiB available, the same workload reached virtual `0x08000000` and
+  exposed a separate address-space bug: every process root mapped QEMU's
+  physical GIC, PL011, and virtio sections at their low physical addresses,
+  occupying valid Linux userspace. Kernel MMIO now switches from physical
+  addresses before MMU activation to supervisor-only aliases in
+  `0xf8000000..0xfa0fffff` afterward. Firmware and DMA addresses remain
+  physical, and the VM gate proves that `0x08000000` is available to userspace.
+- MesCC includes its output filename in a generated string label. An absolute
+  output below random `mktemp` directories therefore changed an otherwise
+  identical oracle hash. Both the independent and Fiwix routes compile from
+  the root directory to relative `hello.s`, making the generated name and
+  exact artifact stable.
+- The observed MesCC workload probes ARM `ioctl` and `clock_gettime`, which the
+  current translator returns as `ENOSYS`; both probes are optional and the
+  real compiler completes. No speculative syscall emulation was added.
 - The first ARM source additions used `GPL-2.0-or-later` SPDX tags copied from
   an unrelated convention even though Fiwix uses its own project license.
   Every ARM source, public header, and linker-script addition now carries the
@@ -586,7 +630,7 @@ assemble and link the soft-float objects.
   first ARM compile selected `cr3` walkers and omitted the ARM kernel-size
   macros. The architecture page operations now live in `arch/arm/memory.c`,
   while shared memory initialization has an explicit ARM branch that caps the
-  current model at 128 MiB, reserves a 16 KiB root after BSS, installs the
+  current model at 256 MiB, reserves a 16 KiB root after BSS, installs the
   supervisor template, and activates it. Initrd pointers stay identity-mapped
   rather than receiving the i386 `PAGE_OFFSET` addition.
 - The first task-hook header edit accidentally placed the `arm_trap_frame`

@@ -18,7 +18,10 @@
 #define ARM_VM_USER_BASE		0x00010000U
 #define ARM_VM_USER_LIMIT		0x40000000U
 #define ARM_VM_RAM_BASE			0x40000000U
-#define ARM_VM_IDENTITY_LIMIT		0x48000000U
+#define ARM_VM_IDENTITY_LIMIT		0x50000000U
+#define ARM_VM_DEVICE_ALIAS_BASE	0xF0000000U
+#define ARM_VM_DEVICE_ALIAS(address)	\
+	(ARM_VM_DEVICE_ALIAS_BASE | (address))
 
 #define ARM_VM_COARSE_TABLE		0x00000001U
 #define ARM_VM_SECTION_SUPERVISOR	0x0001140EU
@@ -38,6 +41,7 @@ int arm_vm_l2_init(unsigned int *);
 int arm_vm_attach_user_table(unsigned int *, unsigned int, unsigned int);
 int arm_vm_map_user_page(unsigned int *, unsigned int, unsigned int, int, int);
 int arm_vm_unmap_user_page(unsigned int *, unsigned int);
+unsigned int arm_vm_device_address(unsigned int);
 unsigned int arm_vm_ttbr0(const unsigned int *);
 int arm_vm_activate(const unsigned int *);
 int arm_vm_context_activate(const unsigned int *);

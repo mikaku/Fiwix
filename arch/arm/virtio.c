@@ -7,6 +7,7 @@
 
 #include <fiwix/arm_devices.h>
 #include <fiwix/arm_fdt.h>
+#include <fiwix/arm_vm.h>
 #include <fiwix/asm.h>
 
 #define VIRTIO_MAGIC			0x74726976U
@@ -149,7 +150,8 @@ static int find_transport(void)
 			(region->address & (sizeof(u32) - 1U))) {
 			continue;
 		}
-		candidate = (volatile u32 *)(unsigned long)region->address;
+		candidate = (volatile u32 *)(unsigned long)
+			arm_vm_device_address(region->address);
 		if(candidate[MMIO_MAGIC / 4] == VIRTIO_MAGIC &&
 			candidate[MMIO_DEVICE_ID / 4] == VIRTIO_DEVICE_BLOCK) {
 			transport = candidate;

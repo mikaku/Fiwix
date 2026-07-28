@@ -20,8 +20,8 @@
 #define PAGE_OFFSET	0x40000000U	/* top of the ARMv7 user range */
 #define KERNEL_ADDR	0x40010000U
 #define ARM_MEMORY_FALLBACK	0x08000000U	/* 128 MiB without a DTB */
-#define ARM_MEMORY_LIMIT	0x08000000U	/* current short-descriptor gate */
-#define GDT_BASE	0x48000000U
+#define ARM_MEMORY_LIMIT	0x10000000U	/* 256 MiB identity-map gate */
+#define GDT_BASE	0x50000000U
 #elif defined(CONFIG_VM_SPLIT22)
 #define PAGE_OFFSET	0x80000000	/* VM split: 2GB user / 2GB kernel */
 #else

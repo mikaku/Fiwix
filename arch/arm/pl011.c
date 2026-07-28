@@ -6,6 +6,7 @@
  */
 
 #include <fiwix/arm_devices.h>
+#include <fiwix/arm_vm.h>
 #include <fiwix/charq.h>
 #include <fiwix/devices.h>
 #include <fiwix/fs.h>
@@ -16,8 +17,10 @@
 #include <fiwix/sysconsole.h>
 #include <fiwix/tty.h>
 
-#define PL011_DR	(*(volatile unsigned int *)(ARM_PL011_BASE + 0x00U))
-#define PL011_FR	(*(volatile unsigned int *)(ARM_PL011_BASE + 0x18U))
+#define PL011_DR	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_PL011_BASE) + 0x00U))
+#define PL011_FR	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_PL011_BASE) + 0x18U))
 #define PL011_FR_TXFF	0x20U
 
 static struct fs_operations arm_pl011_fsop = {

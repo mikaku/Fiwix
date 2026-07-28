@@ -15,21 +15,27 @@ typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define PL011_BASE 0x09000000U
-#define PL011_DR   (*(volatile u32 *)(PL011_BASE + 0x00U))
-#define PL011_FR   (*(volatile u32 *)(PL011_BASE + 0x18U))
+#define PL011_DR   (*(volatile u32 *)(arm_vm_device_address(PL011_BASE) + \
+	0x00U))
+#define PL011_FR   (*(volatile u32 *)(arm_vm_device_address(PL011_BASE) + \
+	0x18U))
 #define PL011_FR_TXFF 0x20U
 #define GICD_BASE 0x08000000U
 #define GICC_BASE 0x08010000U
-#define GICD_CTLR (*(volatile u32 *)(GICD_BASE + 0x000U))
-#define GICD_ISENABLER0 (*(volatile u32 *)(GICD_BASE + 0x100U))
-#define GICD_ICENABLER0 (*(volatile u32 *)(GICD_BASE + 0x180U))
-#define GICD_ICPENDR0 (*(volatile u32 *)(GICD_BASE + 0x280U))
-#define GICD_IPRIORITYR7 (*(volatile u32 *)(GICD_BASE + 0x41CU))
-#define GICC_CTLR (*(volatile u32 *)(GICC_BASE + 0x000U))
-#define GICC_PMR (*(volatile u32 *)(GICC_BASE + 0x004U))
-#define GICC_BPR (*(volatile u32 *)(GICC_BASE + 0x008U))
-#define GICC_IAR (*(volatile u32 *)(GICC_BASE + 0x00CU))
-#define GICC_EOIR (*(volatile u32 *)(GICC_BASE + 0x010U))
+#define GICD_REGISTER(offset) (*(volatile u32 *)\
+	(arm_vm_device_address(GICD_BASE) + (offset)))
+#define GICC_REGISTER(offset) (*(volatile u32 *)\
+	(arm_vm_device_address(GICC_BASE) + (offset)))
+#define GICD_CTLR GICD_REGISTER(0x000U)
+#define GICD_ISENABLER0 GICD_REGISTER(0x100U)
+#define GICD_ICENABLER0 GICD_REGISTER(0x180U)
+#define GICD_ICPENDR0 GICD_REGISTER(0x280U)
+#define GICD_IPRIORITYR7 GICD_REGISTER(0x41CU)
+#define GICC_CTLR GICC_REGISTER(0x000U)
+#define GICC_PMR GICC_REGISTER(0x004U)
+#define GICC_BPR GICC_REGISTER(0x008U)
+#define GICC_IAR GICC_REGISTER(0x00CU)
+#define GICC_EOIR GICC_REGISTER(0x010U)
 #define ARM_PHYS_TIMER_IRQ 30U
 #define ARM_L1_TABLE 0x47E00000U
 #define ARM_USER_PHYS 0x47000000U

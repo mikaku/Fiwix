@@ -39,6 +39,13 @@ fixture/mes-init.o: mes-init.S
 fixture/mes-init.elf: fixture/mes-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/mescc-init.o: mescc-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/mescc-init.elf: fixture/mescc-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE
 	fixture/make-arm-disk $@ fixture/generic-init.elf
 

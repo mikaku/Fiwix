@@ -8,6 +8,8 @@
 #include <fiwix/arm_vm.h>
 #include <fiwix/asm.h>
 
+static int arm_vm_translation_active;
+
 static int arm_vm_root_aligned(const unsigned int *root)
 {
 	return root &&
@@ -20,20 +22,10 @@ static int arm_vm_l2_aligned(const unsigned int *table)
 		!((unsigned long)table & (ARM_VM_L2_ALIGNMENT - 1U));
 }
 
-static int arm_vm_kernel_device_address(unsigned int address)
-{
-	unsigned int section;
-
-	section = address >> 20;
-	return section == 0x080 || section == 0x081 ||
-		section == 0x090 || section == 0x0A0;
-}
-
 static int arm_vm_user_range_address(unsigned int address)
 {
 	return address >= ARM_VM_USER_BASE &&
-		address < ARM_VM_USER_LIMIT &&
-		!arm_vm_kernel_device_address(address);
+		address < ARM_VM_USER_LIMIT;
 }
 
 static int arm_vm_user_section_address(unsigned int address)
@@ -46,8 +38,7 @@ static int arm_vm_user_table_address(unsigned int address)
 {
 	return !(address & (ARM_VM_SECTION_SIZE - 1U)) &&
 		address < ARM_VM_USER_LIMIT &&
-		address + ARM_VM_SECTION_SIZE > ARM_VM_USER_BASE &&
-		!arm_vm_kernel_device_address(address);
+		address + ARM_VM_SECTION_SIZE > ARM_VM_USER_BASE;
 }
 
 static int arm_vm_user_page_address(unsigned int address)
@@ -71,10 +62,14 @@ int arm_vm_root_init(unsigned int *root)
 		address += ARM_VM_SECTION_SIZE) {
 		root[address >> 20] = address | ARM_VM_SECTION_SUPERVISOR;
 	}
-	root[0x080] = 0x08000000U | ARM_VM_SECTION_DEVICE_XN;
-	root[0x081] = 0x08100000U | ARM_VM_SECTION_DEVICE_XN;
-	root[0x090] = 0x09000000U | ARM_VM_SECTION_DEVICE_XN;
-	root[0x0A0] = 0x0A000000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x08000000U) >> 20] =
+		0x08000000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x08100000U) >> 20] =
+		0x08100000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x09000000U) >> 20] =
+		0x09000000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x0A000000U) >> 20] =
+		0x0A000000U | ARM_VM_SECTION_DEVICE_XN;
 	return 0;
 }
 
@@ -203,6 +198,12 @@ unsigned int arm_vm_ttbr0(const unsigned int *root)
 	return (unsigned int)(unsigned long)root;
 }
 
+unsigned int arm_vm_device_address(unsigned int physical_address)
+{
+	return arm_vm_translation_active ?
+		ARM_VM_DEVICE_ALIAS(physical_address) : physical_address;
+}
+
 int arm_vm_activate(const unsigned int *root)
 {
 	unsigned int table_address;
@@ -214,6 +215,7 @@ int arm_vm_activate(const unsigned int *root)
 #ifdef __arm__
 	/* D-cache remains disabled inside the assembly install primitive. */
 	arm_vm_install(table_address);
+	arm_vm_translation_active = 1;
 #endif
 	return 0;
 }
@@ -228,6 +230,7 @@ int arm_vm_context_activate(const unsigned int *root)
 	}
 #ifdef __arm__
 	arm_vm_switch(table_address);
+	arm_vm_translation_active = 1;
 #endif
 	return 0;
 }

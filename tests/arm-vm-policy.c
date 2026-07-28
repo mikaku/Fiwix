@@ -29,7 +29,9 @@ int main(void)
 		V2P(ARM_VM_RAM_BASE + PAGE_SIZE) !=
 			ARM_VM_RAM_BASE + PAGE_SIZE ||
 		PAGE_TO_PHYS(0) != ARM_VM_RAM_BASE ||
-		PHYS_TO_PAGE(ARM_VM_RAM_BASE + PAGE_SIZE) != 1) {
+		PHYS_TO_PAGE(ARM_VM_RAM_BASE + PAGE_SIZE) != 1 ||
+		ARM_VM_DEVICE_ALIAS(0x08000000U) != 0xF8000000U ||
+		arm_vm_device_address(0x08000000U) != 0x08000000U) {
 		return 1;
 	}
 	for(n = 0; n < ARM_VM_ROOT_ENTRIES; n++) {
@@ -46,11 +48,14 @@ int main(void)
 	if(parent_root[0] || parent_root[ARM_VM_USER_BASE >> 20] ||
 		parent_root[ARM_VM_RAM_BASE >> 20] !=
 			(ARM_VM_RAM_BASE | ARM_VM_SECTION_SUPERVISOR) ||
-		parent_root[0x47F] !=
-			(0x47F00000U | ARM_VM_SECTION_SUPERVISOR) ||
-		parent_root[0x080] !=
+		parent_root[(ARM_VM_IDENTITY_LIMIT >> 20) - 1] !=
+			((ARM_VM_IDENTITY_LIMIT - ARM_VM_SECTION_SIZE) |
+				ARM_VM_SECTION_SUPERVISOR) ||
+		parent_root[0x080] ||
+		parent_root[0x090] ||
+		parent_root[0xF80] !=
 			(0x08000000U | ARM_VM_SECTION_DEVICE_XN) ||
-		parent_root[0x090] !=
+		parent_root[0xF90] !=
 			(0x09000000U | ARM_VM_SECTION_DEVICE_XN)) {
 		return 3;
 	}
@@ -70,17 +75,19 @@ int main(void)
 	if(arm_vm_map_user_section(parent_root, 0x00100000U,
 			0x47000000U, 1) ||
 		arm_vm_map_user_section(parent_root, 0x00200000U,
-			0x47100000U, 0)) {
+			0x47100000U, 0) ||
+		arm_vm_map_user_section(parent_root, 0x08000000U,
+			0x47200000U, 0)) {
 		return 4;
 	}
 	if(parent_root[1] != (0x47000000U | ARM_VM_SECTION_USER) ||
-		parent_root[2] != (0x47100000U | ARM_VM_SECTION_USER_XN)) {
+		parent_root[2] != (0x47100000U | ARM_VM_SECTION_USER_XN) ||
+		parent_root[0x080] !=
+			(0x47200000U | ARM_VM_SECTION_USER_XN)) {
 		return 5;
 	}
 	if(!arm_vm_map_user_section(parent_root, 0, 0x47000000U, 1) ||
 		!arm_vm_map_user_section(parent_root, 0x00101000U,
-			0x47000000U, 1) ||
-		!arm_vm_map_user_section(parent_root, 0x08000000U,
 			0x47000000U, 1) ||
 		!arm_vm_map_user_section(parent_root, ARM_VM_USER_LIMIT,
 			0x47000000U, 1) ||
@@ -141,12 +148,17 @@ int main(void)
 	if(arm_vm_root_clone(child_root, parent_root) ||
 		child_root[1] != parent_root[1] ||
 		child_root[2] != parent_root[2] ||
-		child_root[4] != parent_root[4]) {
+		child_root[4] != parent_root[4] ||
+		child_root[0x080] != parent_root[0x080] ||
+		child_root[0xF80] != parent_root[0xF80]) {
 		return 11;
 	}
 	if(arm_vm_unmap_user_section(child_root, 0x00100000U) ||
 		child_root[1] || !parent_root[1] ||
-		!arm_vm_unmap_user_section(child_root, 0x09000000U) ||
+		arm_vm_unmap_user_section(child_root, 0x08000000U) ||
+		child_root[0x080] || !parent_root[0x080] ||
+		arm_vm_unmap_user_section(child_root, 0x09000000U) ||
+		child_root[0x090] ||
 		!arm_vm_unmap_user_section(child_root, ARM_VM_RAM_BASE)) {
 		return 12;
 	}

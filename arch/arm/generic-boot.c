@@ -22,20 +22,26 @@
 #include <fiwix/timer.h>
 #include <fiwix/tty.h>
 
-#define PL011_DR	(*(volatile unsigned int *)(ARM_PL011_BASE + 0x00U))
-#define PL011_FR	(*(volatile unsigned int *)(ARM_PL011_BASE + 0x18U))
+#define PL011_DR	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_PL011_BASE) + 0x00U))
+#define PL011_FR	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_PL011_BASE) + 0x18U))
 #define PL011_FR_TXFF	0x20U
 
-#define GICD_CTLR	(*(volatile unsigned int *)(ARM_GICD_BASE + 0x000U))
-#define GICD_ISENABLER0	(*(volatile unsigned int *)(ARM_GICD_BASE + 0x100U))
-#define GICD_ICENABLER0	(*(volatile unsigned int *)(ARM_GICD_BASE + 0x180U))
-#define GICD_ICPENDR0	(*(volatile unsigned int *)(ARM_GICD_BASE + 0x280U))
-#define GICD_IPRIORITYR7	(*(volatile unsigned int *)(ARM_GICD_BASE + 0x41CU))
-#define GICC_CTLR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x000U))
-#define GICC_PMR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x004U))
-#define GICC_BPR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x008U))
-#define GICC_IAR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x00CU))
-#define GICC_EOIR	(*(volatile unsigned int *)(ARM_GICC_BASE + 0x010U))
+#define GICD_REGISTER(offset)	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_GICD_BASE) + (offset)))
+#define GICC_REGISTER(offset)	(*(volatile unsigned int *)(unsigned long)\
+	(arm_vm_device_address(ARM_GICC_BASE) + (offset)))
+#define GICD_CTLR	GICD_REGISTER(0x000U)
+#define GICD_ISENABLER0	GICD_REGISTER(0x100U)
+#define GICD_ICENABLER0	GICD_REGISTER(0x180U)
+#define GICD_ICPENDR0	GICD_REGISTER(0x280U)
+#define GICD_IPRIORITYR7	GICD_REGISTER(0x41CU)
+#define GICC_CTLR	GICC_REGISTER(0x000U)
+#define GICC_PMR	GICC_REGISTER(0x004U)
+#define GICC_BPR	GICC_REGISTER(0x008U)
+#define GICC_IAR	GICC_REGISTER(0x00CU)
+#define GICC_EOIR	GICC_REGISTER(0x010U)
 
 extern void arm_poweroff(void);
 extern unsigned int arm_boot_dtb;
