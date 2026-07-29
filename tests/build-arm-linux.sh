@@ -44,6 +44,7 @@ make -C "$source" O="$output" ARCH=arm olddefconfig
 for required in \
 	CONFIG_MMU=y \
 	CONFIG_ARCH_VIRT=y \
+	CONFIG_HIGHMEM=y \
 	CONFIG_AEABI=y \
 	CONFIG_PRINTK=y \
 	CONFIG_TTY=y \

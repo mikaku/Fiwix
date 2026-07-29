@@ -140,8 +140,11 @@ ext2, and runs the complete Fiwix-to-Linux transition under both virtio
 transport versions:
 
 ```sh
-tests/build-arm-linux.sh /path/to/linux /tmp/linux-arm \
-  tests/arm-linux-root.config
+LLVM=1 \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
+  MAKEFLAGS='LD=/path/to/bootstrap-binutils/bin/ld' \
+  tests/build-arm-linux.sh /path/to/linux /tmp/linux-arm \
+    tests/arm-linux-root.config
 make TARGET_ARCH=arm CCEXE=clang \
   ARM_CC_TARGET=--target=arm-linux-gnueabihf \
   CROSS_COMPILE=arm-linux-gnueabihf- \
@@ -433,11 +436,18 @@ The memory-intensive seed gate starts one step earlier. A 1 GiB guest runs
 compiles the pinned 19-file TinyCC closure to `tcc.s`, and invokes the
 seed-derived ARM M1 and hex2 to link a fresh `tcc-mes`. PID 1 executes the
 generated compiler's version path, the host extracts the compiler from ext2,
-and the mutated root must pass `e2fsck`. `test-arm-tcc-seed` runs this process
-under Fiwix; `test-arm-linux-tcc-seed` requests the same-root Linux handoff
-first and repeats the Mes-to-TinyCC process tree under Linux. The expensive
-gate uses modern virtio once; the shorter compiler gates continue to prove
-legacy and modern transport equivalence.
+and requires the exact 715,024-byte output with SHA-256
+`1b2fbdfef25295846da23dcac04be2d29ef2339f0d294ce4f00c4312d2c073af`;
+the mutated root must also pass `e2fsck`. `test-arm-tcc-seed` runs this process
+under Fiwix in a 1 GiB guest; `test-arm-linux-tcc-seed` requests the same-root
+Linux handoff and repeats the Mes-to-TinyCC process tree in a 2 GiB guest. The
+minimal Linux oracle enables `CONFIG_HIGHMEM`: its default ARM low-memory
+window exposes only about 768 MiB from a 1 GiB machine, less than Mes's
+840 MB (about 801 MiB) allocation. Fiwix still manages only the bounded first
+1 GiB before handoff, while Linux consumes the unchanged firmware DTB and can
+use the remaining high memory. The expensive gate uses modern virtio once; the
+shorter compiler gates continue to prove legacy and modern transport
+equivalence.
 
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
@@ -538,6 +548,13 @@ assemble and link the soft-float objects.
   seed gate runs the fixed 50,000,000-cell Mes arena in a 1 GiB guest. The
   shorter fixed-point gate remains useful because it completes quickly and
   still checks two successive byte-identical TinyCC generations.
+- The first Linux seed replay used the Fiwix gate's 1 GiB QEMU size. The
+  minimal ARM kernel exposed only about 768 MiB of low memory and rejected
+  Mes's 840 MB (about 801 MiB) allocation in `__vm_enough_memory`. Its checked
+  config now enables `CONFIG_HIGHMEM`, and only the Linux seed replay defaults
+  to a 2 GiB machine. Fiwix caps its own managed identity window at 1 GiB but
+  hands Linux the unchanged DTB, so Linux discovers and uses the additional
+  RAM.
 - The first in-guest boot0 compiler died with raw wait status `0x00000004`
   (`SIGILL`) even though the same binary and inputs completed under QEMU user
   mode. Fiwix had never enabled CP10/CP11 or FPEXC, and its scheduler had no

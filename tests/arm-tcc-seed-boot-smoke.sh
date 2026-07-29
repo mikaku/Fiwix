@@ -6,7 +6,7 @@ set -eu
 
 QEMU=${QEMU:-qemu-system-arm}
 TIMEOUT=${TIMEOUT:-14400}
-QEMU_MEMORY=${QEMU_MEMORY:-1G}
+QEMU_MEMORY=${QEMU_MEMORY:-}
 MKE2FS=${MKE2FS:-}
 DEBUGFS=${DEBUGFS:-}
 SHA256SUM=${SHA256SUM:-sha256sum}
@@ -24,8 +24,8 @@ M1_SHA256=b0f0e941e1c1a268ee6dd208b5519d79511b1c8f19ba4a096795de2492716309
 HEX2_SHA256=c0c0580cf21ceb49cce565b694cc81d1be1df861b0f0e9e5d2763189afdfa1d8
 MESCC_TREE_SHA256=e59166c175a898d9d1d19d00fbfe6e85a53db2a91038a3119b57d3c7b2e67344
 NYACC_TREE_SHA256=b2e0d321a7349ee3b7e708c962fd4b26821b8bc784eb307cfb000218034634d5
-TCC_SEED_SHA256=${TCC_SEED_SHA256:-}
-TCC_SEED_BYTES=${TCC_SEED_BYTES:-}
+TCC_SEED_SHA256=1b2fbdfef25295846da23dcac04be2d29ef2339f0d294ce4f00c4312d2c073af
+TCC_SEED_BYTES=715024
 root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 mes_root=$(CDPATH='' cd -- "$(dirname "$ARM_MES")/.." && pwd)
 nyacc_root=$(CDPATH='' cd -- "$ARM_NYACC" && pwd)
@@ -78,11 +78,13 @@ check_hash()
 
 case "$HANDOFF_LINUX" in
 	0)
+		: "${QEMU_MEMORY:=1G}"
 		start_marker='Fiwix ARM MesCC TinyCC seed rebuild entered'
 		compile_marker='Fiwix ARM MesCC TinyCC source compile completed'
 		complete_marker='Fiwix ARM MesCC TinyCC seed rebuild completed'
 		;;
 	1)
+		: "${QEMU_MEMORY:=2G}"
 		start_marker='Fiwix ARM Linux MesCC TinyCC seed rebuild entered'
 		compile_marker='Fiwix ARM Linux MesCC TinyCC source compile completed'
 		complete_marker='Fiwix ARM Linux MesCC TinyCC seed rebuild completed'
@@ -172,16 +174,17 @@ if ! grep -q "^$start_marker\$" "$log" ||
 	cat "$log" >&2
 	exit 1
 fi
+if test "$HANDOFF_LINUX" -eq 1 &&
+	! grep -Eq '^  HighMem  \[mem ' "$log"; then
+	cat "$log" >&2
+	exit 1
+fi
 "$DEBUGFS" -R 'cat /tcc-mes' "$disk" >"$output" 2>/dev/null
 actual_bytes=$(wc -c < "$output")
 actual_hash=$("$SHA256SUM" "$output")
 actual_hash=${actual_hash%% *}
-if test -n "$TCC_SEED_BYTES"; then
-	test "$actual_bytes" -eq "$TCC_SEED_BYTES"
-fi
-if test -n "$TCC_SEED_SHA256"; then
-	test "$actual_hash" = "$TCC_SEED_SHA256"
-fi
+test "$actual_bytes" -eq "$TCC_SEED_BYTES"
+test "$actual_hash" = "$TCC_SEED_SHA256"
 "$root/tests/arm-ext2-check.sh" "$disk"
 
 printf 'Fiwix ARM MesCC TinyCC seed artifact: %s bytes, SHA-256 %s\n' \
