@@ -17,6 +17,11 @@ source=$(CDPATH='' cd -- "$source" && pwd)
 mkdir -p "$output"
 output=$(CDPATH='' cd -- "$output" && pwd)
 
+command -v bc >/dev/null 2>&1 || {
+	echo "bc is required as a native Linux Kbuild tool" >&2
+	exit 1
+}
+
 : "${CROSS_COMPILE:=arm-linux-gnueabihf-}"
 : "${JOBS:=1}"
 : "${KBUILD_BUILD_USER:=fiwix}"

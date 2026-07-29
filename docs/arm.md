@@ -164,8 +164,11 @@ make TARGET_ARCH=arm \
   QEMU_ARM=qemu-system-arm test-arm-linux-tcc
 ```
 
-The handoff target requires a 256 MiB guest. Ordinary Fiwix generic boot
-continues to cover both 128 MiB and 256 MiB guests.
+The handoff target requires at least a 256 MiB guest. Ordinary Fiwix generic
+boot covers 128 MiB, 256 MiB, and the 1 GiB managed-memory ceiling. Building
+the Linux zImage with `tests/build-arm-linux.sh` additionally requires host
+`bc`; Linux Kbuild uses it to generate `include/generated/timeconst.h`. This is
+a native build tool only and is not copied into either guest root.
 
 Milestones 1 through 6 are implemented on this branch, including the MesCC
 compile/link/run boundary, the first TinyCC compile/link/run boundary, and the
@@ -309,16 +312,17 @@ TTY queue, the live firmware-DTB marker, three timer ticks, and the final
 direct-console marker before PSCI shutdown.
 
 The DTB parser validates the bounded structure and strings blocks, discovers
-RAM from root-level memory nodes, caps it at the current 256 MiB identity-map
-contract, and records at most 32 root-level `virtio,mmio` regions.
+RAM from root-level memory nodes, caps it at the 1 GiB identity-map contract,
+and records at most 32 root-level `virtio,mmio` regions.
 Generic startup retains the parsed platform data before enabling its new
 translation root. When the complete DTB lies inside managed RAM, every page
 overlapping that blob is reserved before it can enter the allocator. A DTB
-above the current 256 MiB managed-memory cap needs no allocator reservation,
+above the current 1 GiB managed-memory cap needs no allocator reservation,
 but its already-parsed platform data remains available. Host gates cover QEMU
-`virt` DTBs for 64, 128, 256, and 512 MiB, including the upper cap. Complete-
-kernel boots at both 128 and 256 MiB require live DTB discovery, at least one
-virtio transport, and reservation whenever the blob overlaps managed RAM.
+`virt` DTBs for 64, 128, 256, and 512 MiB, 1 GiB, and a 2 GiB input that must
+clamp to 1 GiB. Complete-kernel boots at 128 MiB, 256 MiB, and 1 GiB require
+live DTB discovery, at least one virtio transport, and reservation whenever
+the blob overlaps managed RAM.
 
 The ARM block path probes only those retained DTB regions and selects the
 first virtio block device. It supports both version-1 legacy virtio-mmio,
@@ -341,8 +345,8 @@ inode, and buffer state. The acceptance check then reads the file's physical
 sector directly through virtio and compares the replacement marker, bypassing
 the buffer and page caches. A host-built deterministic revision-0 ext2 fixture
 keeps this gate independent of host `mkfs` defaults. The smoke test runs
-legacy and modern transports at both 128 and 256 MiB and requires `e2fsck -fn`
-to accept every modified image.
+legacy and modern transports at 128 MiB, 256 MiB, and 1 GiB and requires
+`e2fsck -fn` to accept every modified image.
 
 The same deterministic root contains a static `/sbin/init` and
 character-device `/dev/console`. The init ELF has one read/execute load
@@ -424,6 +428,17 @@ Boot2 and boot3 are byte-identical 313,820-byte files with SHA-256
 `4467868495ef05fd925d92a75c8959d2cfc7980ab62edaedcd07fecf5de5248c`.
 These artifacts match the independent user-mode route.
 
+The memory-intensive seed gate starts one step earlier. A 1 GiB guest runs
+`mes-m2` with the fixed 50,000,000-cell arena used by the independent route,
+compiles the pinned 19-file TinyCC closure to `tcc.s`, and invokes the
+seed-derived ARM M1 and hex2 to link a fresh `tcc-mes`. PID 1 executes the
+generated compiler's version path, the host extracts the compiler from ext2,
+and the mutated root must pass `e2fsck`. `test-arm-tcc-seed` runs this process
+under Fiwix; `test-arm-linux-tcc-seed` requests the same-root Linux handoff
+first and repeats the Mes-to-TinyCC process tree under Linux. The expensive
+gate uses modern virtio once; the shorter compiler gates continue to prove
+legacy and modern transport equivalence.
+
 The Clang ELF32 process oracle is 20,484 bytes with SHA-256
 `908d9f271ec3358d2a47f7f34b3439665af0dac3a940c1ccab115b762a0966f6`.
 
@@ -443,14 +458,16 @@ assemble and link the soft-float objects.
 
 ## Remaining implementation sequence
 
-1. Extend Linux-side revalidation beyond the completed TinyCC
-   compile/link/run boundary if a cumulative stage0 process tree is required.
-2. Raise the managed-memory contract if rebuilding the 770 MiB MesCC TinyCC
-   seed inside Fiwix is required in addition to the pinned-seed fixed point.
-3. Add the Linux-compatible VFP record in `ucontext.regspace` before claiming
-   that signal handlers transparently preserve user floating-point state.
-   Scheduler switches and fork preserve VFP state, and the bootstrap process
-   tree does not install signal handlers.
+1. A stricter single-root Linux chain could rederive M1 and hex2 from
+   M2-Planet before the completed Mes-to-TinyCC replay. The current cumulative
+   Linux gate starts from hash-pinned M1 and hex2, then runs Mes, MesCC, those
+   native tools, and the generated TinyCC in one process tree.
+2. VFP signal records are explicitly unsupported. Scheduler switches and fork
+   preserve live VFP registers, but signal delivery does not serialize the VFP
+   register file into Linux's `ucontext.regspace`, and `sigreturn` therefore
+   cannot restore handler-modified floating-point state. Bootstrap gates do
+   not install signal handlers around floating-point work; implementing the
+   Linux-compatible record remains out of scope for this milestone.
 
 ## Design and bug log
 
@@ -471,9 +488,10 @@ assemble and link the soft-float objects.
   the evaluated Scheme expression.
 - The first MesCC run exhausted the ARM port's 128 MiB managed-memory contract
   even though QEMU supplied 256 MiB. The FDT path had intentionally clipped
-  all larger guests to that early limit. ARM now keeps 128 MiB as its fallback
-  but identity-maps and manages up to 256 MiB; DTB tests cover 64, 128, 256,
-  and 512 MiB guests and require the last one to be capped.
+  all larger guests to that early limit. The first correction retained 128 MiB
+  as the fallback and raised the cap to 256 MiB; the later TinyCC seed gate
+  raised it again to 1 GiB. DTB tests cover 64 MiB through 1 GiB and require a
+  2 GiB input to be capped.
 - With 256 MiB available, the same workload reached virtual `0x08000000` and
   exposed a separate address-space bug: every process root mapped QEMU's
   physical GIC, PL011, and virtio sections at their low physical addresses,
@@ -513,11 +531,13 @@ assemble and link the soft-float objects.
   layouts then converge on the same full-file hash. The source manifest was
   derived from the files actually opened by that build and pins each of its 19
   inputs before either guest starts.
-- Rebuilding the initial TinyCC seed through MesCC peaks near 770 MiB, above
-  the ARM port's current 256 MiB managed-memory limit. The first self-host gate
-  therefore starts from the independently built and hash-pinned `tcc-mes`.
-  Successive in-guest generations now reach the independently calibrated
-  boot2/boot3 fixed point without weakening this gate's memory contract.
+- Rebuilding the initial TinyCC seed through MesCC peaks near 770 MiB. The
+  original 256 MiB identity map forced the first self-host gate to start from
+  an independently built and hash-pinned `tcc-mes`. ARM now identity-maps and
+  manages 1 GiB while retaining the 1 GiB user/kernel split, and the dedicated
+  seed gate runs the fixed 50,000,000-cell Mes arena in a 1 GiB guest. The
+  shorter fixed-point gate remains useful because it completes quickly and
+  still checks two successive byte-identical TinyCC generations.
 - The first in-guest boot0 compiler died with raw wait status `0x00000004`
   (`SIGILL`) even though the same binary and inputs completed under QEMU user
   mode. Fiwix had never enabled CP10/CP11 or FPEXC, and its scheduler had no
@@ -823,10 +843,11 @@ assemble and link the soft-float objects.
 - The common memory unit also treated every non-RISC-V target as i386. Its
   first ARM compile selected `cr3` walkers and omitted the ARM kernel-size
   macros. The architecture page operations now live in `arch/arm/memory.c`,
-  while shared memory initialization has an explicit ARM branch that caps the
-  current model at 256 MiB, reserves a 16 KiB root after BSS, installs the
-  supervisor template, and activates it. Initrd pointers stay identity-mapped
-  rather than receiving the i386 `PAGE_OFFSET` addition.
+  while shared memory initialization has an explicit ARM branch that reserves
+  a 16 KiB root after BSS, installs the supervisor template, and activates it.
+  The initial 256 MiB cap was later raised to 1 GiB for the MesCC seed gate.
+  Initrd pointers stay identity-mapped rather than receiving the i386
+  `PAGE_OFFSET` addition.
 - The first task-hook header edit accidentally placed the `arm_trap_frame`
   forward declaration inside the RISC-V preprocessor branch. The strict ARM
   host compile rejected the resulting prototype-scope tag before it could

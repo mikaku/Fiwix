@@ -15,7 +15,7 @@ trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 	"$root/arch/arm/fdt.c" "$root/tests/arm-fdt.c" \
 	-o "$temporary/arm-fdt"
 
-for memory in 64M 128M 256M 512M; do
+for memory in 64M 128M 256M 512M 1G 2G; do
 	"$QEMU" -machine "virt,dumpdtb=$temporary/$memory.dtb" \
 		-cpu cortex-a15 -m "$memory" -nographic >/dev/null 2>&1
 done
@@ -23,6 +23,8 @@ done
 "$temporary/arm-fdt" "$temporary/64M.dtb" 16384 32
 "$temporary/arm-fdt" "$temporary/128M.dtb" 32768 32
 "$temporary/arm-fdt" "$temporary/256M.dtb" 65536 32
-"$temporary/arm-fdt" "$temporary/512M.dtb" 65536 32
+"$temporary/arm-fdt" "$temporary/512M.dtb" 131072 32
+"$temporary/arm-fdt" "$temporary/1G.dtb" 262144 32
+"$temporary/arm-fdt" "$temporary/2G.dtb" 262144 32
 
 printf '%s\n' 'Fiwix ARM DTB memory and virtio discovery gate passed'

@@ -27,9 +27,9 @@ static int check_invalid_inputs(void)
 	for(n = 0; n < (int)sizeof(invalid); n++) {
 		invalid[n] = 0;
 	}
-	if(!arm_fdt_parse(NULL, 0x40000000U, 0x10000000U, &info) ||
+	if(!arm_fdt_parse(NULL, 0x40000000U, 0x40000000U, &info) ||
 		arm_fdt_size(NULL) ||
-		!arm_fdt_parse(invalid, 0x40000000U, 0x10000000U, &info) ||
+		!arm_fdt_parse(invalid, 0x40000000U, 0x40000000U, &info) ||
 		arm_fdt_size(invalid)) {
 		return 1;
 	}
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	expected_regions = (unsigned int)strtoul(argv[3], NULL, 0);
 	size = arm_fdt_size(blob);
 	if(size < 40 || size > (unsigned int)length ||
-		arm_fdt_parse(blob, 0x40000000U, 0x10000000U, &info) ||
+		arm_fdt_parse(blob, 0x40000000U, 0x40000000U, &info) ||
 		info.memory_pages != expected_pages ||
 		info.virtio_count != expected_regions ||
 		check_reservation(blob, size)) {

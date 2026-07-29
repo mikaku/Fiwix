@@ -6,7 +6,7 @@ set -eu
 
 QEMU=${QEMU:-qemu-system-arm}
 TIMEOUT=${TIMEOUT:-20}
-QEMU_MEMORIES=${QEMU_MEMORIES:-"128M 256M"}
+QEMU_MEMORIES=${QEMU_MEMORIES:-"128M 256M 1G"}
 KERNEL=${1:-./fiwix-arm-generic.bin}
 DISK=${2:-arch/arm/fixture/disk.img}
 temporary=$(mktemp -d)

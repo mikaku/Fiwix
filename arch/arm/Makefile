@@ -51,6 +51,13 @@ fixture/mescc-init.o: mescc-init.S
 fixture/mescc-init.elf: fixture/mescc-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
+fixture/tcc-seed-init.o: tcc-seed-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/tcc-seed-init.elf: fixture/tcc-seed-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
 fixture/tcc-init.o: tcc-init.S
 	mkdir -p fixture
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -77,6 +84,13 @@ fixture/linux-tcc-init.o: linux-tcc-init.S tcc-init.S
 	$(AS) $(ASFLAGS) -o $@ $<
 
 fixture/linux-tcc-init.elf: fixture/linux-tcc-init.o generic-init.ld
+	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
+
+fixture/linux-tcc-seed-init.o: linux-tcc-seed-init.S tcc-seed-init.S
+	mkdir -p fixture
+	$(AS) $(ASFLAGS) -o $@ $<
+
+fixture/linux-tcc-seed-init.elf: fixture/linux-tcc-seed-init.o generic-init.ld
 	$(LD) $(LDFLAGS) -T generic-init.ld -o $@ $<
 
 fixture/disk.img: fixture/make-arm-disk fixture/generic-init.elf FORCE

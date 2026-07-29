@@ -253,6 +253,24 @@ test-arm-linux-tcc: arm-generic-image-tcc arm-linux-tcc-init
 		tests/arm-linux-tcc-boot-smoke.sh ./fiwix-arm-generic.bin \
 		arch/arm/fixture/linux-tcc-init.elf
 
+arm-linux-tcc-seed-init:
+	$(MAKE) -C arch/arm fixture/linux-tcc-seed-init.elf
+
+test-arm-linux-tcc-seed: TIMEOUT=14400
+test-arm-linux-tcc-seed: arm-generic-image-tcc arm-linux-tcc-seed-init
+	@test -n "$(LINUX_IMAGE)" || { echo "test-arm-linux-tcc-seed requires LINUX_IMAGE=/path/to/zImage" >&2; exit 1; }
+	@test -n "$(ARM_MES)" || { echo "test-arm-linux-tcc-seed requires ARM_MES=/path/to/mes-m2" >&2; exit 1; }
+	@test -n "$(ARM_NYACC)" || { echo "test-arm-linux-tcc-seed requires ARM_NYACC=/path/to/nyacc" >&2; exit 1; }
+	@test -n "$(ARM_M1)" || { echo "test-arm-linux-tcc-seed requires ARM_M1=/path/to/ARM/M1" >&2; exit 1; }
+	@test -n "$(ARM_HEX2)" || { echo "test-arm-linux-tcc-seed requires ARM_HEX2=/path/to/ARM/hex2" >&2; exit 1; }
+	@test -n "$(ARM_TCC_SOURCE)" || { echo "test-arm-linux-tcc-seed requires ARM_TCC_SOURCE=/path/to/tinycc-source" >&2; exit 1; }
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" HANDOFF_LINUX=1 \
+		LINUX_IMAGE="$(LINUX_IMAGE)" ARM_MES="$(ARM_MES)" \
+		ARM_NYACC="$(ARM_NYACC)" ARM_M1="$(ARM_M1)" \
+		ARM_HEX2="$(ARM_HEX2)" ARM_TCC_SOURCE="$(ARM_TCC_SOURCE)" \
+		tests/arm-tcc-seed-boot-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/linux-tcc-seed-init.elf
+
 arm-m2-pivot-init:
 	$(MAKE) -C arch/arm fixture/m2-pivot-init.elf
 
@@ -286,6 +304,22 @@ test-arm-mescc: arm-generic-image-tcc arm-mescc-init
 		ARM_NYACC="$(ARM_NYACC)" ARM_M1="$(ARM_M1)" \
 		ARM_HEX2="$(ARM_HEX2)" tests/arm-mescc-boot-smoke.sh \
 		./fiwix-arm-generic.bin arch/arm/fixture/mescc-init.elf
+
+arm-tcc-seed-init:
+	$(MAKE) -C arch/arm fixture/tcc-seed-init.elf
+
+test-arm-tcc-seed: TIMEOUT=14400
+test-arm-tcc-seed: arm-generic-image-tcc arm-tcc-seed-init
+	@test -n "$(ARM_MES)" || { echo "test-arm-tcc-seed requires ARM_MES=/path/to/mes-m2" >&2; exit 1; }
+	@test -n "$(ARM_NYACC)" || { echo "test-arm-tcc-seed requires ARM_NYACC=/path/to/nyacc" >&2; exit 1; }
+	@test -n "$(ARM_M1)" || { echo "test-arm-tcc-seed requires ARM_M1=/path/to/ARM/M1" >&2; exit 1; }
+	@test -n "$(ARM_HEX2)" || { echo "test-arm-tcc-seed requires ARM_HEX2=/path/to/ARM/hex2" >&2; exit 1; }
+	@test -n "$(ARM_TCC_SOURCE)" || { echo "test-arm-tcc-seed requires ARM_TCC_SOURCE=/path/to/tinycc-source" >&2; exit 1; }
+	QEMU="$(QEMU_ARM)" TIMEOUT="$(TIMEOUT)" ARM_MES="$(ARM_MES)" \
+		ARM_NYACC="$(ARM_NYACC)" ARM_M1="$(ARM_M1)" \
+		ARM_HEX2="$(ARM_HEX2)" ARM_TCC_SOURCE="$(ARM_TCC_SOURCE)" \
+		tests/arm-tcc-seed-boot-smoke.sh ./fiwix-arm-generic.bin \
+		arch/arm/fixture/tcc-seed-init.elf
 
 arm-tcc-init:
 	$(MAKE) -C arch/arm fixture/tcc-init.elf
@@ -562,4 +596,4 @@ test-riscv64-kaem-linux: riscv64-generic-image riscv64-kaem-seed-init riscv64-ka
 		./fiwix-generic arch/riscv64/fixture/kaem-seed-init.elf \
 		arch/riscv64/fixture/kaem-linux-complete.elf
 
-.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-linux-root-init arm-linux-root-disk test-arm-linux-root arm-linux-tcc-init test-arm-linux-tcc arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc arm-tcc-init test-arm-tcc arm-tcc-selfhost-init test-arm-tcc-selfhost test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
+.PHONY: all clean test-arm test-arm-generic-compile arm-generic-image arm-generic-image-tcc arm-generic-disk arm-linux-root-init arm-linux-root-disk test-arm-linux-root arm-linux-tcc-init test-arm-linux-tcc arm-linux-tcc-seed-init test-arm-linux-tcc-seed arm-m2-pivot-init test-arm-m2-pivot arm-mes-init test-arm-mes arm-mescc-init test-arm-mescc arm-tcc-seed-init test-arm-tcc-seed arm-tcc-init test-arm-tcc arm-tcc-selfhost-init test-arm-tcc-selfhost test-arm-generic-tcc test-arm-generic-boot test-riscv64 test-riscv64-large-image test-riscv64-linux riscv64-linux-root-init riscv64-linux-kaem-init riscv64-linux-stage0-complete riscv64-linux-root-disk test-riscv64-linux-root test-riscv64-tcc test-fd-limit test-riscv64-generic-compile riscv64-generic-image riscv64-generic-image-tcc test-riscv64-generic-tcc riscv64-generic-disk test-riscv64-generic-boot riscv64-stage0-init test-riscv64-stage0 riscv64-kaem-seed-init riscv64-kaem-complete riscv64-kaem-linux-complete riscv64-kaem-manifest1-complete riscv64-kaem-manifest2-complete riscv64-kaem-manifest3-complete riscv64-kaem-manifest4-complete riscv64-kaem-manifest5-complete test-riscv64-kaem-seed test-riscv64-kaem-phase2 test-riscv64-kaem-phase3 test-riscv64-kaem-phase4 test-riscv64-kaem-mini test-riscv64-kaem-manifest1 test-riscv64-kaem-manifest2 test-riscv64-kaem-manifest3 test-riscv64-kaem-manifest4 test-riscv64-kaem-manifest5 test-riscv64-kaem-stage0-linux test-riscv64-kaem-linux
