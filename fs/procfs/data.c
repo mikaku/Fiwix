@@ -26,14 +26,15 @@
 #include <fiwix/timer.h>
 #include <fiwix/utsname.h>
 #include <fiwix/version.h>
-#include <fiwix/socket.h>
-#include <fiwix/netdevice.h>
 #include <fiwix/pci.h>
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
 #ifdef CONFIG_NET
+#include <fiwix/socket.h>
+#include <fiwix/netdevice.h>
+#include <fiwix/route.h>
 #include <lwip/netif.h>
 #endif /* CONFIG_NET */
 
@@ -459,9 +460,9 @@ int data_proc_net_dev(char *buffer, __pid_t pid)
 	struct stats_mib2_netif_ctrs *stats;
 	int size;
 
-	netdev = netdevice_table;
 	size = sprintk(buffer, "Inter-|   Receive                                                |  Transmit\n"
 			       " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n");
+	netdev = netdevice_table;
 	while(netdev) {
 		netif = (struct netif *)netdev->lwip_netif;
 		stats = (struct stats_mib2_netif_ctrs *)&netif->mib2_counters;
@@ -470,6 +471,30 @@ int data_proc_net_dev(char *buffer, __pid_t pid)
 				stats->ifinoctets, stats->ifinucastpkts, stats->ifinerrors, stats->ifindiscards, 0, 0, 0, 0,
 				stats->ifoutoctets, stats->ifoutucastpkts, stats->ifouterrors, stats->ifoutdiscards, 0, 0, 0, 0);
 		netdev = netdev->next;
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
+
+int data_proc_net_route(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	struct route *r;
+	struct netif *netif;
+	char tmp[129];
+	int size;
+
+	memset_b(tmp, 0, sizeof(tmp));
+	size = sprintk(buffer, "%127s\n", "Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT");
+	r = route_table;
+	while(r) {
+		netif = (struct netif *)r->netdev->lwip_netif;
+		sprintk(tmp, "%s\t%08X\t%08X\t%02X\t%d\t%u\t%d\t%08X\t%d\t%u\t%u",
+				r->name, r->dst, r->gw, r->flags, 0, 0, 0, r->mask, netif->mtu, 0, 0);
+		size += sprintk(buffer + size, "%127s\n", tmp);
+		r = r->next;
 	}
 	return size;
 #else

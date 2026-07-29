@@ -72,6 +72,7 @@ int data_proc_stat(char *, __pid_t);
 int data_proc_uptime(char *, __pid_t);
 int data_proc_fullversion(char *, __pid_t);
 int data_proc_net_dev(char *, __pid_t);
+int data_proc_net_route(char *, __pid_t);
 int data_proc_net_unix(char *, __pid_t);
 int data_proc_pci_devices(char *, __pid_t);
 int data_proc_buffernr(char *, __pid_t);
