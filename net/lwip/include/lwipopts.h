@@ -50,6 +50,8 @@
 #define MEM_ALIGNMENT 4
 #define MEMP_NUM_NETBUF 128
 #define MIB2_STATS 1
+#define TCP_MSS 1460
+#define IP_DEFAULT_TTL 64
 
 /* debug */
 /*
