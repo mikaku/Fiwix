@@ -32,7 +32,7 @@ void append_packet_to_queue(struct packet *p, struct packet **queue_head)
 	if(!(*queue_head)) {
 		*queue_head = p;
 	} else {
-		p->prev = (*queue_head)->next;
+		p->prev = (*queue_head)->prev;
 		(*queue_head)->prev->next = p;
 	}
 	(*queue_head)->prev = p;
