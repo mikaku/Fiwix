@@ -54,6 +54,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 
 void sys_sem_free(sys_sem_t *sem)
 {
+	unlock_resource(sem);
 	memset_b(sem, 0, sizeof(struct semaphore));
 }
 
@@ -201,6 +202,8 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 void sys_mbox_free(sys_mbox_t *mbox)
 {
 	lock_resource(&mbox->lock);
+	unlock_resource(&mbox->empty);
+	unlock_resource(&mbox->full);
 	if(mbox->length != 0) {
 		printf("ERROR: lwIP mailboxes: mailbox still had mail in it\n");
 	}
