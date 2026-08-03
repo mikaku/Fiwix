@@ -235,11 +235,16 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 		size = LWIP_MIN(TX_BUFFER_SIZE, p->tot_len);
 		entry = nic.tx_index % NUM_TX_DESC;
 		if(!(data = pbuf_get_contiguous(p, nic.tx_buffer[entry], TX_BUFFER_SIZE, size, 0))) {
-			printk("WARNING: %s(): pbuf_get_contiguous() returned NULL, (using the buffer supplied).\n", __FUNCTION__);
-			data = (char *)nic.tx_buffer[entry];
+			printk("WARNING: %s(): pbuf_get_contiguous() returned NULL.\n", __FUNCTION__);
+			return ERR_IF;
 		}
 		nd = nic.nd;
-		outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(data));
+		if((unsigned int)data & 3) {
+			memcpy_b(nic.tx_buffer[entry], data, size);
+			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(nic.tx_buffer[entry]));
+		} else {
+			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(data));
+		}
 		outport_l(nd->ioaddr + TSD0 + (entry * 4), TSD_TXFIFO_THR | size);
 		if(++nic.tx_index - nic.tx_sent == NUM_TX_DESC) {
 			nic.tx_full = 1;
