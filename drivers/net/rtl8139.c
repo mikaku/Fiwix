@@ -34,7 +34,6 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	struct netdevice *nd;
 	struct netif *netif;
 	struct rtl8139 **nicp;
-	short int cmd;
 	int n, speed, mode, ver, hwid;
 
 	if(!(nd = netdevice_alloc())) {
@@ -102,9 +101,9 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	pci_show_desc(pci_dev);
 
 	/* enable I/O space and bus master */
-	cmd = pci_dev->command | (PCI_COMMAND_IO | PCI_COMMAND_MASTER);
-	cmd &= ~PCI_COMMAND_INT_DISABLE;
-	pci_write_short(pci_dev, PCI_COMMAND, cmd);
+	pci_dev->command |= (PCI_COMMAND_IO | PCI_COMMAND_MASTER);
+	pci_dev->command &= ~PCI_COMMAND_INT_DISABLE;
+	pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command);
 
 	irq_config_rtl8139.name = nd->name;
 	if(!register_irq(pci_dev->irq, &irq_config_rtl8139)) {
@@ -265,6 +264,7 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 
 int rtl8139_open(struct netdevice *nd)
 {
+	struct netif *netif;
 	unsigned int addr;
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
@@ -288,12 +288,6 @@ int rtl8139_open(struct netdevice *nd)
 
 	outport_l(nd->ioaddr + MPC, 0);
 	outport_l(nd->ioaddr + RCR, RCR_RXFIFO_THR | DMA_BURST | RCR_AB | RCR_AM | RCR_APM);
-	/* enable transmitter and receiver */
-	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
-
-	/* enable all interrupts and clear all pending */
-	outport_w(nd->ioaddr + IMR, IMR_ALLINT);
-	outport_w(nd->ioaddr + ISR, 0xFFFF);
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
 	memcpy_l(&addr, &nd->mac[0], sizeof(unsigned int));
@@ -301,16 +295,36 @@ int rtl8139_open(struct netdevice *nd)
 	memcpy_l(&addr, &nd->mac[4], sizeof(unsigned int));
 	outport_l(nd->ioaddr + IDR + 4, addr);
 	outport_b(nd->ioaddr + CR9346, 0x0);
+
+	outport_l(nd->ioaddr + MAR0 + 0, 0xFFFFFFFF);
+	outport_l(nd->ioaddr + MAR0 + 4, 0xFFFFFFFF);
+
+	/* enable transmitter and receiver */
+	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
+
+	/* enable all interrupts and clear all pending */
+	outport_w(nd->ioaddr + IMR, IMR_ALLINT);
+	outport_w(nd->ioaddr + ISR, 0xFFFF);
+
+	netif = nd->lwip_netif;
+	netif->flags |= NETIF_FLAG_LINK_UP;
+	netif_set_link_up(netif);
 	return 0;
 }
 
 int rtl8139_close(struct netdevice *nd)
 {
+	struct netif *netif;
+
 	/* disable all interrupts */
 	outport_w(nd->ioaddr + IMR, 0);
 
 	/* disable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, 0);
+
+	netif = nd->lwip_netif;
+	netif->flags &= ~NETIF_FLAG_LINK_UP;
+	netif_set_link_down(netif);
 	return 0;
 }
 
@@ -359,7 +373,7 @@ err_t rtl8139_lwip_init(struct netif *netif)
 		netif->hwaddr[n] = nd->mac[n];
 	}
 	netif->mtu = 1500;	/* TCP_MSS + 40 actually */
-	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP; /* | NETIF_FLAG_LINK_UP; */
+	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 #if LWIP_IPV4
 	netif->output = etharp_output;
 #endif /* LWIP_IPV4 */
@@ -367,7 +381,6 @@ err_t rtl8139_lwip_init(struct netif *netif)
 
 	netif_set_default(netif);
 	netif_set_up(netif);
-	netif_set_link_up(netif);
 	return ERR_OK;
 }
 
