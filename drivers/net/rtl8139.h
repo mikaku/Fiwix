@@ -31,6 +31,7 @@
 
 /* bit masks */
 #define TSD_TXFIFO_THR	(8 << 16)	/* 8 * 32 = 256 bytes */
+#define TSD_IGS		(3 << 24)	/* Interframe Gap Time */
 #define TSD_OWN		0x2000		/* OWN */
 #define TSD_TUN		0x4000		/* Transmit FIFO Underrun */
 #define TSD_TOK		0x8000		/* Transmit OK */
@@ -58,7 +59,7 @@
 #define RCR_APM		0x02		/* Accept Physical Match packets */
 #define RCR_AM		0x04		/* Accept Multicast packets */
 #define RCR_AB		0x08		/* Accept Broadcast packets */
-#define RCR_RXFIFO_THR	(7 << 13)	/* 111 = no RX FIFO threshold */
+#define RCR_RXFIFO_THR	(4 << 13)	/* 256 bytes RX FIFO threshold */
 #define ISR_ROK		0x01		/* Receive (Rx) OK */
 #define ISR_TOK		0x04		/* Transmit (Tx) OK */
 #define CR9346_EEM10	0xC0		/* CONFIG regiters write enable */
@@ -71,7 +72,7 @@
 #define ST_RX_RUNT	0x10		/* Runt Packet Received */
 #define ST_RX_ISE	0x20		/* Invalid Symbol Error */
 
-#define DMA_BURST	(6 << 8)	/* TX/RX DMA burst size (1024 bytes) */
+#define DMA_BURST	(4 << 8)	/* TX/RX DMA burst size (256 bytes) */
 #define RX_BUFFER_SIZE	8192
 #define TX_BUFFER_SIZE	1536
 #define NUM_TX_DESC	4

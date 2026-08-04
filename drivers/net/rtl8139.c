@@ -281,7 +281,7 @@ int rtl8139_open(struct netdevice *nd)
 	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
 
 	/* TX DMA burst size to 1024 bytes */
-	outport_l(nd->ioaddr + TCR, DMA_BURST | 0x03000000);
+	outport_l(nd->ioaddr + TCR, DMA_BURST | TSD_IGS);
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
 	outport_b(nd->ioaddr + CONFIG1, 0x20);
