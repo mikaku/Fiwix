@@ -19,8 +19,6 @@
 #include <lwip/snmp.h>
 
 struct netdevice *netdevice_table;
-struct packet *netdevice_queue;
-struct bh netdevice_bh = { 0, &irq_netdevice_bh, NULL };
 int if_count, ether_count;
 
 static void netdevice_pci_init(void)
@@ -73,41 +71,6 @@ void register_netdevice(struct netdevice *nd)
 	}
 }
 
-void irq_netdevice_bh(struct sigcontext *sc)
-{
-	struct netdevice *netdev;
-	struct packet *pk;
-	struct netif *netif;
-	struct pbuf *p;
-
-	if(can_lock_area(AREA_NETDEVICE)) {
-		netdev = netdevice_table;	/* FIXME: don't parse lo */
-		while(netdev) {
-			while(netdev->queue) {
-				pk = remove_packet_from_queue(&netdev->queue);
-				netif = pk->lwip_netif;
-				p = pk->lwip_pbuf;
-
-				MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->len);
-				MIB2_STATS_NETIF_INC(netif, ifinucastpkts);	/* always unicast packets? */
-#if ETH_PAD_SIZE
-				pbuf_add_header(p, ETH_PAD_SIZE);	/* reclaim the padding word */
-#endif /* ETH_PAD_SIZE */
-				LINK_STATS_INC(link.recv);
-
-				if(netif->input(p, netif) != ERR_OK) {
-					LWIP_DEBUGF(NETIF_DEBUG, ("IP input error.\n"));
-					pbuf_free(p);
-				}
-			}
-			netdev = netdev->next;
-		}
-		unlock_area(AREA_NETDEVICE);
-	} else {
-		netdevice_bh.flags |= BH_ACTIVE;
-	}
-}
-
 void netdevice_init(void)
 {
 	netdevice_table = NULL;
@@ -115,8 +78,5 @@ void netdevice_init(void)
 
 	loopback_init();
 	netdevice_pci_init();
-	if(ether_count) {
-		add_bh(&netdevice_bh);
-	}
 }
 #endif /* CONFIG_NET */

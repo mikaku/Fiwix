@@ -15,7 +15,6 @@
 #include <fiwix/sigcontext.h>
 #include <fiwix/pci.h>
 #include <fiwix/if.h>
-#include <fiwix/net/packet.h>
 
 struct netdevice {
 	char name[IFNAMSIZ];		/* lo, eth0, ... */
@@ -25,7 +24,6 @@ struct netdevice {
 	unsigned short type;		/* ARPHRD_LOOPBACK, ... */
 	unsigned short family;		/* AF_INET */
 	void *lwip_netif;
-	struct packet *queue;
 	unsigned short int ioaddr;	/* I/O port address */
 	struct pci_device *pci_dev;
 	struct netdevice *next;
@@ -35,7 +33,6 @@ struct netdevice {
 	int (*close)(struct netdevice *);
 };
 extern struct netdevice *netdevice_table;
-extern struct bh netdevice_bh;
 
 extern int if_count;
 extern int ether_count;
@@ -43,7 +40,6 @@ int dev_ioctl(int, void *);
 
 struct netdevice *netdevice_alloc(void);
 void register_netdevice(struct netdevice *);
-void irq_netdevice_bh(struct sigcontext *);
 void netdevice_init(void);
 
 /* NIC driver init function prototypes */

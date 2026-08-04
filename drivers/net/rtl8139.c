@@ -144,7 +144,6 @@ static void rtl8139_rx(struct netif *netif)
 {
 	struct netdevice *nd;
 	struct pbuf *p;
-	struct packet *pk;
 	int offset, frag;
 	unsigned short int *header, status, size;
 
@@ -181,18 +180,20 @@ static void rtl8139_rx(struct netif *netif)
 		}
 		p->len = size;
 
-		if(!(pk = (struct packet *)kmalloc(sizeof(struct packet)))) {
-			printk("WARNING: %s(): unable to allocate memory for packet structure.", __FUNCTION__);
-			return;
+		MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->len);
+		MIB2_STATS_NETIF_INC(netif, ifinucastpkts);	/* always unicast packets? */
+#if ETH_PAD_SIZE
+		pbuf_add_header(p, ETH_PAD_SIZE);	/* reclaim the padding word */
+#endif /* ETH_PAD_SIZE */
+		LINK_STATS_INC(link.recv);
+
+		if(netif->input(p, netif) != ERR_OK) {
+			LWIP_DEBUGF(NETIF_DEBUG, ("IP input error.\n"));
+			pbuf_free(p);
 		}
-		memset_b(pk, 0, sizeof(struct packet));
-		pk->lwip_netif = netif;
-		pk->lwip_pbuf = p;
-		append_packet_to_queue(pk, &nd->queue);
 
 		nic.rx_index = ((nic.rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
 		outport_w(nd->ioaddr + CAPR, nic.rx_index - 16);
-		netdevice_bh.flags |= BH_ACTIVE;
 	}
 }
 
