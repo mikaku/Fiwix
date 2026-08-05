@@ -262,6 +262,9 @@ void unlock_resource(struct resource *resource)
 
 int mutex_lock(struct mutex *lock)
 {
+	unsigned int flags;
+
+	SAVE_FLAGS(flags); CLI();
 	if(current != lock->holder) {
 		lock_resource(&lock->sem);
 		lock->holder = current;
@@ -269,11 +272,15 @@ int mutex_lock(struct mutex *lock)
 	} else {
 		lock->recursive_count++;
 	}
+	RESTORE_FLAGS(flags);
 	return lock->recursive_count;
 }
 
 void mutex_unlock(struct mutex *lock)
 {
+	unsigned int flags;
+
+	SAVE_FLAGS(flags); CLI();
 	if(current != lock->holder) {
 		printk("WARNING: %s(): attempting to unlock a not owned mutex.", __FUNCTION__);
 	} else {
@@ -282,6 +289,7 @@ void mutex_unlock(struct mutex *lock)
 			unlock_resource(&lock->sem);
 		}
 	}
+	RESTORE_FLAGS(flags);
 }
 
 int can_lock_area(unsigned int type)
