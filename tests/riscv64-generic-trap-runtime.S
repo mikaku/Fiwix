@@ -76,6 +76,7 @@ user_resumed:
 	li t0, TEST_FINISHER
 	li t1, TEST_PASS
 	sw t1, 0(t0)
+	j 2f
 user_fail:
 	li t0, TEST_FINISHER
 	li t1, TEST_FAIL
