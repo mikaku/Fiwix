@@ -27,6 +27,7 @@ NYACC_TREE_SHA256=b2e0d321a7349ee3b7e708c962fd4b26821b8bc784eb307cfb000218034634
 TCC_SEED_SHA256=1b2fbdfef25295846da23dcac04be2d29ef2339f0d294ce4f00c4312d2c073af
 TCC_SEED_BYTES=715024
 root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
+. "$root/tests/arm-serial-line.sh"
 mes_root=$(CDPATH='' cd -- "$(dirname "$ARM_MES")/.." && pwd)
 nyacc_root=$(CDPATH='' cd -- "$ARM_NYACC" && pwd)
 manifest=$root/tests/fixtures/arm-tcc-0.9.26-sources.SHA256SUM
@@ -165,10 +166,10 @@ if ! timeout "$TIMEOUT" "$QEMU" \
 	cat "$log" >&2
 	exit 1
 fi
-if ! grep -q "^$start_marker\$" "$log" ||
-	! grep -q "^$compile_marker\$" "$log" ||
+if ! fiwix_arm_serial_has_line "$start_marker" "$log" ||
+	! fiwix_arm_serial_has_line "$compile_marker" "$log" ||
 	! grep -q '^tcc version 0.9.26 (ARM Linux)' "$log" ||
-	! grep -q "^$complete_marker\$" "$log" ||
+	! fiwix_arm_serial_has_line "$complete_marker" "$log" ||
 	grep -Eiq 'undefined|unhandled|panic|failed|exec returned|out of memory' \
 		"$log"; then
 	cat "$log" >&2
