@@ -928,12 +928,14 @@ void vconsole_stop(struct tty *tty)
 
 void vconsole_beep(void)
 {
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	struct callout_req creq;
 
 	pit_beep_on();
 	creq.fn = pit_beep_off;
 	creq.arg = 0;
 	add_callout(&creq, HZ / 8);
+#endif
 }
 
 void vconsole_deltab(struct tty *tty)

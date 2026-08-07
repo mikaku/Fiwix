@@ -16,7 +16,7 @@
 #define MAX_INPUT	255	/* bytes for which space will be available in a
 				   terminal input queue */
 #define NGROUPS_MAX	32	/* simultaneous supplementary group IDs */
-#define OPEN_MAX	256	/* files one process can have opened at once */
+#define OPEN_MAX	1024	/* files one process can have opened at once */
 #define FD_SETSIZE	OPEN_MAX /* descriptors that a process may examine with
 				    'pselect' or 'select' */
 #define NAME_MAX	255	/* bytes in a filename */

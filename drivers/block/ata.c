@@ -163,11 +163,11 @@ static int identify_drive(struct ide *ide, struct ata_drv *drive)
 	ata_identify_device(ide, drive);
 	status = inport_b(ide->base + ATA_STATUS);
 	if((status & (ATA_STAT_RDY | ATA_STAT_DRQ)) != (ATA_STAT_RDY | ATA_STAT_DRQ)) {
-		kfree((unsigned int)buffer);
+		kfree((__addr_t)buffer);
 		return 1;
 	}
 	if(!(buffer2 = (void *)kmalloc(ATA_HD_SECTSIZE))) {
-		kfree((unsigned int)buffer);
+		kfree((__addr_t)buffer);
 		return 1;
 	}
 	inport_sl(ide->base + ATA_DATA, (void *)buffer2, ATA_HD_SECTSIZE / sizeof(unsigned int));
@@ -181,9 +181,9 @@ static int identify_drive(struct ide *ide, struct ata_drv *drive)
 			break;
 		}
 	}
-	kfree((unsigned int)buffer2);
+	kfree((__addr_t)buffer2);
 	memcpy_b(&drive->ident, (void *)buffer, sizeof(struct ata_drv_ident));
-	kfree((unsigned int)buffer);
+	kfree((__addr_t)buffer);
 
 
 	/* some basic checks to make sure that data received makes sense */
@@ -852,8 +852,8 @@ int ata_channel_init(struct ide *ide)
 	if(!devices) {
 		disable_irq(ide->irq);
 		unregister_irq(ide->irq, &irq_config_ide[ide->channel]);
-		kfree((unsigned int)ide_device[ide->channel].blksize);
-		kfree((unsigned int)ide_device[ide->channel].device_data);
+		kfree((__addr_t)ide_device[ide->channel].blksize);
+		kfree((__addr_t)ide_device[ide->channel].device_data);
 	}
 
 	return devices;

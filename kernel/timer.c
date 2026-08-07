@@ -45,7 +45,9 @@ unsigned int avenrun[3] = { 0, 0, 0 };
 
 static struct bh timer_bh = { 0, &irq_timer_bh, NULL };
 static struct bh callouts_bh = { 0, &do_callouts_bh, NULL };
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 static struct interrupt irq_config_timer = { 0, "timer", &irq_timer, NULL };
+#endif
 
 static unsigned int count_active_procs(void)
 {
@@ -360,6 +362,11 @@ void do_callouts_bh(struct sigcontext *sc)
 
 void get_system_time(void)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	kstat.boot_time = CURRENT_TIME = riscv64_get_system_time();
+#elif defined(CONFIG_ARCH_ARM)
+	kstat.boot_time = CURRENT_TIME = 0;
+#else
 	short int cmos_century;
 	struct tm tm;
 		  
@@ -374,10 +381,12 @@ void get_system_time(void)
 	tm.tm_year += cmos_century * 100;
 
 	kstat.boot_time = CURRENT_TIME = mktime(&tm);
+#endif
 }
 
 void set_system_time(__time_t t)
 {
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	int sec, spm, min, hour, d, m, y;
 
 	sec = t;
@@ -424,12 +433,16 @@ void set_system_time(__time_t t)
 	cmos_write_date(CMOS_MONTH, m);
 	cmos_write_date(CMOS_YEAR, y % 100);
 	cmos_write_date(CMOS_CENTURY, (y - (y % 100)) / 100);
+#endif
 
 	CURRENT_TIME = t;
 }
 
 int gettimeoffset(void)
 {
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
+	return 0;
+#else
 	int count;
 
 	count = pit_getcounter0();
@@ -437,6 +450,7 @@ int gettimeoffset(void)
 	count /= LATCH;
 
 	return count;
+#endif
 }
 
 void timer_init(void)
@@ -447,7 +461,9 @@ void timer_init(void)
 	add_bh(&timer_bh);
 	add_bh(&callouts_bh);
 
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	pit_init(HZ);
+#endif
 
 	memset_b(callout_pool, 0, sizeof(callout_pool));
 
@@ -460,8 +476,18 @@ void timer_init(void)
 	}
 	callout_head = NULL;
 
-	printk("clock     -                 %d\ttype=PIT Hz=%d\n", TIMER_IRQ, HZ);
+	printk("clock     -                 %d\ttype=%s Hz=%d\n", TIMER_IRQ,
+#ifdef CONFIG_ARCH_RISCV64
+			"RISC-V timer",
+#elif defined(CONFIG_ARCH_ARM)
+			"ARM generic timer",
+#else
+			"PIT",
+#endif
+			HZ);
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	if(!register_irq(TIMER_IRQ, &irq_config_timer)) {
 		enable_irq(TIMER_IRQ);
 	}
+#endif
 }

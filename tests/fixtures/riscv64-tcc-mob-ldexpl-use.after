@@ -1,0 +1,5 @@
+            d = (long double)bn[3];
+            d = tcc_ldexpl(d, 32) + (long double)bn[2];
+            d = tcc_ldexpl(d, 32) + (long double)bn[1];
+            d = tcc_ldexpl(d, 32) + (long double)bn[0];
+            d = tcc_ldexpl(d, exp_val - frac_bits);

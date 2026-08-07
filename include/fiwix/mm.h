@@ -12,17 +12,35 @@
 #include <fiwix/segments.h>
 #include <fiwix/process.h>
 
+#ifdef CONFIG_ARCH_RISCV64
+#define PHYSICAL_MEMORY_BASE	0x80000000UL
+#define P2V(addr)		(addr)
+#define V2P(addr)		(addr)
+#elif defined(CONFIG_ARCH_ARM)
+#define PHYSICAL_MEMORY_BASE	0x40000000U
+#define P2V(addr)		(addr)
+#define V2P(addr)		(addr)
+#else
+#define PHYSICAL_MEMORY_BASE	0
 /* convert from physical to virtual the addresses below PAGE_OFFSET only */
 #define P2V(addr)		(addr < PAGE_OFFSET ? addr + PAGE_OFFSET : addr)
-
 #define V2P(addr)		(addr - PAGE_OFFSET)
+#endif
 
 #define PAGE_SIZE		4096
 #define PAGE_SHIFT		0x0C
-#define PAGE_MASK		~(PAGE_SIZE - 1)	/* 0xFFFFF000 */
+#ifdef CONFIG_ARCH_RISCV64
+#define PAGE_MASK		0xFFFFFFFFFFFFF000UL
+#else
+#define PAGE_MASK		(~((__addr_t)PAGE_SIZE - 1))
+#endif
 #define PAGE_ALIGN(addr)	(((addr) + (PAGE_SIZE - 1)) & PAGE_MASK)
-#define PT_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
-#define PD_ENTRIES		(PAGE_SIZE / sizeof(unsigned int))
+#define PT_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))
+#define PD_ENTRIES		(PAGE_SIZE / sizeof(__pte_t))
+#define PAGE_TO_PHYS(page)	(PHYSICAL_MEMORY_BASE + \
+	((__addr_t)(page) << PAGE_SHIFT))
+#define PHYS_TO_PAGE(addr)	(((__addr_t)(addr) - PHYSICAL_MEMORY_BASE) \
+	>> PAGE_SHIFT)
 
 #define PAGE_LOCKED		0x001
 #define PAGE_BUDDYLOW		0x010	/* page belongs to buddy_low */
@@ -32,6 +50,11 @@
 #define PFAULT_V		0x01	/* protection violation */
 #define PFAULT_W		0x02	/* during write */
 #define PFAULT_U		0x04	/* in user mode */
+
+#define PFAULT_RESOLVED		0
+#define PFAULT_SIGSEGV		1
+#define PFAULT_SIGKILL		2
+#define PFAULT_FATAL		3
 
 #define GET_PGDIR(address)	((unsigned int)((address) >> 22) & 0x3FF)
 #define GET_PGTBL(address)	((unsigned int)((address) >> 12) & 0x3FF)
@@ -57,7 +80,7 @@ extern struct page **page_hash_table;
 extern unsigned int page_table_size;		/* size in bytes */
 extern unsigned int page_hash_table_size;	/* size in bytes */
 
-extern unsigned int *kpage_dir;
+extern __pte_t *kpage_dir;
 
 
 /* buddy_low.c */
@@ -78,13 +101,13 @@ struct bl_head {
 	struct bl_head *next;
 };
 
-unsigned int bl_malloc(__size_t);
-void bl_free(unsigned int);
+__addr_t bl_malloc(__size_t);
+void bl_free(__addr_t);
 void buddy_low_init(void);
 
 /* alloc.c */
-unsigned int kmalloc(__size_t);
-void kfree(unsigned int);
+__addr_t kmalloc(__size_t);
+void kfree(__addr_t);
 
 /* page.c */
 void page_lock(struct page *);
@@ -98,21 +121,28 @@ void update_page_cache(struct inode *, __off_t, const char *, int);
 int write_page(struct page *, struct inode *, __off_t, unsigned int);
 int bread_page(struct page *, struct inode *, __off_t, char, char);
 int file_read(struct inode *, struct fd *, char *, __size_t);
-void reserve_pages(unsigned int, unsigned int);
+void reserve_pages(__addr_t, __addr_t);
 void page_init(int);
 
 /* memory.c */
 unsigned int map_kaddr(unsigned int *,unsigned int, unsigned int, unsigned int, int);
 void bss_init(void);
 unsigned int setup_tmp_pgdir(unsigned int, unsigned int);
-unsigned int get_mapped_addr(struct proc *, unsigned int);
+__addr_t get_mapped_addr(struct proc *, __addr_t);
+int copy_on_write_page(struct vma *, __addr_t);
 int clone_pages(struct proc *);
 int free_page_tables(struct proc *);
-unsigned int map_page(struct proc *, unsigned int, unsigned int, unsigned int);
-unsigned int map_page_flags(struct proc *, unsigned int, unsigned int, unsigned int, int);
-int unmap_page(unsigned int);
+__addr_t map_page(struct proc *, __addr_t, __addr_t, unsigned int);
+__addr_t map_page_flags(struct proc *, __addr_t, __addr_t, unsigned int, int);
+int unmap_page(__addr_t);
+int resolve_page_fault(__addr_t, unsigned int, __addr_t);
 void mem_init(void);
 void mem_stats(void);
+
+#ifdef CONFIG_ARCH_RISCV64
+int riscv64_address_space_create(struct proc *);
+void riscv64_address_space_release(struct proc *);
+#endif
 
 /* swapper.c */
 int kswapd(void);

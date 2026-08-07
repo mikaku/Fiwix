@@ -92,7 +92,7 @@ void pipefs_ifree(struct inode *i)
 		 * also called to free removed (with sys_unlink) fifo files.
 		 */
 		if(i->u.pipefs.i_data) {
-			kfree((unsigned int)i->u.pipefs.i_data);
+			kfree((__addr_t)i->u.pipefs.i_data);
 		}
 	}
 }

@@ -63,7 +63,7 @@ static void free_all_fdstr(struct procfs_dir_entry *d)
 {
 	while(d) {
 		if((d->inode & 0xF0000000) == PROC_FD_INO) {
-			kfree((unsigned int)d->name);
+			kfree((__addr_t)d->name);
 		}
 		d++;
 	}
@@ -179,14 +179,14 @@ static int dir_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	if((len + bytes) > (count - 1)) {
 		printk("WARNING: %s(): len (%d) > count (%d).\n", __FUNCTION__, len, count);
 		free_all_fdstr((struct procfs_dir_entry *)buf);
-		kfree((unsigned int)buf);
+		kfree((__addr_t)buf);
 		return 0;
 	}
 	memcpy_b(buf + len, (char *)&procfs_array[lev], bytes);
 	len += bytes;
 	total_read = f->offset = len;
 	memcpy_b(buffer, buf, len);
-	kfree((unsigned int)buf);
+	kfree((__addr_t)buf);
 	return total_read;
 }
 
@@ -228,7 +228,7 @@ int procfs_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_
 
 	total_read = dir_read(i, f, buffer, PAGE_SIZE);
 	if((count = MIN(total_read, count)) == 0) {
-		kfree((unsigned int)buffer);
+		kfree((__addr_t)buffer);
 		return dirent_offset;
 	}
 
@@ -254,10 +254,10 @@ int procfs_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_
 			break;
 		}
 		if((d->inode & 0xF0000000) == PROC_FD_INO) {
-			kfree((unsigned int)d->name);
+			kfree((__addr_t)d->name);
 		}
 	}
 	f->offset = boffset;
-	kfree((unsigned int)buffer);
+	kfree((__addr_t)buffer);
 	return dirent_offset;
 }

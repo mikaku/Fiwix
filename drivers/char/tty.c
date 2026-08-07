@@ -215,7 +215,7 @@ struct tty *register_tty(__dev_t dev)
 			if(t->dev == dev) {
 				printk("ERROR: %s(): tty device %d,%d already registered!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 				RESTORE_FLAGS(flags);
-				kfree((unsigned int)tty);
+				kfree((__addr_t)tty);
 				return NULL;
 			}
 			if(t->next) {
@@ -258,7 +258,7 @@ void unregister_tty(struct tty *tty)
 		}
 		t->next = tty->next;
 	}
-	kfree((unsigned int)tty);
+	kfree((__addr_t)tty);
 	RESTORE_FLAGS(flags);
 }
 

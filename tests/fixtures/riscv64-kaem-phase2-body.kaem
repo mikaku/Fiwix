@@ -1,0 +1,2 @@
+./riscv64/artifact/hex0 ./riscv64/hex1_riscv64.hex0 ./riscv64/artifact/hex1
+./riscv64/artifact/hex1 ./riscv64/hex2_riscv64.hex1 ./riscv64/artifact/hex2-0

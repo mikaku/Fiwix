@@ -43,7 +43,7 @@ int shm_map_page(struct vma *vma, unsigned int cr2)
 			return 1;
 		}
 	}
-	pg = &page_table[V2P(addr) >> PAGE_SHIFT];
+	pg = &page_table[PHYS_TO_PAGE(V2P(addr))];
 	pg->count++;
 
 	return 0;

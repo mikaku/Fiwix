@@ -1,0 +1,5 @@
+            d = (long double)bn[3] * 79228162514264337593543950336.0L +
+	        (long double)bn[2] * 18446744073709551616.0L +
+	        (long double)bn[1] * 4294967296.0L +
+	        (long double)bn[0];
+            d = ldexpl(d, exp_val - frac_bits);

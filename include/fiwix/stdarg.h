@@ -22,6 +22,8 @@ and this notice must be preserved on all copies.
 #ifndef __stdarg_h
 #define __stdarg_h
 
+#if defined(__i386__)
+
 typedef char *va_list;
 
 /* Amount of space required in an argument list for an arg of type TYPE.
@@ -38,5 +40,12 @@ extern void va_end (va_list);
 
 #define va_arg(AP, TYPE) (AP += __va_rounded_size (TYPE), \
   *((TYPE *) (AP - __va_rounded_size (TYPE))))
+
+#else
+
+/* Non-i386 ABIs may pass variadic arguments in registers. */
+#include <stdarg.h>
+
+#endif
 
 #endif /* __stdarg_h */

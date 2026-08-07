@@ -8,6 +8,8 @@
 #ifndef _FIWIX_SIGNAL_H
 #define _FIWIX_SIGNAL_H
 
+#include <fiwix/types.h>
+
 #define NSIG		32
 
 #define SIGHUP		1	/* Hangup or Reset */
@@ -61,6 +63,7 @@ struct sigaction {
 /* bits in sa_flags */
 #define SA_NOCLDSTOP	0x00000001	/* don't send SIGCHLD when children stop */
 #define SA_NOCLDWAIT	0x00000002	/* don't create zombie on child death */
+#define SA_SIGINFO	0x00000004	/* use three-argument signal handler */
 #define SA_ONSTACK	0x08000000	/* invoke handler on alternate stack */
 #define SA_RESTART	0x10000000	/* automatically restart system call */
 #define SA_INTERRUPT	0x20000000	/* unused */
@@ -82,7 +85,7 @@ struct sigaction {
 #define SIG_SETMASK	2	/* for setting the signal mask */
 
 /* SIGKILL and SIGSTOP can't ever be set as blockable signals */
-#define SIG_BLOCKABLE	(~(1 << (SIGKILL - 1)) | (1 << (SIGSTOP - 1)))
+#define SIG_BLOCKABLE	(~((1U << (SIGKILL - 1)) | (1U << (SIGSTOP - 1))))
 
 #define SIG_MASK(sig)	(~(1 << ((sig) - 1)))
 
@@ -90,7 +93,7 @@ struct sigaction {
 #define	USER		2	/* user is who has sent the signal */
 
 int issig(void);
-void psig(unsigned int);
+void psig(__addr_t);
 int kill_pid(__pid_t, __sigset_t, int);
 int kill_pgrp(__pid_t, __sigset_t, int);
 

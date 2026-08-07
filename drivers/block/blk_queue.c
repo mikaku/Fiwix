@@ -62,7 +62,7 @@ int do_blk_request(struct device *d, void *fn, struct buffer *buf)
 	}
 	errno = br->errno;
 	if(!br->head_group) {
-		kfree((unsigned int)br);
+		kfree((__addr_t)br);
 	}
 	return errno;
 }

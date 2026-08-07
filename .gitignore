@@ -1,6 +1,11 @@
 *.o
 /fiwix
+/fiwix-arm.bin
+/arm-smoke.log
+/arm-virt.dtb
 System.map.gz
+/arch/riscv64/fixture/
+/arch/arm/fixture/
 include/fiwix/custom_config.h
 include/fiwix/custom_limits.h
 include/fiwix/custom_kernel.h

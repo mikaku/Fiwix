@@ -91,6 +91,86 @@ void load_tr(unsigned int);
 unsigned long long int get_rdtsc(void);
 void invalidate_tlb(void);
 
+#ifdef CONFIG_ARCH_RISCV64
+
+void riscv64_interrupt_disable(void);
+void riscv64_interrupt_enable(void);
+unsigned long riscv64_interrupt_state(void);
+void riscv64_interrupt_restore(unsigned long);
+unsigned long riscv64_read_stval(void);
+unsigned long riscv64_read_sp(void);
+void riscv64_set_sp(unsigned long);
+void riscv64_wait_for_interrupt(void);
+void riscv64_clear_ssip(void);
+void riscv64_vm_install(unsigned long);
+void riscv64_fence_i(void);
+void riscv64_system_reset(void);
+int riscv64_linux_kexec(void);
+unsigned long riscv64_user_syscall3(unsigned long, unsigned long,
+	unsigned long, unsigned long);
+
+#define CLI() riscv64_interrupt_disable()
+#define STI() riscv64_interrupt_enable()
+#define NOP() __asm__ __volatile__ ("nop":::"memory")
+#define HLT() riscv64_wait_for_interrupt()
+
+#define GET_CR2(cr2) ((cr2) = riscv64_read_stval())
+#define GET_ESP(esp) ((esp) = riscv64_read_sp())
+#define SET_ESP(esp) riscv64_set_sp((unsigned long)(esp))
+#define GET_GS(gs) ((gs) = 0)
+
+#define SAVE_FLAGS(flags) ((flags) = riscv64_interrupt_state())
+#define RESTORE_FLAGS(flags) riscv64_interrupt_restore(flags)
+
+#define USER_SYSCALL(num, arg1, arg2, arg3) \
+	riscv64_user_syscall3((unsigned long)(num), (unsigned long)(arg1), \
+		(unsigned long)(arg2), (unsigned long)(arg3))
+
+#elif defined(CONFIG_ARCH_ARM)
+
+void arm_interrupt_disable(void);
+void arm_interrupt_enable(void);
+unsigned int arm_interrupt_state(void);
+void arm_interrupt_restore(unsigned int);
+void arm_no_operation(void);
+unsigned int arm_read_dfar(void);
+unsigned int arm_read_dfsr(void);
+unsigned int arm_read_ifar(void);
+unsigned int arm_read_ifsr(void);
+unsigned int arm_read_sp(void);
+void arm_set_sp(unsigned int);
+void arm_wait_for_interrupt(void);
+void arm_instruction_cache_invalidate(void);
+void arm_data_memory_barrier(void);
+void arm_data_sync_barrier(void);
+unsigned int arm_generic_timer_frequency_read(void);
+void arm_generic_timer_program(unsigned int);
+void arm_vm_install(unsigned int);
+void arm_vm_switch(unsigned int);
+void arm_system_reset(void);
+int arm_linux_kexec(void);
+unsigned int arm_user_syscall3(unsigned int, unsigned int, unsigned int,
+	unsigned int);
+
+#define CLI() arm_interrupt_disable()
+#define STI() arm_interrupt_enable()
+#define NOP() arm_no_operation()
+#define HLT() arm_wait_for_interrupt()
+
+#define GET_CR2(cr2) ((cr2) = arm_read_dfar())
+#define GET_ESP(esp) ((esp) = (void *)arm_read_sp())
+#define SET_ESP(esp) arm_set_sp((unsigned int)(esp))
+#define GET_GS(gs) ((gs) = 0)
+
+#define SAVE_FLAGS(flags) ((flags) = arm_interrupt_state())
+#define RESTORE_FLAGS(flags) arm_interrupt_restore(flags)
+
+#define USER_SYSCALL(num, arg1, arg2, arg3) \
+	arm_user_syscall3((unsigned int)(num), (unsigned int)(arg1), \
+		(unsigned int)(arg2), (unsigned int)(arg3))
+
+#else
+
 #define CLI() __asm__ __volatile__ ("cli":::"memory")
 #define STI() __asm__ __volatile__ ("sti":::"memory")
 #define NOP() __asm__ __volatile__ ("nop":::"memory")
@@ -141,6 +221,8 @@ void invalidate_tlb(void);
 		: "eax"((unsigned int)num), "ebx"((unsigned int)arg1), "ecx"((unsigned int)arg2), "edx"((unsigned int)arg3)	\
 	);
 #endif
+
+#endif /* architecture */
 
 /*
 static inline unsigned long long int get_rdtsc(void)

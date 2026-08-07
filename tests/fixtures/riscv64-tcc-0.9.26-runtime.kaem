@@ -1,0 +1,69 @@
+set -ex
+
+${TCC} -c -g -D HAVE_CONFIG_H=1 \
+    -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+    -o crt1.o ${MES_BUILD}/lib/linux/riscv64-mes-gcc/crt1.c
+${TCC} -c -g -D HAVE_CONFIG_H=1 \
+    -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+    -o crti.o ${MES_BUILD}/lib/linux/riscv64-mes-gcc/crti.c
+${TCC} -c -g -D HAVE_CONFIG_H=1 \
+    -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+    -o crtn.o ${MES_BUILD}/lib/linux/riscv64-mes-gcc/crtn.c
+cp crt1.o crt1-${TAG}.o
+cp crti.o crti-${TAG}.o
+cp crtn.o crtn-${TAG}.o
+cp crt1.o ${LIBDIR}/crt1.o
+cp crti.o ${LIBDIR}/crti.o
+cp crtn.o ${LIBDIR}/crtn.o
+
+if match ${RUNTIME_STAGE} boot0; then
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o libtcc1.o ${MES_BUILD}/lib/libtcc1.c
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o lib-arm64.o lib/lib-arm64.c
+fi
+if match ${RUNTIME_STAGE} boot1; then
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_LONG_LONG=1 -D TCC_TARGET_RISCV64=1 \
+        -D HAVE_CONFIG_H=1 -I ${MES_BUILD}/include \
+        -I ${MES_BUILD}/include/linux/riscv64 \
+        -o libtcc1.o ${MES_BUILD}/lib/libtcc1.c
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_LONG_LONG=1 -D TCC_TARGET_RISCV64=1 \
+        -D HAVE_CONFIG_H=1 -I ${MES_BUILD}/include \
+        -I ${MES_BUILD}/include/linux/riscv64 \
+        -o lib-arm64.o lib/lib-arm64.c
+fi
+if match ${RUNTIME_STAGE} boot2; then
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_FLOAT_STUB=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o libtcc1.o ${MES_BUILD}/lib/libtcc1.c
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_FLOAT_STUB=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o lib-arm64.o lib/lib-arm64.c
+fi
+if match ${RUNTIME_STAGE} full; then
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_FLOAT=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o libtcc1.o ${MES_BUILD}/lib/libtcc1.c
+    ${TCC} -c -g -D BOOTSTRAP=1 -D HAVE_BITFIELD=1 \
+        -D HAVE_FLOAT=1 -D HAVE_LONG_LONG=1 \
+        -D TCC_TARGET_RISCV64=1 -D HAVE_CONFIG_H=1 \
+        -I ${MES_BUILD}/include -I ${MES_BUILD}/include/linux/riscv64 \
+        -o lib-arm64.o lib/lib-arm64.c
+fi
+
+cp libtcc1.o libtcc1-${TAG}.o
+cp lib-arm64.o lib-arm64-${TAG}.o
+${TCC} -ar cr libtcc1-${TAG}.a libtcc1.o lib-arm64.o
+cp libtcc1-${TAG}.a ${LIBDIR}/tcc/libtcc1.a

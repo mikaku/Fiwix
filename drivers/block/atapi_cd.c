@@ -253,7 +253,7 @@ int atapi_cd_open(struct inode *i, struct fd *f)
 			sense_key = (int)(buffer[2] & 0xF);
 			sense_asc = (int)(buffer[12] & 0xFF);
 			if(sense_key == RS_NOT_READY && sense_asc == ASC_NO_MEDIUM) {
-				kfree((unsigned int)buffer);
+				kfree((__addr_t)buffer);
 				return -ENOMEDIUM;
 			}
 		}
@@ -261,7 +261,7 @@ int atapi_cd_open(struct inode *i, struct fd *f)
 
 	if(retries == MAX_CD_ERR) {
 		if(sense_key == RS_NOT_READY) {
-			kfree((unsigned int)buffer);
+			kfree((__addr_t)buffer);
 			return -ENOMEDIUM;
 		}
 	}
@@ -274,7 +274,7 @@ int atapi_cd_open(struct inode *i, struct fd *f)
 	ata_set_timeout(ide, WAIT_FOR_CD, WAKEUP_AND_RETURN);
 
 	get_capacity(i, ide, drive);
-	kfree((unsigned int)buffer);
+	kfree((__addr_t)buffer);
 	return 0;
 }
 

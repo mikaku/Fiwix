@@ -82,7 +82,7 @@ static void release_flock(struct flock_file *ff)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 	kstat.nr_flocks--;
 }
 

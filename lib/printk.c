@@ -131,7 +131,7 @@ static int do_printk(char *buffer, const char *format, va_list args)
 	unsigned int unum, digit;
 	long long int lnum;
 	unsigned long long int lunum;
-	static char msg_level = -1;
+	static int msg_level = -1;
 
 	sw_neg = in_identifier = n_pad = lf = sw_l = 0;
 	count = 0;
@@ -468,7 +468,7 @@ static int do_printk(char *buffer, const char *format, va_list args)
 void flush_log_buf(struct tty *tty)
 {
 	int n;
-	static char msg_level = -1;
+	static int msg_level = -1;
 
 	n = log_read;
 	while(n < log_size) {
@@ -529,6 +529,6 @@ int snprintk(char *str, unsigned int size, const char *format, ...)
         va_end(args);
         strncpy(str, buffer, size);
         str[size - 1] = '\0';
-        kfree((unsigned int)buffer);
+        kfree((__addr_t)buffer);
 	return strlen(str);
 }

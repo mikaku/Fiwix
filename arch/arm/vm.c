@@ -1,0 +1,236 @@
+/*
+ * fiwix/arch/arm/vm.c
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
+#include <fiwix/arm_vm.h>
+#include <fiwix/asm.h>
+
+static int arm_vm_translation_active;
+
+static int arm_vm_root_aligned(const unsigned int *root)
+{
+	return root &&
+		!((unsigned long)root & (ARM_VM_ROOT_ALIGNMENT - 1U));
+}
+
+static int arm_vm_l2_aligned(const unsigned int *table)
+{
+	return table &&
+		!((unsigned long)table & (ARM_VM_L2_ALIGNMENT - 1U));
+}
+
+static int arm_vm_user_range_address(unsigned int address)
+{
+	return address >= ARM_VM_USER_BASE &&
+		address < ARM_VM_USER_LIMIT;
+}
+
+static int arm_vm_user_section_address(unsigned int address)
+{
+	return arm_vm_user_range_address(address) &&
+		!(address & (ARM_VM_SECTION_SIZE - 1U));
+}
+
+static int arm_vm_user_table_address(unsigned int address)
+{
+	return !(address & (ARM_VM_SECTION_SIZE - 1U)) &&
+		address < ARM_VM_USER_LIMIT &&
+		address + ARM_VM_SECTION_SIZE > ARM_VM_USER_BASE;
+}
+
+static int arm_vm_user_page_address(unsigned int address)
+{
+	return arm_vm_user_range_address(address) &&
+		!(address & (ARM_VM_PAGE_SIZE - 1U));
+}
+
+int arm_vm_root_init(unsigned int *root)
+{
+	unsigned int address;
+	unsigned int n;
+
+	if(!arm_vm_root_aligned(root)) {
+		return -1;
+	}
+	for(n = 0; n < ARM_VM_ROOT_ENTRIES; n++) {
+		root[n] = 0;
+	}
+	for(address = ARM_VM_RAM_BASE; address < ARM_VM_IDENTITY_LIMIT;
+		address += ARM_VM_SECTION_SIZE) {
+		root[address >> 20] = address | ARM_VM_SECTION_SUPERVISOR;
+	}
+	root[ARM_VM_DEVICE_ALIAS(0x08000000U) >> 20] =
+		0x08000000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x08100000U) >> 20] =
+		0x08100000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x09000000U) >> 20] =
+		0x09000000U | ARM_VM_SECTION_DEVICE_XN;
+	root[ARM_VM_DEVICE_ALIAS(0x0A000000U) >> 20] =
+		0x0A000000U | ARM_VM_SECTION_DEVICE_XN;
+	return 0;
+}
+
+int arm_vm_root_clone(unsigned int *child, const unsigned int *parent)
+{
+	unsigned int n;
+
+	if(!arm_vm_root_aligned(child) || !arm_vm_root_aligned(parent)) {
+		return -1;
+	}
+	for(n = 0; n < ARM_VM_ROOT_ENTRIES; n++) {
+		child[n] = parent[n];
+	}
+	return 0;
+}
+
+int arm_vm_map_user_section(unsigned int *root, unsigned int virtual_address,
+	unsigned int physical_address, int executable)
+{
+	unsigned int descriptor;
+
+	if(!arm_vm_root_aligned(root) ||
+		!arm_vm_user_section_address(virtual_address) ||
+		(executable != 0 && executable != 1) ||
+		physical_address < ARM_VM_RAM_BASE ||
+		physical_address >= ARM_VM_IDENTITY_LIMIT ||
+		physical_address & (ARM_VM_SECTION_SIZE - 1U)) {
+		return -1;
+	}
+	descriptor = executable ?
+		ARM_VM_SECTION_USER : ARM_VM_SECTION_USER_XN;
+	root[virtual_address >> 20] = physical_address | descriptor;
+	return 0;
+}
+
+int arm_vm_unmap_user_section(unsigned int *root,
+	unsigned int virtual_address)
+{
+	if(!arm_vm_root_aligned(root) ||
+		!arm_vm_user_section_address(virtual_address)) {
+		return -1;
+	}
+	root[virtual_address >> 20] = 0;
+	return 0;
+}
+
+int arm_vm_l2_init(unsigned int *table)
+{
+	unsigned int n;
+
+	if(!arm_vm_l2_aligned(table)) {
+		return -1;
+	}
+	for(n = 0; n < ARM_VM_L2_ENTRIES; n++) {
+		table[n] = 0;
+	}
+	return 0;
+}
+
+int arm_vm_attach_user_table(unsigned int *root,
+	unsigned int virtual_address, unsigned int physical_address)
+{
+	unsigned int *entry;
+
+	if(!arm_vm_root_aligned(root) ||
+		!arm_vm_user_table_address(virtual_address) ||
+		physical_address < ARM_VM_RAM_BASE ||
+		physical_address >= ARM_VM_IDENTITY_LIMIT ||
+		physical_address & (ARM_VM_L2_ALIGNMENT - 1U)) {
+		return -1;
+	}
+	entry = &root[virtual_address >> 20];
+	if(*entry) {
+		return -1;
+	}
+	*entry = physical_address | ARM_VM_COARSE_TABLE;
+	return 0;
+}
+
+int arm_vm_map_user_page(unsigned int *table, unsigned int virtual_address,
+	unsigned int physical_address, int writable, int executable)
+{
+	unsigned int descriptor;
+	unsigned int *entry;
+
+	if(!arm_vm_l2_aligned(table) ||
+		!arm_vm_user_page_address(virtual_address) ||
+		physical_address < ARM_VM_RAM_BASE ||
+		physical_address >= ARM_VM_IDENTITY_LIMIT ||
+		physical_address & (ARM_VM_PAGE_SIZE - 1U) ||
+		(writable != 0 && writable != 1) ||
+		(executable != 0 && executable != 1)) {
+		return -1;
+	}
+	entry = &table[(virtual_address >> 12) & 0xFFU];
+	if(*entry) {
+		return -1;
+	}
+	if(writable) {
+		descriptor = executable ?
+			ARM_VM_PAGE_USER_RW : ARM_VM_PAGE_USER_RW_XN;
+	} else {
+		descriptor = executable ?
+			ARM_VM_PAGE_USER_RO : ARM_VM_PAGE_USER_RO_XN;
+	}
+	*entry = physical_address | descriptor;
+	return 0;
+}
+
+int arm_vm_unmap_user_page(unsigned int *table,
+	unsigned int virtual_address)
+{
+	if(!arm_vm_l2_aligned(table) ||
+		!arm_vm_user_page_address(virtual_address)) {
+		return -1;
+	}
+	table[(virtual_address >> 12) & 0xFFU] = 0;
+	return 0;
+}
+
+unsigned int arm_vm_ttbr0(const unsigned int *root)
+{
+	if(!arm_vm_root_aligned(root)) {
+		return 0;
+	}
+	return (unsigned int)(unsigned long)root;
+}
+
+unsigned int arm_vm_device_address(unsigned int physical_address)
+{
+	return arm_vm_translation_active ?
+		ARM_VM_DEVICE_ALIAS(physical_address) : physical_address;
+}
+
+int arm_vm_activate(const unsigned int *root)
+{
+	unsigned int table_address;
+
+	table_address = arm_vm_ttbr0(root);
+	if(!table_address) {
+		return -1;
+	}
+#ifdef __arm__
+	/* D-cache remains disabled inside the assembly install primitive. */
+	arm_vm_install(table_address);
+	arm_vm_translation_active = 1;
+#endif
+	return 0;
+}
+
+int arm_vm_context_activate(const unsigned int *root)
+{
+	unsigned int table_address;
+
+	table_address = arm_vm_ttbr0(root);
+	if(!table_address) {
+		return -1;
+	}
+#ifdef __arm__
+	arm_vm_switch(table_address);
+	arm_vm_translation_active = 1;
+#endif
+	return 0;
+}

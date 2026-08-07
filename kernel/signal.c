@@ -17,6 +17,11 @@
 #include <fiwix/mm.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/riscv64_signal.h>
+#elif defined(CONFIG_ARCH_ARM)
+#include <fiwix/arm_signal.h>
+#endif
 
 /* can process 'current' send a signal to process 'p'? */
 int can_signal(struct proc *p)
@@ -30,7 +35,7 @@ int can_signal(struct proc *p)
 
 int send_sig(struct proc *p, __sigset_t signum)
 {
-	if(signum > NSIG || !p) {
+	if(signum >= NSIG || !p) {
 		return -EINVAL;
 	}
 
@@ -153,21 +158,39 @@ int issig(void)
 	return 0;
 }
 
-void psig(unsigned int stack)
+void psig(__addr_t stack)
 {
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	int len;
+#endif
 	__sigset_t signum;
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
+	__sigset_t oldmask;
+#endif
 	unsigned int mask;
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	struct sigcontext *sc;
+#elif defined(CONFIG_ARCH_RISCV64)
+	struct riscv64_trap_frame *frame;
+#else
+	struct arm_trap_frame *frame;
+#endif
 	struct proc *p;
 
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	sc = (struct sigcontext *)stack;
+#elif defined(CONFIG_ARCH_RISCV64)
+	frame = (struct riscv64_trap_frame *)stack;
+#else
+	frame = (struct arm_trap_frame *)stack;
+#endif
 	for(signum = 1, mask = 1; signum < NSIG; signum++, mask <<= 1) {
 		if(current->sigpending & mask) {
 			current->sigpending &= ~mask;
 
-			if((unsigned int)current->sigaction[signum - 1].sa_handler) {
+			if(current->sigaction[signum - 1].sa_handler != SIG_DFL) {
 
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 				/*
 				 * page_not_present() may have raised a SIGSEGV if it
 				 * detected that this process doesn't have an stack
@@ -181,12 +204,33 @@ void psig(unsigned int stack)
 					printk("WARNING: %s(): no stack region in vma table for process %d. Terminated.\n", __FUNCTION__, current->pid);
 					do_exit(signum);
 				}
+#endif
 
+#if defined(CONFIG_ARCH_RISCV64) || defined(CONFIG_ARCH_ARM)
+				oldmask = current->sigblocked;
+#endif
 				current->sigexecuting = mask;
 				if(!(current->sigaction[signum - 1].sa_flags & SA_NODEFER)) {
 					current->sigblocked |= mask;
 				}
 
+#ifdef CONFIG_ARCH_RISCV64
+				current->sigblocked |=
+					current->sigaction[signum - 1].sa_mask & SIG_BLOCKABLE;
+				if(riscv64_signal_deliver(frame, signum, oldmask)) {
+					printk("WARNING: %s(): unable to build signal frame for process %d. Terminated.\n",
+						__FUNCTION__, current->pid);
+					do_exit(SIGSEGV);
+				}
+#elif defined(CONFIG_ARCH_ARM)
+				current->sigblocked |=
+					current->sigaction[signum - 1].sa_mask & SIG_BLOCKABLE;
+				if(arm_signal_deliver(frame, signum, oldmask)) {
+					printk("WARNING: %s(): unable to build ARM signal frame for process %d. Terminated.\n",
+						__FUNCTION__, current->pid);
+					do_exit(SIGSEGV);
+				}
+#else
 				/* save the current sigcontext */
 				memcpy_b(&current->sc[signum - 1], sc, sizeof(struct sigcontext));
 				/* setup the jump to the user signal handler */
@@ -198,6 +242,7 @@ void psig(unsigned int stack)
 				sc->ecx = (unsigned int)current->sigaction[signum - 1].sa_handler;
 				sc->eax= signum;
 				sc->eip = sc->oldesp;
+#endif
 
 				if(current->sigaction[signum - 1].sa_flags & SA_RESETHAND) {
 					current->sigaction[signum - 1].sa_handler = SIG_DFL;
@@ -233,13 +278,15 @@ void psig(unsigned int stack)
 		}
 	}
 
-	/* coming from a system call that needs to be restarted */
+	/* coming from an i386 system call that needs to be restarted */
+#if !defined(CONFIG_ARCH_RISCV64) && !defined(CONFIG_ARCH_ARM)
 	if(sc->err > 0) {
 		if(sc->eax == -ERESTART) {
 			sc->eax = sc->err;	/* syscall was saved in 'err' */
 			sc->eip -= 2;		/* point again to 'int 0x80' */
 		}
 	}
+#endif
 }
 
 int kill_pid(__pid_t pid, __sigset_t signum, int sender)

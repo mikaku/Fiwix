@@ -1,0 +1,43 @@
+/* Bootstrap libcs may provide ldexp but not its long-double variant. */
+static long double tcc_ldexpl(long double value, int exponent)
+{
+    union {
+        long double value;
+        struct {
+            uint64_t lo;
+            uint32_t mid;
+            uint16_t top;
+            uint16_t sign_exponent;
+        } bits;
+    } scale;
+
+    scale.bits.lo = 0;
+    scale.bits.mid = 0;
+    scale.bits.top = 0;
+    if (exponent > 16383) {
+        scale.bits.sign_exponent = 0x3fff + 16383;
+        value *= scale.value;
+        exponent -= 16383;
+        if (exponent > 16383) {
+            value *= scale.value;
+            exponent -= 16383;
+            if (exponent > 16383)
+                exponent = 16383;
+        }
+    } else if (exponent < -16382) {
+        scale.bits.sign_exponent = 0x3fff - 16382 + 113;
+        value *= scale.value;
+        exponent += 16382 - 113;
+        if (exponent < -16382) {
+            value *= scale.value;
+            exponent += 16382 - 113;
+            if (exponent < -16382)
+                exponent = -16382;
+        }
+    }
+    scale.bits.sign_exponent = 0x3fff + exponent;
+    return value * scale.value;
+}
+
+/* parse number in null terminated string 'p' and return it in the
+   current token */

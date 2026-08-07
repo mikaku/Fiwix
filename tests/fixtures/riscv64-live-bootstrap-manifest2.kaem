@@ -1,0 +1,81 @@
+set -ex
+
+ARCH=riscv64
+ARCH_DIR=riscv64
+M2LIBC=../M2libc
+TOOLS=../riscv64/bin
+BLOOD_FLAG=--64
+BASE_ADDRESS=0x00600000
+ENDIAN_FLAG=--little-endian
+BINDIR=../riscv64/bin
+BUILDDIR=../riscv64/artifact
+TMPDIR=../riscv64/artifact
+OPERATING_SYSTEM=Linux
+
+./riscv64/bin/kaem --verbose --strict --file ./riscv64/mescc-tools-full-kaem.kaem
+cd mescc-tools-extra
+../riscv64/bin/kaem --verbose --strict --file mescc-tools-extra.kaem
+cd ..
+./riscv64/bin/sha256sum -c riscv64.answers
+
+PATH=/riscv64/bin
+
+mkdir -p /usr /usr/bin /usr/lib /usr/include /usr/include/mes /tmp
+
+cp /riscv64/bin/blood-elf /usr/bin/blood-elf
+cp /riscv64/bin/catm /usr/bin/catm
+cp /riscv64/bin/chmod /usr/bin/chmod
+cp /riscv64/bin/cp /usr/bin/cp
+cp /riscv64/bin/get_machine /usr/bin/get_machine
+cp /riscv64/bin/hex2 /usr/bin/hex2
+cp /riscv64/bin/kaem /usr/bin/kaem
+cp /riscv64/bin/M1 /usr/bin/M1
+cp /riscv64/bin/M2-Mesoplanet /usr/bin/M2-Mesoplanet
+cp /riscv64/bin/M2-Planet /usr/bin/M2-Planet
+cp /riscv64/bin/match /usr/bin/match
+cp /riscv64/bin/mkdir /usr/bin/mkdir
+cp /riscv64/bin/replace /usr/bin/replace
+cp /riscv64/bin/rm /usr/bin/rm
+cp /riscv64/bin/sha256sum /usr/bin/sha256sum
+cp /riscv64/bin/unbz2 /usr/bin/unbz2
+cp /riscv64/bin/ungz /usr/bin/ungz
+cp /riscv64/bin/untar /usr/bin/untar
+cp /riscv64/bin/unxz /usr/bin/unxz
+
+chmod 755 /usr/bin/blood-elf
+chmod 755 /usr/bin/catm
+chmod 755 /usr/bin/chmod
+chmod 755 /usr/bin/cp
+chmod 755 /usr/bin/get_machine
+chmod 755 /usr/bin/hex2
+chmod 755 /usr/bin/kaem
+chmod 755 /usr/bin/M1
+chmod 755 /usr/bin/M2-Mesoplanet
+chmod 755 /usr/bin/M2-Planet
+chmod 755 /usr/bin/match
+chmod 755 /usr/bin/mkdir
+chmod 755 /usr/bin/replace
+chmod 755 /usr/bin/rm
+chmod 755 /usr/bin/sha256sum
+chmod 755 /usr/bin/unbz2
+chmod 755 /usr/bin/ungz
+chmod 755 /usr/bin/untar
+chmod 755 /usr/bin/unxz
+
+PATH=/usr/bin
+M2LIBC_PATH=/M2libc
+TMPDIR=/tmp
+ARCH=riscv64
+UPDATE_CHECKSUMS=False
+BINDIR=/usr/bin
+SRCDIR=/steps
+pkg=checksum-transcriber-1.0
+
+cd /steps/checksum-transcriber-1.0
+kaem --file pass1.kaem
+
+pkg=simple-patch-1.0
+cd /steps/simple-patch-1.0
+kaem --file pass1.kaem
+
+/sbin/kaem-complete

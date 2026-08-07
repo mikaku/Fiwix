@@ -1,0 +1,88 @@
+/*
+ * fiwix/arch/arm/boot.S
+ *
+ * Copyright 2026, Fiwix ARM contributors.
+ * Distributed under the terms of the Fiwix License.
+ */
+
+    .syntax unified
+    .arch armv7-a
+    .arch_extension virt
+    .arch_extension sec
+    .fpu vfpv3
+    .arm
+    .section .text.boot
+    .globl _start
+    .globl arm_poweroff
+    .globl arm_system_reset
+    .globl arm_boot_dtb
+
+_start:
+    cpsid   if
+    mrs     r0, cpsr
+    and     r1, r0, #0x1f
+    cmp     r1, #0x1a             /* HYP mode */
+    bne     svc_entry
+
+    mrc     p15, 4, r1, c14, c1, 0
+    orr     r1, r1, #3           /* EL1 physical counter and timer access */
+    mcr     p15, 4, r1, c14, c1, 0
+    mrc     p15, 4, r1, c1, c1, 2
+    bic     r1, r1, #(3 << 10)   /* do not trap CP10/CP11 at HYP */
+    mcr     p15, 4, r1, c1, c1, 2
+    adr     r1, svc_entry
+    msr     ELR_hyp, r1
+    bic     r0, r0, #0x1f
+    orr     r0, r0, #0x13         /* SVC mode */
+    orr     r0, r0, #0xc0         /* IRQ and FIQ masked */
+    msr     spsr_cxsf, r0
+    eret
+
+svc_entry:
+    mrc     p15, 0, r0, c1, c0, 2
+    orr     r0, r0, #(15 << 20)  /* full CP10/CP11 access from USR */
+    mcr     p15, 0, r0, c1, c0, 2
+    isb
+    vmrs    r0, fpexc
+    orr     r0, r0, #(1 << 30)
+    vmsr    fpexc, r0
+    isb
+
+    mrc     p15, 0, r0, c1, c0, 0
+    bic     r0, r0, #2           /* permit ARMv7 unaligned data accesses */
+    orr     r0, r0, #0x400000
+    mcr     p15, 0, r0, c1, c0, 0
+    isb
+    ldr     sp, =0x47fff000
+    ldr     r3, =arm_boot_dtb
+    str     r2, [r3]
+
+    ldr     r0, =__bss_start
+    ldr     r1, =__bss_end
+    mov     r3, #0
+1:  cmp     r0, r1
+    strlo   r3, [r0], #4
+    blo     1b
+
+    bl      arm_boot_main
+2:  wfi
+    b       2b
+
+arm_poweroff:
+    ldr     r0, =0x84000008       /* PSCI SYSTEM_OFF */
+    smc     #0
+3:  wfi
+    b       3b
+
+arm_system_reset:
+    ldr     r0, =0x84000009       /* PSCI SYSTEM_RESET */
+    smc     #0
+4:  wfi
+    b       4b
+
+    .section .data
+    .align  2
+arm_boot_dtb:
+    .word   0
+
+    .section .note.GNU-stack,"",%progbits
