@@ -17,6 +17,9 @@
 #include <fiwix/errno.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/riscv64_trap.h>
+#endif
 
 static void free_vma_table(struct proc *p)
 {
@@ -26,7 +29,7 @@ static void free_vma_table(struct proc *p)
 	while(vma) {
 		tmp = vma;
 		vma = vma->next;
-		kfree((unsigned int)tmp);
+		kfree((__addr_t)tmp);
 	}
 }
 
@@ -38,8 +41,10 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 {
 	int count, pages;
 	unsigned int n;
+#ifndef CONFIG_ARCH_RISCV64
 	unsigned int *child_pgdir;
 	struct sigcontext *stack;
+#endif
 	struct proc *child, *p;
 	struct vma *vma, *child_vma;
 	__pid_t pid;
@@ -78,13 +83,15 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->pid = pid;
 	sprintk(child->pidstr, "%d", child->pid);
 
+#ifndef CONFIG_ARCH_RISCV64
 	if(!(child_pgdir = (void *)kmalloc(PAGE_SIZE))) {
 		release_proc(child);
 		return -ENOMEM;
 	}
 	child->rss++;
 	memcpy_b(child_pgdir, kpage_dir, PAGE_SIZE);
-	child->tss.cr3 = V2P((unsigned int)child_pgdir);
+	child->arch.cr3 = V2P((unsigned int)child_pgdir);
+#endif
 
 	child->ppid = current;
 	child->flags = 0;
@@ -97,7 +104,9 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->vma_table = NULL;
 	while(vma) {
 		if(!(child_vma = (struct vma *)kmalloc(sizeof(struct vma)))) {
-			kfree((unsigned int)child_pgdir);
+#ifndef CONFIG_ARCH_RISCV64
+			kfree((__addr_t)child_pgdir);
+#endif
 			free_vma_table(child);
 			release_proc(child);
 			return -ENOMEM;
@@ -119,7 +128,7 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 
 	child->sigpending = 0;
 	child->sigexecuting = 0;
-	memset_b(&child->sc, 0, sizeof(struct sigcontext));
+	memset_b(&child->sc, 0, sizeof(child->sc));
 	memset_b(&child->usage, 0, sizeof(struct rusage));
 	memset_b(&child->cusage, 0, sizeof(struct rusage));
 	child->it_real_interval = 0;
@@ -133,17 +142,30 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 #endif /* CONFIG_SYSVIPC */
 
 
-	if(!(child->tss.esp0 = kmalloc(PAGE_SIZE))) {
-		kfree((unsigned int)child_pgdir);
+#ifdef CONFIG_ARCH_RISCV64
+	if(riscv64_fork_process_setup(child,
+		(struct riscv64_trap_frame *)sc) < 0) {
 		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;
 	}
+#else
+	if(!(child->arch.esp0 = kmalloc(PAGE_SIZE))) {
+		kfree((__addr_t)child_pgdir);
+		free_vma_table(child);
+		release_proc(child);
+		return -ENOMEM;
+	}
+#endif
 
 	if(!(pages = clone_pages(child))) {
 		printk("WARNING: %s(): not enough memory when cloning pages.\n", __FUNCTION__);
+#ifdef CONFIG_ARCH_RISCV64
+		riscv64_process_release(child);
+#else
 		free_page_tables(child);
-		kfree((unsigned int)child_pgdir);
+		kfree((__addr_t)child_pgdir);
+#endif
 		free_vma_table(child);
 		release_proc(child);
 		return -ENOMEM;
@@ -151,16 +173,18 @@ int sys_fork(int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext
 	child->rss += pages;
 	invalidate_tlb();
 
-	child->tss.esp0 += PAGE_SIZE - 4;
+#ifndef CONFIG_ARCH_RISCV64
+	child->arch.esp0 += PAGE_SIZE - 4;
 	child->rss++;
-	child->tss.ss0 = KERNEL_DS;
+	child->arch.ss0 = KERNEL_DS;
 
-	memcpy_b((unsigned int *)(child->tss.esp0 & PAGE_MASK), (void *)((unsigned int)(sc) & PAGE_MASK), PAGE_SIZE);
-	stack = (struct sigcontext *)((child->tss.esp0 & PAGE_MASK) + ((unsigned int)(sc) & ~PAGE_MASK));
+	memcpy_b((unsigned int *)(child->arch.esp0 & PAGE_MASK), (void *)((unsigned int)(sc) & PAGE_MASK), PAGE_SIZE);
+	stack = (struct sigcontext *)((child->arch.esp0 & PAGE_MASK) + ((unsigned int)(sc) & ~PAGE_MASK));
 
-	child->tss.eip = (unsigned int)return_from_syscall;
-	child->tss.esp = (unsigned int)stack;
+	child->arch.eip = (unsigned int)return_from_syscall;
+	child->arch.esp = (unsigned int)stack;
 	stack->eax = 0;		/* child returns 0 */
+#endif
 
 	/* increase file descriptors usage */
 	for(n = 0; n < OPEN_MAX; n++) {

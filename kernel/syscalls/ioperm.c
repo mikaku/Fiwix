@@ -19,6 +19,12 @@
  */
 int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 {
+#ifdef CONFIG_ARCH_RISCV64
+	(void)from;
+	(void)num;
+	(void)turn_on;
+	return -ENOSYS;
+#else
 	unsigned int n;
 
 #ifdef __DEBUG__
@@ -46,11 +52,12 @@ int sys_ioperm(unsigned int from, unsigned int num, int turn_on)
 
 	for(n = from; n < (from + num); n++) {
 		if(!turn_on) {
-			current->tss.io_bitmap[n / 8] &= ~(1 << (n % 8));
+			current->arch.io_bitmap[n / 8] &= ~(1 << (n % 8));
 		} else {
-			current->tss.io_bitmap[n / 8] |= ~(1 << (n % 8));
+			current->arch.io_bitmap[n / 8] |= ~(1 << (n % 8));
 		}
 	}
 
 	return 0;
+#endif
 }

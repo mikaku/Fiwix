@@ -19,8 +19,9 @@
 
 static int verify_address(int type, const void *addr, unsigned int size)
 {
-	struct vma *vma;
-	unsigned int start, gs;
+	struct vma *vma, *stack;
+	unsigned int gs;
+	__addr_t start;
 
 	/* no need to verify anything if the caller is the kernel */
 	GET_GS(gs);
@@ -37,7 +38,7 @@ static int verify_address(int type, const void *addr, unsigned int size)
 		return 0;
 	}
 
-	start = (unsigned int)addr;
+	start = (__addr_t)addr;
 	if(!(vma = find_vma_region(start))) {
 		/*
 		 * We need to check here if addr looks like a possible
@@ -45,12 +46,15 @@ static int verify_address(int type, const void *addr, unsigned int size)
 		 * and let 'do_page_fault()' to handle the imminent page
 		 * fault as soon as the kernel will try to access it.
 		 */
-		vma = current->vma_table->prev;
-		if(vma) {
-			if(vma->s_type == P_STACK) {
-				if(start < vma->start && start > vma->prev->end) {
-					return 0;
-				}
+		stack = current->vma_table;
+		while(stack && stack->s_type != P_STACK) {
+			stack = stack->next;
+		}
+		if(stack) {
+			if(start < stack->start &&
+				(stack == current->vma_table ||
+				start > stack->prev->end)) {
+				return 0;
 			}
 		}
 		return -EFAULT;
@@ -78,7 +82,7 @@ static int verify_address(int type, const void *addr, unsigned int size)
 
 void free_name(const char *name)
 {
-	kfree((unsigned int)name);
+	kfree((__addr_t)name);
 }
 
 /*
@@ -487,15 +491,13 @@ static void do_bad_syscall(unsigned int num)
  * certain registers (EFLAGS and ESP). The rest of system calls will ignore
  * such extra argument.
  */
-#ifdef CONFIG_SYSCALL_6TH_ARG
-int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, struct sigcontext sc)
-#else
-int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg5, struct sigcontext sc)
-#endif /* CONFIG_SYSCALL_6TH_ARG */
+int do_syscall_frame(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
+	__sysarg_t arg3, __sysarg_t arg4, __sysarg_t arg5, __sysarg_t arg6,
+	struct sigcontext *sc)
 {
-	int (*sys_func)(int, ...);
+	int (*sys_func)(__sysarg_t, ...);
 
-	if(num > NR_SYSCALLS) {
+	if(num >= NR_SYSCALLS) {
 		do_bad_syscall(num);
 		return -ENOSYS;
 	}
@@ -504,10 +506,26 @@ int do_syscall(unsigned int num, int arg1, int arg2, int arg3, int arg4, int arg
 		do_bad_syscall(num);
 		return -ENOSYS;
 	}
-	current->sp = (unsigned int)&sc;
+	current->sp = (__addr_t)sc;
 #ifdef CONFIG_SYSCALL_6TH_ARG
-	return sys_func(arg1, arg2, arg3, arg4, arg5, arg6, &sc);
+	return sys_func(arg1, arg2, arg3, arg4, arg5, arg6, sc);
 #else
-	return sys_func(arg1, arg2, arg3, arg4, arg5, &sc);
+	return sys_func(arg1, arg2, arg3, arg4, arg5, sc);
 #endif /* CONFIG_SYSCALL_6TH_ARG */
 }
+
+#ifdef CONFIG_SYSCALL_6TH_ARG
+int do_syscall(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
+	__sysarg_t arg3, __sysarg_t arg4, __sysarg_t arg5, __sysarg_t arg6,
+	struct sigcontext sc)
+{
+	return do_syscall_frame(num, arg1, arg2, arg3, arg4, arg5, arg6, &sc);
+}
+#else
+int do_syscall(unsigned int num, __sysarg_t arg1, __sysarg_t arg2,
+	__sysarg_t arg3, __sysarg_t arg4, __sysarg_t arg5,
+	struct sigcontext sc)
+{
+	return do_syscall_frame(num, arg1, arg2, arg3, arg4, arg5, 0, &sc);
+}
+#endif /* CONFIG_SYSCALL_6TH_ARG */

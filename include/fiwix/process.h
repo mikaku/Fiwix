@@ -8,9 +8,11 @@
 #ifndef _FIWIX_PROCESS_H
 #define _FIWIX_PROCESS_H
 
+#include <fiwix/types.h>
+
 struct vma {
-	unsigned int start;
-	unsigned int end;
+	__addr_t start;
+	__addr_t end;
 	char prot;		/* PROT_READ, PROT_WRITE, ... */
 	unsigned int flags;	/* MAP_SHARED, MAP_PRIVATE, ... */
 	unsigned int offset;
@@ -23,7 +25,6 @@ struct vma {
 };
 
 #include <fiwix/config.h>
-#include <fiwix/types.h>
 #include <fiwix/signal.h>
 #include <fiwix/limits.h>
 #include <fiwix/sigcontext.h>
@@ -47,6 +48,8 @@ struct vma {
 
 #define IO_BITMAP_SIZE	8192		/* 8192*8bit = all I/O address space */
 
+#include <fiwix/arch_process.h>
+
 #define PG_LEADER(p)	((p)->pid == (p)->pgid)
 #define SESS_LEADER(p)	((p)->pid == (p)->pgid && (p)->pid == (p)->sid)
 
@@ -62,7 +65,7 @@ extern __pid_t lastpid;
 extern struct proc *proc_table_head;
 
 struct binargs {
-	unsigned int page[ARG_MAX];
+	__addr_t page[ARG_MAX];
 	int argc;
 	int argv_len;
 	int envc;
@@ -70,40 +73,8 @@ struct binargs {
 	int offset;
 };
 
-/* Intel 386 Task Switch State */
-struct i386tss {
-	unsigned int prev_tss;
-	unsigned int esp0;
-	unsigned int ss0;
-	unsigned int esp1;
-	unsigned int ss1;
-	unsigned int esp2;
-	unsigned int ss2;
-	unsigned int cr3;
-	unsigned int eip;
-	unsigned int eflags;
-	unsigned int eax;
-	unsigned int ecx;
-	unsigned int edx;
-	unsigned int ebx;
-	unsigned int esp;
-	unsigned int ebp;
-	unsigned int esi;
-	unsigned int edi;
-	unsigned int es;
-	unsigned int cs;
-	unsigned int ss;
-	unsigned int ds;
-	unsigned int fs;
-	unsigned int gs;
-	unsigned int ldt;
-	unsigned short int debug_trap;
-	unsigned short int io_bitmap_addr;
-	unsigned char io_bitmap[IO_BITMAP_SIZE + 1];
-};
-
 struct proc {
-	struct i386tss tss;
+	struct arch_context arch;
 	struct proc *ppid;		/* pointer to parent process */
 	__pid_t pid;			/* process ID */
 	__pid_t pgid;			/* process group ID */
@@ -128,8 +99,8 @@ struct proc {
 	unsigned char fd_flags[OPEN_MAX];
 	struct inode *root;
 	struct inode *pwd;		/* process working directory */
-	unsigned int entry_address;
-	unsigned int end_code;
+	__addr_t entry_address;
+	__addr_t end_code;
 	char argv0[NAME_MAX + 1];
 	int argc;
 	char **argv;
@@ -137,14 +108,14 @@ struct proc {
 	char **envp;
 	char pidstr[5];			/* PID number converted to string */
 	struct vma *vma_table;		/* virtual memory-map addresses */
-	unsigned int brk_lower;		/* lower limit of the heap section */
-	unsigned int brk;		/* current limit of the heap */
+	__addr_t brk_lower;		/* lower limit of the heap section */
+	__addr_t brk;		/* current limit of the heap */
 	__sigset_t sigpending;
 	__sigset_t sigblocked;
 	__sigset_t sigexecuting;
 	struct sigaction sigaction[NSIG];
 	struct sigcontext sc[NSIG];	/* each signal has its own context */
-	unsigned int sp;		/* current process' stack frame */
+	__addr_t sp;		/* current process' stack frame */
 	struct rusage usage;		/* process resource usage */
 	struct rusage cusage;		/* children resource usage */
 	unsigned int it_real_interval, it_real_value;

@@ -19,7 +19,7 @@
 #include <fiwix/stat.h>
 #include <fiwix/blk_queue.h>
 
-#define NR_BUF_HASH		(buffer_hash_table_size / sizeof(struct buffer *))
+#define NR_BUF_HASH		(buffer_hash_table_size / sizeof(*buffer_hash_table))
 #define BUFFER_HASH(dev, block)	(((__dev_t)(dev) ^ (__blk_t)(block)) % (NR_BUF_HASH))
 #define BUFHEAD_INDEX(size)	((size / BLKSIZE_1K) - 1)
 
@@ -81,7 +81,7 @@ static void del_buffer_from_pool(struct buffer *buf)
 		buffer_table = buf->next;
 	}
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 	kstat.nr_buffers--;
 }
 
@@ -297,7 +297,7 @@ static struct buffer *create_buffers(int size)
 	for(n = 0; n < (PAGE_SIZE / size); n++) {
 		if(!(buf = add_buffer_to_pool())) {
 			if(!n) {
-				kfree((unsigned int)data);
+				kfree((__addr_t)data);
 				return NULL;
 			}
 			break;
@@ -741,7 +741,7 @@ int reclaim_buffers(void)
 				RESTORE_FLAGS(flags);
 				continue;
 			}
-			kfree((unsigned int)(buf->data) & PAGE_MASK);
+			kfree((__addr_t)(buf->data) & PAGE_MASK);
 			remove_from_hash(buf);
 			kstat.buffers_size -= buf->size / 1024;
 			del_buffer_from_pool(buf);

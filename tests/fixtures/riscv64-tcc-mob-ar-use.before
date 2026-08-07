@@ -1,0 +1,1 @@
+            if (strpbrk(a, ops_conflict))

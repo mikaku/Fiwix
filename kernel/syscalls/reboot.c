@@ -11,6 +11,9 @@
 #include <fiwix/signal.h>
 #include <fiwix/process.h>
 #include <fiwix/errno.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/asm.h>
+#endif
 
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
@@ -36,8 +39,19 @@ int sys_reboot(int magic1, int magic2, int flag)
 			ctrl_alt_del = 1;
 			break;
 		case BMAGIC_REBOOT:
+#ifdef CONFIG_ARCH_RISCV64
+			riscv64_system_reset();
+#else
 			reboot();
+#endif
 			break;
+#ifdef CONFIG_ARCH_RISCV64
+		case BMAGIC_KEXEC:
+			if(riscv64_linux_kexec() < 0) {
+				return -EINVAL;
+			}
+			break;
+#endif
 		case BMAGIC_HALT:
 			sys_kill(-1, SIGKILL);
 			stop_kernel();

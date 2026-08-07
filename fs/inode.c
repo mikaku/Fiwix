@@ -35,7 +35,7 @@
 #include <fiwix/string.h>
 
 #define INODE_HASH(dev, inode)	(((__dev_t)(dev) ^ (__ino_t)(inode)) % (NR_INO_HASH))
-#define NR_INO_HASH	(inode_hash_table_size / sizeof(struct inode *))
+#define NR_INO_HASH	(inode_hash_table_size / sizeof(*inode_hash_table))
 
 struct inode *inode_table;		/* inode pool */
 struct inode *inode_head;		/* head of free list */
@@ -95,7 +95,7 @@ static void del_inode_from_pool(struct inode *i)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 	kstat.nr_inodes--;
 }
 

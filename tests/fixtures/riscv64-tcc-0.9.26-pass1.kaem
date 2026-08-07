@@ -1,0 +1,164 @@
+set -ex
+
+MES_STACK=15000000
+MES_ARENA=30000000
+MES_MAX_ARENA=30000000
+MES=${BINDIR}/mes-m2
+TCC_TAR=tcc-0.9.26-1157-gdd46e018
+TCC_PKG=tcc-0.9.26-1157-gdd46e018
+
+sha256sum -c /steps/tcc-0.9.26/sources.SHA256SUM
+
+mkdir build
+cd build
+ungz --file ${DISTFILES}/${TCC_TAR}.tar.gz --output ${TCC_TAR}.tar
+ungz --file ${DISTFILES}/${MES_PKG}.tar.gz --output ${MES_PKG}.tar
+untar --non-strict --file ${TCC_TAR}.tar
+untar --non-strict --file ${MES_PKG}.tar
+
+MES_BUILD=/steps/tcc-0.9.26/build/${MES_PKG}
+mkdir -p ${MES_BUILD}/include/arch
+cp ${MES_BUILD}/include/linux/riscv64/kernel-stat.h \
+    ${MES_BUILD}/include/arch/kernel-stat.h
+cp ${MES_BUILD}/include/linux/riscv64/signal.h \
+    ${MES_BUILD}/include/arch/signal.h
+cp ${MES_BUILD}/include/linux/riscv64/syscall.h \
+    ${MES_BUILD}/include/arch/syscall.h
+kaem --file /steps/tcc-0.9.26/unified-libc.kaem
+cp /steps/tcc-0.9.26/config.h ${TCC_PKG}/config.h
+cd ${TCC_PKG}
+
+${MES} --no-auto-compile -e main ${BINDIR}/mescc.scm -- \
+    -S \
+    -o tcc.s \
+    -I ${LIBDIR} \
+    -I ${INCDIR} \
+    -D BOOTSTRAP=1 \
+    -D HAVE_LONG_LONG=1 \
+    -I . \
+    -D TCC_TARGET_RISCV64=1 \
+    -D inline= \
+    -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}:.\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:.\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+    -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_MES_LIBC=1 \
+    -D ONE_SOURCE=1 \
+    tcc.c
+${MES} --no-auto-compile -e main ${BINDIR}/mescc.scm -- \
+    --base-address 0x08048000 \
+    -o tcc-mes \
+    -L /usr/lib \
+    tcc.s \
+    -l c+tcc
+cp tcc-mes ${BINDIR}/tcc-mes
+chmod 755 ${BINDIR}/tcc-mes
+./tcc-mes -version
+
+TCC=./tcc-mes
+TAG=mes
+RUNTIME_STAGE=boot0
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+./tcc-mes \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${MES_BUILD}/include \
+    -I ${MES_BUILD}/include/linux/riscv64 \
+    -o unified-libc.o \
+    ${MES_BUILD}/unified-libc-gcc.c
+./tcc-mes -ar cr libc.a unified-libc.o
+cp libc.a ${LIBDIR}/libc.a
+
+OUT=tcc-boot0
+BOOT_FEATURES=boot0
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot0
+TAG=boot0
+RUNTIME_STAGE=boot0
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot1
+BOOT_FEATURES=boot1
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot1
+TAG=boot1
+RUNTIME_STAGE=boot1
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot2
+BOOT_FEATURES=boot2
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot2
+TAG=boot2
+RUNTIME_STAGE=boot2
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot3
+BOOT_FEATURES=full
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot3
+TAG=boot3
+RUNTIME_STAGE=full
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot4
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot4
+TAG=boot4
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot5
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot5
+TAG=boot5
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+OUT=tcc-boot6
+kaem --file /steps/tcc-0.9.26/compile.kaem
+TCC=./tcc-boot6
+TAG=boot6
+kaem --file /steps/tcc-0.9.26/runtime.kaem
+
+./tcc-boot5 \
+    -c \
+    -D HAVE_CONFIG_H=1 \
+    -I ${MES_BUILD}/include \
+    -I ${MES_BUILD}/include/linux/riscv64 \
+    -o getopt.o \
+    ${MES_BUILD}/lib/posix/getopt.c
+./tcc-boot5 -ar cr libgetopt.a getopt.o
+cp libgetopt.a ${LIBDIR}/libgetopt.a
+
+cp tcc-boot0 ${BINDIR}/tcc-boot0
+cp tcc-boot1 ${BINDIR}/tcc-boot1
+cp tcc-boot5 ${BINDIR}/tcc
+cp tcc-boot5 ${BINDIR}/tcc-0.9.26
+cp tcc-boot5 ${BINDIR}/tcc-boot5
+cp tcc-boot6 ${BINDIR}/tcc-boot6
+chmod 755 ${BINDIR}/tcc-boot0
+chmod 755 ${BINDIR}/tcc-boot1
+chmod 755 ${BINDIR}/tcc
+chmod 755 ${BINDIR}/tcc-0.9.26
+chmod 755 ${BINDIR}/tcc-boot5
+chmod 755 ${BINDIR}/tcc-boot6
+
+./tcc-boot5 -version
+./tcc-boot6 -version
+sha256sum \
+    ${BINDIR}/tcc-mes \
+    ${BINDIR}/tcc-boot0 \
+    ${BINDIR}/tcc-boot1 \
+    ${BINDIR}/tcc-boot5 \
+    ${BINDIR}/tcc-boot6 \
+    ${LIBDIR}/libc.a \
+    ${LIBDIR}/libgetopt.a \
+    ${LIBDIR}/crt1.o \
+    ${LIBDIR}/crti.o \
+    ${LIBDIR}/crtn.o \
+    ${LIBDIR}/tcc/libtcc1.a

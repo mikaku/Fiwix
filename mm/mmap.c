@@ -174,7 +174,7 @@ static void del_vma_region(struct vma *vma)
 	}
 	RESTORE_FLAGS(flags);
 
-	kfree((unsigned int)tmp);
+	kfree((__addr_t)tmp);
 }
 
 static int can_be_merged(struct vma *a, struct vma *b)
@@ -194,7 +194,7 @@ static int can_be_merged(struct vma *a, struct vma *b)
 	return 0;
 }
 
-static int free_vma_region(struct vma *vma, unsigned int start, __ssize_t length)
+static int free_vma_region(struct vma *vma, __addr_t start, __ssize_t length)
 {
 	struct vma *new;
 
@@ -264,65 +264,9 @@ void merge_vma_regions(struct vma *a, struct vma *b)
 			del_vma_region(a);
 		}
 		if(new->start >= new->end) {
-			kfree((unsigned int)new);
+			kfree((__addr_t)new);
 		} else {
 			insert_vma_region(new);
-		}
-	}
-}
-
-void free_vma_pages(struct vma *vma, unsigned int start, __size_t length)
-{
-	unsigned int n, offset;
-	unsigned int *pgdir, *pgtbl;
-	unsigned int pde, pte;
-	struct page *pg;
-	int page;
-
-	pgdir = (unsigned int *)P2V(current->tss.cr3);
-	pgtbl = NULL;
-
-	for(n = 0; n < (length / PAGE_SIZE); n++) {
-		pde = GET_PGDIR(start + (n * PAGE_SIZE));
-		pte = GET_PGTBL(start + (n * PAGE_SIZE));
-		if(pgdir[pde] & PAGE_PRESENT) {
-			pgtbl = (unsigned int *)P2V((pgdir[pde] & PAGE_MASK));
-			if(pgtbl[pte] & PAGE_PRESENT) {
-				if (!(pgtbl[pte] & PAGE_NOALLOC)) {
-					/* make sure to not free reserved pages */
-					page = pgtbl[pte] >> PAGE_SHIFT;
-					pg = &page_table[page];
-					if(pg->flags & PAGE_RESERVED) {
-						continue;
-					}
-
-					if(vma->prot & PROT_WRITE && vma->flags & MAP_SHARED) {
-						offset = start - vma->start + vma->offset + n * PAGE_SIZE;
-						write_page(pg, vma->inode, offset, PAGE_SIZE);
-					}
-
-					kfree(P2V(pgtbl[pte]) & PAGE_MASK);
-				}
-				current->rss--;
-#ifdef CONFIG_SYSVIPC
-				if(vma->object) {
-					shm_rss--;
-				}
-#endif /* CONFIG_SYSVIPC */
-				pgtbl[pte] = 0;
-
-				/* check if a page table can be freed */
-				for(pte = 0; pte < PT_ENTRIES; pte++) {
-					if(pgtbl[pte] & PAGE_MASK) {
-						break;
-					}
-				}
-				if(pte == PT_ENTRIES) {
-					kfree((unsigned int)pgtbl & PAGE_MASK);
-					current->rss--;
-					pgdir[pde] = 0;
-				}
-			}
 		}
 	}
 }
@@ -343,7 +287,7 @@ void release_binary(void)
 	invalidate_tlb();
 }
 
-struct vma *find_vma_region(unsigned int addr)
+struct vma *find_vma_region(__addr_t addr)
 {
 	struct vma *vma;
 
@@ -363,7 +307,7 @@ struct vma *find_vma_region(unsigned int addr)
 	return NULL;
 }
 
-struct vma *find_vma_intersection(unsigned int start, unsigned int end)
+struct vma *find_vma_intersection(__addr_t start, __addr_t end)
 {
 	struct vma *vma;
 
@@ -381,7 +325,7 @@ struct vma *find_vma_intersection(unsigned int start, unsigned int end)
 	return NULL;
 }
 
-int expand_heap(unsigned int new)
+int expand_heap(__addr_t new)
 {
 	struct vma *vma, *heap;
 
@@ -407,9 +351,9 @@ int expand_heap(unsigned int new)
 }
 
 /* return the first free address that matches with the size of length */
-unsigned int get_unmapped_vma_region(unsigned int length)
+__addr_t get_unmapped_vma_region(__size_t length)
 {
-	unsigned int addr;
+	__addr_t addr;
 	struct vma *vma;
 
 	if(!length) {
@@ -433,7 +377,9 @@ unsigned int get_unmapped_vma_region(unsigned int length)
 	return 0;
 }
 
-int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned int prot, unsigned int flags, unsigned int offset, char type, char mode, void *object)
+signed long do_mmap(struct inode *i, __addr_t start, __size_t length,
+	unsigned int prot, unsigned int flags, unsigned int offset, char type,
+	char mode, void *object)
 {
 	struct vma *vma;
 	int errno;
@@ -523,7 +469,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	if(i && i->fsop->mmap) {
 		if((errno = i->fsop->mmap(i, vma))) {
 			free_vma_region(vma, start, length);
-			kfree((unsigned int)vma);
+			kfree((__addr_t)vma);
 			return errno;
 		}
 	}
@@ -532,7 +478,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 	return start;
 }
 
-int do_munmap(unsigned int addr, __size_t length)
+int do_munmap(__addr_t addr, __size_t length)
 {
 	struct vma *vma;
 	unsigned int size;
@@ -562,7 +508,7 @@ int do_munmap(unsigned int addr, __size_t length)
 	return 0;
 }
 
-int do_mprotect(struct vma *vma, unsigned int addr, __size_t length, int prot)
+int do_mprotect(struct vma *vma, __addr_t addr, __size_t length, int prot)
 {
 	struct vma *new;
 

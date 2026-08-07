@@ -13,6 +13,10 @@
 #include <fiwix/fcntl.h>
 #include <fiwix/errno.h>
 #include <fiwix/string.h>
+#ifdef CONFIG_ARCH_RISCV64
+#include <fiwix/riscv64_elf.h>
+#include <fiwix/riscv64_trap.h>
+#endif
 
 #ifdef __DEBUG__
 #include <fiwix/stdio.h>
@@ -111,6 +115,7 @@ static int add_strings(struct binargs *barg, char *filename, char *interpreter, 
 				free_barg_pages(barg);
 				return -ENOMEM;
 			}
+			memset_b((void *)barg->page[n], 0, PAGE_SIZE);
 		}
 	}
 
@@ -176,7 +181,8 @@ static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 	char *page, *str;
 
 	p = ARG_MAX - 1;
-	ae_ptr_len = (1 + (barg->argc + 1) + (barg->envc + 1)) * sizeof(unsigned int);
+	ae_ptr_len = (1 + (barg->argc + 1) + (barg->envc + 1)) *
+		sizeof(__addr_t);
 	/* the last 4 bytes of the stack pages are not used */
 	ae_str_len = barg->argv_len + barg->envp_len + 4;
 	if (ae_ptr_len + ae_str_len > (ARG_MAX * PAGE_SIZE)) {
@@ -194,6 +200,7 @@ static int copy_strings(struct binargs *barg, char *argv[], char *envp[])
 			free_barg_pages(barg);
 			return -ENOMEM;
 		}
+		memset_b((void *)barg->page[n], 0, PAGE_SIZE);
 	}
 	for(n = 0; n < barg->argc; n++) {
 		str = argv[n];
@@ -265,33 +272,33 @@ static int do_execve(const char *filename, char *argv[], char *envp[], struct si
 loop:
 	if((errno = namei(name, &i, NULL, FOLLOW_LINKS))) {
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return errno;
 	}
 
 	if(!S_ISREG(i->i_mode)) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EACCES;
 	}
 	if(check_permission(TO_EXEC, i) < 0) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EACCES;
 	}
 
 	if((block = bmap(i, 0, FOR_READING)) < 0) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return block;
 	}
 	if(!(buf = bread(i->dev, block, i->sb->s_blocksize))) {
 		iput(i);
 		free_barg_pages(&barg);
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -EIO;
 	}
 
@@ -303,7 +310,12 @@ loop:
 	memcpy_b(data, buf->data, i->sb->s_blocksize);
 	brelse(buf);
 
+#ifdef CONFIG_ARCH_RISCV64
+	errno = riscv64_elf_load(i, &barg,
+		(struct riscv64_trap_frame *)sc, data, i->sb->s_blocksize);
+#else
 	errno = elf_load(i, &barg, sc, data);
+#endif
 	if(errno == -ENOEXEC) {
 		/* OK, looks like it was not an ELF binary; let's see if it is a script */
 		memset_b(interpreter, 0, NAME_MAX + 1);
@@ -314,7 +326,7 @@ loop:
 			iput(i);
 			if((errno = add_strings(&barg, name, interpreter, args))) {
 				free_barg_pages(&barg);
-				kfree((unsigned int)data);
+				kfree((__addr_t)data);
 				return errno;
 			}
 			strcpy(name, interpreter);
@@ -333,7 +345,7 @@ loop:
 
 	iput(i);
 	free_barg_pages(&barg);
-	kfree((unsigned int)data);
+	kfree((__addr_t)data);
 	return errno;
 }
 

@@ -1,0 +1,68 @@
+set -ex
+
+if match ${BOOT_FEATURES} boot0; then
+    ${TCC} -g -v -static -o ${OUT} -D BOOTSTRAP=1 \
+        -D HAVE_LONG_LONG=1 -D HAVE_SETJMP=1 \
+        -I . -I ${MES_BUILD}/lib -I ${MES_BUILD}/include \
+        -D TCC_TARGET_RISCV64=1 -D inline= \
+        -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+        -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}:.\" \
+        -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+        -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc:.\" \
+        -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+        -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+        -D TCC_LIBTCC1=\"libtcc1.a\" \
+        -D CONFIG_TCCBOOT=1 -D CONFIG_TCC_STATIC=1 \
+        -D CONFIG_USE_LIBGCC=1 -D TCC_MES_LIBC=1 \
+        -D ONE_SOURCE=1 -L . -L ${LIBDIR} tcc.c
+fi
+if match ${BOOT_FEATURES} boot1; then
+    ${TCC} -g -v -static -o ${OUT} -D BOOTSTRAP=1 \
+        -D HAVE_BITFIELD=1 -D HAVE_LONG_LONG=1 -D HAVE_SETJMP=1 \
+        -I . -I ${MES_BUILD}/lib -I ${MES_BUILD}/include \
+        -D TCC_TARGET_RISCV64=1 -D inline= \
+        -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+        -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}:.\" \
+        -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+        -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc:.\" \
+        -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+        -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+        -D TCC_LIBTCC1=\"libtcc1.a\" \
+        -D CONFIG_TCCBOOT=1 -D CONFIG_TCC_STATIC=1 \
+        -D CONFIG_USE_LIBGCC=1 -D TCC_MES_LIBC=1 \
+        -D ONE_SOURCE=1 -L . -L ${LIBDIR} tcc.c
+fi
+if match ${BOOT_FEATURES} boot2; then
+    ${TCC} -g -v -static -o ${OUT} -D BOOTSTRAP=1 \
+        -D HAVE_BITFIELD=1 -D HAVE_FLOAT_STUB=1 \
+        -D HAVE_LONG_LONG=1 -D HAVE_SETJMP=1 \
+        -I . -I ${MES_BUILD}/lib -I ${MES_BUILD}/include \
+        -D TCC_TARGET_RISCV64=1 -D inline= \
+        -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+        -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}:.\" \
+        -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+        -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc:.\" \
+        -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+        -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+        -D TCC_LIBTCC1=\"libtcc1.a\" \
+        -D CONFIG_TCCBOOT=1 -D CONFIG_TCC_STATIC=1 \
+        -D CONFIG_USE_LIBGCC=1 -D TCC_MES_LIBC=1 \
+        -D ONE_SOURCE=1 -L . -L ${LIBDIR} tcc.c
+fi
+if match ${BOOT_FEATURES} full; then
+    ${TCC} -g -v -static -o ${OUT} -D BOOTSTRAP=1 \
+        -D HAVE_BITFIELD=1 -D HAVE_FLOAT=1 \
+        -D HAVE_LONG_LONG=1 -D HAVE_SETJMP=1 \
+        -I . -I ${MES_BUILD}/lib -I ${MES_BUILD}/include \
+        -D TCC_TARGET_RISCV64=1 -D inline= \
+        -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+        -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}:.\" \
+        -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+        -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc:.\" \
+        -D CONFIG_TCC_SYSINCLUDEPATHS=\"${INCDIR}\" \
+        -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+        -D TCC_LIBTCC1=\"libtcc1.a\" \
+        -D CONFIG_TCCBOOT=1 -D CONFIG_TCC_STATIC=1 \
+        -D CONFIG_USE_LIBGCC=1 -D TCC_MES_LIBC=1 \
+        -D ONE_SOURCE=1 -L . -L ${LIBDIR} tcc.c
+fi

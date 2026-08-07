@@ -87,7 +87,7 @@ void sockfs_ifree(struct inode *i)
 {
 	/*
 	if(i->u.sockfs.sock) {
-		kfree((unsigned int)i->u.sockfs.sock);
+		kfree((__addr_t)i->u.sockfs.sock);
 	}
 	*/
 }

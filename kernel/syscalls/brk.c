@@ -14,9 +14,9 @@
 #include <fiwix/stdio.h>
 #endif /*__DEBUG__ */
 
-int sys_brk(unsigned int brk)
+int sys_brk(__addr_t brk)
 {
-	unsigned int newbrk;
+	__addr_t newbrk;
 
 #ifdef __DEBUG__
 	printk("(pid %d) sys_brk(0x%08x) -> ", current->pid, brk);

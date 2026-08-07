@@ -41,7 +41,7 @@ static int read_pathtable(struct inode *i)
 	offset = 0;
 	while(offset < pt_len) {
 		if(!(buf = bread(i->dev, pt_blk++, BLKSIZE_2K))) {
-			kfree((unsigned int)sbi->pathtable_raw);
+			kfree((__addr_t)sbi->pathtable_raw);
 			return -EIO;
 		}
 		memcpy_b(sbi->pathtable_raw + offset, (void *)buf->data, MIN(pt_len - offset, BLKSIZE_2K));
@@ -52,7 +52,7 @@ static int read_pathtable(struct inode *i)
 	/* allocate and count the number of records in the Path Table */
 	offset = n = 0;
 	if(!(sbi->pathtable = (struct iso9660_pathtable_record **)kmalloc(PAGE_SIZE))) {
-		kfree((unsigned int)sbi->pathtable_raw);
+		kfree((__addr_t)sbi->pathtable_raw);
 		return -ENOMEM;
 	}
 	sbi->pathtable[n] = NULL;

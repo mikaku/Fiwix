@@ -50,6 +50,11 @@ Compiling
 ---------
 The command needed to build the Fiwix kernel is `make clean ; make`.  This will create two the files in the root directory of the source code tree: **fiwix** (the kernel itself) and **System.map.gz** (the symbol table).
 
+An experimental riscv64 bring-up target is also available. It currently tests
+firmware-free QEMU `virt` entry, the transition to supervisor mode, trap
+reporting, and timer forwarding; it does not yet run Fiwix userspace. Build and
+test instructions are in [docs/riscv64.md](docs/riscv64.md).
+
 Before compiling you might want to tweak the kernel configuration by changing the default values in `include/fiwix/config.h` and `include/fiwix/limits.h`.
 
 Keep in mind that the kernel doesn't do anything on its own, you need to create a user-space environment to make use of it. Upon booting, the kernel mounts the root filesystem and tries to run `/sbin/init` on it, so you would need to provide this program yourself.  Fortunately, [FiwixOS](https://www.fiwix.org/downloads.html) provides a full user-space UNIX-like environment to test the Fiwix kernel.
@@ -94,4 +99,3 @@ Credits
 Fiwix was created by [Jordi Sanfeliu](https://www.fibranet.cat).  
 You can contact me at [jordi@fibranet.cat](mailto:jordi@fibranet.cat).
 See also the LICENSE file for a list of contributors.
-

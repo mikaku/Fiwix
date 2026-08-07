@@ -22,14 +22,14 @@ static struct bl_head *get_buddy(struct bl_head *block)
 	int mask;
 
 	mask = 1 << (block->level + 5);
-	return (struct bl_head *)((unsigned int)block ^ mask);
+	return (struct bl_head *)((__addr_t)block ^ mask);
 }
 
 static void deallocate(struct bl_head *block)
 {
 	struct bl_head **h, *buddy, *p;
 	struct page *pg;
-	unsigned int addr, paddr;
+	__addr_t addr, paddr;
 	int level;
 
 	level = block->level;
@@ -66,9 +66,9 @@ static void deallocate(struct bl_head *block)
 		}
 
 		if(level == BUDDY_MAX_LEVEL - 1) {
-			addr = (unsigned int)block;
+			addr = (__addr_t)block;
 			paddr = V2P(addr);
-			pg = &page_table[paddr >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(paddr)];
 			pg->flags &= ~PAGE_BUDDYLOW;
 			kfree(addr);
 			kstat.buddy_low_num_pages--;
@@ -93,7 +93,7 @@ static struct bl_head *allocate(int size)
 {
 	struct bl_head *block, *buddy;
 	struct page *pg;
-	unsigned int addr, paddr;
+	__addr_t addr, paddr;
 	int level;
 
 	for(level = 0; bl_blocksize[level] < size; level++);
@@ -101,7 +101,7 @@ static struct bl_head *allocate(int size)
 	if(level == BUDDY_MAX_LEVEL) {
 		if((addr = kmalloc(PAGE_SIZE))) {
 			paddr = V2P(addr);
-			pg = &page_table[paddr >> PAGE_SHIFT];
+			pg = &page_table[PHYS_TO_PAGE(paddr)];
 			pg->flags |= PAGE_BUDDYLOW;
 			block = (struct bl_head *)addr;
 		} else {
@@ -140,7 +140,7 @@ static struct bl_head *allocate(int size)
 	return block;
 }
 
-unsigned int bl_malloc(__size_t size)
+__addr_t bl_malloc(__size_t size)
 {
 	struct bl_head *block;
 	int level;
@@ -150,10 +150,10 @@ unsigned int bl_malloc(__size_t size)
 	kstat.buddy_low_count[level]++;
 	kstat.buddy_low_mem_requested += bl_blocksize[level];
 	block = allocate(size);
-	return block ? (unsigned int)(block + 1) : 0;
+	return block ? (__addr_t)(block + 1) : 0;
 }
 
-void bl_free(unsigned int addr)
+void bl_free(__addr_t addr)
 {
 	struct bl_head *block;
 	int level;

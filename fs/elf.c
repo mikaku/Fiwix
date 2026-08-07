@@ -316,7 +316,7 @@ static int elf_load_interpreter(struct inode *ii)
 
 	elf32_h = (struct elf32_hdr *)data;
 	if(check_elf(elf32_h)) {
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -ELIBBAD;
 	}
 
@@ -348,7 +348,7 @@ static int elf_load_interpreter(struct inode *ii)
 			}
 			errno = do_mmap(ii, start, length, prot, MAP_PRIVATE | MAP_FIXED, offset, type, O_RDONLY, NULL);
 			if(errno < 0 && errno > -PAGE_SIZE) {
-				kfree((unsigned int)data);
+				kfree((__addr_t)data);
 				send_sig(current, SIGSEGV);
 				return -ENOEXEC;
 			}
@@ -358,7 +358,7 @@ static int elf_load_interpreter(struct inode *ii)
 
 	if(!last_ptload) {
 		printk("%s(): no headers in interpreter.");
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		return -ENOEXEC;
 	}
 
@@ -380,11 +380,11 @@ static int elf_load_interpreter(struct inode *ii)
 	length = end - start;
 	errno = do_mmap(NULL, start, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, 0, P_BSS, 0, NULL);
 	if(errno < 0 && errno > -PAGE_SIZE) {
-		kfree((unsigned int)data);
+		kfree((__addr_t)data);
 		send_sig(current, SIGSEGV);
 		return -ENOEXEC;
 	}
-	kfree((unsigned int)data);
+	kfree((__addr_t)data);
 	return elf32_h->e_entry + MMAP_START;
 }
 

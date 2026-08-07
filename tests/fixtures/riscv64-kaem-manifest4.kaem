@@ -1,0 +1,4 @@
+./bootstrap-seeds/POSIX/riscv64/hex0-seed ./riscv64/hex0_riscv64.hex0 ./riscv64/artifact/hex0
+./riscv64/artifact/hex0 ./riscv64/kaem-minimal.hex0 ./riscv64/artifact/kaem-0
+./riscv64/artifact/kaem-0 ./riscv64/mescc-tools-mini-kaem.kaem
+./riscv64/bin/kaem --verbose --strict --file /steps/live-bootstrap-manifest4.kaem

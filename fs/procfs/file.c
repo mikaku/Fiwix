@@ -113,7 +113,7 @@ int procfs_file_read(struct inode *i, struct fd *f, char *buffer, __size_t count
 		f->offset += bytes;
 	}
 
-	kfree((unsigned int)buf);
+	kfree((__addr_t)buf);
 	return total_read;
 }
 

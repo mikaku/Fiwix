@@ -47,9 +47,9 @@ struct shmid_ds *shm_get_new_seg(void)
 
 void shm_release_seg(struct shmid_ds *seg)
 {
-	kfree((unsigned int)seg->shm_pages);
+	kfree((__addr_t)seg->shm_pages);
 	if(seg->shm_attaches) {
-		kfree((unsigned int)seg->shm_attaches);
+		kfree((__addr_t)seg->shm_attaches);
 	}
 	memset_b(seg, 0, sizeof(struct shmid_ds));
 }
