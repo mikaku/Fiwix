@@ -231,7 +231,7 @@ int unix_accept(struct socket *ss, struct sockaddr *addr, unsigned int *addrlen)
 	}
 	nss->type = ss->type;
 	nss->ops = ss->ops;
-	if((errno = nss->ops->create(nss, 0, 0, 0)) < 0) {
+	if((errno = nss->ops->create(nss, AF_UNIX, nss->type, 0)) < 0) {
 		sock_free(nss);
 		return errno;
 	}
