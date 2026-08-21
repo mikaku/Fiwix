@@ -83,10 +83,12 @@ static int dev_ifsioc(int cmd, void *arg)
 			netdev->flags = ifr->ifr_flags & (IFF_UP | IFF_BROADCAST);
 			if((oldflags ^ ifr->ifr_flags) & IFF_UP) {
 				if(oldflags & IFF_UP) {
+					netdev->flags &= ~(IFF_UP | IFF_RUNNING);
 					retval = netdev->close(netdev);
 				} else {
+					netdev->flags |= (IFF_UP | IFF_RUNNING);
 					if((retval = netdev->open(netdev)) < 0) {
-						netdev->flags &= ~IFF_UP;
+						netdev->flags &= ~(IFF_UP | IFF_RUNNING);
 					}
 				}
 			}
