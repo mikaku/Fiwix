@@ -87,12 +87,10 @@ int assign_proto(struct socket *so, int domain)
 void net_init(void)
 {
 	struct domain_table *d;
-	struct proto_ops *ops;
 
 	d = &domains[0];
 	while(d->ops) {
-		ops = d->ops;
-		ops->init();
+		d->ops->init();
 		d++;
 	}
 	route_init();
