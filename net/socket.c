@@ -170,6 +170,10 @@ int socket(int domain, int type, int protocol)
 		s->fd->flags |= FD_CLOEXEC;
 		type &= ~SOCK_CLOEXEC;
 	}
+	if(type & SOCK_NONBLOCK) {
+		/* FIXME */
+		type &= ~SOCK_NONBLOCK;
+	}
 	s->type = type;
 	if(assign_proto(s, domain)) {
 		sock_free(s);
@@ -179,6 +183,9 @@ int socket(int domain, int type, int protocol)
 		sock_free(s);
 		return errno;
 	}
+#ifdef __DEBUG__
+	printk("\t(ufd = %d)\n", ufd);
+#endif /*__DEBUG__ */
 	return ufd;
 }
 
