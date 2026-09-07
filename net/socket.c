@@ -117,6 +117,7 @@ int sock_alloc(struct socket **s)
 	ns->state = SS_UNCONNECTED;
 	fd_table[fd].flags = O_RDWR;
 	ns->fd = &fd_table[fd];
+	ns->fd_lwip = -1;
 	*s = ns;
 	return ufd;
 }

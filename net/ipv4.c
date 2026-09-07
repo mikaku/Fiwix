@@ -105,12 +105,14 @@ void ipv4_free(struct socket *s)
 	struct ipv4_info *ip4;
 
 	if((errno = lwip_close(s->fd_lwip)) < 0) {
-		return errno;
+		return;
 	}
-	s->fd_lwip = 0;
+	if(s->fd_lwip < 0) {
+		return;
+	}
+	s->fd_lwip = -1;
 	ip4 = &s->u.ipv4_info;
 	remove_ipv4_socket(ip4);
-	return errno;
 }
 
 int ipv4_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
