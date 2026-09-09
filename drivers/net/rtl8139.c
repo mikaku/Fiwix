@@ -194,6 +194,7 @@ static void rtl8139_rx(struct netif *netif)
 
 		nic.rx_index = ((nic.rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
 		outport_w(nd->ioaddr + CAPR, nic.rx_index - 16);
+		tcpip_callback(rtl8139_callback, NULL);
 	}
 }
 
@@ -261,6 +262,11 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 	} else {
 		return ERR_IF;
 	}
+}
+
+void rtl8139_callback(void *ctx)
+{
+	wakeup(&do_select);
 }
 
 int rtl8139_open(struct netdevice *nd)

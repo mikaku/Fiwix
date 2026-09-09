@@ -37,6 +37,7 @@ __ssize_t lwip_recvfrom(int, void *, __size_t, int, struct sockaddr *, socklen_t
 __ssize_t lwip_read(int, void *, __size_t);
 __ssize_t lwip_write(int, const void *, __size_t);
 int lwip_ioctl(int, long, void *);
+int lwip_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 int lwip_shutdown(int, int);
 int lwip_getsockopt (int, int, int, void *, socklen_t *);
 int lwip_setsockopt (int, int, int, const void *, socklen_t);
@@ -241,7 +242,21 @@ int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
 
 int ipv4_select(struct socket *s, int flag)
 {
-	return -EOPNOTSUPP;
+	fd_set rfds, wfds;
+	struct timeval timeout;
+
+	memset_b(&timeout, 0, sizeof(struct timeval));
+	switch(flag) {
+		case SEL_R:
+			__FD_ZERO(&rfds);
+			__FD_SET(s->fd_lwip, &rfds);
+			return lwip_select(s->fd_lwip + 1, &rfds, NULL, NULL, &timeout);
+		case SEL_W:
+			__FD_ZERO(&wfds);
+			__FD_SET(s->fd_lwip, &wfds);
+			return lwip_select(s->fd_lwip + 1, NULL, &wfds, NULL, &timeout);
+	}
+	return 0;
 }
 
 int ipv4_shutdown(struct socket *s, int how)

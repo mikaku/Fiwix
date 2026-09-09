@@ -87,6 +87,7 @@ struct rtl8139 {
 /*	struct rtl8139 *next;*/
 };
 
+void rtl8139_callback(void *);
 int rtl8139_open(struct netdevice *);
 int rtl8139_close(struct netdevice *);
 void irq_rtl8139(int, struct sigcontext *);
