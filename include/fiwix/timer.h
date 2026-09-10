@@ -45,7 +45,7 @@ void irq_timer_bh(struct sigcontext *);
 void do_callouts_bh(struct sigcontext *);
 void get_system_time(void);
 void set_system_time(__time_t);
-int gettimeoffset(void);
+unsigned int gettimeoffset(void);
 void timer_init(void);
 
 #endif /* _FIWIX_TIMER_H */

@@ -428,15 +428,32 @@ void set_system_time(__time_t t)
 	CURRENT_TIME = t;
 }
 
-int gettimeoffset(void)
+/* based on the idea of the Linux kernel */
+unsigned int gettimeoffset(void)
 {
-	int count;
+	unsigned int count, ticks, offset;
+	static unsigned int count_prev = 0;
+	static unsigned int ticks_prev = 0;
 
+	offset = 0;
+	ticks = CURRENT_TICKS;
 	count = pit_getcounter0();
-	count = (LATCH - count) * TICK;
+
+	if(count > count_prev) {
+		if(ticks == ticks_prev) {
+			offset = TICK;
+		} else {
+			count_prev = count;
+			ticks_prev = ticks;
+		}
+	} else {
+		count_prev = count;
+		ticks_prev = ticks;
+	}
+	count = ((LATCH - 1) - count) * TICK;
 	count /= LATCH;
 
-	return count;
+	return count + offset;
 }
 
 void timer_init(void)
