@@ -47,13 +47,13 @@
 #define IMR_TOK		0x04		/* Transmit OK Interrupt */
 #define IMR_TER		0x08		/* Transmit Error Interrupt */
 #define IMR_RXOVW	0x10		/* RX Buffer Overflow Interrupt */
-#define IMR_PUN		0x20		/* Packet Underrun Interrupt */
+#define IMR_LNKCHG	0x20		/* Link Changed/Packet Underrun Int.) */
 #define IMR_FOVW	0x40		/* RX FIFO Overflow Interrupt */
 #define IMR_LENCHG	0x2000		/* Cable Length Change Interrupt */
 #define IMR_TIMEOUT	0x4000		/* Time Out Interrupt */
 #define IMR_SERR	0x8000		/* System Error Interrupt */
 #define IMR_ALLINT	(IMR_ROK | IMR_RER | IMR_TOK | IMR_TER | IMR_RXOVW | \
-			IMR_PUN | IMR_FOVW | IMR_TIMEOUT | IMR_SERR)
+			IMR_LNKCHG | IMR_FOVW | IMR_TIMEOUT | IMR_SERR)
 #define TCR_HWVERID_A	26
 #define TCR_HWVERID_B	22
 #define RCR_APM		0x02		/* Accept Physical Match packets */
@@ -63,6 +63,7 @@
 #define ISR_ROK		0x01		/* Receive (Rx) OK */
 #define ISR_TOK		0x04		/* Transmit (Tx) OK */
 #define CR9346_EEM10	0xC0		/* CONFIG regiters write enable */
+#define MSR_LNKCHG	0x04		/* 0=up, 1=down */
 #define MSR_SPEED10	0x08		/* 0=100Mbps, 1=10Mbps */
 #define BMCR_DUPLEXMODE	0x100		/* 0=half, 1=full */
 #define ST_RX_ROK	0x01		/* Receive OK */

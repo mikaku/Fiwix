@@ -34,7 +34,7 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	struct netdevice *nd;
 	struct netif *netif;
 	struct rtl8139 **nicp;
-	int n, speed, mode, ver, hwid;
+	int n, speed, mode, link, ver, hwid;
 
 	if(!(nd = netdevice_alloc())) {
 		printk("WARNING: %s(): unable to allocate memory for netdevice structure.", __FUNCTION__);
@@ -59,6 +59,7 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	nd->ioaddr = pci_dev->bar[0];
 	speed = inport_b(nd->ioaddr + MSR) & MSR_SPEED10;
 	mode = inport_w(nd->ioaddr + BMCR) & BMCR_DUPLEXMODE;
+	link = inport_b(nd->ioaddr + MSR) & MSR_LNKCHG;
 	printk("%s      0x%04x-0x%04x   %3d", nd->name, nd->ioaddr, nd->ioaddr + 0x7F, pci_dev->irq);
 	printk("\tFast Ethernet Realtek");
 	ver = inport_l(nd->ioaddr + TCR);
@@ -97,7 +98,10 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 			printk(":");
 		}
 	}
-	printk(", %sMbps, %s-duplex\n", speed ? "10" : "100", mode ? "full" : "half");
+	printk("\n\t\t\t\tlink=%s, %sMbps, %s-duplex\n",
+		link ? "down" : "up",
+		speed ? "10" : "100",
+		mode ? "full" : "half");
 	pci_show_desc(pci_dev);
 
 	/* enable I/O space and bus master */
@@ -359,8 +363,11 @@ void irq_rtl8139(int num, struct sigcontext *sc)
 	if(status & IMR_LENCHG) {
 		printk("%s(): %s: cable length change detected.\n", __FUNCTION__, nd->name);
 	}
-	if(status & (IMR_RXOVW | IMR_PUN | IMR_FOVW)) {
+	if(status & (IMR_RXOVW | IMR_FOVW)) {
 		printk("WARNING: %s(): %s: receive error: status = 0x%x\n", __FUNCTION__, nd->name, status);
+	}
+	if(status & IMR_LNKCHG) {
+		printk("%s(): %s: link is %s.\n", __FUNCTION__, nd->name, inport_b(nd->ioaddr + MSR) & MSR_LNKCHG ? "down" : "up");
 	}
 	if(status & (IMR_TIMEOUT | IMR_SERR)) {
 		printk("WARNING: %s(): %s: error: status = 0x%x\n", __FUNCTION__, nd->name, status);
