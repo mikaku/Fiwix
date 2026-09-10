@@ -104,6 +104,7 @@ static void puts(char *buffer, int msg_level)
  *	%o	octal conversion
  *	%c	character
  *	%s	string
+ *	%p	pointer (printed in hexadecimal as %x)
  *
  * length modifiers (e.g: %ld or %lu)
  * --------------------------------------------------------
@@ -112,9 +113,9 @@ static void puts(char *buffer, int msg_level)
  * flags (e.g: %05d or %-6s)
  * --------------------------------------------------------
  *	0	result is padded with zeros (e.g.: '%06d')
- *		(maximum value is 32)
+ *		(maximum value is 255)
  *	blank	result is padded with spaces (e.g.: '% 6d')
- *		(maximum value is 32)
+ *		(maximum value is 255)
  *	-	the numeric result is left-justified
  *		(default is right-justified)
  *		the string is right-justified
@@ -122,8 +123,8 @@ static void puts(char *buffer, int msg_level)
  */
 static int do_printk(char *buffer, const char *format, va_list args)
 {
-	char sw_neg, in_identifier, n_pad, lf, sw_l;
-	char str[32 + 1], ch_pad, basecase, c;
+	unsigned char sw_neg, in_identifier, n_pad, lf, sw_l;
+	char str[255 + 1], ch_pad, basecase, c;
 	char nullstr[7] = { '<', 'N', 'U', 'L', 'L', '>', '\0' };
 	char *ptr_s, *p;
 	int num, count, level_found;
@@ -166,9 +167,6 @@ static int do_printk(char *buffer, const char *format, va_list args)
 
 	/* assumes buffer has a maximum size of MAX_BUF */
 	while((c = *(format++)) && count < MAX_BUF) {
-		if(!in_identifier) {
-			memset_b(str, 0, sizeof(str));
-		}
 		if((c != '%') && !in_identifier) {
 			if(c == '\n') {
 				newline = 1;
@@ -176,6 +174,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 			}
 			*(buffer++) = c;
 		} else {
+			if(!in_identifier) {
+				memset_b(str, 0, sizeof(str));
+			}
 			in_identifier = 1;
 			switch(c = *(format)) {
 				case 'd':
@@ -279,6 +280,7 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					break;
 
 				case 'x':
+				case 'p':
 					basecase = 'a';
 				case 'X':
 					unum = va_arg(args, unsigned int);
@@ -440,7 +442,7 @@ static int do_printk(char *buffer, const char *format, va_list args)
 				case '8':
 				case '9':
 					n_pad = !n_pad ? c - '0': ((n_pad * 10) + (c - '0'));
-					n_pad = n_pad > 32 ? 32 : n_pad;
+					n_pad = n_pad > 255 ? 255 : n_pad;
 					for(unum = 0; unum < n_pad; unum++) {
 						str[unum] = ch_pad;
 					}

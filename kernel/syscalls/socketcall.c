@@ -83,7 +83,7 @@ int sys_socketcall(int call, unsigned int *args)
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 6))) {
 				return errno;
 			}
-			return recvfrom(args[0], (void *)args[1], args[2], args[3], (struct sockaddr *)args[4], (int *)args[5]);
+			return recvfrom(args[0], (void *)args[1], args[2], args[3], (struct sockaddr *)args[4], (socklen_t *)args[5]);
 		case SYS_SHUTDOWN:
 			if((errno = check_user_area(VERIFY_READ, args, sizeof(unsigned int) * 2))) {
 				return errno;

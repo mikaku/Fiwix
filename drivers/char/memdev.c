@@ -16,6 +16,7 @@
 #include <fiwix/bios.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include <fiwix/rand.h>
 
 static struct fs_operations mem_driver_fsop = {
 	0,
@@ -597,8 +598,7 @@ int urandom_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	int n;
 
 	for(n = 0; n < count; n++) {
-		kstat.random_seed = kstat.random_seed * 1103515245 + 12345;
-		*buffer = (char)(unsigned int)(kstat.random_seed / 65536) % 256;
+		*buffer = (char)rand();
 		buffer++;
 	}
 	return count;

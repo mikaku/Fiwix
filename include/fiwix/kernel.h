@@ -74,8 +74,8 @@ struct kernel_stat {
 	unsigned int sirqs;		/* spurious irq counter */
 	unsigned int ctxt;		/* context switches */
 	unsigned int ticks;		/* ticks (1/HZths of sec) since boot */
-	unsigned int system_time;	/* current system time (since the Epoch) */
-	unsigned int boot_time;		/* boot time (since the Epoch) */
+	unsigned int system_time;	/* in seconds (since the Epoch) */
+	unsigned int boot_time;		/* in seconds (since the Epoch) */
 	int tz_minuteswest;		/* minutes west of GMT */
 	int tz_dsttime;			/* type of DST correction */
 	unsigned int uptime;		/* seconds since boot */

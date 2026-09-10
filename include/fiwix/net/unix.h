@@ -44,7 +44,7 @@ int unix_socketpair(struct socket *, struct socket *);
 int unix_send(struct socket *, struct fd *, const char *, __size_t, int);
 int unix_recv(struct socket *, struct fd *, char *, __size_t, int);
 int unix_sendto(struct socket *, struct fd *, const char *, __size_t, int, const struct sockaddr *, int);
-int unix_recvfrom(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, int *);
+int unix_recvfrom(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, socklen_t *);
 int unix_read(struct socket *, struct fd *, char *, __size_t);
 int unix_write(struct socket *, struct fd *, const char *, __size_t);
 int unix_ioctl(struct socket *, struct fd *, int, unsigned int);

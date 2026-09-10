@@ -7,7 +7,7 @@
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-OBJS = ctype.o string.o printk.o sysconsole.o
+OBJS = ctype.o string.o printk.o sysconsole.o rand.o
 
 all:	$(OBJS)
 

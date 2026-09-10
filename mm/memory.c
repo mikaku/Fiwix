@@ -292,7 +292,7 @@ int unmap_page(unsigned int vaddr)
  * tables. It also reserves areas of contiguous memory spaces for internal
  * structures and for the RAMdisk drives.
  */
-void mem_init(void)
+void mm_init(void)
 {
 	unsigned int sizek;
 	unsigned int physical_memory, physical_page_tables;
@@ -462,7 +462,7 @@ void mem_init(void)
 	buddy_low_init();
 }
 
-void mem_stats(void)
+void mm_stats(void)
 {
 	kstat.kernel_reserved <<= 2;
 	kstat.physical_reserved <<= 2;

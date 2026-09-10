@@ -111,8 +111,8 @@ int free_page_tables(struct proc *);
 unsigned int map_page(struct proc *, unsigned int, unsigned int, unsigned int);
 unsigned int map_page_flags(struct proc *, unsigned int, unsigned int, unsigned int, int);
 int unmap_page(unsigned int);
-void mem_init(void);
-void mem_stats(void);
+void mm_init(void);
+void mm_stats(void);
 
 /* swapper.c */
 int kswapd(void);

@@ -5,6 +5,7 @@
  * Distributed under the terms of the Fiwix License.
  */
 
+#include <fiwix/asm.h>
 #include <fiwix/kernel.h>
 #include <fiwix/mm.h>
 #include <fiwix/stdio.h>
@@ -19,15 +20,18 @@
  */
 unsigned int kmalloc(__size_t size)
 {
+	unsigned int flags, addr;
 	struct page *pg;
-	int max_size;
-	unsigned int addr;
+	int max_size, retval;
 
 	/* check if size can be managed by buddy_low */
 	max_size = bl_blocksize[BUDDY_MAX_LEVEL - 1];
 	if(size + sizeof(struct bl_head) <= max_size) {
 		size += sizeof(struct bl_head);
-		return bl_malloc(size);
+		SAVE_FLAGS(flags); CLI();
+		retval = bl_malloc(size);
+		RESTORE_FLAGS(flags);
+		return retval;
 	}
 
 	/* FIXME: pending to implement buddy_high */
@@ -47,14 +51,16 @@ unsigned int kmalloc(__size_t size)
 
 void kfree(unsigned int addr)
 {
+	unsigned flags, paddr;
 	struct page *pg;
-	unsigned paddr;
 
 	paddr = V2P(addr);
 	pg = &page_table[paddr >> PAGE_SHIFT];
 
 	if(pg->flags & PAGE_BUDDYLOW) {
+		SAVE_FLAGS(flags); CLI();
 		bl_free(addr);
+		RESTORE_FLAGS(flags);
 	} else {
 		release_page(pg);
 	}

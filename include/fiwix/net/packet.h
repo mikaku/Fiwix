@@ -17,6 +17,8 @@ struct packet {
 	int len;
 	__off_t offset;
 	struct socket *socket;
+	void *lwip_netif;
+	void *lwip_pbuf;
 	struct packet *prev;
 	struct packet *next;
 };

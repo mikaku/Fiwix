@@ -79,6 +79,9 @@ int unix_create(struct socket *s, int domain, int type, int protocol)
 {
 	struct unix_info *u;
 
+	if(type != SOCK_STREAM && type != SOCK_DGRAM) {
+		return -EINVAL;
+	}
 	u = &s->u.unix_info;
 	memset_b(u, 0, sizeof(struct unix_info));
 	u->count = 1;
@@ -228,7 +231,7 @@ int unix_accept(struct socket *ss, struct sockaddr *addr, unsigned int *addrlen)
 	}
 	nss->type = ss->type;
 	nss->ops = ss->ops;
-	if((errno = nss->ops->create(nss, 0, 0, 0)) < 0) {
+	if((errno = nss->ops->create(nss, AF_UNIX, nss->type, 0)) < 0) {
 		sock_free(nss);
 		return errno;
 	}
@@ -373,7 +376,7 @@ int unix_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t cou
 	return count;
 }
 
-int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, int *addrlen)
+int unix_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, socklen_t *addrlen)
 {
 	struct unix_info *u, *up;
 	struct sockaddr_un *sun;

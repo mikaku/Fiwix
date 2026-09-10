@@ -275,6 +275,11 @@ struct proc *get_proc_by_pid(__pid_t pid)
 
 struct proc *kernel_process(const char *name, int (*fn)(void))
 {
+	return kernel_process_arg(name, (int (*)(void *))fn, NULL);
+}
+
+struct proc *kernel_process_arg(const char *name, int (*fn)(void *), void *arg)
+{
 	struct proc *p;
 
 	p = get_proc_free();
@@ -287,12 +292,11 @@ struct proc *kernel_process(const char *name, int (*fn)(void))
 		release_proc(p);
 		return NULL;
 	}
-	p->entry_address = PAGE_OFFSET;
-	p->end_code = (int)_end;
 	p->tss.esp0 += PAGE_SIZE - 4;
 	p->rss++;
 	p->tss.cr3 = V2P((unsigned int)kpage_dir);
 	p->tss.eip = (unsigned int)fn;
+	p->tss.eax = (unsigned int)arg;
 	p->tss.esp = p->tss.esp0;
 	sprintk(p->pidstr, "%d", p->pid);
 	sprintk(p->argv0, "%s", name);

@@ -35,6 +35,8 @@ typedef __s32 __blk_t;		/* must be signed in order to return error */
 typedef __s32 __daddr_t;
 typedef __s64 __loff_t;		/* must be signed in order to return error */
 
+typedef unsigned int socklen_t;
+
 /* number of descriptors that can fit in an 'fd_set' */
 /* WARNING: this value must be the same as in the C Library */
 #define __FD_SETSIZE	64

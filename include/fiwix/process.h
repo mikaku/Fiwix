@@ -41,6 +41,7 @@ struct vma {
 #define PF_PEXEC	0x00000002	/* has performed a sys_execve() */
 #define PF_USEREAL	0x00000004	/* use real UID in permission checks */
 #define PF_NOTINTERRUPT	0x00000008	/* non-interruptible sleeping */
+#define PF_LWIPINTR	0x00000010	/* simulates SYS_ARCH_INTR in lwIP */
 
 #define MMAP_START	0x40000000	/* mmap()s start at 1GB */
 #define IS_SUPERUSER	(current->euid == 0)
@@ -118,6 +119,7 @@ struct proc {
 	__time_t start_time;
 	int exit_code;	
 	void *sleep_address;
+	int errno;			/* for lwIP */
 	unsigned short int uid;		/* real user ID */
 	unsigned short int gid;		/* real group ID */
 	unsigned short int euid;	/* effective user ID */
@@ -184,6 +186,7 @@ int get_unused_pid(void);
 struct proc *get_proc_by_pid(__pid_t);
 
 struct proc *kernel_process(const char *, int (*fn)(void));
+struct proc *kernel_process_arg(const char *, int (*fn)(void *), void *);
 void proc_slot_init(struct proc *);
 void proc_init(void);
 

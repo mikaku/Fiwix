@@ -32,13 +32,11 @@
 #define SYS_SETSOCKOPT	14
 #define SYS_GETSOCKOPT	15
 
-typedef unsigned int	socklen_t;
-
 struct socket {
 	short int state;
 	int flags;
 	struct fd *fd;
-	int fd_ext;			/* fd of external TCP/IP API */
+	int fd_lwip;			/* fd of external TCP/IP API (lwIP) */
 	short int type;
 	struct proto_ops *ops;
 	int queue_len;			/* number of connections in queue */
@@ -69,7 +67,7 @@ struct proto_ops {
 	int (*send)(struct socket *, struct fd *, const char *, __size_t, int);
 	int (*recv)(struct socket *, struct fd *, char *, __size_t, int);
 	int (*sendto)(struct socket *, struct fd *, const char *, __size_t, int, const struct sockaddr *, int);
-	int (*recvfrom)(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, int *);
+	int (*recvfrom)(struct socket *, struct fd *, char *, __size_t, int, struct sockaddr *, socklen_t *);
 	int (*read)(struct socket *, struct fd *, char *, __size_t);
 	int (*write)(struct socket *, struct fd *, const char *, __size_t);
 	int (*ioctl)(struct socket *, struct fd *, int, unsigned int);
@@ -96,7 +94,7 @@ int socketpair(int, int, int, int [2]);
 int send(int, const void *, __size_t, int);
 int recv(int, void *, __size_t, int);
 int sendto(int, const void *, __size_t, int, const struct sockaddr *, int);
-int recvfrom(int, void *, __size_t, int, struct sockaddr *, int *);
+int recvfrom(int, void *, __size_t, int, struct sockaddr *, socklen_t *);
 int shutdown(int, int);
 int setsockopt(int, int, int, const void *, socklen_t);
 int getsockopt(int, int, int, void *, socklen_t *);

@@ -20,6 +20,7 @@ static const char *get_strclass(unsigned short int class)
 {
 	switch(class) {
 		case PCI_CLASS_STORAGE_IDE:		return "IDE interface";
+		case PCI_CLASS_NETWORK_ETHERNET:	return "Ethernet controller";
 		case PCI_CLASS_DISPLAY_VGA:		return "VGA Display controller";
 		case PCI_CLASS_COMMUNICATION_SERIAL:	return "Serial controller";
 	}
@@ -31,6 +32,7 @@ static const char *get_strvendor_id(unsigned short int vendor_id)
 #ifdef CONFIG_PCI_NAMES
 	switch(vendor_id) {
 		case PCI_VENDOR_ID_BOCHS:		return "QEMU";
+		case PCI_VENDOR_ID_REALTEK:		return "Realtek";
 	}
 #endif /* CONFIG_PCI_NAMES */
 	return NULL;

@@ -117,6 +117,7 @@ int sock_alloc(struct socket **s)
 	ns->state = SS_UNCONNECTED;
 	fd_table[fd].flags = O_RDWR;
 	ns->fd = &fd_table[fd];
+	ns->fd_lwip = -1;
 	*s = ns;
 	return ufd;
 }
@@ -162,13 +163,17 @@ int socket(int domain, int type, int protocol)
 	printk("(pid %d) socket(%d, %d, %d)\n", current->pid, domain, type, protocol);
 #endif /*__DEBUG__ */
 
-	if(type != SOCK_STREAM && type != SOCK_DGRAM) {
-		return -EINVAL;
-	}
-
 	s = NULL;
 	if((ufd = sock_alloc(&s)) < 0) {
 		return ufd;
+	}
+	if(type & SOCK_CLOEXEC) {
+		s->fd->flags |= FD_CLOEXEC;
+		type &= ~SOCK_CLOEXEC;
+	}
+	if(type & SOCK_NONBLOCK) {
+		s->fd->flags |= O_NONBLOCK;
+		type &= ~SOCK_NONBLOCK;
 	}
 	s->type = type;
 	if(assign_proto(s, domain)) {
@@ -179,6 +184,9 @@ int socket(int domain, int type, int protocol)
 		sock_free(s);
 		return errno;
 	}
+#ifdef __DEBUG__
+	printk("\t(ufd = %d)\n", ufd);
+#endif /*__DEBUG__ */
 	return ufd;
 }
 
@@ -406,12 +414,13 @@ int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockad
 	return s->ops->sendto(s, &fdt, buf, len, flags, addr, addrlen);
 }
 
-int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, int *addrlen)
+int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, socklen_t *addrlen)
 {
 	struct socket *s;
 	struct fd fdt;
+	socklen_t ret_len;
 	char ret_addr[108];
-	int errno, ret_len, bytes_read;
+	int errno, bytes_read;
 
 #ifdef __DEBUG__
 	printk("(pid %d) recvfrom(%d, 0x%08x, %d, %d, 0x%08x, 0x%08x)\n", current->pid, sd, (int)buf, len, flags, (int)addr, addrlen);
@@ -426,7 +435,14 @@ int recvfrom(int sd, void *buf, __size_t len, int flags, struct sockaddr *addr, 
 	}
 	fdt.flags = s->fd->flags | ((flags & MSG_DONTWAIT) ? O_NONBLOCK : 0);
 	memset_b(ret_addr, 0, 108);
+	if(addrlen) {
+		ret_len = *addrlen;
+	}
 	if((errno = s->ops->recvfrom(s, &fdt, buf, len, flags, (struct sockaddr *)ret_addr, &ret_len)) < 0) {
+		if(current->flags & PF_LWIPINTR) {
+			current->flags &= ~PF_LWIPINTR;
+			errno = -EINTR;
+		}
 		return errno;
 	}
 	bytes_read = errno;

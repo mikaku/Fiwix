@@ -24,6 +24,7 @@
 #include <fiwix/filesystems.h>
 #include <fiwix/pty.h>
 #include <fiwix/net.h>
+#include <fiwix/netdevice.h>
 #include <fiwix/stdio.h>
 
 /* kswapd continues the kernel initialization */
@@ -46,6 +47,7 @@ int kswapd(void)
 	/* network */
 #ifdef CONFIG_NET
 	net_init();
+	netdevice_init();
 #endif /* CONFIG_NET */
 
 	/* block devices */
@@ -54,7 +56,7 @@ int kswapd(void)
 	ata_init();
 
 	/* starting system */
-	mem_stats();
+	mm_stats();
 	fs_init();
 	mount_root();
 	init_init();

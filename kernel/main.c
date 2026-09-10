@@ -95,7 +95,7 @@ void start_kernel(unsigned int magic, unsigned int info, unsigned int last_boot_
 	idt_init();
 	dev_init();
 	tty_init();
-	mem_init();
+	mm_init();
 
 #ifdef CONFIG_PCI
 	pci_init();

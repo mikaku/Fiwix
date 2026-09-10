@@ -9,9 +9,13 @@
 #include <fiwix/errno.h>
 #include <fiwix/net.h>
 #include <fiwix/socket.h>
+#include <fiwix/route.h>
 #include <fiwix/string.h>
 
 #ifdef CONFIG_NET
+/* lwIP prototype */
+void tcpip_init(void *, void *);
+
 struct domain_table domains[] = {
         { AF_UNIX, "AF_UNIX", &unix_ops },
         { AF_INET, "AF_INET", &ipv4_ops },
@@ -83,16 +87,15 @@ int assign_proto(struct socket *so, int domain)
 void net_init(void)
 {
 	struct domain_table *d;
-	struct proto_ops *ops;
 
 	d = &domains[0];
 	while(d->ops) {
-		ops = d->ops;
-		ops->init();
+		d->ops->init();
 		d++;
 	}
+	route_init();
 
-	/* call to the external TCP/IP API */
-	ext_init();
+	/* initialize the external TCP/IP API (lwIP) */
+	tcpip_init(NULL, NULL);
 }
 #endif /* CONFIG_NET */

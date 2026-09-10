@@ -11,6 +11,7 @@
 #include <fiwix/errno.h>
 #include <fiwix/socket.h>
 #include <fiwix/net.h>
+#include <fiwix/netdevice.h>
 #include <fiwix/net/ipv4.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/sched.h>
@@ -20,9 +21,35 @@
 #include <fiwix/stdio.h>
 
 #ifdef CONFIG_NET
-struct ipv4_info *ipv4_socket_head;
+/* lwIP prototypes */
+int lwip_socket(int, int, int);
+int lwip_close(int);
+int lwip_bind(int, const struct sockaddr *, socklen_t);
+int lwip_listen(int, int backlog);
+int lwip_connect(int, const struct sockaddr *, socklen_t);
+int lwip_accept(int, struct sockaddr *, socklen_t *);
+int lwip_getpeername (int, struct sockaddr *, socklen_t *);
+int lwip_getsockname (int, struct sockaddr *, socklen_t *);
+__ssize_t lwip_send(int, const void *, __size_t, int);
+__ssize_t lwip_recv(int, void *, __size_t, int);
+__ssize_t lwip_sendto(int, const void *, __size_t, int, const struct sockaddr *, socklen_t);
+__ssize_t lwip_recvfrom(int, void *, __size_t, int, struct sockaddr *, socklen_t *);
+__ssize_t lwip_read(int, void *, __size_t);
+__ssize_t lwip_write(int, const void *, __size_t);
+int lwip_ioctl(int, long, void *);
+int lwip_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+int lwip_shutdown(int, int);
+int lwip_getsockopt (int, int, int, void *, socklen_t *);
+int lwip_setsockopt (int, int, int, const void *, socklen_t);
 
-static struct resource packet_resource = { 0, 0 };
+/* not implemented yet */
+__ssize_t lwip_readv(int, const struct iovec *, int);
+__ssize_t lwip_recvmsg(int, struct msghdr *, int);
+__ssize_t lwip_sendmsg(int, const struct msghdr *, int);
+__ssize_t lwip_writev(int, const struct iovec *, int);
+
+
+struct ipv4_info *ipv4_socket_head;
 
 static void add_ipv4_socket(struct ipv4_info *ip4)
 {
@@ -61,17 +88,16 @@ int ipv4_create(struct socket *s, int domain, int type, int protocol)
 	int fd;
 	struct ipv4_info *ip4;
 
-	if((fd = ext_open(domain, type, protocol)) < 0) {
+	if((fd = lwip_socket(domain, type, protocol)) < 0) {
 		return fd;
 	}
-	s->fd_ext = fd;
-
+	s->fd_lwip = fd;
 	ip4 = &s->u.ipv4_info;
 	memset_b(ip4, 0, sizeof(struct ipv4_info));
 	ip4->count = 1;
 	ip4->socket = s;
 	add_ipv4_socket(ip4);
-	return fd;
+	return 0;
 }
 
 void ipv4_free(struct socket *s)
@@ -79,28 +105,30 @@ void ipv4_free(struct socket *s)
 	int errno;
 	struct ipv4_info *ip4;
 
-	if((errno = ext_close(s->fd_ext)) < 0) {
-		return errno;
+	if((errno = lwip_close(s->fd_lwip)) < 0) {
+		return;
 	}
-	s->fd_ext = 0;
+	if(s->fd_lwip < 0) {
+		return;
+	}
+	s->fd_lwip = -1;
 	ip4 = &s->u.ipv4_info;
 	remove_ipv4_socket(ip4);
-	return errno;
 }
 
 int ipv4_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 {
-	return ext_bind(s->fd_ext, addr, addrlen);
+	return lwip_bind(s->fd_lwip, addr, addrlen);
 }
 
 int ipv4_listen(struct socket *s, int backlog)
 {
-	return ext_listen(s->fd_ext, backlog);
+	return lwip_listen(s->fd_lwip, backlog);
 }
 
 int ipv4_connect(struct socket *s, const struct sockaddr *addr, int addrlen)
 {
-	return ext_connect(s->fd_ext, addr, addrlen);
+	return lwip_connect(s->fd_lwip, addr, addrlen);
 }
 
 int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
@@ -109,7 +137,7 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 	struct socket *sc;
 	struct ipv4_info *ip4;
 
-	if((fd = ext_accept(s->fd_ext, addr, addrlen)) < 0) {
+	if((fd = lwip_accept(s->fd_lwip, addr, addrlen)) < 0) {
 		return fd;
 	}
 
@@ -119,9 +147,9 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 	}
 	sc->type = s->type;
 	sc->ops = s->ops;
-	sc->fd_ext = fd;
+	sc->fd_lwip = fd;
 
-	ip4 = &s->u.ipv4_info;
+	ip4 = &sc->u.ipv4_info;
 	memset_b(ip4, 0, sizeof(struct ipv4_info));
 	ip4->count = 1;
 	ip4->socket = sc;
@@ -131,11 +159,22 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 
 int ipv4_getname(struct socket *s, struct sockaddr *addr, unsigned int *addrlen, int call)
 {
-	return -EOPNOTSUPP;
+	int errno;
+
+	if((errno = check_user_area(VERIFY_WRITE, addrlen, sizeof(int)))) {
+		return errno;
+	}
+	if(call == SYS_GETSOCKNAME) {
+		return lwip_getsockname(s->fd_lwip, addr, addrlen);
+	} else {
+		/* SYS_GETPEERNAME */
+		return lwip_getpeername(s->fd_lwip, addr, addrlen);
+	}
 }
 
 int ipv4_socketpair(struct socket *s1, struct socket *s2)
 {
+	printk("%s(%d) NOT SUPPORTED YET!\n", __FUNCTION__, current->pid);
 	return -EOPNOTSUPP;
 }
 
@@ -144,7 +183,7 @@ int ipv4_send(struct socket *s, struct fd *f, const char *buffer, __size_t count
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return ipv4_write(s, f, buffer, count);
+	return lwip_send(s->fd_lwip, buffer, count, flags);
 }
 
 int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags)
@@ -152,34 +191,46 @@ int ipv4_recv(struct socket *s, struct fd *f, char *buffer, __size_t count, int 
 	if(flags & ~MSG_DONTWAIT) {
 		return -EINVAL;
 	}
-	return ipv4_read(s, f, buffer, count);
+	return lwip_recv(s->fd_lwip, buffer, count, flags);
 }
 
 int ipv4_sendto(struct socket *s, struct fd *f, const char *buffer, __size_t count, int flags, const struct sockaddr *addr, int addrlen)
 {
-	return ext_sendto(s->fd_ext, buffer, count, addr, addrlen);
+	unsigned int kbuffer, offset;
+
+	/* makes sure lwIP will have access to 'buffer' */
+	offset = (unsigned int)buffer & ~PAGE_MASK;
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer)) & PAGE_MASK;
+	kbuffer += offset;
+	return lwip_sendto(s->fd_lwip, (const char *)kbuffer, count, flags, addr, addrlen);
 }
 
-int ipv4_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, int *addrlen)
+int ipv4_recvfrom(struct socket *s, struct fd *f, char *buffer, __size_t count, int flags, struct sockaddr *addr, socklen_t *addrlen)
 {
-	return ext_recvfrom(s->fd_ext, buffer, count, addr, addrlen);
+	return lwip_recvfrom(s->fd_lwip, buffer, count, flags, addr, addrlen);
 }
 
 int ipv4_read(struct socket *s, struct fd *f, char *buffer, __size_t count)
 {
-	return ext_read(s->fd_ext, buffer, count);
+	return lwip_read(s->fd_lwip, buffer, count);
 }
 
 int ipv4_write(struct socket *s, struct fd *f, const char *buffer, __size_t count)
 {
-	return ext_write(s->fd_ext, buffer, count);
+	unsigned int kbuffer, offset;
+
+	/* makes sure lwIP will have access to 'buffer' */
+	offset = (unsigned int)buffer & ~PAGE_MASK;
+	kbuffer = P2V(get_mapped_addr(current, (int)buffer)) & PAGE_MASK;
+	kbuffer += offset;
+	return lwip_write(s->fd_lwip, (const char *)kbuffer, count);
 }
 
 int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
 {
 	int errno;
 
-	if((errno = ext_ioctl(s->fd_ext, cmd, (void *)arg)) < 0) {
+	if((errno = lwip_ioctl(s->fd_lwip, cmd, (void *)arg)) < 0) {
 		switch(cmd) {
 			default:
 				errno = dev_ioctl(cmd, (void *)arg);
@@ -191,22 +242,36 @@ int ipv4_ioctl(struct socket *s, struct fd *f, int cmd, unsigned int arg)
 
 int ipv4_select(struct socket *s, int flag)
 {
-	return -EOPNOTSUPP;
+	fd_set rfds, wfds;
+	struct timeval timeout;
+
+	memset_b(&timeout, 0, sizeof(struct timeval));
+	switch(flag) {
+		case SEL_R:
+			__FD_ZERO(&rfds);
+			__FD_SET(s->fd_lwip, &rfds);
+			return lwip_select(s->fd_lwip + 1, &rfds, NULL, NULL, &timeout);
+		case SEL_W:
+			__FD_ZERO(&wfds);
+			__FD_SET(s->fd_lwip, &wfds);
+			return lwip_select(s->fd_lwip + 1, NULL, &wfds, NULL, &timeout);
+	}
+	return 0;
 }
 
 int ipv4_shutdown(struct socket *s, int how)
 {
-	return -EOPNOTSUPP;
+	return lwip_shutdown(s->fd_lwip, how);
 }
 
 int ipv4_setsockopt(struct socket *s, int level, int optname, const void *optval, socklen_t optlen)
 {
-	return -EOPNOTSUPP;
+	return lwip_setsockopt(s->fd_lwip, level, optname, optval, optlen);
 }
 
 int ipv4_getsockopt(struct socket *s, int level, int optname, void *optval, socklen_t *optlen)
 {
-	return -EOPNOTSUPP;
+	return lwip_getsockopt(s->fd_lwip, level, optname, optval, optlen);
 }
 
 int ipv4_init(void)

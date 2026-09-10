@@ -10,16 +10,23 @@
 
 #include <fiwix/process.h>
 
-#define AREA_BH			0x00000001
-#define AREA_CALLOUT		0x00000002
-#define AREA_TTY_READ		0x00000004
-#define AREA_SERIAL_READ	0x00000008
+#define AREA_CALLOUT		0x00000001
+#define AREA_TTY_READ		0x00000002
+#define AREA_SERIAL_READ	0x00000004
+#define AREA_NETDEVICE		0x00000008
 
 extern struct proc *proc_run_head;
 
 struct resource {
 	char locked;
 	char wanted;
+};
+
+/* recursive mutex */
+struct mutex {
+	struct proc *holder;
+	int recursive_count;
+	struct resource sem;
 };
 
 void runnable(struct proc *);
@@ -29,7 +36,10 @@ void wakeup(void *);
 void wakeup_proc(struct proc *);
 
 void lock_resource(struct resource *);
+int lock_resource_timeout(struct resource *, unsigned int);
 void unlock_resource(struct resource *);
+int mutex_lock(struct mutex *);
+void mutex_unlock(struct mutex *);
 int can_lock_area(unsigned int);
 int unlock_area(unsigned int);
 

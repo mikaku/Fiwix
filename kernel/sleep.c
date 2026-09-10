@@ -2,6 +2,7 @@
  * fiwix/kernel/sleep.c
  *
  * Copyright 2018-2022, Jordi Sanfeliu. All rights reserved.
+ * Copyright 2025, Samuel Tyler. All rights reserved.
  * Distributed under the terms of the Fiwix License.
  */
 
@@ -77,7 +78,7 @@ int sleep(void *address, int state)
 	}
 
 	if(current->state == PROC_SLEEPING) {
-		printk("WARNING: %s(): process with pid '%d' is already sleeping!\n", __FUNCTION__, current->pid);
+		printk("WARNING: %s(): process with pid %d is already sleeping!\n", __FUNCTION__, current->pid);
 		RESTORE_FLAGS(flags);
 		return 0;
 	}
@@ -208,6 +209,44 @@ void lock_resource(struct resource *resource)
 	RESTORE_FLAGS(flags);
 }
 
+/* returns whether timed out or not */
+int lock_resource_timeout(struct resource *resource, unsigned int timeout)
+{
+	unsigned int flags;
+	int signum;
+
+	current->timeout = timeout;
+	for(;;) {
+		SAVE_FLAGS(flags); CLI();
+		if(resource->locked) {
+			if(current->timeout > 0) {
+				resource->wanted = 1;
+				RESTORE_FLAGS(flags);
+				signum = sleep(resource, PROC_INTERRUPTIBLE);
+				if(signum) {
+					resource->wanted = 0;
+					wakeup(resource);
+					RESTORE_FLAGS(flags);
+					return 2;
+				}
+			} else {
+				resource->wanted = 0;
+				/* ensure wanted is set back to 1 if anything else is waiting for it */
+				wakeup(resource);
+				RESTORE_FLAGS(flags);
+				/* failed to acquire the lock in the timeout */
+				return 1;
+			}
+		} else {
+			current->timeout = 0;
+			break;
+		}
+	}
+	resource->locked = 1;
+	RESTORE_FLAGS(flags);
+	return 0;
+}
+
 void unlock_resource(struct resource *resource)
 {
 	unsigned int flags;
@@ -217,6 +256,38 @@ void unlock_resource(struct resource *resource)
 	if(resource->wanted) {
 		resource->wanted = 0;
 		wakeup(resource);
+	}
+	RESTORE_FLAGS(flags);
+}
+
+int mutex_lock(struct mutex *lock)
+{
+	unsigned int flags;
+
+	SAVE_FLAGS(flags); CLI();
+	if(current != lock->holder) {
+		lock_resource(&lock->sem);
+		lock->holder = current;
+		lock->recursive_count = 1;
+	} else {
+		lock->recursive_count++;
+	}
+	RESTORE_FLAGS(flags);
+	return lock->recursive_count;
+}
+
+void mutex_unlock(struct mutex *lock)
+{
+	unsigned int flags;
+
+	SAVE_FLAGS(flags); CLI();
+	if(current != lock->holder) {
+		printk("WARNING: %s(): attempting to unlock a not owned mutex.", __FUNCTION__);
+	} else {
+		if(--lock->recursive_count == 0) {
+			lock->holder = NULL;
+			unlock_resource(&lock->sem);
+		}
 	}
 	RESTORE_FLAGS(flags);
 }
