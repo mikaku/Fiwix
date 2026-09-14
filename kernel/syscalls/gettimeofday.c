@@ -30,6 +30,10 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz)
 		tv->tv_sec = CURRENT_TIME;
 		tv->tv_usec = ((CURRENT_TICKS % HZ) * 1000000) / HZ;
 		tv->tv_usec += gettimeoffset();
+		if(tv->tv_usec >= 1000000) {
+			tv->tv_sec++;
+			tv->tv_usec -= 1000000;
+		}
 	}
 	if(tz) {
 		if((errno = check_user_area(VERIFY_WRITE, tz, sizeof(struct timezone)))) {
