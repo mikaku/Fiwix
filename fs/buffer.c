@@ -636,14 +636,14 @@ void invalidate_buffers(__dev_t dev)
 
 static int reclaim_siblings(struct buffer *buf)
 {
-	struct buffer *orig, *tmp;
+	struct buffer *orig, *first, *tmp;
 	unsigned int flags;
 
 	orig = buf;
-
 	if(buf->first_sibling) {
 		buf = buf->first_sibling;
 	}
+	first = buf;
 	/* abort if one of the siblings is locked */
 	do {
 		if(buf != orig) {
@@ -656,10 +656,7 @@ static int reclaim_siblings(struct buffer *buf)
 
 	/* OK, all siblings are eligible to be freed up, let's lock them all */
 	SAVE_FLAGS(flags); CLI();
-	buf = orig;
-	if(buf->first_sibling) {
-		buf = buf->first_sibling;
-	}
+	buf = first;
 	do {
 		if(buf != orig) {
 			buf->flags |= BUFFER_LOCKED;
@@ -669,10 +666,7 @@ static int reclaim_siblings(struct buffer *buf)
 	RESTORE_FLAGS(flags);
 
 	/* now free them up */
-	buf = orig;
-	if(buf->first_sibling) {
-		buf = buf->first_sibling;
-	}
+	buf = first;
 	do {
 		if(buf == orig) {
 			buf = buf->next_sibling;
@@ -731,7 +725,7 @@ int reclaim_buffers(void)
 				/*
 				 * If one of the siblings is not eligible to be
 				 * freed up, then we release this buffer without
-				 * using brelse(), otherwise get_free_buffer()
+				 * calling brelse(), otherwise get_free_buffer()
 				 * will return the same buffer again.
 				 */
 				SAVE_FLAGS(flags); CLI();
@@ -763,14 +757,6 @@ next:
 
 	wakeup(&get_free_buffer);
 	wakeup(&buffer_wait);
-
-	/*
-	 * If some buffers were reclaimed, then wakeup any process
-	 * waiting for a new page because release_page() won't do it.
-	 */
-	if(reclaimed) {
-		wakeup(&get_free_page);
-	}
 	return reclaimed;
 }
 

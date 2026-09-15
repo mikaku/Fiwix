@@ -66,9 +66,7 @@ int kswapd(void)
 
 	for(;;) {
 		sleep(&kswapd, PROC_INTERRUPTIBLE);
-		if((kstat.pages_reclaimed = reclaim_buffers())) {
-			continue;
-		}
+		reclaim_buffers();
 		wakeup(&get_free_page);
 	}
 }
