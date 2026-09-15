@@ -54,7 +54,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 
 void sys_sem_free(sys_sem_t *sem)
 {
-	unlock_resource(sem);
+	unlock_resource(&sem->sem);
 	memset_b(sem, 0, sizeof(struct semaphore));
 }
 
