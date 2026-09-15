@@ -32,7 +32,7 @@ int psaux_read(struct inode *, struct fd *, char *, __size_t);
 int psaux_write(struct inode *, struct fd *, const char *, __size_t);
 int psaux_select(struct inode *, struct fd *, int);
 
-void irq_psaux(int num, struct sigcontext *);
+void irq_psaux(int, struct sigcontext *);
 void psaux_init(void);
 
 #endif /* _FIWIX_PSAUX_H */
