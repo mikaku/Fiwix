@@ -662,6 +662,9 @@ int data_proc_pid_cmdline(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
+		if(!(int)p->argv) {
+			return size;
+		}
 		offset = (int)p->argv & ~PAGE_MASK;
 		addr = get_mapped_addr(p, (int)p->argv) & PAGE_MASK;
 		addr = P2V(addr);
@@ -690,12 +693,10 @@ int data_proc_pid_cwd(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
-
 		/* zombie processes don't have current working directory */
 		if(!p->pwd) {
 			return -ENOENT;
 		}
-
 		i = p->pwd;
 		size = sprintk(buffer, "[%02d%02d]:%d", MAJOR(i->rdev), MINOR(i->rdev), i->inode);
 	}
@@ -711,6 +712,9 @@ int data_proc_pid_environ(char *buffer, __pid_t pid)
 
 	size = 0;
 	if((p = get_proc_by_pid(pid))) {
+		if(!(int)p->envp) {
+			return size;
+		}
 		offset = (int)p->envp & ~PAGE_MASK;
 		addr = get_mapped_addr(p, (int)p->envp) & PAGE_MASK;
 		addr = P2V(addr);
