@@ -92,6 +92,7 @@ void rtl8139_callback(void *);
 int rtl8139_open(struct netdevice *);
 int rtl8139_close(struct netdevice *);
 void irq_rtl8139(int, struct sigcontext *);
+void irq_rtl8139_bh(struct sigcontext *);
 err_t rtl8139_lwip_init(struct netif *);
 
 #endif /* CONFIG_PCI */

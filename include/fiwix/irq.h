@@ -30,6 +30,7 @@ struct bh {
 };
 
 void add_bh(struct bh *);
+void del_bh(struct bh *);
 int register_irq(int, struct interrupt *);
 int unregister_irq(int, const struct interrupt *);
 void irq_handler(int, struct sigcontext);

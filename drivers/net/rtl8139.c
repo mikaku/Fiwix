@@ -26,6 +26,7 @@
 #ifdef CONFIG_PCI
 static struct interrupt irq_config_rtl8139 = { 0, NULL, &irq_rtl8139, NULL };
 static struct rtl8139 *rtl8139_active = NULL;
+static struct bh rtl8139_bh = { 0, &irq_rtl8139_bh, NULL };
 /* FIXME: this should be allocated dynamically */
 static struct rtl8139 nic = { 0 };
 
@@ -198,7 +199,7 @@ static void rtl8139_rx(struct netif *netif)
 
 		nic.rx_index = ((nic.rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
 		outport_w(nd->ioaddr + CAPR, nic.rx_index - 16);
-		tcpip_callback(rtl8139_callback, NULL);
+		rtl8139_bh.flags |= BH_ACTIVE;
 	}
 }
 
@@ -313,13 +314,14 @@ int rtl8139_open(struct netdevice *nd)
 	/* enable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
 
-	/* enable all interrupts and clear all pending */
-	outport_w(nd->ioaddr + IMR, IMR_ALLINT);
-	outport_w(nd->ioaddr + ISR, 0xFFFF);
-
+	add_bh(&rtl8139_bh);
 	netif = nd->lwip_netif;
 	netif->flags |= NETIF_FLAG_LINK_UP;
 	netif_set_link_up(netif);
+
+	/* enable all interrupts and clear all pending */
+	outport_w(nd->ioaddr + IMR, IMR_ALLINT);
+	outport_w(nd->ioaddr + ISR, 0xFFFF);
 	return 0;
 }
 
@@ -333,6 +335,7 @@ int rtl8139_close(struct netdevice *nd)
 	/* disable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, 0);
 
+	del_bh(&rtl8139_bh);
 	netif = nd->lwip_netif;
 	netif->flags &= ~NETIF_FLAG_LINK_UP;
 	netif_set_link_down(netif);
@@ -372,6 +375,11 @@ void irq_rtl8139(int num, struct sigcontext *sc)
 	if(status & (IMR_TIMEOUT | IMR_SERR)) {
 		printk("WARNING: %s(): %s: error: status = 0x%x\n", __FUNCTION__, nd->name, status);
 	}
+}
+
+void irq_rtl8139_bh(struct sigcontext *sc)
+{
+	tcpip_callback(rtl8139_callback, NULL);
 }
 
 err_t rtl8139_lwip_init(struct netif *netif)

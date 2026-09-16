@@ -23,7 +23,7 @@ int register_irq(int num, struct interrupt *new_irq)
 	struct interrupt **irq;
 
 	if(num < 0  || num >= NR_IRQS) {
-		printk("WARNING: %s(): interrupt %d is greater than NR_IRQS (%d)!\n", __FUNCTION__, num, NR_IRQS);
+		printk("WARNING: %s(): bad interrupt number %d!\n", __FUNCTION__, num);
 		return -EINVAL;
 	}
 
@@ -82,6 +82,30 @@ void add_bh(struct bh *new)
 		b = &(*b)->next;
 	}
 	*b = new;
+
+	RESTORE_FLAGS(flags);
+}
+
+void del_bh(struct bh *old)
+{
+	unsigned int flags;
+	struct bh **b, **prev;
+
+	SAVE_FLAGS(flags); CLI();
+
+	b = prev = &bh_table;
+	while(*b) {
+		if(*b == old) {
+			if(b == &bh_table) {
+				*b = old->next;
+				break;
+			}
+			(*prev)->next = old->next;
+			break;
+		}
+		prev = b;
+		b = &(*b)->next;
+	}
 
 	RESTORE_FLAGS(flags);
 }
