@@ -20,6 +20,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 #include <fiwix/sysconsole.h>
+#include <fiwix/mm.h>
 
 static struct fs_operations serial_driver_fsop = {
 	0,
@@ -63,9 +64,6 @@ static struct fs_operations serial_driver_fsop = {
 	NULL,			/* write_superblock */
 	NULL			/* release_superblock */
 };
-
-/* FIXME: this should be allocated dynamically */
-struct serial serial_table[NR_SERIAL];
 
 static struct device serial_device = {
 	"ttyS",
@@ -117,13 +115,8 @@ static int baud_table[] = {
 	0
 };
 
-static struct serial *serial_active = NULL;
+static struct serial *serial_table;
 static struct bh serial_bh = { 0, &irq_serial_bh, NULL };
-
-/* FIXME: this should be allocated dynamically */
-static struct interrupt irq_config_serial0 = { 0, "serial", &irq_serial, NULL };	/* ISA irq4 */
-static struct interrupt irq_config_serial1 = { 0, "serial", &irq_serial, NULL };	/* ISA irq3 */
-static struct interrupt irq_config_serial2 = { 0, "serial", &irq_serial, NULL };	/* first PCI device */
 
 static int is_serial(__dev_t dev)
 {
@@ -134,19 +127,17 @@ static int is_serial(__dev_t dev)
 	return 0;
 }
 
-/* FIXME: this should be removed once these structures are allocated dynamically */
-static struct serial *get_serial_slot(void)
+static void serial_add(struct serial *s)
 {
-	int n;
+	struct serial **sp;
 
-	for(n = 0; n < NR_SERIAL; n++) {
-		if(!(serial_table[n].flags & UART_ACTIVE)) {
-			return &serial_table[n];
-		}
+	sp = &serial_table;
+	if(*sp) {
+		do {
+			sp = &(*sp)->next;
+		} while(*sp);
 	}
-
-	printk("WARNING: %s(): no more serial slots free!\n", __FUNCTION__);
-	return NULL;
+	*sp = s;
 }
 
 static int serial_identify(struct serial *s)
@@ -320,10 +311,9 @@ void irq_serial(int num, struct sigcontext *sc)
 	struct serial *s;
 	int status;
 
-	s = serial_active;
-
+	s = serial_table;
 	while(s) {
-		if(s->irq == num) {
+		if(s->flags & UART_ACTIVE) {
 			while(!(inport_b(s->ioaddr + UART_IIR) & UART_IIR_NOINT)) {
 				status = inport_b(s->ioaddr + UART_LSR);
 				if(status & UART_LSR_RDA) {
@@ -473,16 +463,17 @@ void irq_serial_bh(struct sigcontext *sc)
 	struct tty *tty;
 	struct serial *s;
 
-	s = serial_active;
-
+	s = serial_table;
 	while(s) {
-		tty = s->tty;
-		if(tty->read_q.count) {
-			if(can_lock_area(AREA_SERIAL_READ)) {
-				tty->input(tty);
-				unlock_area(AREA_SERIAL_READ);
-			} else {
-				serial_bh.flags |= BH_ACTIVE;
+		if(s->flags & UART_ACTIVE) {
+			tty = s->tty;
+			if(tty->read_q.count) {
+				if(can_lock_area(AREA_SERIAL_READ)) {
+					tty->input(tty);
+					unlock_area(AREA_SERIAL_READ);
+				} else {
+					serial_bh.flags |= BH_ACTIVE;
+				}
 			}
 		}
 		s = s->next;
@@ -491,7 +482,6 @@ void irq_serial_bh(struct sigcontext *sc)
 
 static int register_serial(struct serial *s, int minor)
 {
-	struct serial **sp;
 	struct tty *tty;
 	int n, type;
 
@@ -501,12 +491,6 @@ static int register_serial(struct serial *s, int minor)
 		printk("%s	  0x%04x-0x%04x	  %3d\ttype=%s%s\n", s->name, s->ioaddr, s->ioaddr + s->iosize - 1, s->irq, serial_chip[type], s->flags & UART_HAS_FIFO ? " FIFO=yes" : "");
 		SET_MINOR(serial_device.minors, (1 << SERIAL_MSF) + minor);
 		serial_setup(s);
-		sp = &serial_active;
-		if(*sp) {
-			do {
-				sp = &(*sp)->next;
-			} while(*sp);
-		}
 		if((tty = register_tty(MKDEV(SERIAL_MAJOR, (1 << SERIAL_MSF) + minor)))) {
 			tty->driver_data = (void *)s;
 			tty->stop = serial_stop;
@@ -529,13 +513,11 @@ static int register_serial(struct serial *s, int minor)
 			tty->count = 0;
 			s->tty = tty;
 			s->flags |= UART_ACTIVE;
-			*sp = s;
 			return 0;
 		} else {
 			printk("WARNING: %s(): unable to register %s.\n", __FUNCTION__, s->name);
 		}
 	}
-
 	return 1;
 }
 
@@ -543,13 +525,15 @@ static int register_serial(struct serial *s, int minor)
 static int setup_serial_device(int minor, struct pci_device *pci_dev)
 {
 	struct serial *s;
+	struct interrupt *irq_config;
 	unsigned short int cmd;
 
 	if(pci_dev->flags[0] & PCI_F_ADDR_SPACE_MEM) {
 		printk("WARNING: %s(): MMIO is not supported.\n", __FUNCTION__);
 		return minor;
 	}
-	if(!(s = get_serial_slot())) {
+	if(!(s = (struct serial *)kmalloc(sizeof(struct serial)))) {
+		printk("WARNING: %s(): unable to allocate memory for a new serial.", __FUNCTION__);
 		return minor;
 	}
 
@@ -557,15 +541,27 @@ static int setup_serial_device(int minor, struct pci_device *pci_dev)
 	cmd = (pci_dev->command | PCI_COMMAND_IO);
 	pci_write_short(pci_dev, PCI_COMMAND, cmd);
 
+	memset_b(s, 0, sizeof(struct serial));
 	s->ioaddr = pci_dev->bar[0];
 	s->iosize = pci_dev->size[0];
 	s->irq = pci_dev->irq;
 	if(!register_serial(s, minor)) {
 		pci_show_desc(pci_dev);
-		if(!register_irq(s->irq, &irq_config_serial2)) {
+		if(!(irq_config = (struct interrupt *)kmalloc(sizeof(struct interrupt)))) {
+			printk("WARNING: %s(): unable to allocate memory to register serial irq.", __FUNCTION__);
+			kfree((unsigned int)s);
+			return minor;
+		}
+		memset_b(irq_config, 0, sizeof(struct interrupt));
+		irq_config->name = "serial";
+		irq_config->handler = &irq_serial;
+		serial_add(s);
+		if(!register_irq(s->irq, irq_config)) {
 			enable_irq(s->irq);
 		}
 		minor++;
+	} else {
+		kfree((unsigned int)s);
 	}
 	return minor;
 }
@@ -592,12 +588,15 @@ static int serial_pci(int minor)
 static int serial_isa(void)
 {
 	struct serial *s;
+	struct interrupt *irq_config;
 	int n, minor;
 
-	for(n = 0, minor = 0; isa_ioports[n] && minor < NR_SERIAL; n++) {
-		if(!(s = get_serial_slot())) {
+	for(n = 0, minor = 0; isa_ioports[n] && minor < NR_ISA_SERIALS; n++) {
+		if(!(s = (struct serial *)kmalloc(sizeof(struct serial)))) {
+			printk("WARNING: %s(): unable to allocate memory for a new serial.", __FUNCTION__);
 			return minor;
 		}
+		memset_b(s, 0, sizeof(struct serial));
 		s->ioaddr = isa_ioports[n];
 		s->iosize = 7;
 		if(!(minor & 1)) {
@@ -606,20 +605,23 @@ static int serial_isa(void)
 			s->irq = SERIAL3_IRQ;
 		}
 		if(!(register_serial(s, minor))) {
-			if(!minor) {
-				if(!register_irq(SERIAL4_IRQ, &irq_config_serial0)) {
-					enable_irq(SERIAL4_IRQ);
-				}
+			if(!(irq_config = (struct interrupt *)kmalloc(sizeof(struct interrupt)))) {
+				printk("WARNING: %s(): unable to allocate memory to register serial irq.", __FUNCTION__);
+				kfree((unsigned int)s);
+				continue;
 			}
-			if(minor == 1) {
-				if(!register_irq(SERIAL3_IRQ, &irq_config_serial1)) {
-					enable_irq(SERIAL3_IRQ);
-				}
+			memset_b(irq_config, 0, sizeof(struct interrupt));
+			irq_config->name = "serial";
+			irq_config->handler = &irq_serial;
+			serial_add(s);
+			if(!register_irq(s->irq, irq_config)) {
+				enable_irq(s->irq);
 			}
 			minor++;
+		} else {
+			kfree((unsigned int)s);
 		}
 	}
-
 	return minor;
 }
 
@@ -628,7 +630,7 @@ void serial_init(void)
 	int minor, n, syscon;
 	struct tty *tty;
 
-	memset_b(serial_table, 0, sizeof(serial_table));
+	serial_table = NULL;
 
 	minor = serial_isa();
 #ifdef CONFIG_PCI
