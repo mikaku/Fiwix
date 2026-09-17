@@ -11,7 +11,8 @@
 #define SERIAL4_IRQ	4	/* IRQ for serial ports 1 and 3 */
 #define SERIAL3_IRQ	3	/* IRQ for serial ports 2 and 4 */
 
-#define NR_SERIAL	5	/* maximum number of serial ttys */
+#define NR_SERIAL	4	/* maximum number of serial ttyS */
+#define NR_ISA_SERIALS	4	/* maximum number of ISA serial devices */
 #define SERIAL_MAJOR	4	/* major number for /dev/ttyS[n] */
 #define SERIAL_MINORS	NR_SERIAL
 #define SERIAL_MSF	6	/* serial minor shift factor */
