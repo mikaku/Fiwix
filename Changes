@@ -1,5 +1,8 @@
 1.8.0 - DD-MMM-2026
 ===================
+- Added networking support by porting lwIP into the kernel's build. [#36]
+- Added support for basic Linux socket ioctls.
+- Added Realtek RTL8139 network driver.
 - Added generic PCI Bus-Master DMA support on ATA disks.
 - Added support for tilde dead key. [#102]
 - Added the 'flags' entry in the 'kernel_params' structure to group all toggle-
@@ -9,12 +12,16 @@
 - Added support for some new functions in lib/string.c.
 - Changed the 'ps2_noreset' to a toggle parameter.
 - Changed the way how device drivers find PCI-type devices.
+- Changed the serial device driver arrays to use dynamic allocation and fixed
+  some bugs.
 - Moved ipc_init() and net_init() initialization into kswpad() to make sure the
   'current' process stucture is completely setup.
 - Removed the file CREDITS because the LICENSE file already contains the list of
   contributors.
 - Removed the configuration option CONFIG_LAZY_USER_ADDR_CHECK.
 - Reimplemented atoi() to rely on strtol().
+- Increased the amount of padding up to 255 characters in do_printk().
+- Improved the efficiency in append_packet_to_queue().
 - Fixed the ATA disk initialitzation to reduce the number of messages like
   'unexpected interrupt'.
 - Fixed the DMA functionality in ATA disks to use UDMA since the support for the
@@ -39,6 +46,20 @@
   and str2.
 - Fixed the inode count in mmap() functions.
 - Fixed a possible infinite loop in do_munmap().
+- Fixed some calculations to use the pointer size instead of the data type,
+  improving code portability. [#113]
+- Fixed kmalloc() and kfree() to protect bl_malloc() and bl_free() to avoid
+  corruption when allocate/free memory in interrupt context.
+- Fixed mutex_lock() and mutex_unlock() to avoid races and memory corruption.
+- Fixed remove_packet_from_queue() to avoid races and memory corruption.
+- Fixed recvfrom() to pass the value of 'addrlen' if it was supplied by the
+  caller.
+- Fixed timer counter underflows in gettimeoffset() that caused it to return
+  earlier timestamps.
+- Fixed sys_gettimeofday() to carry over to seconds when microseconds value
+  overflows.
+- Fixed a kernel panic when trying to show argv and envp values from a zombie
+  process.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
