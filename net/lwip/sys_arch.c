@@ -8,7 +8,7 @@
 #include <fiwix/kernel.h>
 
 #define MS_TO_TICKS(ms)		((ms) * HZ / 1000)
-#define TICKS_TO_MS(ticks)	((ticks) * 1000 / HZ)
+#define TICKS_TO_MS(ticks)	((ticks) * (1000 / HZ))
 
 static struct mutex protect_lk;
 
@@ -289,9 +289,7 @@ u32_t sys_now(void)
 {
 	u32_t now;
 
-	/* Based on gettimeofday syscall */
-	now = ((CURRENT_TICKS % HZ) * 1000) / HZ;
-	now += (gettimeoffset() / 10);
+	now = TICKS_TO_MS(CURRENT_TICKS);
 	return now;
 }
 
