@@ -94,8 +94,9 @@ int ext2_readlink(struct inode *i, char *buffer, __size_t count)
 int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 {
 	struct buffer *buf;
-	char *name;
+	char *name, *tmp_name;
 	__ino_t errno;
+	int len;
 
 	if(!i) {
 		return -ENOENT;
@@ -123,14 +124,27 @@ int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		buf = NULL;
 		name = (char *)i->u.ext2.i_data;
 	}
-	inode_unlock(i);
 
+	len = strlen(name);
+	if(!(tmp_name = (char *)kmalloc(len + 1))) {
+		inode_unlock(i);
+		iput(i);
+		if(buf) {
+			brelse(buf);
+		}
+		return -ENOMEM;
+	}
+	memset_b(tmp_name, 0, len + 1);
+	memcpy_b(tmp_name, name, len);
+
+	inode_unlock(i);
 	current->loopcnt++;
 	iput(i);
 	if(buf) {
 		brelse(buf);
 	}
-	errno = parse_namei(name, dir, i_res, NULL, FOLLOW_LINKS);
+	errno = parse_namei(tmp_name, dir, i_res, NULL, FOLLOW_LINKS);
+	kfree((unsigned int)tmp_name);
 	current->loopcnt--;
 	return errno;
 }

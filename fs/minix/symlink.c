@@ -97,8 +97,9 @@ int minix_readlink(struct inode *i, char *buffer, __size_t count)
 int minix_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 {
 	struct buffer *buf;
-	char *name;
+	char *name, *tmp_name;
 	__ino_t errno;
+	int len;
 
 	if(!i) {
 		return -ENOENT;
@@ -130,10 +131,20 @@ int minix_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 	name = buf->data;
 	inode_unlock(i);
 
+	len = strlen(name);
+	if(!(tmp_name = (char *)kmalloc(len + 1))) {
+		iput(i);
+		brelse(buf);
+		return -ENOMEM;
+	}
+	memset_b(tmp_name, 0, len + 1);
+	memcpy_b(tmp_name, name, len);
+
 	current->loopcnt++;
 	iput(i);
 	brelse(buf);
-	errno = parse_namei(name, dir, i_res, NULL, FOLLOW_LINKS);
+	errno = parse_namei(tmp_name, dir, i_res, NULL, FOLLOW_LINKS);
+	kfree((unsigned int)tmp_name);
 	current->loopcnt--;
 	return errno;
 }
