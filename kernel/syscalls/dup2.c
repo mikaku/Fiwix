@@ -22,7 +22,7 @@ int sys_dup2(unsigned int old_ufd, unsigned int new_ufd)
 #endif /*__DEBUG__ */
 
 	CHECK_UFD(old_ufd);
-	if(new_ufd > OPEN_MAX) {
+	if(new_ufd >= OPEN_MAX) {
 		return -EINVAL;
 	}
 	if(old_ufd == new_ufd) {
