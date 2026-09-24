@@ -24,7 +24,7 @@ unsigned int sys_signal(__sigset_t signum, void(* sighandler)(int))
 	printk("(pid %d) sys_signal()\n", current->pid);
 #endif /*__DEBUG__ */
 
-	if(signum < 1 || signum > NSIG) {
+	if(signum < 1 || signum >= NSIG) {
 		return -EINVAL;
 	}
 	if(signum == SIGKILL || signum == SIGSTOP) {

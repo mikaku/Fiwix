@@ -22,7 +22,7 @@ int sys_sigaction(__sigset_t signum, const struct sigaction *newaction, struct s
 	printk("(pid %d) sys_sigaction(%d, 0x%08x, 0x%08x)\n", current->pid, signum, (unsigned int)newaction, (unsigned int)oldaction);
 #endif /*__DEBUG__ */
 
-	if(signum < 1 || signum > NSIG) {
+	if(signum < 1 || signum >= NSIG) {
 		return -EINVAL;
 	}
 	if(signum == SIGKILL || signum == SIGSTOP) {
