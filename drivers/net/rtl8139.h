@@ -77,6 +77,7 @@
 #define RX_BUFFER_SIZE	8192
 #define TX_BUFFER_SIZE	1536
 #define NUM_TX_DESC	4
+#define MIN_ETH_PSIZE	60		/* minimal Eth packet size (sans CRC) */
 
 struct rtl8139 {
 	struct netdevice *nd;

@@ -94,7 +94,7 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	printk("\t\t\t\tmac=");
 	for(n = 0; n < NETIF_MAX_HWADDR_LEN; n++) {
 		nd->mac[n] = inport_b(nd->ioaddr + IDR + n);
-		printk("%02x", nd->mac[n]);
+		printk("%02x", nd->mac[n] & 0xFF);
 		if(n < (NETIF_MAX_HWADDR_LEN - 1)) {
 			printk(":");
 		}
@@ -251,6 +251,8 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 		} else {
 			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(data));
 		}
+		/* this chip doesn't have auto-padding */
+		size = size < MIN_ETH_PSIZE ? MIN_ETH_PSIZE : size;
 		outport_l(nd->ioaddr + TSD0 + (entry * 4), TSD_TXFIFO_THR | size);
 		if(++nic.tx_index - nic.tx_sent == NUM_TX_DESC) {
 			nic.tx_full = 1;
@@ -279,27 +281,21 @@ int rtl8139_open(struct netdevice *nd)
 	struct netif *netif;
 	unsigned int addr;
 
-	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
-	outport_b(nd->ioaddr + CONFIG1, 0x0);
-	outport_b(nd->ioaddr + CR9346, 0x0);
-
 	rtl8139_reset(nd);
-
-	/* set the rx buffer */
-	outport_l(nd->ioaddr + RBSTART, (unsigned int)V2P(nic.rx_buffer));
 
 	/* enable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
 
-	/* TX DMA burst size to 1024 bytes */
 	outport_l(nd->ioaddr + TCR, DMA_BURST | TSD_IGS);
+	outport_l(nd->ioaddr + RCR, RCR_RXFIFO_THR | DMA_BURST);
+	outport_l(nd->ioaddr + MPC, 0);
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
 	outport_b(nd->ioaddr + CONFIG1, 0x20);
 	outport_b(nd->ioaddr + CR9346, 0x0);
 
-	outport_l(nd->ioaddr + MPC, 0);
-	outport_l(nd->ioaddr + RCR, RCR_RXFIFO_THR | DMA_BURST | RCR_AB | RCR_AM | RCR_APM);
+	/* set the rx buffer */
+	outport_l(nd->ioaddr + RBSTART, (unsigned int)V2P(nic.rx_buffer));
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
 	memcpy_l(&addr, &nd->mac[0], sizeof(unsigned int));
@@ -308,6 +304,7 @@ int rtl8139_open(struct netdevice *nd)
 	outport_l(nd->ioaddr + IDR + 4, addr);
 	outport_b(nd->ioaddr + CR9346, 0x0);
 
+	outport_b(nd->ioaddr + RCR, RCR_AB | RCR_AM | RCR_APM);
 	outport_l(nd->ioaddr + MAR0 + 0, 0xFFFFFFFF);
 	outport_l(nd->ioaddr + MAR0 + 4, 0xFFFFFFFF);
 
