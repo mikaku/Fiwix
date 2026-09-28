@@ -14,6 +14,7 @@
 #include <fiwix/netdevice.h>
 #include <fiwix/net/ipv4.h>
 #include <fiwix/fcntl.h>
+#include <fiwix/ioctl.h>
 #include <fiwix/sched.h>
 #include <fiwix/sleep.h>
 #include <fiwix/mm.h>
@@ -87,6 +88,7 @@ int ipv4_create(struct socket *s, int domain, int type, int protocol)
 {
 	int fd;
 	struct ipv4_info *ip4;
+	unsigned int arg;
 
 	if((fd = lwip_socket(domain, type, protocol)) < 0) {
 		return fd;
@@ -97,6 +99,10 @@ int ipv4_create(struct socket *s, int domain, int type, int protocol)
 	ip4->count = 1;
 	ip4->socket = s;
 	add_ipv4_socket(ip4);
+	if(s->fd->flags & O_NONBLOCK) {
+		arg = 1;
+		lwip_ioctl(s->fd_lwip, FIONBIO, (void *)&arg);
+	}
 	return 0;
 }
 
