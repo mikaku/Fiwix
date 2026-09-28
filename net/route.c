@@ -25,7 +25,7 @@ int route_add(struct rtentry *rt, struct netdevice *netdev)
 	struct sockaddr_in *ip;
 
 	if(!(r = (struct route *)kmalloc(sizeof(struct route)))) {
-		printk("WARNING: %s(): unable to allocate memory for a route.", __FUNCTION__);
+		printk("WARNING: %s(): unable to allocate memory for a route.\n", __FUNCTION__);
 		return -ENOMEM;
 	}
 	memset_b(r, 0, sizeof(struct route));

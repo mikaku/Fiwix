@@ -49,7 +49,7 @@ struct netdevice *netdevice_alloc(void)
 	struct netdevice *nd;
 
 	if(!(nd = (struct netdevice *)kmalloc(sizeof(struct netdevice)))) {
-		printk("WARNING: %s(): unable to allocate memory for network device.", __FUNCTION__);
+		printk("WARNING: %s(): unable to allocate memory for network device.\n", __FUNCTION__);
 		return NULL;
 	}
 	memset_b(nd, 0, sizeof(struct netdevice));

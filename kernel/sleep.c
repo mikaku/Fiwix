@@ -282,7 +282,7 @@ void mutex_unlock(struct mutex *lock)
 
 	SAVE_FLAGS(flags); CLI();
 	if(current != lock->holder) {
-		printk("WARNING: %s(): attempting to unlock a not owned mutex.", __FUNCTION__);
+		printk("WARNING: %s(): attempting to unlock a not owned mutex.\n", __FUNCTION__);
 	} else {
 		if(--lock->recursive_count == 0) {
 			lock->holder = NULL;

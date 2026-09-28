@@ -533,7 +533,7 @@ static int setup_serial_device(int minor, struct pci_device *pci_dev)
 		return minor;
 	}
 	if(!(s = (struct serial *)kmalloc(sizeof(struct serial)))) {
-		printk("WARNING: %s(): unable to allocate memory for a new serial.", __FUNCTION__);
+		printk("WARNING: %s(): unable to allocate memory for a new serial.\n", __FUNCTION__);
 		return minor;
 	}
 
@@ -548,7 +548,7 @@ static int setup_serial_device(int minor, struct pci_device *pci_dev)
 	if(!register_serial(s, minor)) {
 		pci_show_desc(pci_dev);
 		if(!(irq_config = (struct interrupt *)kmalloc(sizeof(struct interrupt)))) {
-			printk("WARNING: %s(): unable to allocate memory to register serial irq.", __FUNCTION__);
+			printk("WARNING: %s(): unable to allocate memory to register serial irq.\n", __FUNCTION__);
 			kfree((unsigned int)s);
 			return minor;
 		}
@@ -593,7 +593,7 @@ static int serial_isa(void)
 
 	for(n = 0, minor = 0; isa_ioports[n] && minor < NR_ISA_SERIALS; n++) {
 		if(!(s = (struct serial *)kmalloc(sizeof(struct serial)))) {
-			printk("WARNING: %s(): unable to allocate memory for a new serial.", __FUNCTION__);
+			printk("WARNING: %s(): unable to allocate memory for a new serial.\n", __FUNCTION__);
 			return minor;
 		}
 		memset_b(s, 0, sizeof(struct serial));
@@ -606,7 +606,7 @@ static int serial_isa(void)
 		}
 		if(!(register_serial(s, minor))) {
 			if(!(irq_config = (struct interrupt *)kmalloc(sizeof(struct interrupt)))) {
-				printk("WARNING: %s(): unable to allocate memory to register serial irq.", __FUNCTION__);
+				printk("WARNING: %s(): unable to allocate memory to register serial irq.\n", __FUNCTION__);
 				kfree((unsigned int)s);
 				continue;
 			}
