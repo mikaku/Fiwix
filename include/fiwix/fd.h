@@ -13,7 +13,7 @@
 
 #define CHECK_UFD(ufd)							\
 {									\
-	if((ufd) > (OPEN_MAX - 1) || current->fd[(ufd)] == 0) {		\
+	if((ufd) >= OPEN_MAX || current->fd[(ufd)] == 0) {		\
 		return -EBADF;						\
 	}								\
 }									\
