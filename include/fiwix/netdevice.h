@@ -16,6 +16,8 @@
 #include <fiwix/pci.h>
 #include <fiwix/if.h>
 
+#define NIC_ACTIVE	0x1
+
 struct netdevice {
 	char name[IFNAMSIZ];		/* lo, eth0, ... */
 	char mac[8];			/* MAC address (6 + 2) */
@@ -23,6 +25,7 @@ struct netdevice {
 	int flags;			/* IFF_UP, IFF_RUNNING, ... */
 	unsigned short type;		/* ARPHRD_LOOPBACK, ... */
 	unsigned short family;		/* AF_INET */
+	void *nic;			/* pointer to NIC structure */
 	void *lwip_netif;
 	unsigned short int ioaddr;	/* I/O port address */
 	struct pci_device *pci_dev;
