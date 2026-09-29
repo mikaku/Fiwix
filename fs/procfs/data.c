@@ -36,6 +36,7 @@
 #include <fiwix/netdevice.h>
 #include <fiwix/route.h>
 #include <lwip/netif.h>
+#include <lwip/etharp.h>
 #endif /* CONFIG_NET */
 
 #define FSHIFT16	16
@@ -451,6 +452,40 @@ int data_proc_fullversion(char *buffer, __pid_t pid)
 	return sprintk(buffer, "Fiwix version %s %s\n", UTS_RELEASE, UTS_VERSION);
 }
 
+
+int data_proc_net_arp(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	struct netdevice *nd;
+	ip4_addr_t *ipaddr;
+	struct netif *netif;
+	struct eth_addr *eth_ret;
+	char str[IP4ADDR_STRLEN_MAX];
+	int n, n2, size;
+
+	size = sprintk(buffer, "IP address       HW type     Flags       HW address            Mask     Device\n");
+	for(n = 0; n < ARP_TABLE_SIZE; n++) {
+		if(!etharp_get_entry(n, &ipaddr, &netif, &eth_ret)) {
+			break;
+		}
+		nd = (struct netdevice *)netif->state;
+		memset_b(str, 0, IP4ADDR_STRLEN_MAX);
+		ip4addr_ntoa_r(ipaddr, str, sizeof(str));
+		size += sprintk(buffer + size, "%15s", str);
+		size += sprintk(buffer + size, "  0x1         0x2         ");
+		for(n2 = 0; n2 < NETIF_MAX_HWADDR_LEN; n2++) {
+			size += sprintk(buffer + size, "%02x", eth_ret->addr[n2] & 0xFF);
+			if(n2 < (NETIF_MAX_HWADDR_LEN - 1)) {
+				size += sprintk(buffer + size, ":");
+			}
+		}
+		size += sprintk(buffer + size, "     *        %s\n", nd->name);
+	}
+	return size;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
 
 int data_proc_net_dev(char *buffer, __pid_t pid)
 {
