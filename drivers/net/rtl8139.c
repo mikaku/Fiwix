@@ -24,34 +24,58 @@
 #include <lwip/dhcp.h>
 
 #ifdef CONFIG_PCI
-static struct interrupt irq_config_rtl8139 = { 0, NULL, &irq_rtl8139, NULL };
-static struct rtl8139 *rtl8139_active = NULL;
+static struct rtl8139 *rtl8139_table = NULL;
 static struct bh rtl8139_bh = { 0, &irq_rtl8139_bh, NULL };
 /* FIXME: this should be allocated dynamically */
-static struct rtl8139 nic = { 0 };
+static struct rtl8139 nic_static = { 0 };
+
+static void rtl8139_add(struct rtl8139 *nic)
+{
+	struct rtl8139 **nicp;
+
+	nicp = &rtl8139_table;
+	if(*nicp) {
+		do {
+			nicp = &(*nicp)->next;
+		} while(*nicp);
+	}
+	*nicp = nic;
+}
 
 static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 {
+	struct rtl8139 *nic;
+	struct interrupt *irq_config;
 	struct netdevice *nd;
 	struct netif *netif;
-	struct rtl8139 **nicp;
 	int n, speed, mode, link, ver, hwid;
 
 	if(!(nd = netdevice_alloc())) {
-		printk("WARNING: %s(): unable to allocate memory for netdevice structure.", __FUNCTION__);
+		printk("WARNING: %s(): unable to allocate memory for netdevice structure.\n", __FUNCTION__);
 		return NULL;
 	}
 	if(!(netif = (struct netif *)kmalloc(sizeof(struct netif)))) {
-		printk("WARNING: %s(): unable to allocate memory for netif structure.", __FUNCTION__);
+		printk("WARNING: %s(): unable to allocate memory for netif structure.\n", __FUNCTION__);
+		kfree((unsigned int)nd);
 		return NULL;
 	}
+	if(!(irq_config = (struct interrupt *)kmalloc(sizeof(struct interrupt)))) {
+		printk("WARNING: %s(): unable to allocate memory to register RTL8139 irq.\n", __FUNCTION__);
+		kfree((unsigned int)nd);
+		kfree((unsigned int)netif);
+		return NULL;
+	}
+
 	memset_b(netif, 0, sizeof(struct netif));
+	memset_b(irq_config, 0, sizeof(struct interrupt));
+	nic = &nic_static;
 
 	sprintk(nd->name, "eth%d", ether_count);
 	nd->num = if_count;
 	nd->flags = IFF_BROADCAST | IFF_RUNNING; /* IFF_UP */
 	nd->type = ARPHRD_ETHER;
 	nd->family = AF_INET;
+	nd->nic = (void *)nic;
 	nd->lwip_netif = (void *)netif;
 	nd->pci_dev = pci_dev;
 	nd->open = &rtl8139_open;
@@ -110,27 +134,20 @@ static struct netdevice *rtl8139_enable(struct pci_device *pci_dev)
 	pci_dev->command &= ~PCI_COMMAND_INT_DISABLE;
 	pci_write_short(pci_dev, PCI_COMMAND, pci_dev->command);
 
-	irq_config_rtl8139.name = nd->name;
-	if(!register_irq(pci_dev->irq, &irq_config_rtl8139)) {
+	irq_config->name = nd->name;
+	irq_config->handler = &irq_rtl8139;
+	nic->nd = nd;
+	rtl8139_add(nic);
+	if(!register_irq(pci_dev->irq, irq_config)) {
 		enable_irq(pci_dev->irq);
 	}
 	register_netdevice(nd);
-	memset_b(&nic, 0, sizeof(struct rtl8139));
-	nicp = &rtl8139_active;
-	/* multiple rtl8139 NICs are not supported yet
-	if(*nicp) {
-		do {
-			nicp = &(*nicp)->next;
-		} while(*nicp);
-	}
-	*/
-	nic.nd = nd;
-	*nicp = &nic;
 	return nd;
 }
 
 static void rtl8139_reset(struct netdevice *nd)
 {
+	struct rtl8139 *nic;
 	int n;
 
 	outport_b(nd->ioaddr + CMD, CMD_RESET);
@@ -140,29 +157,32 @@ static void rtl8139_reset(struct netdevice *nd)
 		}
 	}
 	if(!n) {
-		printk("WARNING: %s(): reset not completed.", __FUNCTION__);
+		printk("WARNING: %s(): reset not completed.\n", __FUNCTION__);
 	}
-	nic.tx_index = nic.tx_sent = 0;
+	nic = (struct rtl8139 *)nd->nic;
+	nic->tx_index = nic->tx_sent = 0;
 }
 
 static void rtl8139_rx(struct netif *netif)
 {
 	struct netdevice *nd;
+	struct rtl8139 *nic;
 	struct pbuf *p;
 	int offset, frag;
 	unsigned short int *header, status, size;
 
-	nd = nic.nd;
+	nd = (struct netdevice *)netif->state;
+	nic = (struct rtl8139 *)nd->nic;
 
 	while((inport_b(nd->ioaddr + CMD) & CMD_RXBUFEMPTY) == 0) {
-		offset = nic.rx_index;
-		header = (unsigned short int *)(nic.rx_buffer + offset);
+		offset = nic->rx_index;
+		header = (unsigned short int *)(nic->rx_buffer + offset);
 		status = header[0];
 		size = header[1];
 		offset += (sizeof(unsigned short int)) * 2;
 
 		if(status & (ST_RX_FAE | ST_RX_CRC | ST_RX_LONG | ST_RX_RUNT | ST_RX_ISE)) {
-			printk("WARNING: %s(): %s packet error: 0x%x\n", nd->name, status);
+			printk("WARNING: %s(): %s packet error: 0x%x.\n", nd->name, status);
 		}
 #if ETH_PAD_SIZE
 		/* allow room for Ethernet padding */
@@ -170,7 +190,7 @@ static void rtl8139_rx(struct netif *netif)
 #else
 		if(!(p = pbuf_alloc(PBUF_RAW, size, PBUF_RAM))) {
 #endif /* ETH_PAD_SIZE */
-			printk("WARNING: %s(): unable to allocate memory for pbuf structure.", __FUNCTION__);
+			printk("WARNING: %s(): unable to allocate memory for pbuf structure.\n", __FUNCTION__);
 			break;
 		}
 #if ETH_PAD_SIZE
@@ -178,10 +198,10 @@ static void rtl8139_rx(struct netif *netif)
 #endif /* ETH_PAD_SIZE */
 		if(offset + size > RX_BUFFER_SIZE) {
 			frag = RX_BUFFER_SIZE - offset;
-			memcpy_b(p->payload, &nic.rx_buffer[offset], frag);
-			memcpy_b(p->payload + frag, &nic.rx_buffer, size - frag);
+			memcpy_b(p->payload, &nic->rx_buffer[offset], frag);
+			memcpy_b(p->payload + frag, nic->rx_buffer, size - frag);
 		} else {
-			memcpy_b(p->payload, &nic.rx_buffer[offset], size);
+			memcpy_b(p->payload, &nic->rx_buffer[offset], size);
 		}
 		p->len = size;
 
@@ -197,41 +217,45 @@ static void rtl8139_rx(struct netif *netif)
 			pbuf_free(p);
 		}
 
-		nic.rx_index = ((nic.rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
-		outport_w(nd->ioaddr + CAPR, nic.rx_index - 16);
+		nic->rx_index = ((nic->rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
+		outport_w(nd->ioaddr + CAPR, nic->rx_index - 16);
 		rtl8139_bh.flags |= BH_ACTIVE;
 	}
 }
 
-static void rtl8139_tx_end(void)
+static void rtl8139_tx_end(struct netdevice *nd)
 {
-	struct netdevice *nd;
+	struct rtl8139 *nic;
 	unsigned int status;
 	int entry;
 
-	nd = nic.nd;
-	while(nic.tx_sent < nic.tx_index || nic.tx_full) {
-		entry = nic.tx_sent % NUM_TX_DESC;
+	nic = (struct rtl8139 *)nd->nic;
+	while(nic->tx_sent < nic->tx_index || nic->tx_full) {
+		entry = nic->tx_sent % NUM_TX_DESC;
 		status = inport_l(nd->ioaddr + TSD0 + (entry * 4));
 		if(!(status & (TSD_TOK | TSD_TUN | TSD_TABT))) {
 			break;
 		}
 		if(status & (TSD_TOK | TSD_OWN)) {
-			if(nic.tx_full) {
-				nic.tx_full = 0;
+			if(nic->tx_full) {
+				nic->tx_full = 0;
 			}
 		}
-		nic.tx_sent++;
+		nic->tx_sent++;
 	}
 }
 
 static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 {
 	struct netdevice *nd;
+	struct rtl8139 *nic;
 	char *data;
 	int size, entry;
 
-	if(nic.tx_full) {
+	nd = (struct netdevice *)netif->state;
+	nic = (struct rtl8139 *)nd->nic;
+
+	if(nic->tx_full) {
 		return ERR_IF;
 	}
 	if(can_lock_area(AREA_NETDEVICE)) {
@@ -239,23 +263,22 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 		pbuf_remove_header(p, ETH_PAD_SIZE);	/* drop the padding word */
 #endif /* ETH_PAD_SIZE */
 		size = LWIP_MIN(TX_BUFFER_SIZE, p->tot_len);
-		entry = nic.tx_index % NUM_TX_DESC;
-		if(!(data = pbuf_get_contiguous(p, nic.tx_buffer[entry], TX_BUFFER_SIZE, size, 0))) {
+		entry = nic->tx_index % NUM_TX_DESC;
+		if(!(data = pbuf_get_contiguous(p, nic->tx_buffer[entry], TX_BUFFER_SIZE, size, 0))) {
 			printk("WARNING: %s(): pbuf_get_contiguous() returned NULL.\n", __FUNCTION__);
 			return ERR_IF;
 		}
-		nd = nic.nd;
 		if((unsigned int)data & 3) {
-			memcpy_b(nic.tx_buffer[entry], data, size);
-			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(nic.tx_buffer[entry]));
+			memcpy_b(nic->tx_buffer[entry], data, size);
+			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(nic->tx_buffer[entry]));
 		} else {
 			outport_l(nd->ioaddr + TSAD0 + (entry * 4), (unsigned int)V2P(data));
 		}
 		/* this chip doesn't have auto-padding */
-		size = size < MIN_ETH_PSIZE ? MIN_ETH_PSIZE : size;
+		size = size < ETH_MIN_LEN ? ETH_MIN_LEN : size;
 		outport_l(nd->ioaddr + TSD0 + (entry * 4), TSD_TXFIFO_THR | size);
-		if(++nic.tx_index - nic.tx_sent == NUM_TX_DESC) {
-			nic.tx_full = 1;
+		if(++nic->tx_index - nic->tx_sent == NUM_TX_DESC) {
+			nic->tx_full = 1;
 		}
 
 		MIB2_STATS_NETIF_ADD(netif, ifoutoctets, size);
@@ -279,9 +302,11 @@ void rtl8139_callback(void *ctx)
 int rtl8139_open(struct netdevice *nd)
 {
 	struct netif *netif;
+	struct rtl8139 *nic;
 	unsigned int addr;
 
 	rtl8139_reset(nd);
+	nic = (struct rtl8139 *)nd->nic;
 
 	/* enable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, CMD_TXENABLE | CMD_RXENABLE);
@@ -295,7 +320,7 @@ int rtl8139_open(struct netdevice *nd)
 	outport_b(nd->ioaddr + CR9346, 0x0);
 
 	/* set the rx buffer */
-	outport_l(nd->ioaddr + RBSTART, (unsigned int)V2P(nic.rx_buffer));
+	outport_l(nd->ioaddr + RBSTART, (unsigned int)V2P(nic->rx_buffer));
 
 	outport_b(nd->ioaddr + CR9346, CR9346_EEM10);
 	memcpy_l(&addr, &nd->mac[0], sizeof(unsigned int));
@@ -315,6 +340,7 @@ int rtl8139_open(struct netdevice *nd)
 	netif = nd->lwip_netif;
 	netif->flags |= NETIF_FLAG_LINK_UP;
 	netif_set_link_up(netif);
+	nic->flags |= NIC_ACTIVE;
 
 	/* enable all interrupts and clear all pending */
 	outport_w(nd->ioaddr + IMR, IMR_ALLINT);
@@ -325,6 +351,7 @@ int rtl8139_open(struct netdevice *nd)
 int rtl8139_close(struct netdevice *nd)
 {
 	struct netif *netif;
+	struct rtl8139 *nic;
 
 	/* disable all interrupts */
 	outport_w(nd->ioaddr + IMR, 0);
@@ -336,41 +363,43 @@ int rtl8139_close(struct netdevice *nd)
 	netif = nd->lwip_netif;
 	netif->flags &= ~NETIF_FLAG_LINK_UP;
 	netif_set_link_down(netif);
+	nic = (struct rtl8139 *)nd->nic;
+	nic->flags &= ~NIC_ACTIVE;
 	return 0;
 }
 
 void irq_rtl8139(int num, struct sigcontext *sc)
 {
-	struct rtl8139 *nicp;
+	struct rtl8139 *nic;
 	struct netdevice *nd;
 	int status;
 
-	nicp = rtl8139_active;
-	/* multiple rtl8139 NICs are not supported yet
-	while(nicp) {
-		nicp = nicp->next;
-	}
-	*/
-	nd = nicp->nd;
-	status = inport_w(nd->ioaddr + ISR);
-	outport_w(nd->ioaddr + ISR, status);	/* ack interrupt bits */
-	if(status & (IMR_ROK | IMR_RER)) {
-		rtl8139_rx(nd->lwip_netif);
-	}
-	if(status & (IMR_TOK | IMR_TER)) {
-		rtl8139_tx_end();
-	}
-	if(status & IMR_LENCHG) {
-		printk("%s(): %s: cable length change detected.\n", __FUNCTION__, nd->name);
-	}
-	if(status & (IMR_RXOVW | IMR_FOVW)) {
-		printk("WARNING: %s(): %s: receive error: status = 0x%x\n", __FUNCTION__, nd->name, status);
-	}
-	if(status & IMR_LNKCHG) {
-		printk("%s(): %s: link is %s.\n", __FUNCTION__, nd->name, inport_b(nd->ioaddr + MSR) & MSR_LNKCHG ? "down" : "up");
-	}
-	if(status & (IMR_TIMEOUT | IMR_SERR)) {
-		printk("WARNING: %s(): %s: error: status = 0x%x\n", __FUNCTION__, nd->name, status);
+	nic = rtl8139_table;
+	while(nic) {
+		if(nic->flags & NIC_ACTIVE) {
+			nd = nic->nd;
+			status = inport_w(nd->ioaddr + ISR);
+			outport_w(nd->ioaddr + ISR, status);	/* ack interrupt bits */
+			if(status & (IMR_ROK | IMR_RER)) {
+				rtl8139_rx(nd->lwip_netif);
+			}
+			if(status & (IMR_TOK | IMR_TER)) {
+				rtl8139_tx_end(nd);
+			}
+			if(status & IMR_LENCHG) {
+				printk("%s(): %s: cable length change detected.\n", __FUNCTION__, nd->name);
+			}
+			if(status & (IMR_RXOVW | IMR_FOVW)) {
+				printk("WARNING: %s(): %s: receive error: status = 0x%x.\n", __FUNCTION__, nd->name, status);
+			}
+			if(status & IMR_LNKCHG) {
+				printk("%s(): %s: link is %s.\n", __FUNCTION__, nd->name, inport_b(nd->ioaddr + MSR) & MSR_LNKCHG ? "down" : "up");
+			}
+			if(status & (IMR_TIMEOUT | IMR_SERR)) {
+				printk("WARNING: %s(): %s: error: status = 0x%x.\n", __FUNCTION__, nd->name, status);
+			}
+		}
+		nic = nic->next;
 	}
 }
 
@@ -407,9 +436,9 @@ void rtl8139_init(struct pci_device *pci_dev)
 {
 	struct netdevice *nd;
 
-	/* multiple rtl8139 NICs are not supported yet */
-	if(nic.nd) {
-		printk("WARNING: %s(): multiple rtl8139 NICs are not supported yet.\n", __FUNCTION__);
+	/* multiple RTL8139 NICs are not supported yet */
+	if(rtl8139_table) {
+		printk("WARNING: %s(): multiple RTL8139 NICs are not supported yet.\n", __FUNCTION__);
 		return;
 	}
 	if(!(nd = rtl8139_enable(pci_dev))) {

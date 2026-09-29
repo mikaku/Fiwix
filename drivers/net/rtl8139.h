@@ -8,7 +8,6 @@
 #ifdef CONFIG_NET
 #ifdef CONFIG_PCI
 
-#include <fiwix/sleep.h>
 #include <lwip/netif.h>
 
 /* register offsets */
@@ -77,16 +76,16 @@
 #define RX_BUFFER_SIZE	8192
 #define TX_BUFFER_SIZE	1536
 #define NUM_TX_DESC	4
-#define MIN_ETH_PSIZE	60		/* minimal Eth packet size (sans CRC) */
+#define ETH_MIN_LEN	60		/* minimal Eth packet size (sans CRC) */
 
 struct rtl8139 {
 	struct netdevice *nd;
 	unsigned char rx_buffer[RX_BUFFER_SIZE + 16];
 	unsigned char tx_buffer[NUM_TX_DESC][TX_BUFFER_SIZE];
 	unsigned int tx_index, tx_sent;
+	int flags;
 	int rx_index, tx_full;
-	struct resource send;
-/*	struct rtl8139 *next;*/
+	struct rtl8139 *next;
 };
 
 void rtl8139_callback(void *);
