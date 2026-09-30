@@ -17,9 +17,7 @@
 #include <fiwix/stdarg.h>
 #include <fiwix/mm.h>
 
-#define MAX_BUF		1024	/* printk() and sprintk() size limit */
-
-static char buf[MAX_BUF];
+static char buf[PAGE_SIZE];	/* printk() and sprintk() size limit */
 static char newline = 1;
 char log_buf[LOG_BUF_LEN];	/* circular buffer */
 unsigned int log_read, log_write, log_size, log_new_chars;
@@ -165,8 +163,8 @@ static int do_printk(char *buffer, const char *format, va_list args)
 		newline = 0;
 	}
 
-	/* assumes buffer has a maximum size of MAX_BUF */
-	while((c = *(format++)) && count < MAX_BUF) {
+	/* assumes buffer has a maximum size of PAGE_SIZE */
+	while((c = *(format++)) && count < PAGE_SIZE) {
 		if((c != '%') && !in_identifier) {
 			if(c == '\n') {
 				newline = 1;
@@ -220,9 +218,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					do {
 						*(buffer++) = *(--ptr_s);
 						count++;
-					} while(ptr_s != str && count < MAX_BUF);
+					} while(ptr_s != str && count < PAGE_SIZE);
 					if(lf) {
-						while(*p && count < MAX_BUF) {
+						while(*p && count < PAGE_SIZE) {
 							*(buffer++) = *(p++);
 							count++;
 						}
@@ -264,9 +262,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					do {
 						*(buffer++) = *(--ptr_s);
 						count++;
-					} while(ptr_s != str && count < MAX_BUF);
+					} while(ptr_s != str && count < PAGE_SIZE);
 					if(lf) {
-						while(*p && count < MAX_BUF) {
+						while(*p && count < PAGE_SIZE) {
 							*(buffer++) = *(p++);
 							count++;
 						}
@@ -298,9 +296,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					do {
 						*(buffer++) = *(--ptr_s);
 						count++;
-					} while(ptr_s != str && count < MAX_BUF);
+					} while(ptr_s != str && count < PAGE_SIZE);
 					if(lf) {
-						while(*p && count < MAX_BUF) {
+						while(*p && count < PAGE_SIZE) {
 							*(buffer++) = *(p++);
 							count++;
 						}
@@ -332,9 +330,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					do {
 						*(buffer++) = *(--ptr_s);
 						count++;
-					} while(ptr_s != str && count < MAX_BUF);
+					} while(ptr_s != str && count < PAGE_SIZE);
 					if(lf) {
-						while(*p && count < MAX_BUF) {
+						while(*p && count < PAGE_SIZE) {
 							*(buffer++) = *(p++);
 							count++;
 						}
@@ -366,9 +364,9 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					do {
 						*(buffer++) = *(--ptr_s);
 						count++;
-					} while(ptr_s != str && count < MAX_BUF);
+					} while(ptr_s != str && count < PAGE_SIZE);
 					if(lf) {
-						while(*p && count < MAX_BUF) {
+						while(*p && count < PAGE_SIZE) {
 							*(buffer++) = *(p++);
 							count++;
 						}
@@ -404,16 +402,16 @@ static int do_printk(char *buffer, const char *format, va_list args)
 					  	ptr_s = (char *)nullstr;
 					}
 					if(lf) {
-						while(num-- > 0 && count < MAX_BUF) {
+						while(num-- > 0 && count < PAGE_SIZE) {
 							*(buffer++) = ' ';
 							count++;
 						}
 					}
-					while((c = *(ptr_s++)) && count < MAX_BUF) {
+					while((c = *(ptr_s++)) && count < PAGE_SIZE) {
 						*(buffer++) = c;
 						count++;
 					}
-					while(num-- > 0 && count < MAX_BUF) {
+					while(num-- > 0 && count < PAGE_SIZE) {
 						*(buffer++) = ' ';
 						count++;
 					}
@@ -519,11 +517,11 @@ int snprintk(char *str, unsigned int size, const char *format, ...)
         va_list args;
         char *buffer;
 
-	if(size > MAX_BUF) {
-		printk("%(): size %d too big, truncating to MAX_BUF (%d bytes).", __FUNCTION__, size, MAX_BUF - 1);
-		size = MAX_BUF - 1;
+	if(size >= PAGE_SIZE) {
+		printk("%(): size %d too big, truncating to %d bytes.", __FUNCTION__, size, PAGE_SIZE - 1);
+		size = PAGE_SIZE;
 	}
-        if(!(buffer = (char *)kmalloc(MAX_BUF))) {
+        if(!(buffer = (char *)kmalloc(size))) {
                 return 0;
         }
         va_start(args, format);
