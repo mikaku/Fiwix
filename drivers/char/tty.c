@@ -1117,6 +1117,9 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 		case TIOCINQ:
 		{
 			int *val = (int *)arg;
+			if((errno = check_user_area(VERIFY_WRITE, (void *)arg, sizeof(int)))) {
+				return errno;
+			}
 			if(tty->termios.c_lflag & ICANON) {
 				*val = tty->cooked_q.count;
 			} else {
