@@ -43,6 +43,7 @@ int dev_ioctl(int, void *);
 
 struct netdevice *netdevice_alloc(void);
 void register_netdevice(struct netdevice *);
+void netdevice_callback(void *);
 void netdevice_init(void);
 
 /* NIC driver init function prototypes */

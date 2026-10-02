@@ -294,11 +294,6 @@ static err_t rtl8139_lwip_send(struct netif *netif, struct pbuf *p)
 	}
 }
 
-void rtl8139_callback(void *ctx)
-{
-	wakeup(&do_select);
-}
-
 int rtl8139_open(struct netdevice *nd)
 {
 	struct netif *netif;
@@ -361,6 +356,7 @@ int rtl8139_close(struct netdevice *nd)
 
 	del_bh(&rtl8139_bh);
 	netif = nd->lwip_netif;
+
 	netif->flags &= ~NETIF_FLAG_LINK_UP;
 	netif_set_link_down(netif);
 	nic = (struct rtl8139 *)nd->nic;
@@ -405,7 +401,7 @@ void irq_rtl8139(int num, struct sigcontext *sc)
 
 void irq_rtl8139_bh(struct sigcontext *sc)
 {
-	tcpip_callback(rtl8139_callback, NULL);
+	tcpip_callback(netdevice_callback, NULL);
 }
 
 err_t rtl8139_lwip_init(struct netif *netif)

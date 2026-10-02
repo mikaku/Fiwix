@@ -71,6 +71,11 @@ void register_netdevice(struct netdevice *nd)
 	}
 }
 
+void netdevice_callback(void *ctx)
+{
+	wakeup(&do_select);
+}
+
 void netdevice_init(void)
 {
 	netdevice_table = NULL;
