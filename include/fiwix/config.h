@@ -28,6 +28,7 @@
 					   hash table */
 #define INODE_HASH_PERCENTAGE	10	/* % of hash buckets relative to the
 					   size of the inode table */
+#define NR_INODE_RECLAIM	125	/* inodes reclaimed in a single shot */
 
 #define MAX_PID_VALUE		32767	/* max. value for PID */
 #define SCREENS_LOG		6	/* max. number of screens in console's

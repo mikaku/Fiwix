@@ -37,6 +37,9 @@
 #define INODE_HASH(dev, inode)	(((__dev_t)(dev) ^ (__ino_t)(inode)) % (NR_INO_HASH))
 #define NR_INO_HASH	(inode_hash_table_size / sizeof(struct inode *))
 
+#define NO_GROW		0
+#define GROW_IF_NEEDED	1
+
 struct inode *inode_table;		/* inode pool */
 struct inode *inode_head;		/* head of free list */
 struct inode **inode_hash_table;
@@ -181,16 +184,18 @@ static void remove_from_free_list(struct inode *i)
 	i->prev_free = i->next_free = NULL;
 }
 
-static struct inode *get_free_inode(void)
+static struct inode *get_free_inode(int mode)
 {
 	unsigned int flags;
 	struct inode *i;
 
-	if(kstat.nr_inodes < kstat.max_inodes) {
-		if(!(i = add_inode_to_pool())) {
-			return NULL;
+	if(mode == GROW_IF_NEEDED) {
+		if(kstat.nr_inodes < kstat.max_inodes) {
+			if(!(i = add_inode_to_pool())) {
+				return NULL;
+			}
+			return i;
 		}
-		return i;
 	}
 
 	SAVE_FLAGS(flags); CLI();
@@ -310,7 +315,7 @@ struct inode *ialloc(struct superblock *sb, int mode)
 {
 	struct inode *i;
 
-	if((i = get_free_inode())) {
+	if((i = get_free_inode(GROW_IF_NEEDED))) {
 		i->sb = sb;
 		i->rdev = sb->dev;
 		if(i->sb->fsop->ialloc(i, mode)) {
@@ -357,7 +362,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 			return i;
 		}
 
-		if(!(i = get_free_inode())) {
+		if(!(i = get_free_inode(GROW_IF_NEEDED))) {
 			printk("WARNING: %s(): no more inodes on free list!\n", __FUNCTION__);
 			return NULL;
 		}
@@ -498,6 +503,30 @@ void invalidate_inodes(__dev_t dev)
 	}
 
 	RESTORE_FLAGS(flags);
+}
+
+void reclaim_inodes(void)
+{
+	struct inode *i;
+	int reclaimed;
+	unsigned int flags;
+
+	reclaimed = 0;
+	for(;;) {
+		if((i = get_free_inode(NO_GROW))) {
+			SAVE_FLAGS(flags); CLI();
+			del_inode_from_pool(i);
+			RESTORE_FLAGS(flags);
+			if(++reclaimed == NR_INODE_RECLAIM) {
+				break;
+			}
+		} else {
+			break;
+		}
+		if(kstat.nr_inodes < NR_INODE_RECLAIM) {
+			break;
+		}
+	}
 }
 
 void inode_init(void)

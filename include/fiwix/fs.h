@@ -238,6 +238,7 @@ int check_fs_busy(__dev_t, struct inode *);
 void iput(struct inode *);
 void sync_inodes(__dev_t);
 void invalidate_inodes(__dev_t);
+void reclaim_inodes(void);
 void inode_init(void);
 
 int parse_namei(char *, struct inode *, struct inode **, struct inode **, int);
