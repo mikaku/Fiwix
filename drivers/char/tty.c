@@ -1100,10 +1100,11 @@ int tty_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 			break;
 		case TIOCLINUX:
 		{
-			int val = *(unsigned char *)arg;
+			int val;
 			if((errno = check_user_area(VERIFY_READ, (void *)arg, sizeof(unsigned char)))) {
 				return errno;
 			}
+			val = *(unsigned char *)arg;
 			switch(val) {
 				case 12:	/* get current console */
 					return current_cons;
