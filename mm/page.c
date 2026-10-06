@@ -387,7 +387,12 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		tmp = br;
 		size_read += blksize;
 	}
-	if(!retval) {
+
+	if(retval) {
+		remove_from_hash(pg);
+		pg->inode = pg->offset = pg->dev = 0;
+		goto end;
+	} else {
 		retval = gbread(d, &brh);
 	}
 	/*
@@ -417,6 +422,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		br = tmp;
 	}
 
+end:
 	page_unlock(pg);
 	return retval;
 }
