@@ -319,6 +319,10 @@ int write_page(struct page *pg, struct inode *i, __off_t offset, unsigned int le
 	unsigned int size;
 	int errno;
 
+	if(offset >= i->i_size) {
+		printk("WARNING: %s(): offset >= i->i_size (%d >= %d)!\n", __FUNCTION__, offset, i->i_size);
+		return -EINVAL;
+	}
 	size = MIN(i->i_size - offset, length);
 	fdt.inode = i;
 	fdt.flags = 0;
