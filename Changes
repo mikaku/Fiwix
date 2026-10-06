@@ -2,6 +2,8 @@
 ===================
 - Added networking support by porting lwIP into the kernel's build. [#36]
 - Added support for basic Linux socket ioctls.
+- Added support for retrieving network information through 'proc/net/dev',
+  '/proc/net/arp' and '/proc/net/route', while maintaining Linux compatibility.
 - Added Realtek RTL8139 network driver.
 - Added generic PCI Bus-Master DMA support on ATA disks.
 - Added support for tilde dead key. [#102]
@@ -10,6 +12,8 @@
 - Added the new kernel parameter 'ide_nodma' to disable DMA in all ATA drives.
 - Added support to be able to right-justify strings in printk().
 - Added support for some new functions in lib/string.c.
+- Added reclaim_inodes(), which is called after reclaim_buffers() to free memory
+  allocated for inodes.
 - Changed the 'ps2_noreset' to a toggle parameter.
 - Changed the way how device drivers find PCI-type devices.
 - Changed the serial device driver arrays to use dynamic allocation and fixed
@@ -21,6 +25,8 @@
 - Removed the configuration option CONFIG_LAZY_USER_ADDR_CHECK.
 - Reimplemented atoi() to rely on strtol().
 - Increased the amount of padding up to 255 characters in do_printk().
+- Increased from 1024 to PAGE_SIZE (4096) the buffer used in printk(), sprintk()
+  and snprintk().
 - Improved the efficiency in append_packet_to_queue().
 - Fixed the ATA disk initialitzation to reduce the number of messages like
   'unexpected interrupt'.
@@ -60,6 +66,16 @@
   overflows.
 - Fixed a kernel panic when trying to show argv and envp values from a zombie
   process.
+- Fixed a potential use-after-free in ext2_followlink() and minix_followlink().
+- Fixed a potential out-of-range of OPEN_MAX in sys_dup2().
+- Fixed a potential out-of-range of NSIG in sys_kill(), sys_sigaction() and
+  sys_signal().
+- Fixed a missing argument check in the tty ioctl TIOCINQ that could have led
+  to local privilege escalation.
+- Fixed late argument check in tty ioctl TIOCLINUX that could have led to local
+  privilege escalation.
+- Fixed bread_page() to revert the changes in the page hash table if kmalloc()
+  or bmap() fails.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
