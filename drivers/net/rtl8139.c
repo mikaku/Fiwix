@@ -182,7 +182,10 @@ static void rtl8139_rx(struct netif *netif)
 		offset += (sizeof(unsigned short int)) * 2;
 
 		if(status & (ST_RX_FAE | ST_RX_CRC | ST_RX_LONG | ST_RX_RUNT | ST_RX_ISE)) {
-			printk("WARNING: %s(): %s packet error: 0x%x.\n", nd->name, status);
+			printk("WARNING: %s(): %s packet error: 0x%x.\n", __FUNCTION__, nd->name, status);
+			nic->rx_index = ((nic->rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
+			outport_w(nd->ioaddr + CAPR, nic->rx_index - 16);
+			break;
 		}
 #if ETH_PAD_SIZE
 		/* allow room for Ethernet padding */
@@ -191,6 +194,8 @@ static void rtl8139_rx(struct netif *netif)
 		if(!(p = pbuf_alloc(PBUF_RAW, size, PBUF_RAM))) {
 #endif /* ETH_PAD_SIZE */
 			printk("WARNING: %s(): unable to allocate memory for pbuf structure.\n", __FUNCTION__);
+			nic->rx_index = ((nic->rx_index + size + 4 + 3) & ~3) % RX_BUFFER_SIZE;
+			outport_w(nd->ioaddr + CAPR, nic->rx_index - 16);
 			break;
 		}
 #if ETH_PAD_SIZE
@@ -333,7 +338,7 @@ int rtl8139_open(struct netdevice *nd)
 
 	add_bh(&rtl8139_bh);
 	netif = nd->lwip_netif;
-	netif->flags |= NETIF_FLAG_LINK_UP;
+	netif->flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP | NETIF_FLAG_BROADCAST;
 	netif_set_link_up(netif);
 	nic->flags |= NIC_ACTIVE;
 
@@ -347,9 +352,11 @@ int rtl8139_close(struct netdevice *nd)
 {
 	struct netif *netif;
 	struct rtl8139 *nic;
+	ip4_addr_t ipaddr;
 
-	/* disable all interrupts */
+	/* disable all interrupts and clear all pending */
 	outport_w(nd->ioaddr + IMR, 0);
+	outport_w(nd->ioaddr + ISR, 0xFFFF);
 
 	/* disable transmitter and receiver */
 	outport_b(nd->ioaddr + CMD, 0);
@@ -357,7 +364,13 @@ int rtl8139_close(struct netdevice *nd)
 	del_bh(&rtl8139_bh);
 	netif = nd->lwip_netif;
 
-	netif->flags &= ~NETIF_FLAG_LINK_UP;
+	/* reset IP, netmask and gateway */
+	netif->flags &= ~(NETIF_FLAG_UP | NETIF_FLAG_LINK_UP | NETIF_FLAG_BROADCAST);
+	ip4addr_aton("0.0.0.0", &ipaddr);
+	netif_set_ipaddr(netif, &ipaddr);
+	netif_set_netmask(netif, &ipaddr);
+	netif_set_gw(netif, &ipaddr);
+
 	netif_set_link_down(netif);
 	nic = (struct rtl8139 *)nd->nic;
 	nic->flags &= ~NIC_ACTIVE;
@@ -416,7 +429,7 @@ err_t rtl8139_lwip_init(struct netif *netif)
 	for(n = 0; n < NETIF_MAX_HWADDR_LEN; n++) {
 		netif->hwaddr[n] = nd->mac[n];
 	}
-	netif->mtu = 1500;	/* TCP_MSS + 40 actually */
+	netif->mtu = 1500;	/* TCP_MSS + 40 */
 	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 #if LWIP_IPV4
 	netif->output = etharp_output;
