@@ -533,12 +533,11 @@ struct buffer *bread(__dev_t dev, __blk_t block, int size)
 		if(buf->flags & BUFFER_VALID) {
 			return buf;
 		}
-		if(!(d = get_device(BLK_DEV, dev))) {
-			return NULL;
-		}
-		if(do_blk_request(d, d->fsop->read_block, buf) == size) {
-			buf->flags |= BUFFER_VALID;
-			return buf;
+		if((d = get_device(BLK_DEV, dev))) {
+			if(do_blk_request(d, d->fsop->read_block, buf) == size) {
+				buf->flags |= BUFFER_VALID;
+				return buf;
+			}
 		}
 		brelse(buf);
 	}
