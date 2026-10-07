@@ -442,7 +442,7 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 		return start;
 	}
 
-	if(start > PAGE_OFFSET || start + length > PAGE_OFFSET) {
+	if(start > PAGE_OFFSET || length > PAGE_OFFSET - start) {
 		return -EINVAL;
 	}
 
