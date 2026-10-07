@@ -77,7 +77,9 @@ static void del_inode_from_pool(struct inode *i)
 	tmp = i;
 
 	if(!i->next && !i->prev) {
-		printk("WARNING: %s(): trying to delete an unexistent inode (%d).\n", __FUNCTION__, i->inode);
+		kfree((unsigned int)i);
+		kstat.nr_inodes--;
+		inode_table = NULL;
 		return;
 	}
 
