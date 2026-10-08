@@ -76,7 +76,6 @@ static int dev_ifsioc(int cmd, void *arg)
 		case SIOCSIFFLAGS:
 			if(ifr->ifr_flags & ~(IFF_UP | IFF_BROADCAST | IFF_LOOPBACK | IFF_RUNNING)) {
 				printk("WARNING: %s(): unsupported flags (%x).\n", __FUNCTION__, ifr->ifr_flags);
-				return -EINVAL;
 			}
 			retval = 0;
 			oldflags = netdev->flags;
