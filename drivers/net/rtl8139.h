@@ -9,6 +9,7 @@
 #ifdef CONFIG_PCI
 
 #include <lwip/netif.h>
+#include "lwip.h"
 
 /* register offsets */
 #define IDR		0x00	/* MAC address */

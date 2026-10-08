@@ -13,6 +13,7 @@
 #include <fiwix/pci.h>
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
+#include "lwip.h"
 
 #ifdef CONFIG_NET
 #include <lwip/netif.h>
@@ -71,7 +72,7 @@ void register_netdevice(struct netdevice *nd)
 	}
 }
 
-void netdevice_callback(void *ctx)
+void netdevice_lwip_callback(void *ctx)
 {
 	wakeup(&do_select);
 }

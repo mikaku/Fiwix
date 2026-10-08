@@ -414,7 +414,7 @@ void irq_rtl8139(int num, struct sigcontext *sc)
 
 void irq_rtl8139_bh(struct sigcontext *sc)
 {
-	tcpip_callback(netdevice_callback, NULL);
+	tcpip_callback(netdevice_lwip_callback, NULL);
 }
 
 err_t rtl8139_lwip_init(struct netif *netif)
