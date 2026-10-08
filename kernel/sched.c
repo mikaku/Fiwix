@@ -47,19 +47,22 @@ void set_tss(struct proc *p)
 void do_sched(void)
 {
 	int count;
-	struct proc *p, *selected;
-
-	/* let the current running process consume its time slice */
-	if(current->state == PROC_RUNNING && current->cpu_count > 0) {
-		return;
-	}
+	struct proc *p, *first, *selected;
 
 	need_resched = 0;
 	for(;;) {
 		count = -1;
 		selected = &proc_table[IDLE];
 
-		FOR_EACH_PROCESS_RUNNING(p) {
+		/*
+		 * Since interrupts are enabled, new processes may be added to
+		 * the front of the run queue during iteration. That's why we
+		 * must first preserve a safe initial value for 'p'.
+		 */
+		CLI();
+		p = first = proc_run_head;
+		STI();
+		while(p) {
 			if(p->cpu_count > count) {
 				count = p->cpu_count;
 				selected = p;
@@ -71,7 +74,10 @@ void do_sched(void)
 		}
 
 		/* reassigns new quantum to all running processes */
-		FOR_EACH_PROCESS_RUNNING(p) {
+		CLI();
+		p = first = proc_run_head;
+		STI();
+		while(p) {
 			p->cpu_count = p->priority;
 			p = p->next_run;
 		}
