@@ -272,7 +272,26 @@ int ipv4_shutdown(struct socket *s, int how)
 
 int ipv4_setsockopt(struct socket *s, int level, int optname, const void *optval, socklen_t optlen)
 {
-	return lwip_setsockopt(s->fd_lwip, level, optname, optval, optlen);
+	char str[5] = {0};
+	char *lwip_optval, *optval_c;
+
+	lwip_optval = (char *)optval;
+	if(optval) {
+		/*
+		 * Unfortunately lwIP stores the network interfaces in a
+		 * two-character array and starts numbering them from 1.
+		 * So we need to convert them to the lwIP format:
+		 * 	- eth0 --> et1
+		 * 	- eth1 --> et2
+		 * 	...
+		 */
+		if(!strncmp(optval, "eth", 3)) {
+			optval_c = (char *)optval;
+			sprintk(str, "et%c", 1 + optval_c[3]);
+			lwip_optval = str;
+		}
+	}
+	return lwip_setsockopt(s->fd_lwip, level, optname, lwip_optval, optlen);
 }
 
 int ipv4_getsockopt(struct socket *s, int level, int optname, void *optval, socklen_t *optlen)

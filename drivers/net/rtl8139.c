@@ -424,7 +424,8 @@ err_t rtl8139_lwip_init(struct netif *netif)
 
 	nd = (struct netdevice *)netif->state;
 	netif->name[0] = 'e';
-	netif->name[1] = '0' + ether_count;
+	netif->name[1] = 't';
+	netif->num = ether_count + 1;
 	netif->hwaddr_len = ETH_HWADDR_LEN;
 	for(n = 0; n < NETIF_MAX_HWADDR_LEN; n++) {
 		netif->hwaddr[n] = nd->mac[n];
