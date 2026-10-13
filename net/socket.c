@@ -403,6 +403,15 @@ int sendto(int sd, const void *buf, __size_t len, int flags, const struct sockad
 	printk("(pid %d) sendto(%d, 0x%08x, %d, %d, 0x%08x, %d)\n", current->pid, sd, (int)buf, len, flags, (int)addr, addrlen);
 #endif /*__DEBUG__ */
 
+	if(!addr) {
+		/*
+		 * The call to 'sendto(sd, buf, len, flags, NULL, 0)' is
+		 * equivalent to 'send(sd, buf, len, flags)'.
+		 *
+		 * FIXME: unify send() and sendto() properly.
+		 */
+		return send(sd, buf, len, flags);
+	}
 	if((errno = check_sd(sd)) < 0) {
 		return errno;
 	}
