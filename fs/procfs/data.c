@@ -15,6 +15,7 @@
 #include <fiwix/ata.h>
 #include <fiwix/fs.h>
 #include <fiwix/filesystems.h>
+#include <fiwix/stat.h>
 #include <fiwix/devices.h>
 #include <fiwix/locks.h>
 #include <fiwix/mm.h>
@@ -676,6 +677,7 @@ int data_proc_dirty_background_ratio(char *buffer, __pid_t pid)
 int data_proc_pid_fd(char *buffer, __pid_t pid, __ino_t inode)
 {
 	int size, ufd;
+	__dev_t dev;
 	struct proc *p;
 	struct inode *i;
 
@@ -683,7 +685,11 @@ int data_proc_pid_fd(char *buffer, __pid_t pid, __ino_t inode)
 	ufd = inode & 0xFFF;
 	if((p = get_proc_by_pid(pid))) {
 		i = fd_table[p->fd[ufd]].inode;
-		size = sprintk(buffer, "[%02d%02d]:%d", MAJOR(i->dev), MINOR(i->dev), i->inode);
+		dev = MKDEV(MAJOR(i->dev), MINOR(i->dev));
+		if(S_ISSOCK(i->i_mode) || S_ISFIFO(i->i_mode)) {
+			dev = 0;
+		}
+		size = sprintk(buffer, "[%04d]:%d", dev, i->inode);
 	}
 	return size;
 }
