@@ -157,6 +157,7 @@ int procfs_dir_open(struct inode *, struct fd *);
 int procfs_dir_close(struct inode *, struct fd *);
 int procfs_dir_read(struct inode *, struct fd *, char *, __size_t);
 int procfs_readdir(struct inode *, struct fd *, struct dirent *, __size_t);
+int procfs_readdir64(struct inode *, struct fd *, struct dirent64 *, __size_t);
 int procfs_readlink(struct inode *, char *, __size_t);
 int procfs_followlink(struct inode *, struct inode *, struct inode **);
 int procfs_bmap(struct inode *, __off_t, int);

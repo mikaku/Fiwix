@@ -27,7 +27,7 @@ struct fs_operations procfs_dir_fsop = {
 	NULL,			/* ioctl */
 	NULL,			/* llseek */
 	procfs_readdir,
-	NULL,			/* readdir64 */
+	procfs_readdir64,
 	NULL,			/* mmap */
 	NULL,			/* select */
 
@@ -249,6 +249,83 @@ int procfs_readdir(struct inode *i, struct fd *f, struct dirent *dirent, __size_
 			memcpy_b(dirent->d_name, d->name, d->name_len);
 			dirent->d_name[d->name_len] = 0;
 			dirent = (struct dirent *)((char *)dirent + dirent_len);
+			dirent_offset += dirent_len;
+		} else {
+			break;
+		}
+		if((d->inode & 0xF0000000) == PROC_FD_INO) {
+			kfree((unsigned int)d->name);
+		}
+	}
+	f->offset = boffset;
+	kfree((unsigned int)buffer);
+	return dirent_offset;
+}
+
+int procfs_readdir64(struct inode *i, struct fd *f, struct dirent64 *dirent, __size_t count)
+{
+	unsigned int offset, boffset, dirent_offset, doffset;
+	int dirent_len;
+	__size_t total_read;
+	struct procfs_dir_entry *d;
+	struct inode *dirent_inode;
+	int base_dirent_len;
+	char *buffer;
+
+	if(!(buffer = (void *)kmalloc(PAGE_SIZE))) {
+		return -ENOMEM;
+	}
+
+	base_dirent_len = sizeof(dirent->d_ino) + sizeof(dirent->d_off) + sizeof(dirent->d_reclen) + sizeof(dirent->d_type);
+
+	offset = f->offset;
+	boffset = dirent_offset = doffset = 0;
+
+	boffset = offset & (PAGE_SIZE - 1);	/* mod PAGE_SIZE */
+
+	total_read = dir_read(i, f, buffer, PAGE_SIZE);
+	if((count = MIN(total_read, count)) == 0) {
+		kfree((unsigned int)buffer);
+		return dirent_offset;
+	}
+
+	while(boffset < f->offset) {
+		d = (struct procfs_dir_entry *)(buffer + boffset);
+		if(!d->inode) {
+			break;
+		}
+		dirent_len = (base_dirent_len + (d->name_len + 1)) + 3;
+		dirent_len &= ~3;	/* round up */
+		dirent->d_ino = d->inode;
+		if((doffset + dirent_len) <= count) {
+			dirent_inode = iget(i->sb, dirent->d_ino);
+			boffset += sizeof(struct procfs_dir_entry);
+			offset += sizeof(struct procfs_dir_entry);
+			doffset += dirent_len;
+			dirent->d_ino = d->inode;
+			dirent->d_off = offset;
+			dirent->d_reclen = dirent_len;
+			memcpy_b(dirent->d_name, d->name, d->name_len);
+			dirent->d_name[d->name_len] = 0;
+			if (S_ISREG(dirent_inode->i_mode)) {
+				dirent->d_type = DT_REG;
+			} else if (S_ISDIR(dirent_inode->i_mode)) {
+				dirent->d_type = DT_DIR;
+			} else if (S_ISCHR(dirent_inode->i_mode)) {
+				dirent->d_type = DT_CHR;
+			} else if (S_ISBLK(dirent_inode->i_mode)) {
+				dirent->d_type = DT_BLK;
+			} else if (S_ISFIFO(dirent_inode->i_mode)) {
+				dirent->d_type = DT_FIFO;
+			} else if (S_ISSOCK(dirent_inode->i_mode)) {
+				dirent->d_type = DT_SOCK;
+			} else if (S_ISLNK(dirent_inode->i_mode)) {
+				dirent->d_type = DT_LNK;
+			} else {
+				dirent->d_type = DT_UNKNOWN;
+			}
+			iput(dirent_inode);
+			dirent = (struct dirent64 *)((char *)dirent + dirent_len);
 			dirent_offset += dirent_len;
 		} else {
 			break;
