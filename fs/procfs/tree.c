@@ -87,8 +87,11 @@ struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1] = {
 	{ 1,     DIR,  2, 0, 2,  "..",  NULL },
 	{ 4001,  REG,  1, 4, 3, "arp",   data_proc_net_arp },
 	{ 4002,  REG,  1, 4, 3, "dev",   data_proc_net_dev },
-	{ 4003,  REG,  1, 4, 5, "route", data_proc_net_route },
-	{ 4004,  REG,  1, 4, 4, "unix",  data_proc_net_unix },
+	{ 4003,  REG,  1, 4, 3, "raw",   data_proc_net_raw },
+	{ 4004,  REG,  1, 4, 5, "route", data_proc_net_route },
+	{ 4005,  REG,  1, 4, 3, "tcp",   data_proc_net_tcp },
+	{ 4006,  REG,  1, 4, 3, "udp",   data_proc_net_udp },
+	{ 4007,  REG,  1, 4, 4, "unix",  data_proc_net_unix },
 	{ 0, 0, 0, 0, 0, NULL, NULL }
    },
    {	/* [lev 5] /sys/ */

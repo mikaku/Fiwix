@@ -94,6 +94,7 @@ int sock_alloc(struct socket **s)
 	struct filesystems *fs;
 	struct inode *i;
 	struct socket *ns;
+	struct ipv4_info *ip4;
 
 	if(!(fs = get_filesystem("sockfs"))) {
 		printk("WARNING: %s(): sockfs filesystem is not registered!\n", __FUNCTION__);
@@ -118,6 +119,8 @@ int sock_alloc(struct socket **s)
 	fd_table[fd].flags = O_RDWR;
 	ns->fd = &fd_table[fd];
 	ns->fd_lwip = -1;
+	ip4 = &ns->u.ipv4_info;
+	ip4->uid = current->uid;
 	*s = ns;
 	return ufd;
 }

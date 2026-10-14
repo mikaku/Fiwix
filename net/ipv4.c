@@ -13,6 +13,7 @@
 #include <fiwix/net.h>
 #include <fiwix/netdevice.h>
 #include <fiwix/net/ipv4.h>
+#include <fiwix/in.h>
 #include <fiwix/fcntl.h>
 #include <fiwix/ioctl.h>
 #include <fiwix/sched.h>
@@ -51,6 +52,27 @@ __ssize_t lwip_writev(int, const struct iovec *, int);
 
 
 struct ipv4_info *ipv4_socket_head;
+
+static int get_protocol(int type)
+{
+	int protocol;
+
+	switch(type) {
+		case SOCK_STREAM:
+			protocol = IPPROTO_TCP;
+			break;
+		case SOCK_DGRAM:
+			protocol = IPPROTO_UDP;
+			break;
+		case SOCK_RAW:
+			protocol = IPPROTO_ICMP;
+			break;
+		default:
+			protocol = 0;
+			break;
+	}
+	return protocol;
+}
 
 static void add_ipv4_socket(struct ipv4_info *ip4)
 {
@@ -97,7 +119,9 @@ int ipv4_create(struct socket *s, int domain, int type, int protocol)
 	ip4 = &s->u.ipv4_info;
 	memset_b(ip4, 0, sizeof(struct ipv4_info));
 	ip4->count = 1;
+	ip4->type = get_protocol(type);
 	ip4->socket = s;
+	ip4->state = TCP_CLOSE;
 	add_ipv4_socket(ip4);
 	if(s->fd->flags & O_NONBLOCK) {
 		arg = 1;
@@ -124,17 +148,37 @@ void ipv4_free(struct socket *s)
 
 int ipv4_bind(struct socket *s, const struct sockaddr *addr, int addrlen)
 {
-	return lwip_bind(s->fd_lwip, addr, addrlen);
+	int retval;
+	struct sockaddr_in *sin;
+
+	if(!(retval = lwip_bind(s->fd_lwip, addr, addrlen))) {
+		sin = (struct sockaddr_in *)addr;
+		s->u.ipv4_info.saddr = sin->sin_addr.s_addr;
+	}
+	return retval;
 }
 
 int ipv4_listen(struct socket *s, int backlog)
 {
-	return lwip_listen(s->fd_lwip, backlog);
+	int retval;
+
+	if(!(retval = lwip_listen(s->fd_lwip, backlog))) {
+		s->u.ipv4_info.state = TCP_LISTEN;
+	}
+	return retval;
 }
 
 int ipv4_connect(struct socket *s, const struct sockaddr *addr, int addrlen)
 {
-	return lwip_connect(s->fd_lwip, addr, addrlen);
+	int retval;
+	struct sockaddr_in *sin;
+
+	if(!(retval = lwip_connect(s->fd_lwip, addr, addrlen))) {
+		sin = (struct sockaddr_in *)addr;
+		s->u.ipv4_info.daddr = sin->sin_addr.s_addr;
+		s->u.ipv4_info.state = TCP_ESTABLISHED;
+	}
+	return retval;
 }
 
 int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
@@ -158,6 +202,7 @@ int ipv4_accept(struct socket *s, struct sockaddr *addr, unsigned int *addrlen)
 	ip4 = &sc->u.ipv4_info;
 	memset_b(ip4, 0, sizeof(struct ipv4_info));
 	ip4->count = 1;
+	ip4->type = get_protocol(s->type);
 	ip4->socket = sc;
 	add_ipv4_socket(ip4);
 	return ufd;

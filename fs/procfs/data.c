@@ -36,6 +36,7 @@
 #include <fiwix/socket.h>
 #include <fiwix/netdevice.h>
 #include <fiwix/route.h>
+#include <fiwix/in.h>
 #include <lwip/netif.h>
 #include <lwip/etharp.h>
 #endif /* CONFIG_NET */
@@ -53,6 +54,32 @@ static const char *pstate[] = {
 	"T (stopped)",
 	"D (idle)",
 };
+
+#ifdef CONFIG_NET
+static int list_tcpudpraw(int type, char *buffer, __pid_t pid)
+{
+	struct ipv4_info *ip4;
+	struct fd *f;
+	char tmp[129];
+	int n, size;
+
+	memset_b(tmp, 0, sizeof(tmp));
+	size = sprintk(buffer, "%127s\n", "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode");
+	ip4 = ipv4_socket_head;
+	n = 0;
+	while(ip4) {
+		if(ip4->type == type) {
+			f = ip4->socket->fd;
+			sprintk(tmp, "%4d: %08X:%04X %08X:%04X %02X %08X:%08X %02X:%08X %08X %5d %8d %d",
+				n, ip4->saddr, 0, ip4->daddr, 0, ip4->state, 0, 0, 0, 0, 0, ip4->uid, 0, f->inode->inode);
+			size += sprintk(buffer + size, "%127s\n", tmp);
+			n++;
+		}
+		ip4 = ip4->next;
+	}
+	return size;
+}
+#endif /* CONFIG_NET */
 
 /*
  * procfs root directory related functions
@@ -514,6 +541,15 @@ int data_proc_net_dev(char *buffer, __pid_t pid)
 #endif /* CONFIG_NET */
 }
 
+int data_proc_net_raw(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	return list_tcpudpraw(IPPROTO_RAW, buffer, pid);;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
+
 int data_proc_net_route(char *buffer, __pid_t pid)
 {
 #ifdef CONFIG_NET
@@ -533,6 +569,24 @@ int data_proc_net_route(char *buffer, __pid_t pid)
 		r = r->next;
 	}
 	return size;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
+
+int data_proc_net_tcp(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	return list_tcpudpraw(IPPROTO_TCP, buffer, pid);;
+#else
+	return 0;
+#endif /* CONFIG_NET */
+}
+
+int data_proc_net_udp(char *buffer, __pid_t pid)
+{
+#ifdef CONFIG_NET
+	return list_tcpudpraw(IPPROTO_UDP, buffer, pid);;
 #else
 	return 0;
 #endif /* CONFIG_NET */

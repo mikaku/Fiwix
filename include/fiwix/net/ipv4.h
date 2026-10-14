@@ -12,9 +12,28 @@
 
 #include <fiwix/types.h>
 
+/* socket states */
+enum {
+	TCP_ESTABLISHED = 1,
+	TCP_SYN_SENT,
+	TCP_SYN_RECV,
+	TCP_FIN_WAIT1,
+	TCP_FIN_WAIT2,
+	TCP_TIME_WAIT,
+	TCP_CLOSE,
+	TCP_CLOSE_WAIT,
+	TCP_LAST_ACK,
+	TCP_LISTEN,
+	TCP_CLOSING
+};
+
 /* AF_INET */
 struct ipv4_info {
 	int count;
+	int type;
+	char state;
+	unsigned int saddr, daddr;
+	unsigned short int uid;
 	struct socket *socket;
 	struct ipv4_info *next;
 };
