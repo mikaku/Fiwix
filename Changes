@@ -3,7 +3,8 @@
 - Added networking support by porting lwIP into the kernel's build. [#36]
 - Added support for basic Linux socket ioctls.
 - Added support for retrieving network information through 'proc/net/dev',
-  '/proc/net/arp' and '/proc/net/route', while maintaining Linux compatibility.
+  '/proc/net/arp', '/proc/net/raw', '/proc/net/route', '/proc/net/tcp' and
+  '/proc/net/udp' while maintaining Linux compatibility.
 - Added Realtek RTL8139 network driver.
 - Added generic PCI Bus-Master DMA support on ATA disks.
 - Added support for tilde dead key. [#102]
@@ -14,7 +15,8 @@
 - Added support for some new functions in lib/string.c.
 - Added reclaim_inodes(), which is called after reclaim_buffers() to free memory
   allocated for inodes.
-- Changed the 'ps2_noreset' to a toggle parameter.
+- Added the procfs_readdir64() method to support sys_getdents64() on procfs.
+- Changed the 'ps2_noreset' to a toggle-type parameter.
 - Changed the way how device drivers find PCI-type devices.
 - Changed the serial device driver arrays to use dynamic allocation and fixed
   some bugs.
@@ -76,6 +78,16 @@
   privilege escalation.
 - Fixed bread_page() to revert the changes in the page hash table if kmalloc()
   or bmap() fails.
+- Fixed write_page() to make sure it cannot underflow if offset is greater than
+  i->i_size.
+- Fixed do_mmap() to avoid an overflow in the comparison.
+- Fixed del_inode_from_pool() to effectively remove the last inode in the pool.
+- Fixed bread() to avoid leaving the buffer permanently locked if get_device()
+  fails.
+- Fixed do_sched() to protect process iteration against possible corruption.
+- Fixed sendto() to relay to send() when the last two arguments are zero.
+- Fixed data_proc_pid_fd() to display the major/minor pair as zeros for sockets
+  and pipes.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
