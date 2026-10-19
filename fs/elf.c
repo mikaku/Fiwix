@@ -357,7 +357,7 @@ static int elf_load_interpreter(struct inode *ii)
 	}
 
 	if(!last_ptload) {
-		printk("%s(): no headers in interpreter.");
+		printk("%s(): no headers in interpreter.", __FUNCTION__);
 		kfree((unsigned int)data);
 		return -ENOEXEC;
 	}
@@ -513,7 +513,7 @@ int elf_load(struct inode *i, struct binargs *barg, struct sigcontext *sc, char 
 	}
 
 	if(!last_ptload) {
-		printk("%s(): no program headers.");
+		printk("%s(): no program headers.", __FUNCTION__);
 		send_sig(current, SIGKILL);
 		return -ENOEXEC;
 	}

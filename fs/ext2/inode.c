@@ -106,7 +106,7 @@ int ext2_read_inode(struct inode *i)
 	struct buffer *buf;
 
 	if(!(sb = get_superblock(i->dev))) {
-		printk("WARNING: %s(): get_superblock() has returned NULL.\n");
+		printk("WARNING: %s(): get_superblock() has returned NULL.\n", __FUNCTION__);
 		return -EINVAL;
 	}
 	block_group = ((i->inode - 1) / EXT2_INODES_PER_GROUP(sb));
@@ -185,7 +185,7 @@ int ext2_write_inode(struct inode *i)
 	struct buffer *buf;
 
 	if(!(sb = get_superblock(i->dev))) {
-		printk("WARNING: %s(): get_superblock() has returned NULL.\n");
+		printk("WARNING: %s(): get_superblock() has returned NULL.\n", __FUNCTION__);
 		return -EINVAL;
 	}
 	block_group = ((i->inode - 1) / EXT2_INODES_PER_GROUP(sb));
