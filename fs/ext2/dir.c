@@ -148,6 +148,7 @@ int ext2_readdir64(struct inode *i, struct fd *f, struct dirent64 *dirent, __siz
 	unsigned int doffset, offset;
 	unsigned int size, dirent_len;
 	struct ext2_dir_entry_2 *d;
+	struct inode *dirent_inode;
 	int base_dirent_len;
 	int blksize;
 	struct buffer *buf;
@@ -182,7 +183,10 @@ int ext2_readdir64(struct inode *i, struct fd *f, struct dirent64 *dirent, __siz
 					dirent_len &= ~3;	/* round up */
 					dirent->d_ino = d->inode;
 					if((size + dirent_len) <= count) {
-						struct inode *dirent_inode = iget(i->sb, dirent->d_ino);
+						if(!(dirent_inode = iget(i->sb, dirent->d_ino))) {
+							brelse(buf);
+							return -EIO;
+						}
 						dirent->d_off = doffset;
 						dirent->d_reclen = dirent_len;
 						memcpy_b(dirent->d_name, d->name, d->name_len);
