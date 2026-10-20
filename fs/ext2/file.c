@@ -168,13 +168,17 @@ int ext2_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t 
 		while(total_written < count) {
 			boffset = offset & (blksize - 1);	/* mod blksize */
 			if((block = bmap(i, offset, FOR_WRITING)) < 0) {
-				retval = block;
+				if(!total_written) {
+					retval = block;
+				}
 				break;
 			}
 			bytes = blksize - boffset;
 			bytes = MIN(bytes, (count - total_written));
 			if(!(buf = bread(i->dev, block, blksize))) {
-				retval = -EIO;
+				if(!total_written) {
+					retval = -EIO;
+				}
 				break;
 			}
 			memcpy_b(buf->data + boffset, buffer + total_written, bytes);
