@@ -117,6 +117,7 @@ int ext2_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t 
 			}
 			if((block = bmap(i, offset, FOR_WRITING)) < 0) {
 				retval = block;
+				kfree((unsigned int)br);
 				break;
 			}
 			memset_b(br, 0, sizeof(struct blk_request));

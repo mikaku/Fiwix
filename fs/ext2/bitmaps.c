@@ -126,13 +126,14 @@ int ext2_ialloc(struct inode *i, int mode)
 	inode = errno;
 	errno = change_bit(SET_BIT, sb, gd->bg_inode_bitmap, bmbuf, inode);
 	if(errno) {
+		brelse(buf);
+		superblock_unlock(sb);
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set inode %d.\n", __FUNCTION__, inode);
-			brelse(buf);
-			superblock_unlock(sb);
 			return errno;
 		} else {
 			printk("WARNING: %s(): inode %d is already marked as used!\n", __FUNCTION__, inode);
+			return -EIO;
 		}
 	}
 
@@ -185,13 +186,14 @@ void ext2_ifree(struct inode *i)
 	errno = change_bit(CLEAR_BIT, sb, gd->bg_inode_bitmap, NULL, (i->inode - 1) % EXT2_INODES_PER_GROUP(sb));
 
 	if(errno) {
+		brelse(buf);
+		superblock_unlock(sb);
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to free inode %d.\n", __FUNCTION__, i->inode);
-			brelse(buf);
-			superblock_unlock(sb);
 			return;
 		} else {
 			printk("WARNING: %s(): inode %d is already marked as free!\n", __FUNCTION__, i->inode);
+			return;
 		}
 	}
 
@@ -256,13 +258,14 @@ int ext2_balloc(struct superblock *sb)
 	block = errno;
 	errno = change_bit(SET_BIT, sb, gd->bg_block_bitmap, bmbuf, block);
 	if(errno) {
+		brelse(buf);
+		superblock_unlock(sb);
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to set block %d.\n", __FUNCTION__, block);
-			brelse(buf);
-			superblock_unlock(sb);
 			return errno;
 		} else {
 			printk("WARNING: %s(): block %d is already marked as used!\n", __FUNCTION__, block);
+			return -EIO;
 		}
 	}
 
@@ -283,7 +286,7 @@ void ext2_bfree(struct superblock *sb, int block)
 	__blk_t b, bg;
 	int errno;
 
-	if(!block || block > sb->u.ext2.sb.s_blocks_count) {
+	if(block < sb->u.ext2.sb.s_first_data_block || block >= sb->u.ext2.sb.s_blocks_count) {
 		printk("WARNING: %s(): invalid block %d!\n", __FUNCTION__, block);
 		return;
 	}
@@ -300,13 +303,14 @@ void ext2_bfree(struct superblock *sb, int block)
 	errno = change_bit(CLEAR_BIT, sb, gd->bg_block_bitmap, NULL, (block - sb->u.ext2.sb.s_first_data_block) % EXT2_BLOCKS_PER_GROUP(sb));
 
 	if(errno) {
+		brelse(buf);
+		superblock_unlock(sb);
 		if(errno < 0) {
 			printk("WARNING: %s(): unable to free block %d.\n", __FUNCTION__, block);
-			brelse(buf);
-			superblock_unlock(sb);
 			return;
 		} else {
 			printk("WARNING: %s(): block %d is already marked as free!\n", __FUNCTION__, block);
+			return;
 		}
 	}
 
