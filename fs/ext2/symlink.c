@@ -125,7 +125,7 @@ int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 		name = (char *)i->u.ext2.i_data;
 	}
 
-	len = strlen(name);
+	len = i->i_size;
 	if(!(tmp_name = (char *)kmalloc(len + 1))) {
 		inode_unlock(i);
 		iput(i);
