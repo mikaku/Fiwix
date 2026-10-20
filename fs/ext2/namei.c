@@ -891,6 +891,8 @@ int ext2_rename(struct inode *i_old, struct inode *dir_old, struct inode *i_new,
 end:
 	inode_unlock(i_old);
 	inode_unlock(dir_old);
-	inode_unlock(dir_new);
+	if(dir_old != dir_new) {
+		inode_unlock(dir_new);
+	}
 	return errno;
 }
