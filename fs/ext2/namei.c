@@ -50,7 +50,7 @@ static struct buffer *find_first_free_dir_entry(struct inode *dir, struct ext2_d
 			do {
 				*d_res = (struct ext2_dir_entry_2 *)(buf->data + doffset);
 				/* calculates the real length of the current entry */
-				rlen = basesize + strlen((*d_res)->name) + 3;
+				rlen = basesize + (*d_res)->name_len + 3;
 				rlen &= ~3;
 				/* returns the first entry where name can fit in */
 				if(!(*d_res)->inode) {
