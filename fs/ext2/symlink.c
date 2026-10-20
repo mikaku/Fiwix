@@ -95,8 +95,7 @@ int ext2_followlink(struct inode *dir, struct inode *i, struct inode **i_res)
 {
 	struct buffer *buf;
 	char *name, *tmp_name;
-	__ino_t errno;
-	int len;
+	int len, errno;
 
 	if(!i) {
 		return -ENOENT;
