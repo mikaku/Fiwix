@@ -778,6 +778,7 @@ int kbdflushd(void)
 
 				if(!(buf->flags & BUFFER_DIRTY)) {
 					printk("WARNING: %s(): a dirty buffer (dev %x, block %d, flags = %x) is not marked as dirty!\n", __FUNCTION__, buf->dev, buf->block, buf->flags);
+					buf->flags &= ~BUFFER_LOCKED;
 					continue;
 				}
 
