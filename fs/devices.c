@@ -287,6 +287,9 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	}
 
 	blksize = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
+	if(!blksize || (blksize & (blksize - 1)) != 0) {
+		return -EINVAL;
+	}
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
@@ -336,6 +339,9 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 	}
 
 	blksize = ((unsigned int *)d->blksize)[MINOR(i->rdev)];
+	if(!blksize || (blksize & (blksize - 1)) != 0) {
+		return -EINVAL;
+	}
 	device_size = ((unsigned int *)d->device_data)[MINOR(i->rdev)];
 	device_size *= 1024LLU;
 
