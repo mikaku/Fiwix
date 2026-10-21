@@ -275,12 +275,13 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 	unsigned int boffset, bytes;
 	struct buffer *buf;
 	struct device *d;
+	int retval;
 
 	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -ENXIO;
 	}
 
-	total_read = 0;
+	retval = total_read = 0;
 	if(!d->device_data) {
 		printk("%s(): don't know the size of the block device %d,%d.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
 		return -EIO;
@@ -305,7 +306,8 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 		boffset = f->offset & (blksize - 1);	/* mod blksize */
 		block = (f->offset >> blksize_bits);
 		if(!(buf = bread(i->rdev, block, blksize))) {
-			return -EIO;
+			retval = -EIO;
+			break;
 		}
 		bytes = blksize - boffset;
 		bytes = MIN(bytes, count);
@@ -315,7 +317,7 @@ int blk_dev_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 		f->offset += bytes;
 		brelse(buf);
 	}
-	return total_read;
+	return total_read ? total_read : retval;
 }
 
 int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t count)
@@ -327,12 +329,13 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 	unsigned int boffset, bytes;
 	struct buffer *buf;
 	struct device *d;
+	int retval;
 
 	if(!(d = get_device(BLK_DEV, i->rdev))) {
 		return -ENXIO;
 	}
 
-	total_written = 0;
+	retval = total_written = 0;
 	if(!d->device_data) {
 		printk("%s(): don't know the size of the block device %d,%d.\n", __FUNCTION__, MAJOR(i->rdev), MINOR(i->rdev));
 		return -EIO;
@@ -357,7 +360,8 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 		boffset = f->offset & (blksize - 1);	/* mod blksize */
 		block = (f->offset >> blksize_bits);
 		if(!(buf = bread(i->rdev, block, blksize))) {
-			return -EIO;
+			retval = -EIO;
+			break;
 		}
 		bytes = blksize - boffset;
 		bytes = MIN(bytes, count);
@@ -367,7 +371,7 @@ int blk_dev_write(struct inode *i, struct fd *f, const char *buffer, __size_t co
 		f->offset += bytes;
 		bwrite(buf);
 	}
-	return total_written;
+	return total_written ? total_written : retval;
 }
 
 int blk_dev_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
