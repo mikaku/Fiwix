@@ -62,7 +62,9 @@ static void del_buffer_from_pool(struct buffer *buf)
 	tmp = buf;
 
 	if(!buf->next && !buf->prev) {
-		printk("WARNING: %s(): trying to delete an unexistent buffer (block %d).\n", __FUNCTION__, buf->block);
+		kfree((unsigned int)buf);
+		kstat.nr_buffers--;
+		buffer_table = NULL;
 		return;
 	}
 
