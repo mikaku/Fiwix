@@ -157,7 +157,7 @@ int posix_lock(int ufd, int cmd, struct flock *fl)
 
 void flock_release_inode(struct inode *i)
 {
-	struct flock_file *ff;
+	struct flock_file *ff, *next;
 
 	lock_resource(&flock_resource);
 	ff = flock_file_table;
@@ -165,7 +165,10 @@ void flock_release_inode(struct inode *i)
 	while(ff) {
 		if(ff->inode == i && ff->proc == current) {
 			wakeup(ff);
+			next = ff->next;
 			release_flock(ff);
+			ff = next;
+			continue;
 		}
 		ff = ff->next;
 	}
