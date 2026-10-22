@@ -298,7 +298,9 @@ int procfs_readdir64(struct inode *i, struct fd *f, struct dirent64 *dirent, __s
 		dirent_len &= ~3;	/* round up */
 		dirent->d_ino = d->inode;
 		if((doffset + dirent_len) <= count) {
-			dirent_inode = iget(i->sb, dirent->d_ino);
+			if(!(dirent_inode = iget(i->sb, dirent->d_ino))) {
+				return -EIO;
+			}
 			boffset += sizeof(struct procfs_dir_entry);
 			offset += sizeof(struct procfs_dir_entry);
 			doffset += dirent_len;
