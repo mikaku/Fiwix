@@ -18,8 +18,6 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct resource pipe_resource = { 0, 0 };
-
 int pipefs_close(struct inode *i, struct fd *f)
 {
 	if((f->flags & O_ACCMODE) == O_RDONLY) {
@@ -68,7 +66,7 @@ int pipefs_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 		}
 		n = MIN(limit, count);
 		if(i->i_size && n) {
-			lock_resource(&pipe_resource);
+			inode_lock(i);
 			memcpy_b(buffer + bytes_read, data + i->u.pipefs.i_readoff, n);
 			bytes_read += n;
 			i->u.pipefs.i_readoff += n;
@@ -76,7 +74,7 @@ int pipefs_read(struct inode *i, struct fd *f, char *buffer, __size_t count)
 			if(i->u.pipefs.i_writeoff >= PIPE_BUF) {
 				i->u.pipefs.i_writeoff = 0;
 			}
-			unlock_resource(&pipe_resource);
+			inode_unlock(i);
 			wakeup(&do_select);
 			wakeup(&pipefs_write);
 			break;
@@ -142,7 +140,7 @@ int pipefs_write(struct inode *i, struct fd *f, const char *buffer, __size_t cou
 		 * of other processes to the same pipe.
 		*/
 		if(n && n <= PIPE_BUF) {
-			lock_resource(&pipe_resource);
+			inode_lock(i);
 			memcpy_b(data + i->u.pipefs.i_writeoff, buffer + bytes_written, n);
 			bytes_written += n;
 			i->u.pipefs.i_writeoff += n;
@@ -150,7 +148,7 @@ int pipefs_write(struct inode *i, struct fd *f, const char *buffer, __size_t cou
 			if(i->u.pipefs.i_readoff >= PIPE_BUF) {
 				i->u.pipefs.i_readoff = 0;
 			}
-			unlock_resource(&pipe_resource);
+			inode_unlock(i);
 			wakeup(&do_select);
 			wakeup(&pipefs_read);
 			continue;
