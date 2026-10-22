@@ -79,6 +79,10 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 		return NULL;
 	}
 
+	mp->dev = dev;
+	strcpy(mp->devname, devname);
+	strcpy(mp->dirname, dirname);
+
 	SAVE_FLAGS(flags); CLI();
 	if(!mount_table) {
 		mount_table = mp;
@@ -89,9 +93,6 @@ struct mount *add_mount_point(__dev_t dev, const char *devname, const char *dirn
 	mount_table->prev = mp;
 	RESTORE_FLAGS(flags);
 
-	mp->dev = dev;
-	strcpy(mp->devname, devname);
-	strcpy(mp->dirname, dirname);
 	kstat.mount_points++;
 	return mp;
 }
