@@ -112,34 +112,34 @@ int v1_minix_read_inode(struct inode *i)
 	errno = 0;
 	switch(i->i_mode & S_IFMT) {
 		case S_IFCHR:
-			i->fsop = &def_chr_fsop;
+			i->ops = &def_chr_ops;
 			i->rdev = ii->i_zone[0];
 			break;
 		case S_IFBLK:
-			i->fsop = &def_blk_fsop;
+			i->ops = &def_blk_ops;
 			i->rdev = ii->i_zone[0];
 			break;
 		case S_IFIFO:
-			i->fsop = &pipefs_fsop;
+			i->ops = &pipefs_ops;
 			/* it's a union so we need to clear pipefs_i */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 		case S_IFDIR:
-			i->fsop = &minix_dir_fsop;
+			i->ops = &minix_dir_ops;
 			break;
 		case S_IFREG:
-			i->fsop = &minix_file_fsop;
+			i->ops = &minix_file_ops;
 			break;
 		case S_IFLNK:
-			i->fsop = &minix_symlink_fsop;
+			i->ops = &minix_symlink_ops;
 			break;
 		case S_IFSOCK:
 #ifdef CONFIG_NET
-			i->fsop = &sockfs_fsop;
+			i->ops = &sockfs_ops;
 			/* it's a union so we need to clear sockfs_inode */
 			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
 #else
-			i->fsop = NULL;
+			i->ops = NULL;
 #endif /* CONFIG_NET */
 			break;
 		default:

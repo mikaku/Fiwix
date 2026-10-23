@@ -45,9 +45,9 @@ int sys_ftruncate64(unsigned int ufd, __loff_t length)
 	}
 
 	errno = 0;
-	if(i->fsop && i->fsop->truncate) {
+	if(i->ops && i->ops->truncate) {
 		inode_lock(i);
-		errno = i->fsop->truncate(i, (__off_t)length);
+		errno = i->ops->truncate(i, (__off_t)length);
 		inode_unlock(i);
 	}
 	return errno;

@@ -33,8 +33,8 @@ int sys_ustat(__dev_t dev, struct ustat *ubuf)
 	if(!(sb = get_superblock(dev))) {
 		return -EINVAL;
 	}
-	if(sb->fsop && sb->fsop->statfs) {
-		sb->fsop->statfs(sb, &statfsbuf);
+	if(sb->ops && sb->ops->statfs) {
+		sb->ops->statfs(sb, &statfsbuf);
 		memset_b(ubuf, 0, sizeof(struct ustat));
 		ubuf->f_tfree = statfsbuf.f_bfree;
 		ubuf->f_tinode = statfsbuf.f_ffree;

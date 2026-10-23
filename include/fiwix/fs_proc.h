@@ -51,7 +51,7 @@ struct procfs_dir_entry {
 };
 
 extern struct procfs_dir_entry procfs_array[][PROC_ARRAY_ENTRIES + 1];
-extern struct fs_operations procfs_kmsg_fsop;
+extern struct fs_operations procfs_kmsg_ops;
 
 int data_proc_buddyinfo(char *, __pid_t);
 int data_proc_cmdline(char *, __pid_t);

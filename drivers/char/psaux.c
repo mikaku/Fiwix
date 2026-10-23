@@ -21,7 +21,7 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_PSAUX
-static struct fs_operations psaux_driver_fsop = {
+static struct fs_operations psaux_driver_ops = {
 	0,
 	0,
 
@@ -70,7 +70,7 @@ static struct device psaux_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&psaux_driver_fsop,
+	&psaux_driver_ops,
 	NULL,
 	NULL,
 	NULL

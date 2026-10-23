@@ -24,7 +24,7 @@ enum {
 
 struct filesystems {
 	const char *name;		/* filesystem name */
-	struct fs_operations *fsop;	/* filesystem operations */
+	struct fs_operations *ops;	/* filesystem operations */
 	struct mount *mp;		/* mount-table entry (only for nodev) */
 };
 extern struct filesystems filesystems_table[NR_FILESYSTEMS];

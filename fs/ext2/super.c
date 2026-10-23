@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations ext2_fsop = {
+struct fs_operations ext2_ops = {
 	FSOP_REQUIRES_DEV,
 	0,
 
@@ -118,7 +118,7 @@ int ext2_read_superblock(__dev_t dev, struct superblock *sb)
 	}
 
 	sb->dev = dev;
-	sb->fsop = &ext2_fsop;
+	sb->ops = &ext2_ops;
 	sb->s_blocksize_bits = ext2sb->s_log_block_size + EXT2_MIN_BLOCK_LOG_SIZE;
 	sb->s_blocksize = 1 << sb->s_blocksize_bits;
 	memcpy_b(&sb->u.ext2.sb, ext2sb, sizeof(struct ext2_super_block));
@@ -215,5 +215,5 @@ void ext2_release_superblock(struct superblock *sb)
 
 int ext2_init(void)
 {
-	return register_filesystem("ext2", &ext2_fsop);
+	return register_filesystem("ext2", &ext2_ops);
 }

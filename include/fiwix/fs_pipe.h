@@ -8,7 +8,7 @@
 #ifndef _FIWIX_FS_PIPE_H
 #define _FIWIX_FS_PIPE_H
 
-extern struct fs_operations pipefs_fsop;
+extern struct fs_operations pipefs_ops;
 
 struct pipefs_inode {
 	char *i_data;			/* buffer */

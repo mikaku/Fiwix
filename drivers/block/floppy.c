@@ -74,7 +74,7 @@ static struct fdd_status fdd_status[] = {
 static unsigned char current_fdd = 0;
 static struct fddt *current_fdd_type;
 
-static struct fs_operations fdc_driver_fsop = {
+static struct fs_operations fdc_driver_ops = {
 	0,
 	0,
 
@@ -123,7 +123,7 @@ static struct device floppy_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&fdc_driver_fsop,
+	&fdc_driver_ops,
 	NULL,
 	NULL,
 	NULL

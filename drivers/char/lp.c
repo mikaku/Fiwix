@@ -15,7 +15,7 @@
 
 struct lp lp_table[LP_MINORS];
 
-static struct fs_operations lp_driver_fsop = {
+static struct fs_operations lp_driver_ops = {
 	0,
 	0,
 
@@ -64,7 +64,7 @@ static struct device lp_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&lp_driver_fsop,
+	&lp_driver_ops,
 	NULL,
 	NULL,
 	NULL

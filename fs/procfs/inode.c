@@ -63,20 +63,20 @@ int procfs_read_inode(struct inode *i)
 	i->u.procfs.i_lev = lev;
 	switch(i->i_mode & S_IFMT) {
 		case S_IFDIR:
-			i->fsop = &procfs_dir_fsop;
+			i->ops = &procfs_dir_ops;
 			break;
 		case S_IFREG:
-			i->fsop = &procfs_file_fsop;
+			i->ops = &procfs_file_ops;
 			break;
 		case S_IFLNK:
-			i->fsop = &procfs_symlink_fsop;
+			i->ops = &procfs_symlink_ops;
 			break;
 		default:
 			PANIC("invalid inode (%d) mode %08o.\n", i->inode, i->i_mode);
 	}
 	switch(i->inode) {
 		case PROC_KMSG_INO:
-			i->fsop = &procfs_kmsg_fsop;
+			i->ops = &procfs_kmsg_ops;
 			break;
 	}
 	return 0;

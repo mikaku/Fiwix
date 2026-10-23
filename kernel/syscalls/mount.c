@@ -58,8 +58,8 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 			return -EINVAL;
 		}
 		fs = mp->fs;
-		if(fs->fsop && fs->fsop->remount_fs) {
-			if((errno = fs->fsop->remount_fs(&mp->sb, flags))) {
+		if(fs->ops && fs->ops->remount_fs) {
+			if((errno = fs->ops->remount_fs(&mp->sb, flags))) {
 				iput(i_target);
 				free_name(tmp_target);
 				return errno;
@@ -77,8 +77,8 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 			 * FIXME: if there are files opened in RW mode then
 			 * we can't continue and must return -EBUSY.
 			 */
-			if(fs->fsop && fs->fsop->release_superblock) {
-				fs->fsop->release_superblock(&mp->sb);
+			if(fs->ops && fs->ops->release_superblock) {
+				fs->ops->release_superblock(&mp->sb);
 			}
 			sync_superblocks(dev);
 			sync_inodes(dev);
@@ -109,7 +109,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		free_name(tmp_fstype);
 		return -ENODEV;
 	}
-	dev = fs->fsop->fsdev;
+	dev = fs->ops->fsdev;
 
 	if((errno = malloc_name(source, &tmp_source)) < 0) {
 		iput(i_target);
@@ -117,7 +117,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 		free_name(tmp_fstype);
 		return errno;
 	}
-	if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
+	if(fs->ops->flags == FSOP_REQUIRES_DEV) {
 		if((errno = namei(tmp_source, &i_source, NULL, FOLLOW_LINKS))) {
 			iput(i_target);
 			free_name(tmp_target);
@@ -133,8 +133,8 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 			free_name(tmp_source);
 			return -ENOTBLK;
 		}
-		if(i_source->fsop && i_source->fsop->open) {
-			if((errno = i_source->fsop->open(i_source, NULL))) {
+		if(i_source->ops && i_source->ops->open) {
+			if((errno = i_source->ops->open(i_source, NULL))) {
 				iput(i_target);
 				iput(i_source);
 				free_name(tmp_target);
@@ -154,8 +154,8 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 	}
 
 	if(!(mp = add_mount_point(dev, tmp_source, tmp_target))) {
-		if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
-			i_source->fsop->close(i_source, NULL);
+		if(fs->ops->flags == FSOP_REQUIRES_DEV) {
+			i_source->ops->close(i_source, NULL);
 			iput(i_source);
 		}
 		iput(i_target);
@@ -166,10 +166,10 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 	}
 
 	mp->sb.flags = flags;
-	if(fs->fsop->read_superblock) {
-		if((errno = fs->fsop->read_superblock(dev, &mp->sb))) {
-			i_source->fsop->close(i_source, NULL);
-			if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
+	if(fs->ops->read_superblock) {
+		if((errno = fs->ops->read_superblock(dev, &mp->sb))) {
+			i_source->ops->close(i_source, NULL);
+			if(fs->ops->flags == FSOP_REQUIRES_DEV) {
 				iput(i_source);
 			}
 			iput(i_target);
@@ -180,7 +180,7 @@ int sys_mount(const char *source, const char *target, const char *fstype, unsign
 			return errno;
 		}
 	} else {
-		if(fs->fsop->flags == FSOP_REQUIRES_DEV) {
+		if(fs->ops->flags == FSOP_REQUIRES_DEV) {
 			iput(i_source);
 		}
 		iput(i_target);

@@ -23,8 +23,8 @@ int sys_ioctl(unsigned int ufd, int cmd, unsigned int arg)
 
 	CHECK_UFD(ufd);
 	i = fd_table[current->fd[ufd]].inode;
-	if(i->fsop && i->fsop->ioctl) {
-		errno = i->fsop->ioctl(i, &fd_table[current->fd[ufd]], cmd, arg);
+	if(i->ops && i->ops->ioctl) {
+		errno = i->ops->ioctl(i, &fd_table[current->fd[ufd]], cmd, arg);
 
 #ifdef __DEBUG__
 		printk("%d\n", errno);

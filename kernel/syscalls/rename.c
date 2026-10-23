@@ -100,8 +100,8 @@ int sys_rename(const char *oldpath, const char *newpath)
 		goto end;
 	}
 
-	if(dir_new->fsop && dir_new->fsop->rename) {
-		errno = dir_new->fsop->rename(i, dir, i_new, dir_new, oldbasename, newbasename);
+	if(dir_new->ops && dir_new->ops->rename) {
+		errno = dir_new->ops->rename(i, dir, i_new, dir_new, oldbasename, newbasename);
 	} else {
 		errno = -EPERM;
 	}

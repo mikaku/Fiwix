@@ -17,7 +17,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations iso9660_fsop = {
+struct fs_operations iso9660_ops = {
 	FSOP_REQUIRES_DEV,
 	0,
 
@@ -188,7 +188,7 @@ int iso9660_read_superblock(__dev_t dev, struct superblock *sb)
 	root_inode = isonum_711(dr->extent);
 
 	sb->dev = dev;
-	sb->fsop = &iso9660_fsop;
+	sb->ops = &iso9660_ops;
 	sb->flags = MS_RDONLY;
 	sb->s_blocksize = isonum_723(pvd->logical_block_size);
 	sb->u.iso9660.rrip = 0;
@@ -221,5 +221,5 @@ void iso9660_release_superblock(struct superblock *sb)
 
 int iso9660_init(void)
 {
-	return register_filesystem("iso9660", &iso9660_fsop);
+	return register_filesystem("iso9660", &iso9660_ops);
 }

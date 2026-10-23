@@ -66,8 +66,8 @@ int sys_unlink(const char *filename)
 	}
 
 	basename = get_basename(filename);
-	if(dir->fsop && dir->fsop->unlink) {
-		errno = dir->fsop->unlink(dir, i, basename);
+	if(dir->ops && dir->ops->unlink) {
+		errno = dir->ops->unlink(dir, i, basename);
 	} else {
 		errno = -EPERM;
 	}

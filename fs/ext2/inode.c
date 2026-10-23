@@ -136,34 +136,34 @@ int ext2_read_inode(struct inode *i)
 	i->count = 1;
 	switch(i->i_mode & S_IFMT) {
 		case S_IFCHR:
-			i->fsop = &def_chr_fsop;
+			i->ops = &def_chr_ops;
 			i->rdev = ii->i_block[0];
 			break;
 		case S_IFBLK:
-			i->fsop = &def_blk_fsop;
+			i->ops = &def_blk_ops;
 			i->rdev = ii->i_block[0];
 			break;
 		case S_IFIFO:
-			i->fsop = &pipefs_fsop;
+			i->ops = &pipefs_ops;
 			/* it's a union so we need to clear pipefs_i */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 		case S_IFDIR:
-			i->fsop = &ext2_dir_fsop;
+			i->ops = &ext2_dir_ops;
 			break;
 		case S_IFREG:
-			i->fsop = &ext2_file_fsop;
+			i->ops = &ext2_file_ops;
 			break;
 		case S_IFLNK:
-			i->fsop = &ext2_symlink_fsop;
+			i->ops = &ext2_symlink_ops;
 			break;
 		case S_IFSOCK:
 #ifdef CONFIG_NET
-			i->fsop = &sockfs_fsop;
+			i->ops = &sockfs_ops;
 			/* it's a union so we need to clear sockfs_inode */
 			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
 #else
-			i->fsop = NULL;
+			i->ops = NULL;
 #endif /* CONFIG_NET */
 			break;
 		default:

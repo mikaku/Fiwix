@@ -22,7 +22,7 @@
 #include <fiwix/sysconsole.h>
 #include <fiwix/mm.h>
 
-static struct fs_operations serial_driver_fsop = {
+static struct fs_operations serial_driver_ops = {
 	0,
 	0,
 
@@ -71,7 +71,7 @@ static struct device serial_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&serial_driver_fsop,
+	&serial_driver_ops,
 	NULL,
 	NULL,
 	NULL

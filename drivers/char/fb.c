@@ -24,7 +24,7 @@
 #define IO_FB_XRES	2	/* TODO(ghaerr): to be removed shortly */
 #define IO_FB_YRES	3
 
-static struct fs_operations fb_driver_fsop = {
+static struct fs_operations fb_driver_ops = {
 	0,
 	0,
 
@@ -73,7 +73,7 @@ static struct device fb_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&fb_driver_fsop,
+	&fb_driver_ops,
 	NULL,
 	NULL,
 	NULL

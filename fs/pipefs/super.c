@@ -18,7 +18,7 @@
 
 static unsigned int i_counter;
 
-struct fs_operations pipefs_fsop = {
+struct fs_operations pipefs_ops = {
 	FSOP_KERN_MOUNT,
 	PIPE_DEV,
 
@@ -71,7 +71,7 @@ int pipefs_ialloc(struct inode *i, int mode)
 
 	i->i_mode = mode;
 	i->dev = i->rdev = sb->dev;
-	i->fsop = &pipefs_fsop;
+	i->ops = &pipefs_ops;
 	i->inode = i_counter;
 	i->count = 2;
 	if(!(i->u.pipefs.i_data = (void *)kmalloc(PAGE_SIZE))) {
@@ -101,7 +101,7 @@ int pipefs_read_superblock(__dev_t dev, struct superblock *sb)
 {
 	superblock_lock(sb);
 	sb->dev = dev;
-	sb->fsop = &pipefs_fsop;
+	sb->ops = &pipefs_ops;
 	sb->s_blocksize = BLKSIZE_1K;
 	i_counter = 0;
 	superblock_unlock(sb);
@@ -110,5 +110,5 @@ int pipefs_read_superblock(__dev_t dev, struct superblock *sb)
 
 int pipefs_init(void)
 {
-	return register_filesystem("pipefs", &pipefs_fsop);
+	return register_filesystem("pipefs", &pipefs_ops);
 }

@@ -15,7 +15,7 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_UNIX98_PTYS
-struct fs_operations devpts_dir_fsop = {
+struct fs_operations devpts_dir_ops = {
 	0,
 	0,
 

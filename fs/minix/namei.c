@@ -392,7 +392,7 @@ int minix_symlink(struct inode *dir, char *name, char *oldname)
 	i->i_nlink = 1;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->fsop = &minix_symlink_fsop;
+	i->ops = &minix_symlink_ops;
 	i->state |= INODE_DIRTY;
 
 	block = minix_balloc(dir->sb);
@@ -490,7 +490,7 @@ int minix_mkdir(struct inode *dir, char *name, __mode_t mode)
 	i->i_nlink = 1;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->fsop = &minix_dir_fsop;
+	i->ops = &minix_dir_ops;
 	i->state |= INODE_DIRTY;
 
 	if((block = bmap(i, 0, FOR_WRITING)) < 0) {
@@ -602,24 +602,24 @@ int minix_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	switch(mode & S_IFMT) {
 		case S_IFCHR:
-			i->fsop = &def_chr_fsop;
+			i->ops = &def_chr_ops;
 			i->rdev = dev;
 			i->i_mode |= S_IFCHR;
 			break;
 		case S_IFBLK:
-			i->fsop = &def_blk_fsop;
+			i->ops = &def_blk_ops;
 			i->rdev = dev;
 			i->i_mode |= S_IFBLK;
 			break;
 		case S_IFIFO:
-			i->fsop = &pipefs_fsop;
+			i->ops = &pipefs_ops;
 			i->i_mode |= S_IFIFO;
 			/* it's a union so we need to clear pipefs_i */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 #ifdef CONFIG_NET
 		case S_IFSOCK:
-			i->fsop = &sockfs_fsop;
+			i->ops = &sockfs_ops;
 			i->i_mode |= S_IFSOCK;
 			/* it's a union so we need to clear sockfs_inode */
 			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
@@ -688,7 +688,7 @@ int minix_create(struct inode *dir, char *name, int flags, __mode_t mode, struct
 	i->i_gid = current->egid;
 	i->i_nlink = 1;
 	i->dev = dir->dev;
-	i->fsop = &minix_file_fsop;
+	i->ops = &minix_file_ops;
 	i->count = 1;
 	i->state |= INODE_DIRTY;
 

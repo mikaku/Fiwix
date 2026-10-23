@@ -35,8 +35,8 @@ int sys_getdents64(unsigned int ufd, struct dirent64 *dirent, unsigned int count
 		return -ENOTDIR;
 	}
 
-	if(i->fsop && i->fsop->readdir64) {
-		errno = i->fsop->readdir64(i, &fd_table[current->fd[ufd]], dirent, count);
+	if(i->ops && i->ops->readdir64) {
+		errno = i->ops->readdir64(i, &fd_table[current->fd[ufd]], dirent, count);
 	#ifdef __DEBUG__
 		printk(" -> returning %d\n", errno);
 	#endif /*__DEBUG__ */

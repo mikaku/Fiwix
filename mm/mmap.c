@@ -520,8 +520,8 @@ int do_mmap(struct inode *i, unsigned int start, unsigned int length, unsigned i
 
 	do_munmap(start, length);   /* clear old maps */
 
-	if(i && i->fsop->mmap) {
-		if((errno = i->fsop->mmap(i, vma))) {
+	if(i && i->ops->mmap) {
+		if((errno = i->ops->mmap(i, vma))) {
 			free_vma_region(vma, start, length);
 			kfree((unsigned int)vma);
 			return errno;

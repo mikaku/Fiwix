@@ -18,7 +18,7 @@
 struct device *chr_device_table[NR_CHRDEV];
 struct device *blk_device_table[NR_BLKDEV];
 
-struct fs_operations def_chr_fsop = {
+struct fs_operations def_chr_ops = {
 	0,
 	0,
 
@@ -61,7 +61,7 @@ struct fs_operations def_chr_fsop = {
 	NULL			/* release_superblock */
 };
 
-struct fs_operations def_blk_fsop = {
+struct fs_operations def_blk_ops = {
 	0,
 	0,
 
@@ -237,8 +237,8 @@ int chr_dev_open(struct inode *i, struct fd *f)
 	struct device *d;
 
 	if((d = get_device(CHR_DEV, i->rdev))) {
-		i->fsop = d->fsop;
-		return i->fsop->open(i, f);
+		i->ops = d->ops;
+		return i->ops->open(i, f);
 	}
 
 	return -ENXIO;
@@ -249,7 +249,7 @@ int blk_dev_open(struct inode *i, struct fd *f)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->open(i, f);
+		return d->ops->open(i, f);
 	}
 
 	return -ENXIO;
@@ -260,7 +260,7 @@ int blk_dev_close(struct inode *i, struct fd *f)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->close(i, f);
+		return d->ops->close(i, f);
 	}
 
 	return -ENXIO;
@@ -379,7 +379,7 @@ int blk_dev_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->ioctl(i, f, cmd, arg);
+		return d->ops->ioctl(i, f, cmd, arg);
 	}
 
 	return -ENXIO;
@@ -390,7 +390,7 @@ __loff_t blk_dev_llseek(struct inode *i, __loff_t offset)
 	struct device *d;
 
 	if((d = get_device(BLK_DEV, i->rdev))) {
-		return d->fsop->llseek(i, offset);
+		return d->ops->llseek(i, offset);
 	}
 
 	return -ENXIO;

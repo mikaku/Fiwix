@@ -17,7 +17,7 @@
 
 #define NR_PTYS			64
 
-extern struct fs_operations devpts_fsop;
+extern struct fs_operations devpts_ops;
 
 struct devpts_files {
 	int count;

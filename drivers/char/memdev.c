@@ -18,7 +18,7 @@
 #include <fiwix/string.h>
 #include <fiwix/rand.h>
 
-static struct fs_operations mem_driver_fsop = {
+static struct fs_operations mem_driver_ops = {
 	0,
 	0,
 
@@ -61,7 +61,7 @@ static struct fs_operations mem_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations kmem_driver_fsop = {
+static struct fs_operations kmem_driver_ops = {
 	0,
 	0,
 
@@ -104,7 +104,7 @@ static struct fs_operations kmem_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations null_driver_fsop = {
+static struct fs_operations null_driver_ops = {
 	0,
 	0,
 
@@ -147,7 +147,7 @@ static struct fs_operations null_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations port_driver_fsop = {
+static struct fs_operations port_driver_ops = {
 	0,
 	0,
 
@@ -190,7 +190,7 @@ static struct fs_operations port_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations zero_driver_fsop = {
+static struct fs_operations zero_driver_ops = {
 	0,
 	0,
 
@@ -233,7 +233,7 @@ static struct fs_operations zero_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations full_driver_fsop = {
+static struct fs_operations full_driver_ops = {
 	0,
 	0,
 
@@ -276,7 +276,7 @@ static struct fs_operations full_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations urandom_driver_fsop = {
+static struct fs_operations urandom_driver_ops = {
 	0,
 	0,
 
@@ -319,7 +319,7 @@ static struct fs_operations urandom_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations memdev_driver_fsop = {
+static struct fs_operations memdev_driver_ops = {
 	0,
 	0,
 
@@ -368,7 +368,7 @@ static struct device memdev_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&memdev_driver_fsop,
+	&memdev_driver_ops,
 	NULL,
 	NULL,
 	NULL
@@ -621,33 +621,33 @@ int memdev_open(struct inode *i, struct fd *f)
 	minor = MINOR(i->rdev);
 	switch(minor) {
 		case MEMDEV_MEM:
-			i->fsop = &mem_driver_fsop;
+			i->ops = &mem_driver_ops;
 			break;
 		case MEMDEV_KMEM:
-			i->fsop = &kmem_driver_fsop;
+			i->ops = &kmem_driver_ops;
 			break;
 		case MEMDEV_NULL:
-			i->fsop = &null_driver_fsop;
+			i->ops = &null_driver_ops;
 			break;
 		case MEMDEV_PORT:
-			i->fsop = &port_driver_fsop;
+			i->ops = &port_driver_ops;
 			break;
 		case MEMDEV_ZERO:
-			i->fsop = &zero_driver_fsop;
+			i->ops = &zero_driver_ops;
 			break;
 		case MEMDEV_FULL:
-			i->fsop = &full_driver_fsop;
+			i->ops = &full_driver_ops;
 			break;
 		case MEMDEV_RANDOM:
-			i->fsop = &urandom_driver_fsop;
+			i->ops = &urandom_driver_ops;
 			break;
 		case MEMDEV_URANDOM:
-			i->fsop = &urandom_driver_fsop;
+			i->ops = &urandom_driver_ops;
 			break;
 		default:
 			return -ENXIO;
 	}
-	return i->fsop->open(i, f);
+	return i->ops->open(i, f);
 }
 
 /*

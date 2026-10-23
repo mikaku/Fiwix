@@ -24,7 +24,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct fs_operations ata_driver_fsop = {
+static struct fs_operations ata_driver_ops = {
 	0,
 	0,
 
@@ -91,7 +91,7 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		NULL,
 		NULL,
-		&ata_driver_fsop,
+		&ata_driver_ops,
 		NULL,
 		NULL,
 		NULL
@@ -102,7 +102,7 @@ static struct device ide_device[NR_IDE_CTRLS] = {
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		NULL,
 		NULL,
-		&ata_driver_fsop,
+		&ata_driver_ops,
 		NULL,
 		NULL,
 		NULL
@@ -873,7 +873,7 @@ int ata_open(struct inode *i, struct fd *f)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->open(i, f);
+	return drive->ops->open(i, f);
 }
 
 int ata_close(struct inode *i, struct fd *f)
@@ -890,7 +890,7 @@ int ata_close(struct inode *i, struct fd *f)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->close(i, f);
+	return drive->ops->close(i, f);
 }
 
 int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
@@ -908,7 +908,7 @@ int ata_read(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	return drive->fsop->read_block(dev, block, buffer, blksize);
+	return drive->ops->read_block(dev, block, buffer, blksize);
 }
 
 int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
@@ -926,7 +926,7 @@ int ata_write(__dev_t dev, __blk_t block, char *buffer, int blksize)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(dev)];
-	return drive->fsop->write_block(dev, block, buffer, blksize);
+	return drive->ops->write_block(dev, block, buffer, blksize);
 }
 
 int ata_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
@@ -943,7 +943,7 @@ int ata_ioctl(struct inode *i, struct fd *f, int cmd, unsigned int arg)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->ioctl(i, f, cmd, arg);
+	return drive->ops->ioctl(i, f, cmd, arg);
 }
 
 __loff_t ata_llseek(struct inode *i, __loff_t offset)
@@ -960,7 +960,7 @@ __loff_t ata_llseek(struct inode *i, __loff_t offset)
 	}
 
 	drive = &ide->drive[GET_DRIVE_NUM(i->rdev)];
-	return drive->fsop->llseek(i, offset);
+	return drive->ops->llseek(i, offset);
 }
 
 void ata_init(void)

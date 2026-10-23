@@ -55,8 +55,8 @@ int sys_mkdir(const char *dirname, __mode_t mode)
 	}
 
 	basename = get_basename(basename);
-	if(dir->fsop && dir->fsop->mkdir) {
-		errno = dir->fsop->mkdir(dir, basename, mode);
+	if(dir->ops && dir->ops->mkdir) {
+		errno = dir->ops->mkdir(dir, basename, mode);
 	} else {
 		errno = -EPERM;
 	}

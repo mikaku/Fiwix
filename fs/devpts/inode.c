@@ -22,11 +22,11 @@ int devpts_read_inode(struct inode *i)
 	if(i->inode == DEVPTS_ROOT_INO) {
 		mode = S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 		nlink = 2;
-		i->fsop = &devpts_dir_fsop;
+		i->ops = &devpts_dir_ops;
 	} else {
 		mode = S_IFCHR | S_IRUSR | S_IWUSR;
 		nlink = 1;
-		i->fsop = &def_chr_fsop;
+		i->ops = &def_chr_ops;
 	}
 
 	i->i_mode = mode;

@@ -37,8 +37,8 @@ int sys_statfs(const char *filename, struct statfs *statfsbuf)
 	}
 	free_name(tmp_name);
 
-	if(i->sb && i->sb->fsop && i->sb->fsop->statfs) {
-		i->sb->fsop->statfs(i->sb, statfsbuf);
+	if(i->sb && i->sb->ops && i->sb->ops->statfs) {
+		i->sb->ops->statfs(i->sb, statfsbuf);
 		iput(i);
 		return 0;
 	}

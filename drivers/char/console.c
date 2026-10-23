@@ -52,7 +52,7 @@ short int *vcbuf;
 struct video_parms video;
 struct vconsole vc[NR_VCONSOLES + 1];
 
-static struct fs_operations tty_driver_fsop = {
+static struct fs_operations tty_driver_ops = {
 	0,
 	0,
 
@@ -101,7 +101,7 @@ static struct device tty_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&tty_driver_fsop,
+	&tty_driver_ops,
 	NULL,
 	NULL,
 	NULL
@@ -113,7 +113,7 @@ static struct device console_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&tty_driver_fsop,
+	&tty_driver_ops,
 	NULL,
 	NULL,
 	NULL

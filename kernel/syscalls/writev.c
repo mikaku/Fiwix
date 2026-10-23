@@ -45,8 +45,8 @@ int sys_writev(int ufd, const struct iovec *iov, int iovcnt)
 			return -EINVAL;
 		}
 		i = fd_table[current->fd[ufd]].inode;
-		if(i->fsop && i->fsop->write) {
-			errno = i->fsop->write(i, &fd_table[current->fd[ufd]], io_write->iov_base, io_write->iov_len);
+		if(i->ops && i->ops->write) {
+			errno = i->ops->write(i, &fd_table[current->fd[ufd]], io_write->iov_base, io_write->iov_len);
 			if (errno < 0) {
 				return errno;
 			}

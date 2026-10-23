@@ -80,7 +80,7 @@ int sys_getcwd(char *buf, __size_t size)
 		}
 		do {
 			done = 0;
-			bytes_read = up->fsop->readdir(up, &fd_table[tmp_fd], dirent_buf, PAGE_SIZE);
+			bytes_read = up->ops->readdir(up, &fd_table[tmp_fd], dirent_buf, PAGE_SIZE);
 			if(bytes_read < 0) {
 				release_fd(tmp_fd);
 				iput(up);

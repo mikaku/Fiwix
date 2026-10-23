@@ -97,8 +97,8 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 			}
 		}
 		if(errno) {	/* assumes -ENOENT */
-			if(dir->fsop && dir->fsop->create) {
-				errno = dir->fsop->create(dir, basename, flags, mode, &i);
+			if(dir->ops && dir->ops->create) {
+				errno = dir->ops->create(dir, basename, flags, mode, &i);
 				if(errno) {
 					iput(dir);
 					free_name(tmp_name);
@@ -166,8 +166,8 @@ int sys_open(const char *filename, int flags, __mode_t mode)
 
 	fd_table[fd].flags = flags;
 	current->fd[ufd] = fd;
-	if(i->fsop && i->fsop->open) {
-		if((errno = i->fsop->open(i, &fd_table[fd])) < 0) {
+	if(i->ops && i->ops->open) {
+		if((errno = i->ops->open(i, &fd_table[fd])) < 0) {
 			release_fd(fd);
 			release_user_fd(ufd);
 			iput(i);

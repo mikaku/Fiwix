@@ -52,9 +52,9 @@ int sys_truncate(const char *path, __off_t length)
 		return 0;
 	}
 
-	if(i->fsop && i->fsop->truncate) {
+	if(i->ops && i->ops->truncate) {
 		inode_lock(i);
-		errno = i->fsop->truncate(i, length);
+		errno = i->ops->truncate(i, length);
 		inode_unlock(i);
 		iput(i);
 		return errno;

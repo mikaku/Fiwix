@@ -83,10 +83,10 @@ int sys_umount2(const char *target, int flags)
 	lock_resource(&umount_resource);
 
 	fs = mp->fs;
-	if(fs->fsop && fs->fsop->release_superblock) {
-		fs->fsop->release_superblock(sb);
+	if(fs->ops && fs->ops->release_superblock) {
+		fs->ops->release_superblock(sb);
 	}
-	if(sb->fsop->flags & FSOP_REQUIRES_DEV) {
+	if(sb->ops->flags & FSOP_REQUIRES_DEV) {
 		if(!(d = get_device(BLK_DEV, dev))) {
 			printk("WARNING: %s(): block device %d,%d not registered!\n", __FUNCTION__, MAJOR(dev), MINOR(dev));
 			unlock_resource(&umount_resource);
@@ -94,8 +94,8 @@ int sys_umount2(const char *target, int flags)
 		}
 		memset_b(&dummy_i, 0, sizeof(struct inode));
 		dummy_i.dev = dummy_i.rdev = dev;
-		if(d && d->fsop && d->fsop->close) {
-			d->fsop->close(&dummy_i, NULL);
+		if(d && d->ops && d->ops->close) {
+			d->ops->close(&dummy_i, NULL);
 		}
 	}
 

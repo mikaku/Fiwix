@@ -18,7 +18,7 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_FS_MINIX
-struct fs_operations minix_file_fsop = {
+struct fs_operations minix_file_ops = {
 	0,
 	0,
 

@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations procfs_fsop = {
+struct fs_operations procfs_ops = {
 	0,
 	PROC_DEV,
 
@@ -63,7 +63,7 @@ int procfs_read_superblock(__dev_t dev, struct superblock *sb)
 {
 	superblock_lock(sb);
 	sb->dev = dev;
-	sb->fsop = &procfs_fsop;
+	sb->ops = &procfs_ops;
 	sb->s_blocksize = PAGE_SIZE;
 
 	if(!(sb->root = iget(sb, PROC_ROOT_INO))) {
@@ -79,5 +79,5 @@ int procfs_read_superblock(__dev_t dev, struct superblock *sb)
 
 int procfs_init(void)
 {
-	return register_filesystem("proc", &procfs_fsop);
+	return register_filesystem("proc", &procfs_ops);
 }

@@ -328,8 +328,8 @@ int write_page(struct page *pg, struct inode *i, __off_t offset, unsigned int le
 	fdt.flags = 0;
 	fdt.count = 0;
 	fdt.offset = offset;
-	if(i->fsop && i->fsop->write) {
-		errno = i->fsop->write(i, &fdt, pg->data, size);
+	if(i->ops && i->ops->write) {
+		errno = i->ops->write(i, &fdt, pg->data, size);
 	} else {
 		errno = -EINVAL;
 	}
@@ -381,7 +381,7 @@ int bread_page(struct page *pg, struct inode *i, __off_t offset, char prot, char
 		br->flags = block ? 0 : BRF_NOBLOCK;
 		br->size = blksize;
 		br->device = d;
-		br->fn = d->fsop->read_block;
+		br->fn = d->ops->read_block;
 		br->head_group = &brh;
 		if(!brh.next_group) {
 			brh.next_group = br;

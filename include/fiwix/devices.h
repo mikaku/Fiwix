@@ -28,7 +28,7 @@ struct device {
 	unsigned int minors[MINOR_BITS];/* bitmap of MAX_MINORS bits */
 	unsigned int *blksize;		/* default minor blocksizes, in KB */
 	void *device_data;		/* mostly used for minor sizes, in KB */
-	struct fs_operations *fsop;
+	struct fs_operations *ops;
 	void *requests_queue;
 	void *xfer_data;
 	struct device *next;

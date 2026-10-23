@@ -21,7 +21,7 @@
 #ifdef CONFIG_UNIX98_PTYS
 extern struct devpts_files *devpts_list;
 
-static struct fs_operations pty_master_driver_fsop = {
+static struct fs_operations pty_master_driver_ops = {
 	0,
 	0,
 
@@ -64,7 +64,7 @@ static struct fs_operations pty_master_driver_fsop = {
 	NULL			/* release_superblock */
 };
 
-static struct fs_operations pty_slave_driver_fsop = {
+static struct fs_operations pty_slave_driver_ops = {
 	0,
 	0,
 
@@ -113,7 +113,7 @@ static struct device pty_master_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&pty_master_driver_fsop,
+	&pty_master_driver_ops,
 	NULL,
 	NULL,
 	NULL
@@ -125,7 +125,7 @@ static struct device pty_slave_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&pty_slave_driver_fsop,
+	&pty_slave_driver_ops,
 	NULL,
 	NULL,
 	NULL

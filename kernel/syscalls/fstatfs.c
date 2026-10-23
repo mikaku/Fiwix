@@ -28,8 +28,8 @@ int sys_fstatfs(unsigned int ufd, struct statfs *statfsbuf)
 		return errno;
 	}
 	i = fd_table[current->fd[ufd]].inode;
-	if(i->sb && i->sb->fsop && i->sb->fsop->statfs) {
-		i->sb->fsop->statfs(i->sb, statfsbuf);
+	if(i->sb && i->sb->ops && i->sb->ops->statfs) {
+		i->sb->ops->statfs(i->sb, statfsbuf);
 		return 0;
 	}
 	return -ENOSYS;

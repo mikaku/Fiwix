@@ -15,7 +15,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations iso9660_dir_fsop = {
+struct fs_operations iso9660_dir_ops = {
 	0,
 	0,
 

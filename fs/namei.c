@@ -65,7 +65,7 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 		}
 
 		dir->count++;
-		if((errno = dir->fsop->lookup(name, dir, &i))) {
+		if((errno = dir->ops->lookup(name, dir, &i))) {
 			break;
 		}
 
@@ -77,16 +77,16 @@ static int do_namei(char *path, struct inode *dir, struct inode **i_res, struct 
 				return -ENOTDIR;
 			}
 			if(S_ISLNK(i->i_mode)) {
-				if(i->fsop->followlink) {
-					if((errno = i->fsop->followlink(dir, i, &i))) {
+				if(i->ops->followlink) {
+					if((errno = i->ops->followlink(dir, i, &i))) {
 						iput(dir);
 						return errno;
 					}
 				}
 			}
 		} else {
-			if(i->fsop->followlink && follow_links) {
-				if((errno = i->fsop->followlink(dir, i, &i))) {
+			if(i->ops->followlink && follow_links) {
+				if((errno = i->ops->followlink(dir, i, &i))) {
 					iput(dir);
 					return errno;
 				}

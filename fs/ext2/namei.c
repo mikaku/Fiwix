@@ -460,7 +460,7 @@ int ext2_symlink(struct inode *dir, char *name, char *oldname)
 	i->i_gid = current->egid;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->fsop = &ext2_symlink_fsop;
+	i->ops = &ext2_symlink_ops;
 
 	if(strlen(oldname) >= EXT2_N_BLOCKS * sizeof(__u32)) {
 		/* this will be a slow symlink */
@@ -555,7 +555,7 @@ int ext2_mkdir(struct inode *dir, char *name, __mode_t mode)
 	i->i_gid = current->egid;
 	i->dev = dir->dev;
 	i->count = 1;
-	i->fsop = &ext2_dir_fsop;
+	i->ops = &ext2_dir_ops;
 
 	if((block = bmap(i, 0, FOR_WRITING)) < 0) {
 		iput(i);
@@ -675,19 +675,19 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 
 	switch(mode & S_IFMT) {
 		case S_IFCHR:
-			i->fsop = &def_chr_fsop;
+			i->ops = &def_chr_ops;
 			i->rdev = dev;
 			i->i_mode |= S_IFCHR;
 			d->file_type = 0;	/* EXT2_FT_CHRDEV not used */
 			break;
 		case S_IFBLK:
-			i->fsop = &def_blk_fsop;
+			i->ops = &def_blk_ops;
 			i->rdev = dev;
 			i->i_mode |= S_IFBLK;
 			d->file_type = 0;	/* EXT2_FT_BLKDEV not used */
 			break;
 		case S_IFIFO:
-			i->fsop = &pipefs_fsop;
+			i->ops = &pipefs_ops;
 			i->i_mode |= S_IFIFO;
 			/* it's a union so we need to clear pipefs_i */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
@@ -695,7 +695,7 @@ int ext2_mknod(struct inode *dir, char *name, __mode_t mode, __dev_t dev)
 			break;
 #ifdef CONFIG_NET
 		case S_IFSOCK:
-			i->fsop = &sockfs_fsop;
+			i->ops = &sockfs_ops;
 			i->i_mode |= S_IFSOCK;
 			/* it's a union so we need to clear sockfs_inode */
 			memset_b(&i->u.sockfs, 0, sizeof(struct sockfs_inode));
@@ -768,7 +768,7 @@ int ext2_create(struct inode *dir, char *name, int flags, __mode_t mode, struct 
 	i->i_nlink = 1;
 	i->i_blocks = 0;
 	i->dev = dir->dev;
-	i->fsop = &ext2_file_fsop;
+	i->ops = &ext2_file_ops;
 	i->count = 1;
 	i->state |= INODE_DIRTY;
 

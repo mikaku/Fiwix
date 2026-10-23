@@ -46,8 +46,8 @@ int sys_readv(unsigned int ufd, const struct iovec *iov, int iovcnt)
 		}
 
 		i = fd_table[current->fd[ufd]].inode;
-		if(i->fsop && i->fsop->read) {
-			errno = i->fsop->read(i, &fd_table[current->fd[ufd]], io_read->iov_base, io_read->iov_len);
+		if(i->ops && i->ops->read) {
+			errno = i->ops->read(i, &fd_table[current->fd[ufd]], io_read->iov_base, io_read->iov_len);
 			if (errno < 0) {
 			    return errno;
 			}

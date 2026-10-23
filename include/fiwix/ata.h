@@ -289,7 +289,7 @@ struct ata_drv {
 	int pio_mode;
 	int udma_mode;
 	int multi;
-	struct fs_operations *fsop;
+	struct fs_operations *ops;
 	struct ata_drv_ident ident;
 	struct ata_xfer xfer;
 	struct xfer_data xd;		/* transfer data setup */

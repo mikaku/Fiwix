@@ -23,7 +23,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct fs_operations ata_hd_driver_fsop = {
+static struct fs_operations ata_hd_driver_ops = {
 	0,
 	0,
 
@@ -419,7 +419,7 @@ int ata_hd_init(struct ide *ide, struct ata_drv *drive)
 	struct partition *part;
 
 	rdev = 0;
-	drive->fsop = &ata_hd_driver_fsop;
+	drive->ops = &ata_hd_driver_ops;
 	part = drive->part_table;
 
 	if(drive->num == IDE_MASTER) {

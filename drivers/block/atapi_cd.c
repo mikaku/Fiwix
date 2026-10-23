@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-static struct fs_operations atapi_cd_driver_fsop = {
+static struct fs_operations atapi_cd_driver_ops = {
 	0,
 	0,
 
@@ -352,7 +352,7 @@ int atapi_cd_init(struct ide *ide, struct ata_drv *drive)
 	struct device *d;
 	unsigned char minor;
 
-	drive->fsop = &atapi_cd_driver_fsop;
+	drive->ops = &atapi_cd_driver_ops;
 
 	minor = !drive->minor_shift ? 0 : 1 << drive->minor_shift;
 

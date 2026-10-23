@@ -61,8 +61,8 @@ int sys_symlink(const char *oldpath, const char *newpath)
 		return -EACCES;
 	}
 
-	if(dir->fsop && dir->fsop->symlink) {
-		errno = dir->fsop->symlink(dir, basename, tmp_oldpath);
+	if(dir->ops && dir->ops->symlink) {
+		errno = dir->ops->symlink(dir, basename, tmp_oldpath);
 	} else {
 		errno = -EPERM;
 	}

@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations procfs_symlink_fsop = {
+struct fs_operations procfs_symlink_ops = {
 	0,
 	0,
 

@@ -79,7 +79,7 @@ struct inode {
 	__ino_t		inode;
 	__s16		count;
 	__dev_t		rdev;
-	struct fs_operations *fsop;
+	struct fs_operations *ops;
 	struct superblock *sb;
 	struct inode *prev;
 	struct inode *next;
@@ -115,7 +115,7 @@ struct superblock {
 	unsigned int state;
 	struct inode *root;		/* root inode of mounted fs */
 	struct inode *dir;		/* inode on which the fs was mounted */
-	struct fs_operations *fsop;
+	struct fs_operations *ops;
 	__u32 s_blocksize;
 	unsigned char s_blocksize_bits;
 	union {
@@ -178,14 +178,14 @@ struct fs_operations {
 	void (*release_superblock)(struct superblock *);
 };
 
-extern struct fs_operations def_chr_fsop;
-extern struct fs_operations def_blk_fsop;
+extern struct fs_operations def_chr_ops;
+extern struct fs_operations def_blk_ops;
 
 /* fs_minix.h prototypes */
-extern struct fs_operations minix_fsop;
-extern struct fs_operations minix_file_fsop;
-extern struct fs_operations minix_dir_fsop;
-extern struct fs_operations minix_symlink_fsop;
+extern struct fs_operations minix_ops;
+extern struct fs_operations minix_file_ops;
+extern struct fs_operations minix_dir_ops;
+extern struct fs_operations minix_symlink_ops;
 extern int minix_count_free_inodes(struct superblock *);
 extern int minix_count_free_blocks(struct superblock *);
 extern int minix_find_first_zero(struct superblock *, __blk_t, int, int);
@@ -194,18 +194,18 @@ extern int minix_balloc(struct superblock *);
 extern void minix_bfree(struct superblock *, int);
 
 /* fs_ext2.h prototypes */
-extern struct fs_operations ext2_fsop;
-extern struct fs_operations ext2_file_fsop;
-extern struct fs_operations ext2_dir_fsop;
-extern struct fs_operations ext2_symlink_fsop;
+extern struct fs_operations ext2_ops;
+extern struct fs_operations ext2_file_ops;
+extern struct fs_operations ext2_dir_ops;
+extern struct fs_operations ext2_symlink_ops;
 extern int ext2_balloc(struct superblock *);
 extern void ext2_bfree(struct superblock *, int);
 
 /* fs_proc.h prototypes */
-extern struct fs_operations procfs_fsop;
-extern struct fs_operations procfs_file_fsop;
-extern struct fs_operations procfs_dir_fsop;
-extern struct fs_operations procfs_symlink_fsop;
+extern struct fs_operations procfs_ops;
+extern struct fs_operations procfs_file_ops;
+extern struct fs_operations procfs_dir_ops;
+extern struct fs_operations procfs_symlink_ops;
 struct procfs_dir_entry *get_procfs_by_inode(struct inode *);
 
 /* fs_iso9660.h prototypes */
@@ -215,17 +215,17 @@ extern int isonum_731(char *);
 extern int isonum_733(char *);
 extern unsigned int isodate(const char *);
 extern int iso9660_cleanfilename(char *, int);
-extern struct fs_operations iso9660_fsop;
-extern struct fs_operations iso9660_file_fsop;
-extern struct fs_operations iso9660_dir_fsop;
-extern struct fs_operations iso9660_symlink_fsop;
+extern struct fs_operations iso9660_ops;
+extern struct fs_operations iso9660_file_ops;
+extern struct fs_operations iso9660_dir_ops;
+extern struct fs_operations iso9660_symlink_ops;
 void check_rrip_inode(struct iso9660_directory_record *, struct inode *);
 int get_rrip_filename(struct iso9660_directory_record *, struct inode *, char *);
 int get_rrip_symlink(struct inode *, char *);
 
 /* fs_devpts.h prototypes */
-extern struct fs_operations devpts_fsop;
-extern struct fs_operations devpts_dir_fsop;
+extern struct fs_operations devpts_ops;
+extern struct fs_operations devpts_dir_ops;
 
 
 /* generic VFS function prototypes */

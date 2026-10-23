@@ -19,7 +19,7 @@
 #ifdef CONFIG_UNIX98_PTYS
 struct devpts_files *devpts_list;
 
-struct fs_operations devpts_fsop = {
+struct fs_operations devpts_ops = {
 	0,
 	DEVPTS_DEV,
 
@@ -84,7 +84,7 @@ int devpts_ialloc(struct inode *i, int mode)
 	i->rdev = MKDEV(0, 0);
 	i->inode = DEVPTS_ROOT_INO + 1 + n;
 	i->count = 1;
-	i->fsop = &def_chr_fsop;
+	i->ops = &def_chr_ops;
 	i->i_uid = 0;
 	i->i_size = 0;
 	i->i_atime = CURRENT_TIME;
@@ -115,7 +115,7 @@ int devpts_read_superblock(__dev_t dev, struct superblock *sb)
 {
 	superblock_lock(sb);
 	sb->dev = dev;
-	sb->fsop = &devpts_fsop;
+	sb->ops = &devpts_ops;
 	sb->s_blocksize = BLKSIZE_1K;
 
 	if(!(sb->root = iget(sb, DEVPTS_ROOT_INO))) {
@@ -133,6 +133,6 @@ int devpts_init(void)
 		return -ENOMEM;
 	}
 	memset_b(devpts_list, 0, sizeof(struct devpts_files) * NR_PTYS);
-	return register_filesystem("devpts", &devpts_fsop);
+	return register_filesystem("devpts", &devpts_ops);
 }
 #endif /* CONFIG_UNIX98_PTYS */

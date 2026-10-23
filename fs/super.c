@@ -182,7 +182,7 @@ void sync_superblocks(__dev_t dev)
 		if(!dev || mp->dev == dev) {
 			sb = &mp->sb;
 			if((sb->state & SUPERBLOCK_DIRTY) && !(sb->flags & MS_RDONLY)) {
-				if(sb->fsop->write_superblock(sb)) {
+				if(sb->ops->write_superblock(sb)) {
 					printk("WARNING: %s(): I/O error on device %d,%d while syncing superblock.\n", __FUNCTION__, MAJOR(sb->dev), MINOR(sb->dev));
 				}
 			}
@@ -201,7 +201,7 @@ int kern_mount(__dev_t dev, struct filesystems *fs)
 		return -EBUSY;
 	}
 
-	if(fs->fsop->read_superblock(dev, &mp->sb)) {
+	if(fs->ops->read_superblock(dev, &mp->sb)) {
 		del_mount_point(mp);
 		return -EINVAL;
 	}
@@ -240,7 +240,7 @@ int mount_root(void)
 	if(kparms.ro) {
 		mp->sb.flags = MS_RDONLY;
 	}
-	if(fs->fsop->read_superblock(kparms.rootdev, &mp->sb)) {
+	if(fs->ops->read_superblock(kparms.rootdev, &mp->sb)) {
 		PANIC("unable to mount root filesystem on %s.\n", kparms.rootdevname);
 	}
 

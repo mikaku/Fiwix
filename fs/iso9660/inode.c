@@ -143,28 +143,28 @@ int iso9660_read_inode(struct inode *i)
 
 	switch(i->i_mode & S_IFMT) {
 		case S_IFCHR:
-			i->fsop = &def_chr_fsop;
+			i->ops = &def_chr_ops;
 			break;
 		case S_IFBLK:
-			i->fsop = &def_blk_fsop;
+			i->ops = &def_blk_ops;
 			break;
 		case S_IFIFO:
-			i->fsop = &pipefs_fsop;
+			i->ops = &pipefs_ops;
 			/* it's a union so we need to clear pipefs_inode */
 			memset_b(&i->u.pipefs, 0, sizeof(struct pipefs_inode));
 			break;
 		case S_IFDIR:
-			i->fsop = &iso9660_dir_fsop;
+			i->ops = &iso9660_dir_ops;
 			i->i_nlink++;
 			break;
 		case S_IFREG:
-			i->fsop = &iso9660_file_fsop;
+			i->ops = &iso9660_file_ops;
 			break;
 		case S_IFLNK:
-			i->fsop = &iso9660_symlink_fsop;
+			i->ops = &iso9660_symlink_ops;
 			break;
 		case S_IFSOCK:
-			i->fsop = NULL;
+			i->ops = NULL;
 			break;
 		default:
 			PANIC("invalid inode (%d) mode %08o.\n", i->inode, i->i_mode);

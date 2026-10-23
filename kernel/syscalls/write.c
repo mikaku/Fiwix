@@ -38,8 +38,8 @@ int sys_write(unsigned int ufd, const char *buf, int count)
 		return -EINVAL;
 	}
 	i = fd_table[current->fd[ufd]].inode;
-	if(i->fsop && i->fsop->write) {
-		errno = i->fsop->write(i, &fd_table[current->fd[ufd]], buf, count);
+	if(i->ops && i->ops->write) {
+		errno = i->ops->write(i, &fd_table[current->fd[ufd]], buf, count);
 #ifdef __DEBUG__
 		printk("%d\n", errno);
 #endif /*__DEBUG__ */

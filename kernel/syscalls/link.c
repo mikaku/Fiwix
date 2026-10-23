@@ -99,8 +99,8 @@ int sys_link(const char *oldname, const char *newname)
 		return -EACCES;
 	}
 
-	if(dir_new->fsop && dir_new->fsop->link) {
-		errno = dir_new->fsop->link(i, dir_new, basename);
+	if(dir_new->ops && dir_new->ops->link) {
+		errno = dir_new->ops->link(i, dir_new, basename);
 	} else {
 		errno = -EPERM;
 	}

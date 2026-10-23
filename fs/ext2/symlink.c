@@ -15,7 +15,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations ext2_symlink_fsop = {
+struct fs_operations ext2_symlink_ops = {
 	0,
 	0,
 

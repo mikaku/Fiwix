@@ -46,8 +46,8 @@ int sys_readlink(const char *filename, char *buffer, __size_t bufsize)
 		return -EINVAL;
 	}
 
-	if(i->fsop && i->fsop->readlink) {
-		errno = i->fsop->readlink(i, buffer, bufsize);
+	if(i->ops && i->ops->readlink) {
+		errno = i->ops->readlink(i, buffer, bufsize);
 		iput(i);
 		return errno;
 	}

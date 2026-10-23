@@ -14,7 +14,7 @@
 
 struct filesystems filesystems_table[NR_FILESYSTEMS];
 
-int register_filesystem(const char *name, struct fs_operations *fsop)
+int register_filesystem(const char *name, struct fs_operations *ops)
 {
 	__dev_t dev;
 	int n, retval;
@@ -28,9 +28,9 @@ int register_filesystem(const char *name, struct fs_operations *fsop)
 		}
 		if(!filesystems_table[n].name) {
 			filesystems_table[n].name = name;
-			filesystems_table[n].fsop = fsop;
-			if((fsop->flags & FSOP_KERN_MOUNT)) {
-				dev = fsop->fsdev;
+			filesystems_table[n].ops = ops;
+			if((ops->flags & FSOP_KERN_MOUNT)) {
+				dev = ops->fsdev;
 				if((retval = kern_mount(dev, &filesystems_table[n])) < 0) {
 					filesystems_table[n].name = NULL;
 					return retval;

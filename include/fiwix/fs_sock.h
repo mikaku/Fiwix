@@ -12,7 +12,7 @@
 
 #include <fiwix/net.h>
 
-extern struct fs_operations sockfs_fsop;
+extern struct fs_operations sockfs_ops;
 
 struct sockfs_inode {
 	struct socket sock;

@@ -17,7 +17,7 @@
 #include <fiwix/string.h>
 
 #ifdef CONFIG_FS_MINIX
-struct fs_operations minix_fsop = {
+struct fs_operations minix_ops = {
 	FSOP_REQUIRES_DEV,
 	0,
 
@@ -134,7 +134,7 @@ int minix_read_superblock(__dev_t dev, struct superblock *sb)
 	}
 
 	sb->dev = dev;
-	sb->fsop = &minix_fsop;
+	sb->ops = &minix_ops;
 	sb->s_blocksize = BLKSIZE_1K << sb->u.minix.sb.s_log_zone_size;
 
 	if(sb->s_blocksize != BLKSIZE_1K) {
@@ -266,6 +266,6 @@ void minix_release_superblock(struct superblock *sb)
 
 int minix_init(void)
 {
-	return register_filesystem("minix", &minix_fsop);
+	return register_filesystem("minix", &minix_ops);
 }
 #endif /* CONFIG_FS_MINIX */

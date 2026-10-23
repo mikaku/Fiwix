@@ -20,7 +20,7 @@
 int ramdisk_minors;
 struct ramdisk ramdisk_table[RAMDISK_TOTAL];
 
-static struct fs_operations ramdisk_driver_fsop = {
+static struct fs_operations ramdisk_driver_ops = {
 	0,
 	0,
 
@@ -69,7 +69,7 @@ static struct device ramdisk_device = {
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	NULL,
-	&ramdisk_driver_fsop,
+	&ramdisk_driver_ops,
 	NULL,
 	NULL,
 	NULL

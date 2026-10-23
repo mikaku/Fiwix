@@ -225,7 +225,7 @@ static struct inode *get_free_inode(int mode)
 	i->inode = 0;
 	i->count = 0;
 	i->rdev = 0;
-	i->fsop = NULL;
+	i->ops = NULL;
 	i->sb = NULL;
 	memset_b(&i->u, 0, sizeof(i->u));
 	RESTORE_FLAGS(flags);
@@ -237,7 +237,7 @@ static int read_inode(struct inode *i)
 	int errno;
 
 	inode_lock(i);
-	errno = i->sb->fsop->read_inode(i);
+	errno = i->sb->ops->read_inode(i);
 	inode_unlock(i);
 	return errno;
 }
@@ -246,8 +246,8 @@ static int write_inode(struct inode *i)
 {
 	int errno;
 
-	if(i->sb && i->sb->fsop && i->sb->fsop->write_inode) {
-		errno = i->sb->fsop->write_inode(i);
+	if(i->sb && i->sb->ops && i->sb->ops->write_inode) {
+		errno = i->sb->ops->write_inode(i);
 	} else {
 		/* PIPE_DEV inodes can't be flushed on disk */
 		i->state &= ~INODE_DIRTY;
@@ -320,7 +320,7 @@ struct inode *ialloc(struct superblock *sb, int mode)
 	if((i = get_free_inode(GROW_IF_NEEDED))) {
 		i->sb = sb;
 		i->rdev = sb->dev;
-		if(i->sb->fsop->ialloc(i, mode)) {
+		if(i->sb->ops->ialloc(i, mode)) {
 			i->count = 1;
 			i->sb = NULL;
 			iput(i);
@@ -389,7 +389,7 @@ struct inode *iget(struct superblock *sb, __ino_t inode)
 
 int bmap(struct inode *i, __off_t offset, int mode)
 {
-	return i->fsop->bmap(i, offset, mode);
+	return i->ops->bmap(i, offset, mode);
 }
 
 int check_fs_busy(__dev_t dev, struct inode *root)
@@ -435,8 +435,8 @@ void iput(struct inode *i)
 
 	inode_lock(i);
 	if(!i->i_nlink) {
-		if(i->sb && i->sb->fsop && i->sb->fsop->ifree) {
-			i->sb->fsop->ifree(i);
+		if(i->sb && i->sb->ops && i->sb->ops->ifree) {
+			i->sb->ops->ifree(i);
 		}
 		remove_from_hash(i);
 	}

@@ -42,8 +42,8 @@ int do_mknod(char *pathname, __mode_t mode, __dev_t dev)
 		return -EACCES;
 	}
 
-	if(dir->fsop && dir->fsop->mknod) {
-		errno = dir->fsop->mknod(dir, basename, mode, dev);
+	if(dir->ops && dir->ops->mknod) {
+		errno = dir->ops->mknod(dir, basename, mode, dev);
 	} else {
 		errno = -EPERM;
 	}

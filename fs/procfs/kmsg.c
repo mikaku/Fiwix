@@ -40,7 +40,7 @@ static int kmsg_select(struct inode *i, struct fd *f, int flag)
 	return 0;
 }
 
-struct fs_operations procfs_kmsg_fsop = {
+struct fs_operations procfs_kmsg_ops = {
 	0,
 	0,
 

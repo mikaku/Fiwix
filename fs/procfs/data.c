@@ -200,7 +200,7 @@ int data_proc_filesystems(char *buffer, __pid_t pid)
 	for(n = 0; n < NR_FILESYSTEMS; n++) {
 		if(filesystems_table[n].name) {
 			nodev = 0;
-			if(filesystems_table[n].fsop->flags != FSOP_REQUIRES_DEV) {
+			if(filesystems_table[n].ops->flags != FSOP_REQUIRES_DEV) {
 				nodev = 1;
 			}
 			size += sprintk(buffer + size, "%s %s\n", nodev ? "nodev" : "     ", filesystems_table[n].name);
@@ -314,7 +314,7 @@ int data_proc_mounts(char *buffer, __pid_t pid)
 	mp = mount_table;
 
 	while(mp) {
-		if(mp->fs->fsop->flags != FSOP_KERN_MOUNT) {
+		if(mp->fs->ops->flags != FSOP_KERN_MOUNT) {
 			flag = mp->sb.flags & MS_RDONLY ? "ro" : "rw";
 			size += sprintk(buffer + size, "%s %s %s %s 0 0\n", mp->devname, mp->dirname, mp->fs->name, flag);
 		}
@@ -922,7 +922,7 @@ int data_proc_pid_mountinfo(char *buffer, __pid_t pid)
 	mp = mount_table;
 
 	while(mp) {
-		if(mp->fs->fsop->flags != FSOP_KERN_MOUNT) {
+		if(mp->fs->ops->flags != FSOP_KERN_MOUNT) {
 			flag = mp->sb.flags & MS_RDONLY ? "ro" : "rw";
 			devname = mp->devname;
 			if(!strcmp(devname, "/dev/root")) {

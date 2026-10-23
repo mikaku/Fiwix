@@ -16,7 +16,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations iso9660_symlink_fsop = {
+struct fs_operations iso9660_symlink_ops = {
 	0,
 	0,
 

@@ -18,7 +18,7 @@
 #ifdef CONFIG_NET
 static unsigned int i_counter;
 
-struct fs_operations sockfs_fsop = {
+struct fs_operations sockfs_ops = {
 	FSOP_KERN_MOUNT,
 	SOCK_DEV,
 
@@ -71,7 +71,7 @@ int sockfs_ialloc(struct inode *i, int mode)
 
 	i->i_mode = mode;
 	i->dev = i->rdev = sb->dev;
-	i->fsop = &sockfs_fsop;
+	i->ops = &sockfs_ops;
 	i->inode = i_counter;
 	i->count = 1;
 	/*
@@ -96,7 +96,7 @@ int sockfs_read_superblock(__dev_t dev, struct superblock *sb)
 {
 	superblock_lock(sb);
 	sb->dev = dev;
-	sb->fsop = &sockfs_fsop;
+	sb->ops = &sockfs_ops;
 	sb->s_blocksize = BLKSIZE_1K;
 	i_counter = 0;
 	superblock_unlock(sb);
@@ -105,6 +105,6 @@ int sockfs_read_superblock(__dev_t dev, struct superblock *sb)
 
 int sockfs_init(void)
 {
-	return register_filesystem("sockfs", &sockfs_fsop);
+	return register_filesystem("sockfs", &sockfs_ops);
 }
 #endif /* CONFIG_NET */

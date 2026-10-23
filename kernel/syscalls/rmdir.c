@@ -71,8 +71,8 @@ int sys_rmdir(const char *dirname)
 		}
 	}
 
-	if(i->fsop && i->fsop->rmdir) {
-		errno = i->fsop->rmdir(dir, i);
+	if(i->ops && i->ops->rmdir) {
+		errno = i->ops->rmdir(dir, i);
 	} else {
 		errno = -EPERM;
 	}

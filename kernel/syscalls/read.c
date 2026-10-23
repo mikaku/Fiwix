@@ -38,8 +38,8 @@ int sys_read(unsigned int ufd, char *buf, int count)
 	}
 
 	i = fd_table[current->fd[ufd]].inode;
-	if(i->fsop && i->fsop->read) {
-		errno = i->fsop->read(i, &fd_table[current->fd[ufd]], buf, count);
+	if(i->ops && i->ops->read) {
+		errno = i->ops->read(i, &fd_table[current->fd[ufd]], buf, count);
 #ifdef __DEBUG__
 		printk("%d\n", errno);
 #endif /*__DEBUG__ */

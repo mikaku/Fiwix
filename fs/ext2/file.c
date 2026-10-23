@@ -18,7 +18,7 @@
 #include <fiwix/string.h>
 #include <fiwix/blk_queue.h>
 
-struct fs_operations ext2_file_fsop = {
+struct fs_operations ext2_file_ops = {
 	0,
 	0,
 
@@ -125,7 +125,7 @@ int ext2_file_write(struct inode *i, struct fd *f, const char *buffer, __size_t 
 			br->block = block;
 			br->size = blksize;
 			br->device = d;
-			br->fn = d->fsop->read_block;
+			br->fn = d->ops->read_block;
 			br->head_group = &brh;
 			if(!brh.next_group) {
 				brh.next_group = br;

@@ -15,7 +15,7 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
-struct fs_operations procfs_file_fsop = {
+struct fs_operations procfs_file_ops = {
 	0,
 	0,
 

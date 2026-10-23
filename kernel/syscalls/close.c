@@ -29,8 +29,8 @@ int sys_close(unsigned int ufd)
 	}
 	i = fd_table[fd].inode;
 	flock_release_inode(i);
-	if(i->fsop && i->fsop->close) {
-		i->fsop->close(i, &fd_table[fd]);
+	if(i->ops && i->ops->close) {
+		i->ops->close(i, &fd_table[fd]);
 		release_fd(fd);
 		iput(i);
 		return 0;
