@@ -17,10 +17,15 @@
 #include <fiwix/stdio.h>
 #include <fiwix/string.h>
 
+static const unsigned char first_zero_bit[15] = {
+    0, 1, 0, 2, 0, 1, 0, 3,
+    0, 1, 0, 2, 0, 1, 0
+};
+
 static int find_first_zero(struct superblock *sb, __blk_t bmblock, struct buffer **buf)
 {
 	unsigned char c;
-	int n, n2;
+	int n;
 
 	if(!(*buf = bread(sb->dev, bmblock, sb->s_blocksize))) {
 		return -EIO;
@@ -29,11 +34,10 @@ static int find_first_zero(struct superblock *sb, __blk_t bmblock, struct buffer
 		if((c = (unsigned char)(*buf)->data[n]) == 0xFF) {
 			continue;
 		}
-		for(n2 = 0; n2 < 8; n2++) {
-			if(!(c & (1 << n2))) {
-				return (n * 8) + n2;
-			}
+		if((c & 0x0F) != 0x0F) {
+			return (n * 8) + first_zero_bit[c & 0x0F];
 		}
+		return (n * 8) + 4 + first_zero_bit[c >> 4];
 	}
 	return -ENOSPC;
 }
