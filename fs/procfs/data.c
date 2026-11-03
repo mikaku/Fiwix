@@ -326,7 +326,7 @@ int data_proc_mounts(char *buffer, __pid_t pid)
 int data_proc_partitions(char *buffer, __pid_t pid)
 {
 	int n, ctrl, drv, size;
-	int minor, major;
+	int minor, minor_shift, major;
 	unsigned int blocks;
 	struct ide *ide;
 	struct ata_drv *drive;
@@ -343,13 +343,15 @@ int data_proc_partitions(char *buffer, __pid_t pid)
 			}
 			if(drive->flags & DRIVE_IS_DISK) {
 				major = (int)drive->major;
-				minor = (int)drive->minor_shift;
+				minor_shift = (int)drive->minor_shift;
 				blocks = drive->nr_sects / 2;
-				size += sprintk(buffer + size, "%4d  %4d  %9d %s\n", major, 0, blocks, drive->dev_name);
+				minor = minor_shift ? 1 << minor_shift : 0;
+				size += sprintk(buffer + size, "%4d  %4d  %9d %s\n", major, minor, blocks, drive->dev_name);
 				for(n = 0; n < NR_PARTITIONS; n++) {
 					if(drive->part_table[n].type) {
 						blocks = drive->part_table[n].nr_sects / 2;
-						size += sprintk(buffer + size, "%4d  %4d  %9u %s%d\n", major, (n + 1) << minor, blocks, drive->dev_name, n + 1);
+						minor = (minor_shift ? 1 << minor_shift : 0) + n + 1;
+						size += sprintk(buffer + size, "%4d  %4d  %9u %s%d\n", major, minor, blocks, drive->dev_name, n + 1);
 					}
 				}
 			}
