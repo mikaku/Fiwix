@@ -66,10 +66,27 @@ OBJS = 	kernel/*.o \
 	drivers/pci/*.o \
 	drivers/video/*.o \
 	net/*.o \
-	lib/*.o \
-	net/lwip/liblwip.a
+	lib/*.o
 
-export CC LD CFLAGS LDFLAGS INCLUDE FIWIX_INCLUDE LWIP_STABLE_RELEASE
+NETOBJ =
+NETDIRS =
+NETWORK := $(shell grep CONFIG_NET include/fiwix/config.h)
+NETWORK2 := $(shell test -f include/fiwix/custom_config.h && grep CONFIG_NET include/fiwix/custom_config.h)
+ifeq ($(NETWORK), \#define CONFIG_NET)
+	NETOBJ=net/lwip/liblwip.a
+	NETDIRS=lwip
+endif
+ifeq ($(NETWORK2), \#define CONFIG_NET)
+	NETOBJ=net/lwip/liblwip.a
+	NETDIRS=lwip
+endif
+ifeq ($(NETWORK2), \#undef CONFIG_NET)
+	NETOBJ=
+	NETDIRS=
+endif
+OBJS += $(NETOBJ)
+
+export CC LD CFLAGS LDFLAGS INCLUDE FIWIX_INCLUDE LWIP_STABLE_RELEASE NETDIRS
 
 all:
 	@echo "#define UTS_VERSION \"`date -u`\"" > include/fiwix/version.h
