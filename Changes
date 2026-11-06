@@ -20,6 +20,8 @@
 - Changed the way how device drivers find PCI-type devices.
 - Changed the serial device driver arrays to use dynamic allocation and fixed
   some bugs.
+- The function page_not_present() now returns 1 if it cannot find a stack region
+  in the vma_table (this is a testing change).
 - Moved ipc_init() and net_init() initialization into kswpad() to make sure the
   'current' process stucture is completely setup.
 - Removed the file CREDITS because the LICENSE file already contains the list of
@@ -30,6 +32,8 @@
 - Increased from 1024 to PAGE_SIZE (4096) the buffer used in printk(), sprintk()
   and snprintk().
 - Improved the efficiency in append_packet_to_queue().
+- Improved pipe access by locking the pipe’s inode instead of using a global
+  resource lock.
 - Fixed the ATA disk initialitzation to reduce the number of messages like
   'unexpected interrupt'.
 - Fixed the DMA functionality in ATA disks to use UDMA since the support for the
@@ -81,13 +85,38 @@
 - Fixed write_page() to make sure it cannot underflow if offset is greater than
   i->i_size.
 - Fixed do_mmap() to avoid an overflow in the comparison.
-- Fixed del_inode_from_pool() to effectively remove the last inode in the pool.
+- Fixed del_inode_from_pool() and del_buffer_from_pool() to effectively remove
+  the last inode and buffer in the pool.
 - Fixed bread() to avoid leaving the buffer permanently locked if get_device()
   fails.
 - Fixed do_sched() to protect process iteration against possible corruption.
 - Fixed sendto() to relay to send() when the last two arguments are zero.
 - Fixed data_proc_pid_fd() to display the major/minor pair as zeros for sockets
   and pipes.
+- Fixed ext2_readdir() and ext2_readdir64() to allow an entry that fits exactly
+  the caller’s buffer, also check iget() before dereferencing its result.
+- Fixed ext2_ialloc(), ext2_ifree(), ext2_balloc() and ext2_bfree() to reject
+  an already-set/clear bit instead of returning it as allocated/freed.
+- Fixed ext2_bfree() to validate correctly block numbers.
+- Fixed ext2_file_write() to free the request on bmap() failure, also to
+  preserve successful bytes when write later fails.
+- Fixed find_first_free_dir_entry() to use name_len instead of strlen() when
+  finding free space in a directory.
+- Fixed ext2_rename() to avoid a possible double unlock an inode.
+- Fixed ext2_followlink() to use i_size instead of strlen() to get the symlink
+  length, also changed to signed-type for the result of parse_namei().
+- Fixed kbdflushd() to clear the BUFFER_LOCKED flag if an inconsistency was
+  found in the dirty list.
+- Fixed blk_dev_read() and blk_dev_write() to validate the device’s configured
+  block size before computing 'blksize_bits'.
+- Fixed blk_dev_read() and blk_dev_write() to return the current byte count on
+  an I/O failure.
+- Fixed flock_release_inode() to avoid a use-after-free case.
+- Fixed add_mount_point() to initialize the new entry before adding it to mount
+  table.
+- Fixed register_filesystem() to undo the changes if kern_mount() returns error.
+- Fixed how data_proc_partitions() represents the minor number for block
+  devices.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
