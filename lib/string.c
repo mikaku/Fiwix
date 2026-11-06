@@ -58,9 +58,12 @@ int strcmp(const char *str1, const char *str2)
 
 int strncmp(const char *str1, const char *str2, __ssize_t n)
 {
-	while(n > 0 && *str1) {
+	while(n > 0) {
 		if(*str1 != *str2) {
 			return 1;
+		}
+		if(!*str1) {
+			return 0;
 		}
 		str1++;
 		str2++;
