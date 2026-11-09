@@ -756,8 +756,12 @@ next:
 		}
 	}
 
-	wakeup(&get_free_buffer);
-	wakeup(&buffer_wait);
+	if(reclaimed) {
+		wakeup(&get_free_buffer);
+		wakeup(&buffer_wait);
+	} else {
+		printk("WARNING: %s(): no more buffers to reclaim!\n", __FUNCTION__);
+	}
 	return reclaimed;
 }
 

@@ -66,8 +66,7 @@ int kswapd(void)
 
 	for(;;) {
 		sleep(&kswapd, PROC_INTERRUPTIBLE);
-		reclaim_buffers();
-		reclaim_inodes();
+		reclaim_inodes(reclaim_buffers());
 		wakeup(&get_free_page);
 	}
 }

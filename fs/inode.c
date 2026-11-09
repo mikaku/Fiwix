@@ -507,7 +507,7 @@ void invalidate_inodes(__dev_t dev)
 	RESTORE_FLAGS(flags);
 }
 
-void reclaim_inodes(void)
+void reclaim_inodes(int buf_reclaimed)
 {
 	struct inode *i;
 	int reclaimed;
@@ -525,9 +525,14 @@ void reclaim_inodes(void)
 		} else {
 			break;
 		}
-		if(kstat.nr_inodes < NR_INODE_RECLAIM) {
-			break;
+		if(buf_reclaimed > 0) {
+			if(kstat.nr_inodes < NR_INODE_RECLAIM) {
+				break;
+			}
 		}
+	}
+	if(!reclaimed) {
+		printk("WARNING: %s(): no more inodes to reclaim!\n", __FUNCTION__);
 	}
 }
 
