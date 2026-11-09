@@ -310,7 +310,7 @@ static struct buffer *create_buffers(int size)
 		}
 		buf->data = data + (n * size);
 		buf->size = size;
-		buf->first_sibling = first;
+		buf->firstborn = first;
 		kstat.buffers_size += size / 1024;
 		prev = buf;
 		if(!first) {
@@ -641,8 +641,8 @@ static int reclaim_siblings(struct buffer *buf)
 	unsigned int flags;
 
 	orig = buf;
-	if(buf->first_sibling) {
-		buf = buf->first_sibling;
+	if(buf->firstborn) {
+		buf = buf->firstborn;
 	}
 	first = buf;
 	/* abort if one of the siblings is locked */

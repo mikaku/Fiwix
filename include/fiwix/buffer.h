@@ -35,9 +35,8 @@ struct buffer {
 	struct buffer *next_free;
 	struct buffer *prev_dirty;
 	struct buffer *next_dirty;
-	struct buffer *first_sibling;
+	struct buffer *firstborn;
 	struct buffer *next_sibling;
-	struct buffer *next_retained;
 };
 extern struct buffer *buffer_table;
 extern struct buffer **buffer_hash_table;
