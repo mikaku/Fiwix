@@ -117,6 +117,8 @@
 - Fixed register_filesystem() to undo the changes if kern_mount() returns error.
 - Fixed how data_proc_partitions() represents the minor number for block
   devices.
+- Fixed an infinite loop when there are no more buffers to reclaim. Messages are
+  now displayed again, and all inodes are reclaimed in that case.
 - Small fixes and improvements, code cleanup and cosmetic changes.
 
 
