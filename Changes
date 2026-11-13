@@ -32,7 +32,7 @@
 - Increased from 1024 to PAGE_SIZE (4096) the buffer used in printk(), sprintk()
   and snprintk().
 - Improved the efficiency in append_packet_to_queue().
-- Improved pipe access by locking the pipe’s inode instead of using a global
+- Improved pipe access by locking the pipe's inode instead of using a global
   resource lock.
 - Fixed the ATA disk initialitzation to reduce the number of messages like
   'unexpected interrupt'.
@@ -94,7 +94,7 @@
 - Fixed data_proc_pid_fd() to display the major/minor pair as zeros for sockets
   and pipes.
 - Fixed ext2_readdir() and ext2_readdir64() to allow an entry that fits exactly
-  the caller’s buffer, also check iget() before dereferencing its result.
+  the caller's buffer, also check iget() before dereferencing its result.
 - Fixed ext2_ialloc(), ext2_ifree(), ext2_balloc() and ext2_bfree() to reject
   an already-set/clear bit instead of returning it as allocated/freed.
 - Fixed ext2_bfree() to validate correctly block numbers.
@@ -107,7 +107,7 @@
   length, also changed to signed-type for the result of parse_namei().
 - Fixed kbdflushd() to clear the BUFFER_LOCKED flag if an inconsistency was
   found in the dirty list.
-- Fixed blk_dev_read() and blk_dev_write() to validate the device’s configured
+- Fixed blk_dev_read() and blk_dev_write() to validate the device's configured
   block size before computing 'blksize_bits'.
 - Fixed blk_dev_read() and blk_dev_write() to return the current byte count on
   an I/O failure.
