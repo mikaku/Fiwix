@@ -28,9 +28,13 @@ Features
  - ISO9660 filesystem support with Rock Ridge extensions.
  - RAMdisk device support.
  - Initial RAMdisk (initrd) image support.
+ - Networking support with the integration of lwIP into the kernel (BETA).
  - SVGAlib based applications support.
  - PCI local bus support.
-   - QEMU/Bochs Graphics Adapter support.
+   - QEMU/Bochs Graphics Adapter.
+   - PCI serial devices.
+   - PCI ATA controllers.
+   - Realtek RTL8139 network adapter.
  - UNIX98 pseudoterminals (pty) and devpts filesystem support.
  - Virtual consoles support (up to 12).
  - Keyboard driver with Linux keymaps support.
