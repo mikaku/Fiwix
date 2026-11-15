@@ -1,4 +1,4 @@
-1.8.0 - DD-MMM-2026
+1.8.0 - 15-Nov-2026
 ===================
 - Added networking support by porting lwIP into the kernel's build. [#36]
 - Added support for basic Linux socket ioctls.
